@@ -147,7 +147,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .tdot{width:6px;height:6px;border-radius:50%;background:var(--g2);animation:bounce 1.2s infinite;}
 .tdot:nth-child(2){animation-delay:0.2s;}.tdot:nth-child(3){animation-delay:0.4s;}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-.chat-iw{padding:10px 14px max(14px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:var(--surface);}
+.chat-iw{padding:6px 10px max(12px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;gap:7px;align-items:flex-end;flex-shrink:0;background:var(--surface);}
 .chat-input{flex:1;padding:9px 14px;border:0.5px solid var(--border2);border-radius:22px;font-size:13px;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);outline:none;resize:none;max-height:100px;line-height:1.4;}
 .send-btn{width:36px;height:36px;border-radius:50%;background:var(--g);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
 .send-btn:disabled{background:var(--border2);cursor:default;}
@@ -251,6 +251,29 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .gi-cat-pill{position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);border-radius:9px;padding:2px 7px;font-size:7px;color:rgba(255,255,255,0.95);font-weight:600;letter-spacing:.3px;display:none;}
 .gi:hover .gi-cat-pill{display:block;}
 
+
+/* ── CHAT ADDITIONAL PHOTOS & REFS ── */
+.chat-sub-btn{width:34px;height:34px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;}
+.chat-sub-btn:hover{background:var(--gl);border-color:var(--g);color:var(--g);}
+.chat-attach-row{display:flex;gap:8px;padding:0 14px 6px;flex-wrap:wrap;}
+.chat-attach-row:empty{display:none;}
+.chat-attach-thumb{position:relative;width:52px;height:52px;border-radius:8px;overflow:hidden;flex-shrink:0;border:1.5px solid var(--g);}
+.chat-attach-thumb img{width:100%;height:100%;object-fit:cover;}
+.chat-attach-thumb .remove-attach{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,0.65);color:white;font-size:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;}
+.chat-attach-ref{position:relative;height:52px;border-radius:8px;overflow:hidden;flex-shrink:0;border:1.5px solid var(--blue);display:flex;align-items:center;padding:0 8px;gap:6px;background:rgba(55,138,221,0.08);max-width:140px;}
+.chat-attach-ref .ref-label{font-size:9px;color:var(--blue);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
+.chat-attach-ref .remove-attach{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,0.45);color:white;font-size:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+/* ── REF PICKER ── */
+.ref-picker{display:none;position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);z-index:50;max-height:55%;flex-direction:column;border-radius:16px 16px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,0.12);}
+.ref-picker.on{display:flex;}
+.ref-picker-hdr{padding:12px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border);}
+.ref-picker-title{font-size:13px;font-weight:600;}
+.ref-picker-close{font-size:14px;color:var(--text3);cursor:pointer;padding:4px 6px;}
+.ref-picker-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px;}
+.ref-picker-tile{aspect-ratio:1;position:relative;cursor:pointer;overflow:hidden;border-radius:4px;background:#ddd;}
+.ref-picker-tile img{width:100%;height:100%;object-fit:cover;}
+.ref-picker-tile.selected::after{content:'✓';position:absolute;inset:0;background:rgba(29,158,117,0.55);display:flex;align-items:center;justify-content:center;font-size:22px;color:white;font-weight:700;}
+.ref-picker-text{background:#1a1a1a;display:flex;align-items:center;justify-content:center;padding:6px;font-size:10px;color:rgba(255,255,255,0.8);text-align:center;line-height:1.3;}
 /* ── CHAT PRIVACY TOGGLE ── */
 .chat-privacy-row{padding:8px 14px 0;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);}
 .priv-toggle{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:14px;border:0.5px solid var(--border2);cursor:pointer;font-size:10px;color:var(--text2);background:var(--bg);user-select:none;}
@@ -412,7 +435,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     </div>
   </div>
   <div class="prof-name" id="home-name">Kazuma</div>
-  <div class="prof-tag" id="home-tag"><span class="prof-tag-badge">SnapIn</span></div>
+  <div class="prof-tag" id="home-tag"></div>
   <div class="search-wrap" id="search-wrap">
     <div class="search-box">
       <svg width="14" height="14" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="4"/><line x1="9.5" y1="9.5" x2="13" y2="13"/></svg>
@@ -570,14 +593,29 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     <span style="font-size:9px;color:var(--text3);">あなただけが見られます</span>
   </div>
   <div class="chat-msgs" id="chat-msgs"></div>
+  <!-- 追加写真・参照投稿のプレビューエリア -->
+  <div class="chat-attach-row" id="chat-attach-row"></div>
   <div class="chat-iw">
-    <textarea class="chat-input" id="chat-input" placeholder="写真について何でも聞いて…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="chat-sub-btn" onclick="triggerChatPhoto()" title="写真を追加">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3"/></svg>
+    </button>
+    <button class="chat-sub-btn" onclick="openRefPicker()" title="他の投稿を参照">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    </button>
+    <textarea class="chat-input" id="chat-input" placeholder="何でも聞いて…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
     <button class="send-btn" id="send-btn" onclick="sendMsg()">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 19V5M12 5L6 11M12 5L18 11" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-</button>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M12 5L6 11M12 5L18 11" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
   </div>
+  <!-- 投稿参照ピッカー（グリッドから選ぶ） -->
+  <div class="ref-picker" id="ref-picker">
+    <div class="ref-picker-hdr">
+      <span class="ref-picker-title">参照する投稿を選ぶ</span>
+      <span class="ref-picker-close" onclick="closeRefPicker()">✕</span>
+    </div>
+    <div class="ref-picker-grid" id="ref-picker-grid"></div>
+  </div>
+  <input type="file" id="chat-photo-input" accept="image/*" style="display:none">
 </div>
 
 <!-- ANALYTICS -->
@@ -802,6 +840,8 @@ const S = {
   showCatLabels:false,   // toggle to show category labels on tiles
   swipeIndex:-1,         // current index in filtered list during swipe preview
   pendingPhoto:null,     // {imgData, croppedData} during quick post overlay
+  chatAttachPhotos:[],   // [{imgData, label}] added mid-chat
+  chatAttachRefs:[],     // [{id, label, imgData, content}] referenced items
   profile:{ name:'Kazuma', avatarUrl:null, who:'', detail:'', dob:{year:0,month:0,day:0}, gradeText:'', gradeShort:'', interests:[], level:'標準', tone:'friendly' },
   deco:{ bg:'linear-gradient(135deg,#1D9E75,#0F6E56)', tc:'#ffffff', font:'system-ui', emoji:'' }
 };
@@ -1138,9 +1178,9 @@ function setupSwipeEvents(body){
 
 function updateHomeProfile(){
   document.getElementById('home-name').textContent=S.profile.name;
-  const whoLine=[S.profile.who,S.profile.gradeText,S.profile.detail].filter(Boolean).join(' · ')||'SnapIn';
+  const whoLine=[S.profile.who,S.profile.gradeText,S.profile.detail].filter(Boolean).join(' · ');
   const interestHtml=(S.profile.interests||[]).slice(0,3).map(t=>`<span style="font-size:9px;color:var(--text2);">#${t}</span>`).join('');
-  document.getElementById('home-tag').innerHTML=`<span class="prof-tag-badge">${whoLine}</span>${interestHtml}`;
+  document.getElementById('home-tag').innerHTML=whoLine?`<span class="prof-tag-badge">${whoLine}</span>${interestHtml}`:interestHtml;
   updateAvaUI();
 }
 // Click delegation
@@ -1761,18 +1801,42 @@ function addAI(t){
 }
 async function sendMsg(){
   const inp=document.getElementById('chat-input');
-  const t=inp.value.trim(); if(!t) return;
+  const t=inp.value.trim();
+  const hasAttach=S.chatAttachPhotos.length>0||S.chatAttachRefs.length>0;
+  if(!t&&!hasAttach) return;
   inp.value=''; autoResize(inp);
-  // 質問候補チップが残っていたら消す
   document.getElementById('q-chips-wrap')?.remove();
-  userDirect(t);
+
+  // UI: ユーザーメッセージ表示（サムネ付き）
+  const msgDiv=document.createElement('div'); msgDiv.className='msg user';
+  let thumbsHtml='';
+  [...S.chatAttachPhotos,...S.chatAttachRefs].forEach(a=>{
+    if(a.imgData) thumbsHtml+=`<img src="${a.imgData}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;display:block;margin-bottom:4px;">`;
+    else thumbsHtml+=`<div style="font-size:9px;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.15);border-radius:6px;padding:4px 6px;margin-bottom:4px;">📎 ${a.label}</div>`;
+  });
+  msgDiv.innerHTML=(thumbsHtml?`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">${thumbsHtml}</div>`:'')+(t?`<div class="bubble user">${t}</div>`:'');
+  document.getElementById('chat-msgs').appendChild(msgDiv);
+  document.getElementById('chat-msgs').scrollTop=99999;
+
+  // 履歴に保存（テキストのみ、画像はAPI送信時に付加）
   const item=S.items.find(i=>i.id===S.curId);
-  if(item){item.chatHistory=item.chatHistory||[];item.chatHistory.push({role:'user',content:t});item.chatted=true;}
+  const msgRecord={role:'user',content:t||'（写真・参照を送信）',
+    extraPhotos:S.chatAttachPhotos.map(p=>p.imgData),
+    extraRefs:S.chatAttachRefs.map(r=>({id:r.id,label:r.label,imgData:r.imgData,content:r.content}))
+  };
+  if(item){item.chatHistory=item.chatHistory||[];item.chatHistory.push(msgRecord);item.chatted=true;}
+  
+  // attachments をコピーしてからリセット
+  const attachPhotos=[...S.chatAttachPhotos];
+  const attachRefs=[...S.chatAttachRefs];
+  S.chatAttachPhotos=[]; S.chatAttachRefs=[];
+  renderAttachRow();
+
   updateStats(); saveState();
-  await callAI(item,t);
+  await callAI(item, t||'', attachPhotos, attachRefs);
 }
 
-async function callAI(item,latestUserText){
+async function callAI(item, latestUserText, attachPhotos=[], attachRefs=[]){
   const msgs=document.getElementById('chat-msgs');
   const ty=document.createElement('div'); ty.id='typing'; ty.className='msg ai';
   ty.innerHTML='<div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';
@@ -1782,15 +1846,49 @@ async function callAI(item,latestUserText){
     const history=item?.chatHistory||[];
     const messages=[]; let firstUser=false;
     const imgData=S.croppedData||(item?.type==='photo'?item.imageData:null);
+
+    // 履歴をAPI用メッセージに変換
     for(const h of history){
+      // 最初のユーザーメッセージに元の写真を付加
       if(h.role==='user'&&!firstUser&&imgData&&item?.type==='photo'){
         const b64=imgData.split(',')[1];
         const mt=imgData.startsWith('data:image/png')?'image/png':'image/jpeg';
-        messages.push({role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:h.content}]});
+        const contentArr=[{type:'image',source:{type:'base64',media_type:mt,data:b64}}];
+        // 同時に追加された写真・参照もこのターンに付加
+        (h.extraPhotos||[]).forEach(ep=>{
+          const eb=ep.split(',')[1];
+          const em=ep.startsWith('data:image/png')?'image/png':'image/jpeg';
+          contentArr.push({type:'image',source:{type:'base64',media_type:em,data:eb}});
+        });
+        (h.extraRefs||[]).forEach(ref=>{
+          if(ref.imgData){const rb=ref.imgData.split(',')[1];const rm=ref.imgData.startsWith('data:image/png')?'image/png':'image/jpeg';contentArr.push({type:'image',source:{type:'base64',media_type:rm,data:rb}});}
+          if(ref.content) contentArr.push({type:'text',text:`[参照投稿「${ref.label}」]: ${ref.content}`});
+        });
+        if(h.content) contentArr.push({type:'text',text:h.content});
+        messages.push({role:'user',content:contentArr});
         firstUser=true;
-      } else { messages.push({role:h.role,content:h.content}); }
+      } else if(h.role==='user'){
+        // 2ターン目以降の追加写真・参照
+        const hasExtras=(h.extraPhotos?.length||0)+(h.extraRefs?.length||0);
+        if(hasExtras){
+          const contentArr=[];
+          (h.extraPhotos||[]).forEach(ep=>{const eb=ep.split(',')[1];const em=ep.startsWith('data:image/png')?'image/png':'image/jpeg';contentArr.push({type:'image',source:{type:'base64',media_type:em,data:eb}});});
+          (h.extraRefs||[]).forEach(ref=>{if(ref.imgData){const rb=ref.imgData.split(',')[1];const rm=ref.imgData.startsWith('data:image/png')?'image/png':'image/jpeg';contentArr.push({type:'image',source:{type:'base64',media_type:rm,data:rb}});}if(ref.content)contentArr.push({type:'text',text:`[参照「${ref.label}」]: ${ref.content}`});});
+          if(h.content) contentArr.push({type:'text',text:h.content});
+          messages.push({role:'user',content:contentArr});
+        } else {
+          messages.push({role:'user',content:h.content||''});
+        }
+        firstUser=true;
+      } else {
+        messages.push({role:h.role,content:h.content});
+      }
     }
-    if(!messages.length) messages.push({role:'user',content:item?.type==='text'?`メモ：「${item.content}」\n${latestUserText}`:latestUserText});
+    if(!messages.length){
+      // 初回（autoFirstAICommentで呼ばれた場合）
+      messages.push({role:'user',content:item?.type==='text'?`メモ：「${item.content}」
+${latestUserText}`:latestUserText});
+    }
     const res=await fetch('/api/chat',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildPrompt(),messages})
@@ -1815,6 +1913,93 @@ async function callAI(item,latestUserText){
   document.getElementById('send-btn').disabled=false;
   msgs.scrollTop=msgs.scrollHeight;
 }
+
+// ═══════════════════════════════════════════
+// CHAT ADDITIONAL PHOTOS & REFS
+// ═══════════════════════════════════════════
+function renderAttachRow(){
+  const row=document.getElementById('chat-attach-row');
+  if(!row) return;
+  row.innerHTML='';
+  S.chatAttachPhotos.forEach((p,i)=>{
+    const d=document.createElement('div'); d.className='chat-attach-thumb';
+    d.innerHTML=`<img src="${p.imgData}"><span class="remove-attach" onclick="removeAttachPhoto(${i})">✕</span>`;
+    row.appendChild(d);
+  });
+  S.chatAttachRefs.forEach((r,i)=>{
+    const d=document.createElement('div'); d.className='chat-attach-ref';
+    const thumb=r.imgData?`<img src="${r.imgData}" style="width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0;">`:'<span style="font-size:16px;">📝</span>';
+    d.innerHTML=`${thumb}<span class="ref-label">${r.label}</span><span class="remove-attach" onclick="removeAttachRef(${i})">✕</span>`;
+    row.appendChild(d);
+  });
+}
+function removeAttachPhoto(i){ S.chatAttachPhotos.splice(i,1); renderAttachRow(); }
+function removeAttachRef(i){ S.chatAttachRefs.splice(i,1); renderAttachRow(); }
+
+function triggerChatPhoto(){
+  document.getElementById('chat-photo-input').click();
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const cp=document.getElementById('chat-photo-input');
+  if(cp) cp.addEventListener('change',async e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=async ev=>{
+      const compressed=await compressImage(ev.target.result,900,0.82);
+      S.chatAttachPhotos.push({imgData:compressed,label:'追加写真'});
+      renderAttachRow();
+    };
+    r.readAsDataURL(f); e.target.value='';
+  });
+});
+
+function openRefPicker(){
+  // 現在のitemを除いた全投稿をグリッド表示
+  const picker=document.getElementById('ref-picker');
+  const grid=document.getElementById('ref-picker-grid');
+  picker.classList.add('on');
+  const others=S.items.filter(i=>i.id!==S.curId);
+  grid.innerHTML='';
+  if(!others.length){
+    grid.innerHTML='<div style="grid-column:span 3;padding:24px;text-align:center;color:var(--text3);font-size:12px;">他の投稿がありません</div>';
+    return;
+  }
+  others.forEach(item=>{
+    const tile=document.createElement('div');
+    tile.className='ref-picker-tile'+(S.chatAttachRefs.find(r=>r.id===item.id)?' selected':'');
+    const cat=detectCat(item);
+    if(item.type==='photo'&&item.imageData){
+      tile.innerHTML=`<img src="${item.imageData}">`;
+    } else {
+      const d=item.deco||{};
+      tile.className+=' ref-picker-text';
+      tile.style.background=d.bg||'#1a1a1a';
+      tile.innerHTML=`<span style="color:${d.tc||'#fff'};font-size:10px;">${(d.emoji||'')+item.content.substring(0,20)}</span>`;
+    }
+    // カテゴリドット
+    const dot=document.createElement('div');
+    dot.style.cssText=`position:absolute;bottom:4px;left:4px;width:7px;height:7px;border-radius:50%;background:${catColor(cat)};border:1px solid rgba(255,255,255,0.7);`;
+    tile.appendChild(dot);
+    tile.onclick=()=>toggleRefItem(item,tile);
+    grid.appendChild(tile);
+  });
+}
+function toggleRefItem(item,tile){
+  const idx=S.chatAttachRefs.findIndex(r=>r.id===item.id);
+  if(idx>=0){
+    S.chatAttachRefs.splice(idx,1);
+    tile.classList.remove('selected');
+  } else {
+    const label=item.type==='text'?item.content.substring(0,16)+'…':(item.autoNote||item.date||'写真');
+    S.chatAttachRefs.push({id:item.id,label,imgData:item.type==='photo'?item.imageData:null,content:item.type==='text'?item.content:null});
+    tile.classList.add('selected');
+  }
+  renderAttachRow();
+}
+function closeRefPicker(){
+  document.getElementById('ref-picker').classList.remove('on');
+}
+
 function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();} }
 function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
 
