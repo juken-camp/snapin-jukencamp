@@ -1299,7 +1299,7 @@ document.getElementById('acad-input').addEventListener('change', async e => {
 {"level":"基礎" or "標準" or "発展" or "専門","summary":"1〜2文（日本語）","strong":"得意分野","weak":"苦手分野"}
 基準：基礎=偏差値50未満/通知表3以下、標準=偏差値50〜60/通知表4程度、発展=偏差値60〜70/通知表オール5、専門=偏差値70以上`});
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content}]})});
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content}]})});
     const data=await res.json();
     const raw=data.content?.[0]?.text||'{}';
     let parsed; try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch{parsed={};}
@@ -1443,7 +1443,7 @@ async function backgroundCategorize(item){
     const b64=item.imageData.split(',')[1];
     const mt=item.imageData.startsWith('data:image/png')?'image/png':'image/jpeg';
     const catNames=CAT_LIST.join('、');
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('/api/chat',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:200,
@@ -1475,7 +1475,7 @@ async function backgroundCategorize(item){
 async function backgroundCategorizeText(item){
   try{
     const catNames=CAT_LIST.join('、');
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('/api/chat',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:120,
@@ -1611,7 +1611,7 @@ async function autoFirstAIComment(item){
 メモ：「${item.content}」
 カテゴリ候補：${catNames}`;
     }
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('/api/chat',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system:buildPrompt(),messages:[{role:'user',content}]})
     });
@@ -1753,7 +1753,7 @@ async function callAI(item,latestUserText){
       } else { messages.push({role:h.role,content:h.content}); }
     }
     if(!messages.length) messages.push({role:'user',content:item?.type==='text'?`メモ：「${item.content}」\n${latestUserText}`:latestUserText});
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('/api/chat',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildPrompt(),messages})
     });
