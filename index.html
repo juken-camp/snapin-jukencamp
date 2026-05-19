@@ -20,7 +20,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .screen.active{display:flex;}
 .hdr{padding:14px 18px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid var(--border);flex-shrink:0;}
 .logo{font-size:22px;font-weight:700;letter-spacing:-0.5px;color:var(--text);}
-.logo em{color:var(--g);font-style:normal;}
+.logo em{color:var(--g);font-style:normal;}.logo-by{font-size:10px;font-weight:400;color:var(--text3);letter-spacing:0;margin-left:3px;vertical-align:middle;}
 .hdr-icons{display:flex;gap:16px;color:var(--text2);}
 .hdr-icons span{cursor:pointer;display:flex;align-items:center;transition:color 0.15s;}
 .hdr-icons span:hover{color:var(--g);}
@@ -90,7 +90,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .ep:active{transform:scale(1.2);}
 .deco-footer{padding:8px 12px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:#fafafa;}
 .post-btn{padding:7px 18px;background:var(--g);border:none;border-radius:20px;font-size:11px;color:white;font-weight:500;cursor:pointer;}
-.clr-emoji{font-size:10px;color:var(--text3);border:none;background:none;cursor:pointer;padding:4px;}
+.clr-emoji{font-size:10px;color:var(--text3);border:none;background:none;cursor:pointer;padding:4px;white-space:nowrap;}.emoji-free-inp{flex:1;padding:7px 12px;border:0.5px solid var(--border2);border-radius:20px;font-size:16px;font-family:system-ui,sans-serif;background:var(--bg);outline:none;color:var(--text);}
 /* TRIM */
 .trim-body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .trim-ca{position:relative;background:#111;flex-shrink:0;overflow:hidden;}
@@ -120,7 +120,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .tdot{width:6px;height:6px;border-radius:50%;background:var(--g2);animation:bounce 1.2s infinite;}
 .tdot:nth-child(2){animation-delay:0.2s;}.tdot:nth-child(3){animation-delay:0.4s;}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-.chat-iw{padding:10px 14px 12px;border-top:0.5px solid var(--border);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;}
+.chat-iw{padding:10px 14px max(14px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:var(--surface);}
 .chat-input{flex:1;padding:9px 14px;border:0.5px solid var(--border2);border-radius:22px;font-size:13px;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);outline:none;resize:none;max-height:100px;line-height:1.4;}
 .send-btn{width:36px;height:36px;border-radius:50%;background:var(--g);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
 .send-btn:disabled{background:var(--border2);cursor:default;}
@@ -378,7 +378,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 <!-- HOME -->
 <div class="screen active" id="screen-home">
   <div class="hdr">
-    <div class="logo">Snap<em>In</em></div>
+    <div class="logo">Snap<em>In</em><span class="logo-by"> by JUKEN CAMP</span></div>
     <div class="hdr-icons">
       <span onclick="enterEditMode()" title="編集モード"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
       <span onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
@@ -503,20 +503,32 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
           </div>
         </div>
         <div class="deco-row" style="align-items:flex-start;">
-          <div class="deco-lbl" style="padding-top:3px;">絵文字</div>
-          <div style="flex:1;">
-            <div class="emoji-row">
-              <span class="ep" onclick="setEmoji('📚')">📚</span><span class="ep" onclick="setEmoji('✏️')">✏️</span>
-              <span class="ep" onclick="setEmoji('🍳')">🍳</span><span class="ep" onclick="setEmoji('🌸')">🌸</span>
-              <span class="ep" onclick="setEmoji('✈️')">✈️</span><span class="ep" onclick="setEmoji('💪')">💪</span>
-              <span class="ep" onclick="setEmoji('🎵')">🎵</span><span class="ep" onclick="setEmoji('⭐')">⭐</span>
-              <span class="ep" onclick="setEmoji('🔥')">🔥</span><span class="ep" onclick="setEmoji('💡')">💡</span>
-              <span class="ep" onclick="setEmoji('🌙')">🌙</span><span class="ep" onclick="setEmoji('🌈')">🌈</span>
-              <span class="ep" onclick="setEmoji('🎀')">🎀</span><span class="ep" onclick="setEmoji('💎')">💎</span>
-              <span class="ep" onclick="setEmoji('🌿')">🌿</span><span class="ep" onclick="setEmoji('☕')">☕</span>
-              <span class="ep" onclick="setEmoji('🫧')">🫧</span><span class="ep" onclick="setEmoji('🦋')">🦋</span>
+          <div class="deco-lbl" style="padding-top:6px;">絵文字</div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="emoji-free-input" type="text" class="emoji-free-inp" placeholder="絵文字を直接入力…🎵" maxlength="4" oninput="setEmoji(this.value.trim())">
+              <button class="clr-emoji" onclick="setEmoji('');document.getElementById('emoji-free-input').value=''">✕ 消す</button>
             </div>
-            <button class="clr-emoji" onclick="setEmoji('')">✕ 絵文字を消す</button>
+            <div class="emoji-row">
+              <span class="ep" onclick="setEmoji('📚');document.getElementById('emoji-free-input').value='📚'">📚</span>
+              <span class="ep" onclick="setEmoji('✏️');document.getElementById('emoji-free-input').value='✏️'">✏️</span>
+              <span class="ep" onclick="setEmoji('🍳');document.getElementById('emoji-free-input').value='🍳'">🍳</span>
+              <span class="ep" onclick="setEmoji('🌸');document.getElementById('emoji-free-input').value='🌸'">🌸</span>
+              <span class="ep" onclick="setEmoji('✈️');document.getElementById('emoji-free-input').value='✈️'">✈️</span>
+              <span class="ep" onclick="setEmoji('💪');document.getElementById('emoji-free-input').value='💪'">💪</span>
+              <span class="ep" onclick="setEmoji('🎵');document.getElementById('emoji-free-input').value='🎵'">🎵</span>
+              <span class="ep" onclick="setEmoji('⭐');document.getElementById('emoji-free-input').value='⭐'">⭐</span>
+              <span class="ep" onclick="setEmoji('🔥');document.getElementById('emoji-free-input').value='🔥'">🔥</span>
+              <span class="ep" onclick="setEmoji('💡');document.getElementById('emoji-free-input').value='💡'">💡</span>
+              <span class="ep" onclick="setEmoji('🌙');document.getElementById('emoji-free-input').value='🌙'">🌙</span>
+              <span class="ep" onclick="setEmoji('🌈');document.getElementById('emoji-free-input').value='🌈'">🌈</span>
+              <span class="ep" onclick="setEmoji('🎀');document.getElementById('emoji-free-input').value='🎀'">🎀</span>
+              <span class="ep" onclick="setEmoji('💎');document.getElementById('emoji-free-input').value='💎'">💎</span>
+              <span class="ep" onclick="setEmoji('🌿');document.getElementById('emoji-free-input').value='🌿'">🌿</span>
+              <span class="ep" onclick="setEmoji('☕');document.getElementById('emoji-free-input').value='☕'">☕</span>
+              <span class="ep" onclick="setEmoji('🫧');document.getElementById('emoji-free-input').value='🫧'">🫧</span>
+              <span class="ep" onclick="setEmoji('🦋');document.getElementById('emoji-free-input').value='🦋'">🦋</span>
+            </div>
           </div>
         </div>
       </div>
@@ -575,13 +587,17 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   <div class="chat-msgs" id="chat-msgs"></div>
   <div class="chat-iw">
     <textarea class="chat-input" id="chat-input" placeholder="写真について何でも聞いて…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-    <button class="send-btn" id="send-btn" onclick="sendMsg()"><svg width="16" height="16" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="white"/></svg></button>
+    <button class="send-btn" id="send-btn" onclick="sendMsg()">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 19V5M12 5L6 11M12 5L18 11" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
   </div>
 </div>
 
 <!-- ANALYTICS -->
 <div class="screen" id="screen-analytics">
-  <div class="hdr"><div class="logo">Snap<em>In</em></div><div class="hdr-icons"><span><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span></div></div>
+  <div class="hdr"><div class="logo">Snap<em>In</em><span class="logo-by"> by JUKEN CAMP</span></div><div class="hdr-icons"><span><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span></div></div>
   <div class="ana-body">
     <div>
       <div class="sec-title">知識スコア</div>
@@ -628,7 +644,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     <div class="card-frame">
       <div class="share-card" id="share-card">
         <div class="sc-head">
-          <div class="sc-logo">Snap<em>In</em></div>
+          <div class="sc-logo">Snap<em>In</em><span class="logo-by"> by JUKEN CAMP</span></div>
           <div class="sc-date" id="sc-date"></div>
         </div>
         <div class="sc-ava" id="sc-ava">K</div>
