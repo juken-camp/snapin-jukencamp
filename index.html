@@ -71,26 +71,43 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .roll-btn{padding:13px 16px;border:0.5px solid var(--border2);border-radius:var(--rs);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);cursor:pointer;background:var(--bg);}
 /* DECO TEXT */
 .deco-box{border:0.5px solid var(--border2);border-radius:var(--r);overflow:hidden;}
+/* プレビュー: 正方形・相対配置のキャンバス */
 .deco-preview{
   position:relative;aspect-ratio:1;width:100%;
   display:block;overflow:hidden;
-  transition:background 0.2s;touch-action:none;
+  transition:background 0.2s;
 }
+/* ドラッグ可能レイヤー */
 .deco-layer{
   position:absolute;cursor:grab;user-select:none;
-  touch-action:none;display:inline-block;
+  touch-action:none;display:inline-flex;
+  align-items:center;justify-content:center;
   transform-origin:center center;
 }
 .deco-layer:active{cursor:grabbing;}
-.deco-emoji-el{font-size:52px;line-height:1;left:18px;top:18px;}
+/* 絵文字レイヤー: 左上寄り */
+.deco-emoji-el{font-size:44px;line-height:1;left:16px;top:14px;}
+/* テキストレイヤー: 中央配置・編集枠付き */
 .deco-text-el{
-  font-size:22px;font-weight:500;line-height:1.4;
-  word-break:break-word;outline:none;
-  left:18px;top:80px;max-width:85%;
+  font-size:17px;font-weight:500;line-height:1.45;
+  word-break:break-word;
+  outline:2px solid rgba(255,255,255,0.5);
+  outline-offset:6px;
+  border-radius:2px;
+  padding:2px 4px;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  max-width:80%;min-width:60px;min-height:1.5em;
+  text-align:center;
   white-space:pre-wrap;
 }
-.deco-text-el:empty:before{content:'ここに入力…';opacity:0.3;}
-.deco-hint{position:absolute;bottom:8px;right:10px;font-size:9px;color:rgba(255,255,255,0.4);pointer-events:none;}
+.deco-text-el:focus{outline:2px solid rgba(255,255,255,0.85);}
+.deco-text-el:empty:before{content:'タップして入力';opacity:0.35;font-size:14px;}
+/* フォントサイズスライダー */
+.deco-size-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:0.5px solid var(--border);}
+.deco-size-lbl{font-size:10px;color:var(--text3);flex-shrink:0;}
+.deco-size-slider{flex:1;accent-color:var(--g);}
+.deco-hint{position:absolute;bottom:7px;right:10px;font-size:8.5px;color:rgba(255,255,255,0.35);pointer-events:none;letter-spacing:.2px;}
 .deco-toolbar{padding:10px 12px;background:rgba(0,0,0,0.025);border-top:0.5px solid var(--border);display:flex;flex-direction:column;gap:9px;}
 .deco-row{display:flex;align-items:center;gap:7px;}
 .deco-lbl{font-size:9px;color:var(--text3);width:26px;flex-shrink:0;}
@@ -365,8 +382,8 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .sp-card{max-width:100%;max-height:100%;border-radius:14px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.5);transition:transform .25s;}
 .sp-card img{max-width:90vw;max-height:65vh;display:block;}
 .sp-text-card{padding:30px 24px;min-width:80vw;min-height:50vh;display:flex;flex-direction:column;justify-content:center;}
-.sp-foot{padding:14px 18px max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;align-items:center;color:white;}
-.sp-foot-action{padding:10px 24px;border-radius:22px;background:var(--g);color:white;border:none;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.sp-foot{padding:12px 18px max(16px,env(safe-area-inset-bottom));display:flex;flex-direction:row;gap:12px;align-items:center;justify-content:center;color:white;flex-wrap:wrap;}
+.sp-foot-action{padding:10px 24px;border-radius:22px;background:var(--g);color:white;border:none;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}.sp-foot-del{width:36px;height:36px;border-radius:50%;background:rgba(226,75,74,0.85);border:none;color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
 .sp-counter{font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:.5px;}
 .sp-arrow{font-size:10px;color:rgba(255,255,255,0.45);text-align:center;}
 
@@ -395,11 +412,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 <div class="screen active" id="screen-home">
   <div class="hdr">
     <div class="logo">Snap<em>In</em><span class="logo-by"> by JUKEN CAMP</span></div>
-    <div class="hdr-icons">
-      <span onclick="enterEditMode()" title="編集モード"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
-      <span onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
-      <span><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
-    </div>
+
   </div>
   <!-- edit mode bar -->
   <div class="edit-bar" id="edit-bar">
@@ -474,7 +487,12 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
       <div class="deco-preview" id="deco-preview" style="background:#1a1a1a;">
         <div class="deco-layer deco-emoji-el" id="deco-emoji-el"></div>
         <div class="deco-layer deco-text-el" id="deco-text-el" contenteditable="true" style="color:#fff;font-family:system-ui;" onclick="this.focus()"></div>
-        <div class="deco-hint">指でドラッグ・ピンチで拡大</div>
+        <div class="deco-hint">ドラッグで移動・ピンチで拡大</div>
+      </div>
+      <div class="deco-size-row">
+        <span class="deco-size-lbl">Ａ</span>
+        <input type="range" class="deco-size-slider" id="deco-size-slider" min="10" max="48" value="17" oninput="setDecoSize(this.value)">
+        <span class="deco-size-lbl" style="font-size:16px;">Ａ</span>
       </div>
       <div class="deco-toolbar">
         <div class="deco-row">
@@ -689,7 +707,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     <div class="prof-sec">
       <div class="divider"></div>
       <div class="prof-sec-lbl">📝 自己紹介</div>
-      <input class="free-inp" id="prof-detail-inp" type="text" placeholder="学校名・職業・学年など（例：港川中学校 2年 / JUKEN CAMP 講師）" maxlength="60">
+      <input class="free-inp" id="prof-detail-inp" type="text" placeholder="学校名・学年・職業など（例：中学2年 / 高校教員 / 会社員）" maxlength="60">
       <div style="font-size:10px;color:var(--text3);margin-top:-8px;margin-bottom:14px;">AIがこの情報を参考に回答を最適化します</div>
     </div>
 
@@ -743,7 +761,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 
     <!-- ゴミ箱リンク -->
     <div class="trash-link" onclick="goTo('trash')">
-      <svg width="18" height="18" fill="none" stroke="var(--text2)" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
       <span class="trash-link-txt">ゴミ箱</span>
       <span class="trash-link-badge" id="trash-badge">0</span>
     </div>
@@ -779,6 +797,9 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   </div>
   <div class="sp-body" id="sp-body"></div>
   <div class="sp-foot">
+    <button class="sp-foot-del" onclick="trashFromSwipe()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </button>
     <button class="sp-foot-action" onclick="openCurrentFromSwipe()">
       <svg width="13" height="13" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
       AIに聞く
@@ -1078,6 +1099,14 @@ function closeSwipePreview(){
   document.getElementById('sp-overlay').classList.remove('on');
   S.swipeIndex=-1;
 }
+function trashFromSwipe(){
+  const list=getFilteredItems();
+  if(S.swipeIndex<0||S.swipeIndex>=list.length) return;
+  const item=list[S.swipeIndex];
+  closeSwipePreview();
+  trashItem(item.id);
+  showToast('ゴミ箱に移動しました');
+}
 function renderSwipePreview(){
   const list=getFilteredItems();
   if(S.swipeIndex<0||S.swipeIndex>=list.length){ closeSwipePreview(); return; }
@@ -1316,17 +1345,30 @@ document.getElementById('ava-input').addEventListener('change', e=>{
   function makeDraggable(el){
     let ox=0,oy=0,startX=0,startY=0,dragging=false;
     let scale=1, initDist=0, initScale=1;
-    // get current translate
+    let initialized=false;
+    // 初回ドラッグ前にCSS配置をピクセル座標に変換して固定
+    function initPos(){
+      if(initialized) return;
+      const prev=document.getElementById('deco-preview');
+      const pr=prev.getBoundingClientRect();
+      const er=el.getBoundingClientRect();
+      // 現在のビジュアル中心をpreview座標系に変換
+      const cx=er.left+er.width/2-pr.left;
+      const cy=er.top+er.height/2-pr.top;
+      el.style.left='0'; el.style.top='0';
+      el.style.transform=`translate(${cx-er.width/2}px,${cy-er.height/2}px) scale(1)`;
+      initialized=true;
+    }
     function getXY(){
       const m=el.style.transform.match(/translate\(([^,]+)px,\s*([^)]+)px\)/);
       return m?{x:parseFloat(m[1]),y:parseFloat(m[2])}:{x:0,y:0};
     }
     function setPos(x,y,sc){
-      scale=sc||scale;
+      scale=sc!==undefined?sc:scale;
       el.style.transform=`translate(${x}px,${y}px) scale(${scale})`;
     }
     // Touch: single finger = drag, two finger = pinch+drag
-    el.addEventListener('touchstart',e=>{
+    el.addEventListener('touchstart',e=>{ initPos();
       if(e.target===el&&el.isContentEditable&&e.touches.length===1){
         // let text editing happen on single tap (no move)
       }
@@ -1364,8 +1406,8 @@ document.getElementById('ava-input').addEventListener('change', e=>{
     el.addEventListener('touchend',()=>{dragging=false;},{passive:true});
     // Mouse drag for desktop preview
     el.addEventListener('mousedown',e=>{
-      if(el.isContentEditable) return; // let text cursor work
-      dragging=true;
+      if(el.isContentEditable) return;
+      initPos(); dragging=true;
       const {x,y}=getXY(); ox=x; oy=y;
       startX=e.clientX; startY=e.clientY;
       e.preventDefault();
@@ -1380,12 +1422,17 @@ document.getElementById('ava-input').addEventListener('change', e=>{
   makeDraggable(document.getElementById('deco-emoji-el'));
 })();
 function setEmoji(e){ S.deco.emoji=e; document.getElementById('deco-emoji-el').textContent=e; }
+function setDecoSize(v){
+  const el=document.getElementById('deco-text-el');
+  el.style.fontSize=v+'px';
+  S.deco.fontSize=parseInt(v);
+}
 function postDeco(){
   const textEl=document.getElementById('deco-text-el');
   const v=textEl.innerText.trim(); if(!v) return;
-  const item={id:Date.now(),type:'text',content:v,date:td(),chatted:false,chatHistory:[],deco:{...S.deco},isPublic:false,isNew:true,category:null,categoryPending:true};
+  const fs=document.getElementById('deco-size-slider')?.value||17;const item={id:Date.now(),type:'text',content:v,date:td(),chatted:false,chatHistory:[],deco:{...S.deco,fontSize:parseInt(fs)},isPublic:false,isNew:true,category:null,categoryPending:true};
   S.items.unshift(item);
-  textEl.innerText=''; updateStats(); saveState(); goTo('home');
+  textEl.innerText=''; const slider=document.getElementById('deco-size-slider'); if(slider){slider.value=17; setDecoSize(17);} updateStats(); saveState(); goTo('home');
   backgroundCategorizeText(item);
 }
 
@@ -1857,15 +1904,14 @@ function renderGrid(){
     const turns=Math.floor((item.chatHistory||[]).length/2);
     const cat=detectCat(item);
 
-    // ── 長押し：編集モード or プレビュー ──
+    // ── 長押し → スワイププレビュー、タップ → チャット ──
     let lpt=null;
     let lpFired=false;
-    const startLP=()=>{
+    const startLP=(e)=>{
       lpFired=false;
       lpt=setTimeout(()=>{
         lpFired=true;
-        if(S.editMode){ /* in edit mode, long press does nothing extra */ }
-        else { openSwipePreview(item.id); }
+        openSwipePreview(item.id);
       },420);
     };
     const clearLP=()=>{ clearTimeout(lpt); };
@@ -1876,14 +1922,15 @@ function renderGrid(){
     el.addEventListener('touchend',clearLP);
     el.addEventListener('touchmove',clearLP,{passive:true});
 
-    // ── 削除ボタン ──
+    // ── 削除ボタン（常時表示しない・スワイププレビュー内に移動済み） ──
+    // editModeのときだけ表示
     const delBtn=document.createElement('div');
     delBtn.className='gi-del'; delBtn.textContent='×';
     delBtn.addEventListener('click',e=>{e.stopPropagation();trashItem(item.id);});
     el.appendChild(delBtn);
 
     // ── タップ → チャット（長押しが発火していたら無視） ──
-    el.onclick=(e)=>{ if(S.editMode||lpFired) return; openFromGrid(item.id); };
+    el.onclick=(e)=>{ if(lpFired) return; openFromGrid(item.id); };
 
     // ── テキストタイル ──
     if(item.type==='text'){
