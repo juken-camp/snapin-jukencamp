@@ -20,7 +20,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .screen.active{display:flex;}
 .hdr{padding:14px 18px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid var(--border);flex-shrink:0;}
 .logo{font-size:22px;font-weight:700;letter-spacing:-0.5px;color:var(--text);}
-.logo em{color:var(--g);font-style:normal;}.logo-by{font-size:10px;font-weight:400;color:var(--text3);letter-spacing:0;margin-left:3px;vertical-align:middle;}
+.logo em{color:var(--g);font-style:normal;}.logo-by{font-size:10px;font-weight:400;color:var(--text3);letter-spacing:0;margin-left:3px;vertical-align:middle;}.hdr-tagline{font-size:10px;color:var(--text3);line-height:1.5;text-align:right;letter-spacing:0.01em;}
 .hdr-icons{display:flex;gap:16px;color:var(--text2);}
 .hdr-icons span{cursor:pointer;display:flex;align-items:center;transition:color 0.15s;}
 .hdr-icons span:hover{color:var(--g);}
@@ -274,6 +274,17 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .ref-picker-tile img{width:100%;height:100%;object-fit:cover;}
 .ref-picker-tile.selected::after{content:'✓';position:absolute;inset:0;background:rgba(29,158,117,0.55);display:flex;align-items:center;justify-content:center;font-size:22px;color:white;font-weight:700;}
 .ref-picker-text{background:#1a1a1a;display:flex;align-items:center;justify-content:center;padding:6px;font-size:10px;color:rgba(255,255,255,0.8);text-align:center;line-height:1.3;}
+
+/* ── AI MODE TOGGLE ── */
+.ai-toggle-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;border:1.5px solid var(--g);background:var(--gl);color:var(--gd);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;}
+.ai-toggle-btn.off{background:var(--bg);border-color:var(--border2);color:var(--text3);}
+.ai-toggle-dot{width:7px;height:7px;border-radius:50%;background:var(--g);transition:background .2s;}
+.ai-toggle-btn.off .ai-toggle-dot{background:var(--text3);}
+/* メモバブル（AIなし投稿） */
+.bubble.memo{background:#FFFBE6;color:#5a4a00;border-radius:14px 2px 14px 14px;border:0.5px solid #EDD97A;}
+.memo-badge{font-size:8px;color:#9a8000;padding:0 4px;opacity:.7;}
+/* send-btn: メモモードは黄色に */
+.send-btn.memo-mode{background:#D4A800;}
 /* ── CHAT PRIVACY TOGGLE ── */
 .chat-privacy-row{padding:8px 14px 0;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);}
 .priv-toggle{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:14px;border:0.5px solid var(--border2);cursor:pointer;font-size:10px;color:var(--text2);background:var(--bg);user-select:none;}
@@ -419,7 +430,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 <div class="screen active" id="screen-home">
   <div class="hdr">
     <div class="logo">Snap<em>In</em><span class="logo-by"> by JUKEN CAMP</span></div>
-
+    <div class="hdr-tagline">その1枚が、<br>知識になる。</div>
   </div>
   <!-- edit mode bar -->
   <div class="edit-bar" id="edit-bar">
@@ -578,10 +589,12 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 <div class="screen" id="screen-chat">
   <div class="back-hdr">
     <span class="back-btn" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></span>
-    <span class="back-title">SnapIn AI</span>
-    <div style="margin-left:auto;display:flex;gap:14px;color:var(--text2);">
-      <span style="cursor:pointer;display:flex;"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>
-      <span style="cursor:pointer;display:flex;" onclick="goTo('trim')"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg></span>
+    <span class="back-title" id="chat-title">SnapIn AI</span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+      <button class="ai-toggle-btn" id="ai-toggle-btn" onclick="toggleAiMode()">
+        <span class="ai-toggle-dot" id="ai-toggle-dot"></span>
+        <span id="ai-toggle-lbl">AI ON</span>
+      </button>
     </div>
   </div>
   <div class="chat-photo" id="chat-photo-area"></div>
@@ -603,7 +616,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     </button>
     <textarea class="chat-input" id="chat-input" placeholder="何でも聞いて…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-    <button class="send-btn" id="send-btn" onclick="sendMsg()">
+    <button class="send-btn" id="send-btn" onclick="sendMsg()" title="送信（ボタンのみ・改行はShift+Enter）">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M12 5L6 11M12 5L18 11" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
@@ -842,6 +855,7 @@ const S = {
   pendingPhoto:null,     // {imgData, croppedData} during quick post overlay
   chatAttachPhotos:[],   // [{imgData, label}] added mid-chat
   chatAttachRefs:[],     // [{id, label, imgData, content}] referenced items
+  aiMode:true,           // false=メモモード（AIに送らない）
   profile:{ name:'Kazuma', avatarUrl:null, who:'', detail:'', dob:{year:0,month:0,day:0}, gradeText:'', gradeShort:'', interests:[], level:'標準', tone:'friendly' },
   deco:{ bg:'linear-gradient(135deg,#1D9E75,#0F6E56)', tc:'#ffffff', font:'system-ui', emoji:'' }
 };
@@ -1033,6 +1047,7 @@ function goTo(name){
   if(name==='profile') loadProfileUI();
   if(name==='trash') renderTrash();
   if(name==='share') renderShareCard();
+  if(name==='chat') updateAiModeUI();
 }
 
 // ═══════════════════════════════════════════
@@ -1642,6 +1657,7 @@ function skipTrim(){ S.croppedData=S.curImgData; openChat(); }
 // CHAT
 // ============================================================
 function openChat(){
+  S.aiMode=true;
   const item={id:Date.now(),type:'photo',imageData:S.croppedData,fullImageData:S.curImgData,date:td(),chatted:false,chatHistory:[],isPublic:false,isNew:true,category:null,categoryPending:true};
   S.items.unshift(item); S.curId=item.id;
   updateStats(); renderChatUI(item); goTo('chat');
@@ -1650,6 +1666,7 @@ function openChat(){
   autoFirstAIComment(item);
 }
 function openFromGrid(id){
+  S.aiMode=true;
   const item=S.items.find(i=>i.id===id); if(!item) return;
   S.curId=id; S.croppedData=item.type==='photo'?item.imageData:null;
   renderChatUI(item); goTo('chat');
@@ -1772,7 +1789,16 @@ function renderChatUI(item){
     }
   }
   const msgs=document.getElementById('chat-msgs'); msgs.innerHTML='';
-  (item.chatHistory||[]).forEach(m=>{if(m.role==='assistant')aiDirect(m.content);else userDirect(m.content);});
+  (item.chatHistory||[]).forEach(m=>{
+    if(m.role==='assistant') aiDirect(m.content);
+    else if(m.isMemo){
+      // メモモードで書いたもの
+      const msgs=document.getElementById('chat-msgs');
+      const d=document.createElement('div'); d.className='msg user';
+      d.innerHTML=`<div class="memo-badge">📝 メモ</div><div class="bubble memo">${(m.content||'').replace(/\n/g,'<br>')}</div>`;
+      msgs.appendChild(d);
+    } else userDirect(m.content);
+  });
 }
 function togglePrivacy(){
   const item=S.items.find(i=>i.id===S.curId); if(!item) return;
@@ -1806,6 +1832,23 @@ async function sendMsg(){
   if(!t&&!hasAttach) return;
   inp.value=''; autoResize(inp);
   document.getElementById('q-chips-wrap')?.remove();
+
+  // ── メモモード: AIに送らず履歴に保存するだけ ──
+  if(!S.aiMode){
+    const item=S.items.find(i=>i.id===S.curId);
+    if(item){
+      item.chatHistory=item.chatHistory||[];
+      item.chatHistory.push({role:'user',content:t,isMemo:true});
+      item.chatted=true;
+    }
+    // メモとして表示（黄色バブル）
+    const msgDiv=document.createElement('div'); msgDiv.className='msg user';
+    msgDiv.innerHTML=`<div class="memo-badge">📝 メモ</div><div class="bubble memo">${t.replace(/\n/g,'<br>')}</div>`;
+    const msgsEl=document.getElementById('chat-msgs');
+    msgsEl.appendChild(msgDiv); msgsEl.scrollTop=99999;
+    updateStats(); saveState();
+    return;
+  }
 
   // UI: ユーザーメッセージ表示（サムネ付き）
   const msgDiv=document.createElement('div'); msgDiv.className='msg user';
@@ -1914,6 +1957,37 @@ ${latestUserText}`:latestUserText});
   msgs.scrollTop=msgs.scrollHeight;
 }
 
+
+// ═══════════════════════════════════════════
+// AI MODE TOGGLE
+// ═══════════════════════════════════════════
+function toggleAiMode(){
+  S.aiMode = !S.aiMode;
+  updateAiModeUI();
+}
+function updateAiModeUI(){
+  const btn = document.getElementById('ai-toggle-btn');
+  const dot = document.getElementById('ai-toggle-dot');
+  const lbl = document.getElementById('ai-toggle-lbl');
+  const inp = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('send-btn');
+  const title = document.getElementById('chat-title');
+  if(!btn) return;
+  if(S.aiMode){
+    btn.classList.remove('off');
+    if(lbl) lbl.textContent='AI ON';
+    if(inp) inp.placeholder='何でも聞いて…';
+    if(sendBtn) sendBtn.classList.remove('memo-mode');
+    if(title) title.textContent='SnapIn AI';
+  } else {
+    btn.classList.add('off');
+    if(lbl) lbl.textContent='メモモード';
+    if(inp) inp.placeholder='メモを書く（AIには送りません）';
+    if(sendBtn) sendBtn.classList.add('memo-mode');
+    if(title) title.textContent='メモ';
+  }
+}
+
 // ═══════════════════════════════════════════
 // CHAT ADDITIONAL PHOTOS & REFS
 // ═══════════════════════════════════════════
@@ -2000,7 +2074,7 @@ function closeRefPicker(){
   document.getElementById('ref-picker').classList.remove('on');
 }
 
-function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();} }
+function handleKey(e){ /* Enterは改行のみ。送信はボタンだけ */ }
 function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
 
 // ═══════════════════════════════════════════
