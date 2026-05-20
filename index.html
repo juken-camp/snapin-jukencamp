@@ -33,16 +33,17 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .ni.active{color:var(--g);}
 .ni svg{display:block;flex-shrink:0;}
 /* HOME */
-.prof{padding:12px 18px 6px 18px;display:flex;flex-direction:row;align-items:center;gap:12px;}
+.prof{padding:12px 18px 6px 18px;display:flex;flex-direction:row;align-items:center;gap:16px;}
 .ava{width:60px;height:60px;border-radius:50%;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:var(--gd);border:2px solid var(--g);flex-shrink:0;cursor:pointer;overflow:hidden;}
 .ava img{width:100%;height:100%;object-fit:cover;}
-.prof-info{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;}
-.prof-stats{display:flex;flex:1;}
-.pst{flex:1;display:flex;flex-direction:column;align-items:center;padding:0 2px;}
+.prof-info{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;}
+.prof-name{font-size:14px;font-weight:600;}
+.prof-stats{display:flex;flex:1;margin-top:2px;}
+.pst{flex:1;display:flex;flex-direction:column;align-items:center;padding:0;}
+.pst:first-child{align-items:flex-start;}
 .pst-n{font-size:15px;font-weight:700;line-height:1.2;}
 .pst-l{font-size:7px;color:var(--text2);margin-top:1px;white-space:nowrap;}
 .pst+.pst{border-left:0.5px solid var(--border);}
-.prof-name{padding:0;font-size:14px;font-weight:600;}
 .prof-sub{padding:0 18px 10px;font-size:10px;color:var(--text2);}
 /* VIEW TOGGLE */
 .view-toggle{display:flex;align-items:center;gap:0;border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;flex-shrink:0;}
@@ -125,8 +126,8 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .feed-counter{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);border-radius:12px;padding:4px 10px;font-size:10px;color:rgba(255,255,255,0.85);z-index:5;}
 
 /* UPLOAD */
-.upload-body{flex:1;padding:20px 18px 0;display:flex;flex-direction:column;gap:14px;overflow:hidden;}
-.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:row;align-items:center;gap:14px;cursor:pointer;transition:all 0.15s;}
+.upload-body{flex:1;padding:16px;display:flex;flex-direction:column;gap:12px;overflow:hidden;}
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:row;align-items:center;gap:14px;cursor:pointer;transition:all 0.15s;}
 .upload-zone:hover{background:var(--gl);border-color:var(--g);}
 .uz-title{font-size:15px;font-weight:500;}
 .uz-sub{font-size:11px;color:var(--text2);text-align:center;line-height:1.6;}
@@ -135,15 +136,14 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .or-txt{font-size:11px;color:var(--text3);}
 .roll-btn{padding:13px 16px;border:0.5px solid var(--border2);border-radius:var(--rs);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);cursor:pointer;background:var(--bg);}
 /* DECO TEXT */
-.deco-box{display:flex;flex-direction:column;border:0.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-top:2px;flex:1;min-height:0;}
-/* プレビュー: 固定高さ（コンパクト） */
+.deco-box{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
+/* プレビュー正方形：左右余白なし・角丸のみ */
 .deco-preview{
-  position:relative;width:80%;align-self:center;aspect-ratio:1/1;flex-shrink:0;
+  position:relative;width:100%;aspect-ratio:1/1;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  overflow:hidden;border-radius:8px;
+  overflow:hidden;border-radius:12px;
   transition:background 0.2s;
 }
-/* テキストオーバーレイ（Facebook風：中央寄せ・自動サイズ） */
 .deco-text-main{
   position:relative;z-index:2;
   width:82%;text-align:center;
@@ -152,17 +152,16 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   pointer-events:none;
   transition:font-size 0.15s;
 }
-/* 絵文字（左上固定・小さめ） */
-.deco-emoji-el{position:absolute;top:10px;left:14px;font-size:28px;line-height:1;z-index:3;cursor:grab;}
-.deco-hint{position:absolute;bottom:6px;right:8px;font-size:8px;color:rgba(255,255,255,0.3);pointer-events:none;z-index:1;}
-/* ツールバー：残り高さを全部使う */
-.deco-toolbar{flex:1;padding:10px 12px;background:rgba(0,0,0,0.025);border-top:0.5px solid var(--border);display:flex;flex-direction:column;gap:9px;overflow:hidden;min-height:0;}
-.deco-row{display:flex;align-items:center;gap:7px;flex-shrink:0;}
-.deco-lbl{font-size:9px;color:var(--text3);width:26px;flex-shrink:0;}
-/* テキスト入力：残り高さをすべて使う */
-.deco-inp{width:100%;flex:1;min-height:0;padding:11px 12px;border:0.5px solid var(--border2);border-radius:10px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;resize:none;line-height:1.6;}
-/* フッター：画面下に固定 */
-.deco-footer{padding:10px 14px max(14px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--surface);flex-shrink:0;}
+.deco-emoji-el{position:absolute;top:10px;left:14px;font-size:28px;line-height:1;z-index:3;}
+.deco-hint{position:absolute;bottom:6px;right:10px;font-size:8px;color:rgba(255,255,255,0.35);pointer-events:none;z-index:1;}
+/* ツールバー：上に12pxだけあけてあとは詰める */
+.deco-toolbar{flex:1;padding:12px 0 0;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-height:0;}
+.deco-row{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.deco-lbl{font-size:9px;color:var(--text3);width:28px;flex-shrink:0;}
+/* テキスト入力：同じ左右幅で伸びる */
+.deco-inp{width:100%;flex:1;min-height:0;padding:12px 14px;border:0.5px solid var(--border2);border-radius:10px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;resize:none;line-height:1.6;}
+/* フッター */
+.deco-footer{padding:10px 0 max(14px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--surface);flex-shrink:0;}
 .swatches{display:flex;gap:5px;flex-wrap:wrap;flex:1;}
 .sw{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:transform 0.1s;flex-shrink:0;}
 .sw.on{border-color:var(--text);transform:scale(1.15);}
