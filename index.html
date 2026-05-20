@@ -42,10 +42,14 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .pst-l{font-size:9px;color:var(--text2);margin-top:1px;}
 .prof-name{padding:0 18px 2px;font-size:13px;font-weight:500;}
 .prof-sub{padding:0 18px 10px;font-size:10px;color:var(--text2);}
+/* VIEW TOGGLE */
+.view-toggle{display:flex;align-items:center;gap:0;border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;flex-shrink:0;}
+.vt-btn{width:32px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg);color:var(--text3);transition:all .15s;border:none;}
+.vt-btn.on{background:var(--g);color:white;}
 /* GRID */
 .grid-wrap{flex:1;overflow-y:auto;}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px;}
-.gi{position:relative;overflow:hidden;cursor:pointer;border-radius:4px;min-height:106px;display:flex;align-items:center;justify-content:center;transition:opacity 0.15s;}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:3px;}
+.gi{position:relative;overflow:hidden;cursor:pointer;border-radius:6px;min-height:106px;display:flex;align-items:center;justify-content:center;transition:opacity 0.15s;box-shadow:0 1px 2px rgba(0,0,0,0.04);}
 .gi:active{opacity:0.78;}
 .gi.sq{aspect-ratio:1;}
 .gi.wide{aspect-ratio:2.05/1;grid-column:span 2;}
@@ -59,6 +63,46 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .fab-wrap{position:absolute;bottom:80px;right:18px;}
 .fab{width:52px;height:52px;border-radius:50%;background:var(--g);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(29,158,117,0.4);transition:transform 0.15s;}
 .fab:active{transform:scale(0.93);}
+
+/* ═══ FEED VIEW ═══ */
+.feed-wrap{flex:1;overflow:hidden;position:relative;}
+.feed-scroller{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.feed-scroller::-webkit-scrollbar{display:none;}
+.feed-item{height:100%;scroll-snap-align:start;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#111;flex-shrink:0;}
+.feed-item-bg{position:absolute;inset:0;object-fit:cover;width:100%;height:100%;}
+.feed-item-bg-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;}
+.feed-item-overlay{position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,0.75) 100%);}
+/* 右側アクション */
+.feed-actions{position:absolute;right:14px;bottom:120px;display:flex;flex-direction:column;gap:18px;align-items:center;z-index:5;}
+.feed-act{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.feed-act-btn{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);border:0.5px solid rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;transition:all .15s;}
+.feed-act-btn:active{transform:scale(0.9);}
+.feed-act-lbl{font-size:9px;color:rgba(255,255,255,0.8);}
+/* 左下：カテゴリ+日付+最初の質問プレビュー */
+.feed-bottom{position:absolute;left:0;right:0;bottom:0;padding:14px 16px max(16px,env(safe-area-inset-bottom));z-index:5;}
+.feed-cat-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.feed-cat-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);border-radius:12px;padding:3px 10px;font-size:10px;color:white;font-weight:600;}
+.feed-date{font-size:10px;color:rgba(255,255,255,0.6);}
+/* 質問プレビュー（タップでシート） */
+.feed-q-preview{display:flex;align-items:center;gap:8px;cursor:pointer;}
+.feed-q-bubble{flex:1;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);border:0.5px solid rgba(255,255,255,0.15);border-radius:14px;padding:8px 12px;min-height:36px;}
+.feed-q-text{font-size:12px;color:rgba(255,255,255,0.92);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.feed-q-empty{font-size:11px;color:rgba(255,255,255,0.4);font-style:italic;}
+.feed-q-arrow{width:28px;height:28px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+/* シートオーバーレイ */
+.feed-sheet{position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-radius:22px 22px 0 0;z-index:20;transform:translateY(100%);transition:transform .35s cubic-bezier(.25,.9,.3,1);max-height:72%;display:flex;flex-direction:column;box-shadow:0 -8px 32px rgba(0,0,0,0.2);}
+.feed-sheet.open{transform:translateY(0);}
+.feed-sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--border2);margin:10px auto 0;}
+.feed-sheet-hdr{padding:10px 16px 8px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid var(--border);}
+.feed-sheet-title{font-size:12px;font-weight:600;color:var(--text2);}
+.feed-sheet-close{font-size:14px;color:var(--text3);cursor:pointer;padding:4px 6px;line-height:1;}
+.feed-sheet-body{flex:1;overflow-y:auto;padding:14px 16px;}
+.feed-sheet-msg{font-size:13px;line-height:1.75;color:var(--text);}
+.feed-sheet-footer{padding:10px 16px max(14px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);}
+.feed-sheet-cta{width:100%;padding:12px;background:var(--g);border:none;border-radius:var(--rs);font-size:13px;font-weight:600;color:white;cursor:pointer;}
+/* カウンター */
+.feed-counter{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);border-radius:12px;padding:4px 10px;font-size:10px;color:rgba(255,255,255,0.85);z-index:5;}
+
 /* UPLOAD */
 .upload-body{flex:1;padding:20px 18px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;}
 .upload-zone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:34px 20px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all 0.15s;}
@@ -71,11 +115,12 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .roll-btn{padding:13px 16px;border:0.5px solid var(--border2);border-radius:var(--rs);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);cursor:pointer;background:var(--bg);}
 /* DECO TEXT */
 .deco-box{border:0.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-top:2px;}
-/* プレビュー: 3:2比率・コンパクト */
+/* プレビュー: 3:2比率 */
 .deco-preview{
   position:relative;aspect-ratio:3/2;width:100%;
   display:block;overflow:hidden;
   transition:background 0.2s;
+  touch-action:none;/* ← スクロール無効化してピンチを取る */
 }
 /* ドラッグ可能レイヤー */
 .deco-layer{
@@ -87,20 +132,21 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .deco-layer:active{cursor:grabbing;}
 /* 絵文字レイヤー */
 .deco-emoji-el{font-size:32px;line-height:1;left:14px;top:12px;}
-/* テキストレイヤー: 中央・小さめ */
+/* テキストレイヤー */
 .deco-text-el{
-  font-size:15px;font-weight:500;line-height:1.5;
+  font-size:22px;font-weight:500;line-height:1.4;
   word-break:break-word;
   outline:1.5px solid rgba(255,255,255,0.45);
   outline-offset:5px;border-radius:2px;
-  padding:1px 3px;
+  padding:2px 6px;
   left:50%;top:50%;
   transform:translate(-50%,-50%);
-  max-width:82%;min-width:50px;
+  max-width:86%;min-width:50px;
   text-align:center;white-space:pre-wrap;
+  cursor:text;
 }
-.deco-text-el:focus{outline:1.5px solid rgba(255,255,255,0.9);}
-.deco-text-el:empty:before{content:'タップして入力';opacity:0.3;font-size:12px;}
+.deco-text-el:focus{outline:1.5px solid rgba(255,255,255,0.9);cursor:text;}
+.deco-text-el:empty:before{content:'タップして入力';opacity:0.3;font-size:14px;}
 .deco-hint{position:absolute;bottom:6px;right:8px;font-size:8px;color:rgba(255,255,255,0.3);pointer-events:none;}
 .deco-toolbar{padding:10px 12px;background:rgba(0,0,0,0.025);border-top:0.5px solid var(--border);display:flex;flex-direction:column;gap:9px;}
 .deco-row{display:flex;align-items:center;gap:7px;}
@@ -172,9 +218,9 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .advice-lbl{font-size:9px;color:#854F0B;font-weight:600;margin-bottom:4px;}
 .advice-txt{font-size:11px;color:#633806;line-height:1.6;}
 .stat-pills{display:flex;gap:8px;margin-top:10px;}
-.stat-pill{flex:1;background:var(--bg);border-radius:10px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;}
-.stat-pill-n{font-size:18px;font-weight:600;}
-.stat-pill-l{font-size:8px;color:var(--text2);}
+.stat-pill{flex:1;background:var(--bg);border-radius:10px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.stat-pill-n{font-size:17px;font-weight:700;}
+.stat-pill-l{font-size:7.5px;color:var(--text2);text-align:center;}
 /* PROFILE */
 .profile-body{flex:1;overflow-y:auto;padding-bottom:24px;}
 .prof-sec{padding:16px 18px 0;}
@@ -216,16 +262,11 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .edit-bar{position:absolute;top:0;left:0;right:0;background:rgba(226,75,74,.93);color:white;padding:10px 16px;display:none;justify-content:space-between;align-items:center;font-size:12px;z-index:20;backdrop-filter:blur(4px);}
 .edit-bar.on{display:flex;}
 .edit-bar-done{padding:5px 14px;border-radius:20px;border:1.5px solid rgba(255,255,255,.7);font-size:11px;color:white;cursor:pointer;background:transparent;}
-/* ── STAT RING (analytics) ── */
+/* ── STAT RING ── */
 .score-ring{width:70px;height:70px;flex-shrink:0;}
-.stat-pills{display:flex;gap:6px;margin-top:10px;}
-.stat-pill{flex:1;background:var(--bg);border-radius:10px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;}
-.stat-pill-n{font-size:17px;font-weight:700;}
-.stat-pill-l{font-size:7.5px;color:var(--text2);text-align:center;}
 /* ── PROFILE ADDITIONS ── */
 .free-inp{width:100%;padding:9px 12px;border:.5px solid var(--border2);border-radius:var(--rs);font-size:13px;color:var(--text);background:var(--bg);outline:none;margin-bottom:14px;}
 .free-inp::placeholder{color:var(--text3);}
-.chip.multi.on{background:var(--gl);border-color:var(--g);color:var(--gd);}
 .prof-tag{padding:0 18px 10px;font-size:10px;color:var(--text2);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .prof-tag-badge{background:var(--gl);color:var(--gd);border-radius:10px;padding:2px 8px;font-size:9px;font-weight:500;}
 /* ── TRASH ── */
@@ -243,15 +284,11 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .trash-link-badge{background:var(--red);color:white;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:600;display:none;}
 #file-input,#acad-input,#ava-input{display:none;}
 /* ── GRID POLISH ── */
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:3px;}
-.gi{border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,0.04);}
 .gi.new-tile{animation:tileIn .45s cubic-bezier(.2,.9,.3,1.2);}
 @keyframes tileIn{0%{transform:scale(.7);opacity:0;}60%{transform:scale(1.04);opacity:1;}100%{transform:scale(1);opacity:1;}}
 .gi-lock{position:absolute;top:6px;left:6px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
 .gi-cat-pill{position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);border-radius:9px;padding:2px 7px;font-size:7px;color:rgba(255,255,255,0.95);font-weight:600;letter-spacing:.3px;display:none;}
 .gi:hover .gi-cat-pill{display:block;}
-
-
 /* ── CHAT ADDITIONAL PHOTOS & REFS ── */
 .chat-sub-btn{width:34px;height:34px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;}
 .chat-sub-btn:hover{background:var(--gl);border-color:var(--g);color:var(--g);}
@@ -274,16 +311,14 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .ref-picker-tile img{width:100%;height:100%;object-fit:cover;}
 .ref-picker-tile.selected::after{content:'✓';position:absolute;inset:0;background:rgba(29,158,117,0.55);display:flex;align-items:center;justify-content:center;font-size:22px;color:white;font-weight:700;}
 .ref-picker-text{background:#1a1a1a;display:flex;align-items:center;justify-content:center;padding:6px;font-size:10px;color:rgba(255,255,255,0.8);text-align:center;line-height:1.3;}
-
 /* ── AI MODE TOGGLE ── */
 .ai-toggle-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;border:1.5px solid var(--g);background:var(--gl);color:var(--gd);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;}
 .ai-toggle-btn.off{background:var(--bg);border-color:var(--border2);color:var(--text3);}
 .ai-toggle-dot{width:7px;height:7px;border-radius:50%;background:var(--g);transition:background .2s;}
 .ai-toggle-btn.off .ai-toggle-dot{background:var(--text3);}
-/* メモバブル（AIなし投稿） */
+/* メモバブル */
 .bubble.memo{background:#FFFBE6;color:#5a4a00;border-radius:14px 2px 14px 14px;border:0.5px solid #EDD97A;}
 .memo-badge{font-size:8px;color:#9a8000;padding:0 4px;opacity:.7;}
-/* send-btn: メモモードは黄色に */
 .send-btn.memo-mode{background:#D4A800;}
 /* ── CHAT PRIVACY TOGGLE ── */
 .chat-privacy-row{padding:8px 14px 0;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);}
@@ -291,13 +326,12 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .priv-toggle.public{color:var(--g);border-color:var(--g);background:var(--gl);}
 /* ── CHAT RETRY ── */
 .retry-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;margin-top:6px;border-radius:12px;border:0.5px solid var(--red);font-size:10px;color:var(--red);background:white;cursor:pointer;}
-.retry-btn:hover{background:#FFF0F0;}
-/* ── INITIAL AI HINT CHIPS (suggested questions) ── */
+/* ── SUGGESTED Q CHIPS ── */
 .q-chips{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 0;}
 .q-chip{padding:5px 11px;border-radius:14px;border:0.5px solid var(--g);background:white;color:var(--gd);font-size:11px;cursor:pointer;transition:all .15s;}
 .q-chip:hover{background:var(--gl);}
 .q-chip:active{transform:scale(.96);}
-/* ── SHARE CARD SCREEN ── */
+/* ── SHARE CARD ── */
 .share-body{flex:1;overflow-y:auto;padding:14px 18px 24px;display:flex;flex-direction:column;gap:14px;background:linear-gradient(180deg,#F7F6F3,#EFEFEC);}
 .share-intro{font-size:12px;color:var(--text2);text-align:center;line-height:1.7;padding:0 8px;}
 .card-frame{background:white;border-radius:18px;padding:8px;box-shadow:0 8px 28px rgba(0,0,0,0.12);}
@@ -328,21 +362,17 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .share-act{flex:1;padding:12px;background:white;border:0.5px solid var(--border2);border-radius:var(--rs);display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;cursor:pointer;color:var(--text);font-weight:500;}
 .share-act.primary{background:var(--g);color:white;border-color:var(--g);}
 .share-act:active{transform:scale(.97);}
-/* ── PRIVACY TOGGLE LITE on upload ── */
+/* ── UPLOAD PRIV ── */
 .upload-priv{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:var(--rs);border:0.5px solid var(--border);font-size:11px;color:var(--text2);}
-.upload-priv-r{display:flex;align-items:center;gap:6px;cursor:pointer;}
-/* ── empty state polish ── */
+/* ── EMPTY STATE ── */
 .empty-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:56px 24px;color:var(--text3);}
 .empty-hero-ic{width:64px;height:64px;border-radius:50%;background:var(--gl);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
 .empty-hero-t{font-size:14px;color:var(--text2);font-weight:500;margin-bottom:6px;}
 .empty-hero-s{font-size:11px;line-height:1.8;}
 .empty-cta{margin-top:18px;padding:10px 22px;background:var(--g);color:white;border:none;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;}
-/* ── grid scroll smoothness ── */
 .grid-wrap{scroll-behavior:smooth;}
-/* ── chat photo: smoother fade ── */
 .chat-photo{transition:max-height .3s;}
-
-/* ═══ CATEGORY SYSTEM (visible at-a-glance) ═══ */
+/* ═══ CATEGORY SYSTEM ═══ */
 .gi-cat-dot{position:absolute;bottom:6px;left:6px;width:9px;height:9px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.85);box-shadow:0 1px 3px rgba(0,0,0,0.25);}
 .gi-cat-label{position:absolute;bottom:5px;left:5px;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);border-radius:8px;padding:2px 7px 2px 5px;font-size:7.5px;color:white;font-weight:600;letter-spacing:.3px;display:flex;align-items:center;gap:3px;opacity:0;transition:opacity .2s;}
 .gi-cat-label .cat-mini{width:6px;height:6px;border-radius:50%;}
@@ -351,16 +381,14 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .gi-pending{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.7);color:white;font-size:9px;padding:4px 9px;border-radius:10px;backdrop-filter:blur(6px);z-index:3;}
 .gi-pending::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#9FE1CB;margin-right:5px;animation:pulse 1.4s infinite;vertical-align:middle;}
 @keyframes pulse{0%,100%{opacity:.4;}50%{opacity:1;}}
-
 /* ═══ SEARCH BAR ═══ */
 .search-wrap{padding:7px 12px 4px;background:var(--surface);}
 .search-box{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:20px;padding:7px 12px;border:0.5px solid var(--border);}
 .search-input{flex:1;border:none;background:transparent;font-size:12px;color:var(--text);outline:none;}
 .search-input::placeholder{color:var(--text3);}
 .search-clear{font-size:11px;color:var(--text3);cursor:pointer;padding:2px 4px;line-height:1;}
-/* ═══ FILTER CHIPS (top of grid) ═══ */
+/* ═══ FILTER CHIPS ═══ */
 .filter-bar{display:flex;gap:6px;padding:8px 12px 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-bottom:0.5px solid var(--border);background:var(--surface);}
-.filter-bar::-webkit-scrolbar{display:none;}
 .filter-bar::-webkit-scrollbar{display:none;}
 .fchip{flex-shrink:0;padding:5px 12px;border-radius:14px;border:0.5px solid var(--border2);background:var(--bg);font-size:11px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;}
 .fchip.on{background:var(--text);color:white;border-color:var(--text);}
@@ -369,8 +397,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .fchip.on .fc-cnt{opacity:.85;}
 .fchip-eye{flex-shrink:0;padding:5px 10px;border-radius:14px;border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;font-size:10px;white-space:nowrap;}
 .fchip-eye.on{background:var(--gl);border-color:var(--g);color:var(--gd);}
-
-/* ═══ QUICK POST OVERLAY (Stories-like) ═══ */
+/* ═══ QUICK POST OVERLAY ═══ */
 .qp-overlay{position:absolute;inset:0;background:#000;z-index:100;display:none;flex-direction:column;}
 .qp-overlay.on{display:flex;}
 .qp-photo-wrap{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;}
@@ -386,8 +413,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .qp-btn-edit{background:rgba(255,255,255,0.18);color:white;font-size:11px;padding:9px;flex:0 0 auto;width:46px;border:0.5px solid rgba(255,255,255,0.3);}
 .qp-btn:active{transform:scale(.97);}
 .qp-savedhint{text-align:center;color:rgba(255,255,255,0.7);font-size:10px;letter-spacing:.4px;}
-
-/* ═══ SWIPE PREVIEW (long-press) ═══ */
+/* ═══ SWIPE PREVIEW ═══ */
 .sp-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:none;flex-direction:column;animation:spIn .25s;}
 .sp-overlay.on{display:flex;}
 @keyframes spIn{from{opacity:0;}to{opacity:1;}}
@@ -401,11 +427,11 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .sp-card img{max-width:90vw;max-height:65vh;display:block;}
 .sp-text-card{padding:30px 24px;min-width:80vw;min-height:50vh;display:flex;flex-direction:column;justify-content:center;}
 .sp-foot{padding:12px 18px max(16px,env(safe-area-inset-bottom));display:flex;flex-direction:row;gap:12px;align-items:center;justify-content:center;color:white;flex-wrap:wrap;}
-.sp-foot-action{padding:10px 24px;border-radius:22px;background:var(--g);color:white;border:none;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}.sp-foot-del{width:36px;height:36px;border-radius:50%;background:rgba(226,75,74,0.85);border:none;color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.sp-foot-action{padding:10px 24px;border-radius:22px;background:var(--g);color:white;border:none;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.sp-foot-del{width:36px;height:36px;border-radius:50%;background:rgba(226,75,74,0.85);border:none;color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
 .sp-counter{font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:.5px;}
 .sp-arrow{font-size:10px;color:rgba(255,255,255,0.45);text-align:center;}
-
-/* ═══ WEAKNESS HIGHLIGHTS (analytics) ═══ */
+/* ── WEAKNESS HIGHLIGHTS ── */
 .weak-list{display:flex;flex-direction:column;gap:8px;}
 .weak-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#FFF5F5;border-radius:var(--rs);border-left:2px solid var(--red);}
 .weak-thumb{width:38px;height:38px;border-radius:6px;object-fit:cover;flex-shrink:0;background:#ddd;}
@@ -414,10 +440,27 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .weak-meta{font-size:9px;color:var(--text2);margin-top:2px;display:flex;gap:8px;}
 .weak-cat-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px;vertical-align:middle;}
 .weak-reopen{padding:5px 10px;border-radius:12px;background:var(--red);color:white;font-size:10px;cursor:pointer;border:none;flex-shrink:0;}
-
-/* ═══ AUTO-CATEGORY BADGE in chat ═══ */
+/* ── AUTO-CATEGORY BADGE in chat ── */
 .chat-cat-tag{background:rgba(0,0,0,0.55);border-radius:20px;padding:3px 9px;font-size:8px;color:white;display:flex;align-items:center;gap:4px;}
 .chat-cat-tag .cct-dot{width:6px;height:6px;border-radius:50%;}
+
+/* ── LOGIN SCREEN ── */
+#screen-login{position:absolute;inset:0;z-index:300;background:var(--surface);display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px max(32px,env(safe-area-inset-bottom));}
+#screen-login.active{display:flex;}
+.login-logo{font-size:36px;font-weight:700;letter-spacing:-1px;margin-bottom:4px;}
+.login-logo em{color:var(--g);font-style:normal;}
+.login-sub{font-size:11px;color:var(--text3);margin-bottom:36px;letter-spacing:0.3px;}
+.login-tabs{display:flex;border-bottom:1px solid var(--border);width:100%;margin-bottom:24px;}
+.login-tab{flex:1;text-align:center;padding:10px 0;font-size:13px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+.login-tab.on{color:var(--g);border-bottom-color:var(--g);font-weight:600;}
+.login-form{width:100%;display:flex;flex-direction:column;gap:12px;}
+.login-input{width:100%;padding:12px 14px;border:0.5px solid var(--border2);border-radius:var(--rs);font-size:14px;background:var(--bg);color:var(--text);outline:none;}
+.login-input:focus{border-color:var(--g);}
+.login-submit{width:100%;padding:13px;background:var(--g);color:white;border:none;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;margin-top:4px;}
+.login-submit:disabled{opacity:0.5;cursor:default;}
+.login-err{font-size:11px;color:var(--red);min-height:16px;text-align:center;}
+.login-note{margin-top:24px;font-size:10px;color:var(--text3);text-align:center;line-height:1.8;}
+.logout-btn{margin:8px 18px 0;padding:12px;background:transparent;border:0.5px solid var(--border2);border-radius:var(--rs);font-size:13px;color:var(--text2);cursor:pointer;width:calc(100% - 36px);display:block;}
 </style>
 </head>
 <body>
@@ -426,11 +469,48 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 <input type="file" id="acad-input" accept="image/*" multiple>
 <input type="file" id="ava-input" accept="image/*">
 
+<!-- LOGIN SCREEN -->
+<div id="screen-login" class="screen">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:32px 28px;">
+    <div class="login-logo">Snap<em>In</em></div>
+    <div class="login-sub">by JUKEN CAMP</div>
+    <div class="login-tabs">
+      <div class="login-tab on" id="tab-login" onclick="switchLoginTab('login')">ログイン</div>
+      <div class="login-tab" id="tab-reg" onclick="switchLoginTab('reg')">新規登録</div>
+    </div>
+    <div id="login-panel" class="login-form">
+      <input id="login-email" class="login-input" type="email" placeholder="メールアドレス" autocomplete="email">
+      <input id="login-pass" class="login-input" type="password" placeholder="パスワード" autocomplete="current-password">
+      <div id="login-err" class="login-err"></div>
+      <button id="login-btn" class="login-submit" onclick="doLogin()">ログイン</button>
+    </div>
+    <div id="reg-panel" class="login-form" style="display:none;">
+      <input id="reg-name" class="login-input" type="text" placeholder="ニックネーム（後から変更可）" maxlength="20">
+      <input id="reg-email" class="login-input" type="email" placeholder="メールアドレス" autocomplete="email">
+      <input id="reg-pass" class="login-input" type="password" placeholder="パスワード（6文字以上）" autocomplete="new-password">
+      <div id="reg-err" class="login-err"></div>
+      <button id="reg-btn" class="login-submit" onclick="doRegister()">登録してはじめる</button>
+    </div>
+    <div class="login-note">JUKEN CAMPの塾内限定アプリです。<br>外部には一切公開されません。</div>
+  </div>
+</div>
+
 <!-- HOME -->
-<div class="screen active" id="screen-home">
+<div class="screen" id="screen-home">
   <div class="hdr">
     <div class="logo">Snap<em>In</em><span class="logo-by"> by JUKEN CAMP</span></div>
-    <div class="hdr-tagline">その1枚が、<br>知識になる。</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <!-- グリッド/フィード切替 -->
+      <div class="view-toggle" id="view-toggle">
+        <button class="vt-btn on" id="vt-grid" onclick="setViewMode('grid')" title="グリッド">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="1" width="5" height="5" rx="0.8"/><rect x="8" y="1" width="5" height="5" rx="0.8"/><rect x="1" y="8" width="5" height="5" rx="0.8"/><rect x="8" y="8" width="5" height="5" rx="0.8"/></svg>
+        </button>
+        <button class="vt-btn" id="vt-feed" onclick="setViewMode('feed')" title="フィード">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="1" width="12" height="8" rx="1"/><line x1="1" y1="12" x2="13" y2="12"/></svg>
+        </button>
+      </div>
+      <div class="hdr-tagline">その1枚が、<br>知識になる。</div>
+    </div>
   </div>
   <!-- edit mode bar -->
   <div class="edit-bar" id="edit-bar">
@@ -447,16 +527,26 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   </div>
   <div class="prof-name" id="home-name">Kazuma</div>
   <div class="prof-tag" id="home-tag"></div>
-  <div class="search-wrap" id="search-wrap">
-    <div class="search-box">
-      <svg width="14" height="14" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="4"/><line x1="9.5" y1="9.5" x2="13" y2="13"/></svg>
-      <input id="search-input" class="search-input" type="text" placeholder="キーワードで検索…" oninput="onSearch(this.value)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-      <span class="search-clear" id="search-clear" onclick="clearSearch()" style="display:none;">✕</span>
+
+  <!-- グリッドモード -->
+  <div id="home-grid-mode" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+    <div class="search-wrap" id="search-wrap">
+      <div class="search-box">
+        <svg width="14" height="14" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="4"/><line x1="9.5" y1="9.5" x2="13" y2="13"/></svg>
+        <input id="search-input" class="search-input" type="text" placeholder="キーワードで検索…" oninput="onSearch(this.value)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <span class="search-clear" id="search-clear" onclick="clearSearch()" style="display:none;">✕</span>
+      </div>
     </div>
+    <div class="filter-bar" id="filter-bar"></div>
+    <div class="grid-wrap"><div class="grid" id="main-grid"></div></div>
   </div>
-  <div class="filter-bar" id="filter-bar"></div>
-  <div class="grid-wrap"><div class="grid" id="main-grid"></div></div>
-  <!-- Quick Post Overlay (Stories-style) -->
+
+  <!-- フィードモード -->
+  <div id="home-feed-mode" style="flex:1;display:none;overflow:hidden;position:relative;">
+    <div class="feed-scroller" id="feed-scroller"></div>
+  </div>
+
+  <!-- Quick Post Overlay -->
   <div class="qp-overlay" id="qp-overlay">
     <div class="qp-photo-wrap" id="qp-photo-wrap"></div>
     <div class="qp-top">
@@ -467,9 +557,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     <div class="qp-bottom">
       <div class="qp-savedhint">タイトル不要・タグ不要・整理は自動</div>
       <div class="qp-actions">
-        <button class="qp-btn qp-btn-edit" onclick="quickPostEdit()" title="切り取り">
-          <svg width="14" height="14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-        </button>
+        <button class="qp-btn qp-btn-edit" onclick="quickPostEdit()" title="切り取り">✂</button>
         <button class="qp-btn qp-btn-save" onclick="quickPostSave()">保存だけ</button>
         <button class="qp-btn qp-btn-talk" onclick="quickPostTalk()">AIに聞く</button>
       </div>
@@ -503,8 +591,8 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     <div class="deco-box">
       <div class="deco-preview" id="deco-preview" style="background:linear-gradient(135deg,#1D9E75,#0F6E56);">
         <div class="deco-layer deco-emoji-el" id="deco-emoji-el"></div>
-        <div class="deco-layer deco-text-el" id="deco-text-el" contenteditable="true" style="color:#fff;font-family:system-ui;" onclick="this.focus()"></div>
-        <div class="deco-hint">ピンチで拡大・ドラッグで移動</div>
+        <div class="deco-layer deco-text-el" id="deco-text-el" contenteditable="true" style="color:#fff;font-family:system-ui;" onclick="focusDecoText(event)"></div>
+        <div class="deco-hint">ピンチ→文字サイズ変更 / ドラッグ→移動</div>
       </div>
       <div class="deco-toolbar">
         <div class="deco-row">
@@ -523,7 +611,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
           </div>
         </div>
         <div class="deco-row">
-          <div class="deco-lbl">文字</div>
+          <div class="deco-lbl">文字色</div>
           <div class="swatches" id="txt-sw">
             <div class="sw on lite" data-tc="#ffffff" style="background:#fff;"></div>
             <div class="sw" data-tc="#1a1a1a" style="background:#1a1a1a;"></div>
@@ -537,10 +625,12 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
         <div class="deco-row">
           <div class="deco-lbl">書体</div>
           <div class="font-chips" id="font-chips">
-            <div class="fc on" data-font="system-ui" style="font-family:system-ui;">ゴシック</div>
-            <div class="fc" data-font="Georgia,serif" style="font-family:Georgia,serif;">セリフ</div>
-            <div class="fc" data-font="monospace" style="font-family:monospace;">等幅</div>
-            <div class="fc" data-font="'Courier New',monospace" style="font-family:'Courier New',monospace;">タイプ</div>
+            <div class="fc on" data-font="system-ui,-apple-system,sans-serif" style="font-family:system-ui;">ゴシック</div>
+            <div class="fc" data-font="Georgia,'Times New Roman',serif" style="font-family:Georgia,serif;">セリフ</div>
+            <div class="fc" data-font="'Courier New',Courier,monospace" style="font-family:'Courier New',monospace;">等幅</div>
+            <div class="fc" data-font="'Hiragino Mincho ProN','Yu Mincho',serif" style="font-family:'Hiragino Mincho ProN',serif;">明朝</div>
+            <div class="fc" data-font="cursive,fantasy" style="font-family:cursive;">筆記体</div>
+            <div class="fc" data-font="Impact,'Arial Black',sans-serif" style="font-family:Impact;">インパクト</div>
           </div>
         </div>
         <div class="deco-row">
@@ -606,7 +696,6 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     <span style="font-size:9px;color:var(--text3);">あなただけが見られます</span>
   </div>
   <div class="chat-msgs" id="chat-msgs"></div>
-  <!-- 追加写真・参照投稿のプレビューエリア -->
   <div class="chat-attach-row" id="chat-attach-row"></div>
   <div class="chat-iw">
     <button class="chat-sub-btn" onclick="triggerChatPhoto()" title="写真を追加">
@@ -616,11 +705,10 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     </button>
     <textarea class="chat-input" id="chat-input" placeholder="何でも聞いて…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-    <button class="send-btn" id="send-btn" onclick="sendMsg()" title="送信（ボタンのみ・改行はShift+Enter）">
+    <button class="send-btn" id="send-btn" onclick="sendMsg()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M12 5L6 11M12 5L18 11" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
-  <!-- 投稿参照ピッカー（グリッドから選ぶ） -->
   <div class="ref-picker" id="ref-picker">
     <div class="ref-picker-hdr">
       <span class="ref-picker-title">参照する投稿を選ぶ</span>
@@ -633,7 +721,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 
 <!-- ANALYTICS -->
 <div class="screen" id="screen-analytics">
-  <div class="hdr"><div class="logo">Snap<em>In</em><span class="logo-by"> by JUKEN CAMP</span></div><div class="hdr-icons"><span><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span></div></div>
+  <div class="hdr"><div class="logo">Snap<em>In</em><span class="logo-by"> by JUKEN CAMP</span></div></div>
   <div class="ana-body">
     <div>
       <div class="sec-title">知識スコア</div>
@@ -656,9 +744,9 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
         <div class="stat-pill"><span class="stat-pill-n" id="ana-depth">0</span><span class="stat-pill-l">📊 深さ平均</span></div>
       </div>
     </div>
-    <div><div class="sec-title">カテゴリ別</div><div class="bar-list" id="ana-bars"><div style="color:var(--text3);font-size:11px;">まだデータがありません</div></div></div>
-    <div><div class="sec-title">深く悩んだ・繰り返し聞いたもの</div><div class="rank-list" id="ana-ranks"><div class="rank-item" style="justify-content:center;color:var(--text3);font-size:11px;">まだデータがありません</div></div></div>
-    <div class="advice-card"><div class="advice-lbl">💡 AIより</div><div class="advice-txt" id="ana-advice">写真を撮ってAIと話すと、ここに分析が出ます。まずは気になるものを何でも撮ってみましょう。</div></div>
+    <div><div class="sec-title">カテゴリ別</div><div class="bar-list" id="ana-bars"></div></div>
+    <div><div class="sec-title">深く掘り下げたもの</div><div class="rank-list" id="ana-ranks"></div></div>
+    <div class="advice-card"><div class="advice-lbl">💡 AIより</div><div class="advice-txt" id="ana-advice">写真を撮ってAIと話すと、ここに分析が出ます。</div></div>
   </div>
   <div class="bnav">
     <div class="ni" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
@@ -675,11 +763,11 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     <span class="back-title">シェアカード</span>
   </div>
   <div class="share-body">
-    <div class="share-intro">あなたの学びの軌跡を、一枚のカードに。<br>SNS にシェアしたり、画像として保存できます。</div>
+    <div class="share-intro">あなたの学びの軌跡を、一枚のカードに。</div>
     <div class="card-frame">
       <div class="share-card" id="share-card">
         <div class="sc-head">
-          <div class="sc-logo">Snap<em>In</em><span class="logo-by"> by JUKEN CAMP</span></div>
+          <div class="sc-logo">Snap<em>In</em></div>
           <div class="sc-date" id="sc-date"></div>
         </div>
         <div class="sc-ava" id="sc-ava">K</div>
@@ -702,16 +790,15 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
       </div>
     </div>
     <div class="share-actions">
-      <button class="share-act" onclick="copyShareCardText()"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>テキストをコピー</button>
-      <button class="share-act primary" onclick="downloadShareCard()"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>画像を保存</button>
+      <button class="share-act" onclick="copyShareCardText()">テキストをコピー</button>
+      <button class="share-act primary" onclick="downloadShareCard()">画像を保存</button>
     </div>
   </div>
   <div class="bnav">
     <div class="ni" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
     <div class="ni" onclick="goTo('upload')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
     <div class="ni" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
-    <div class="ni active"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>シェア</span></div>
-    <div class="ni" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
+    <div class="ni active"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
 </div>
 
@@ -731,16 +818,12 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
       <input class="prof-name-inp" id="prof-name-inp" type="text" value="Kazuma" maxlength="20" placeholder="名前">
       <div id="prof-grade-lbl" style="font-size:11px;color:var(--g);font-weight:500;"></div>
     </div>
-
-    <!-- 1. 自己紹介 -->
     <div class="prof-sec">
       <div class="divider"></div>
       <div class="prof-sec-lbl">📝 自己紹介</div>
-      <input class="free-inp" id="prof-detail-inp" type="text" placeholder="学校名・学年・職業など（例：中学2年 / 高校教員 / 会社員）" maxlength="60">
+      <input class="free-inp" id="prof-detail-inp" type="text" placeholder="学校名・学年・職業など" maxlength="60">
       <div style="font-size:10px;color:var(--text3);margin-top:-8px;margin-bottom:14px;">AIがこの情報を参考に回答を最適化します</div>
     </div>
-
-    <!-- 2. 生年月日（任意） -->
     <div class="prof-sec">
       <div class="prof-sec-lbl">🎂 生年月日（任意・学年自動判定）</div>
       <div class="dob-row">
@@ -753,8 +836,6 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
       </div>
       <div class="grade-badge" id="grade-badge" style="display:none;"><span>🎓</span><span id="grade-badge-txt"></span></div>
     </div>
-
-    <!-- 4. AIレベル + 模試解析 -->
     <div class="prof-sec">
       <div class="divider"></div>
       <div class="prof-sec-lbl">🧠 AIの回答レベル</div>
@@ -774,28 +855,24 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
       <div class="acad-analyzing" id="acad-analyzing"><div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div><span>AIが解析中…</span></div>
       <div class="acad-result" id="acad-result"></div>
     </div>
-
-    <!-- 5. トーン -->
     <div class="prof-sec">
       <div class="divider"></div>
       <div class="prof-sec-lbl">💬 AIのトーン</div>
       <div class="tone-cards">
         <div class="tone-card on" data-tone="friendly"><div class="tone-title">😊 フレンドリー</div><div class="tone-sample">「おっ、これ面白いね！この問題でいちばん大事なのはさ…」</div></div>
-        <div class="tone-card" data-tone="grok"><div class="tone-title">🤙 ガチ砕け（Grok風）</div><div class="tone-sample">「まじでこれわかんないよな笑　ぶっちゃけ言うと…あ、でもここ超重要ね」</div></div>
+        <div class="tone-card" data-tone="grok"><div class="tone-title">🤙 ガチ砕け（Grok風）</div><div class="tone-sample">「まじでこれわかんないよな笑　ぶっちゃけ言うと…」</div></div>
         <div class="tone-card" data-tone="cool"><div class="tone-title">😎 クール・シンプル</div><div class="tone-sample">「結論から。核心は3点。①… ②… ③…」</div></div>
         <div class="tone-card" data-tone="polite"><div class="tone-title">🎓 丁寧・敬語</div><div class="tone-sample">「こちらの写真を拝見しました。ポイントをご説明いたします。」</div></div>
         <div class="tone-card" data-tone="teacher"><div class="tone-title">📖 先生風・熱血</div><div class="tone-sample">「よし！これは重要！一緒に解いていこう。まず…」</div></div>
       </div>
     </div>
-
-    <!-- ゴミ箱リンク -->
     <div class="trash-link" onclick="goTo('trash')">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
       <span class="trash-link-txt">ゴミ箱</span>
       <span class="trash-link-badge" id="trash-badge">0</span>
     </div>
-
     <button class="save-btn" onclick="saveProfile()">✓ 保存する</button>
+    <button class="logout-btn" onclick="doLogout()">ログアウト</button>
     <div style="height:28px;"></div>
   </div>
 </div>
@@ -812,9 +889,9 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   </div>
 </div>
 
-</div>
+</div><!-- .app -->
 
-<!-- Swipe Preview Overlay (long-press peek) -->
+<!-- Swipe Preview Overlay -->
 <div class="sp-overlay" id="sp-overlay">
   <div class="sp-top">
     <button class="sp-close" onclick="closeSwipePreview()"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><line x1="3" y1="3" x2="11" y2="11"/><line x1="11" y1="3" x2="3" y2="11"/></svg></button>
@@ -834,7 +911,6 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
       AIに聞く
     </button>
     <div class="sp-counter" id="sp-counter"></div>
-    <div class="sp-arrow">← スワイプで前後 →</div>
   </div>
 </div>
 
@@ -848,21 +924,19 @@ const S = {
   trimMode:'free', trimRect:null, dragging:false,
   editMode:false,
   lastFailedMsg:null,
-  filter:'all',          // 'all' or category name
-  searchQuery:'',        // search text
-  showCatLabels:false,   // toggle to show category labels on tiles
-  swipeIndex:-1,         // current index in filtered list during swipe preview
-  pendingPhoto:null,     // {imgData, croppedData} during quick post overlay
-  chatAttachPhotos:[],   // [{imgData, label}] added mid-chat
-  chatAttachRefs:[],     // [{id, label, imgData, content}] referenced items
-  aiMode:true,           // false=メモモード（AIに送らない）
+  filter:'all',
+  searchQuery:'',
+  showCatLabels:false,
+  swipeIndex:-1,
+  pendingPhoto:null,
+  chatAttachPhotos:[],
+  chatAttachRefs:[],
+  aiMode:true,
+  viewMode:'grid',   // 'grid' | 'feed'
   profile:{ name:'Kazuma', avatarUrl:null, who:'', detail:'', dob:{year:0,month:0,day:0}, gradeText:'', gradeShort:'', interests:[], level:'標準', tone:'friendly' },
-  deco:{ bg:'linear-gradient(135deg,#1D9E75,#0F6E56)', tc:'#ffffff', font:'system-ui', emoji:'' }
+  deco:{ bg:'linear-gradient(135deg,#1D9E75,#0F6E56)', tc:'#ffffff', font:'system-ui,-apple-system,sans-serif', emoji:'' }
 };
 
-// ═══════════════════════════════════════════
-// CATEGORIES (universal, not just school subjects)
-// ═══════════════════════════════════════════
 const CATS = {
   '英語':       {color:'#4A90E2', emoji:'🔤'},
   '数学':       {color:'#9B59B6', emoji:'📐'},
@@ -886,8 +960,8 @@ const CATS = {
 const CAT_LIST = Object.keys(CATS);
 function catColor(c){ return CATS[c]?.color || CATS['その他'].color; }
 function catEmoji(c){ return CATS[c]?.emoji || CATS['その他'].emoji; }
+
 let tc, tctx, tImg = new Image();
-let longPressTimer = null;
 const STORAGE_KEY = 'snapin_v1';
 
 // ═══════════════════════════════════════════
@@ -895,9 +969,8 @@ const STORAGE_KEY = 'snapin_v1';
 // ═══════════════════════════════════════════
 function saveState(){
   try{
-    const data={items:S.items,trash:S.trash,profile:S.profile,deco:S.deco};
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
-  }catch(e){/* quota, ignore */}
+    localStorage.setItem(STORAGE_KEY,JSON.stringify({items:S.items,trash:S.trash,profile:S.profile,deco:S.deco}));
+  }catch(e){}
 }
 function loadState(){
   try{
@@ -908,36 +981,26 @@ function loadState(){
     if(d.trash) S.trash=d.trash;
     if(d.profile) S.profile={...S.profile,...d.profile};
     if(d.deco) S.deco={...S.deco,...d.deco};
-  }catch(e){/* corrupted, ignore */}
+  }catch(e){}
 }
 loadState();
 
 // ═══════════════════════════════════════════
-// STREAK
+// STREAK / SCORE
 // ═══════════════════════════════════════════
-function dayKey(t){
-  const d=new Date(t); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-}
-function getActiveDays(){
-  const set=new Set(); S.items.forEach(i=>set.add(dayKey(i.id)));
-  return set;
-}
+function dayKey(t){ const d=new Date(t); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
 function getStreakCount(){
-  const set=getActiveDays();
+  const set=new Set(); S.items.forEach(i=>set.add(dayKey(i.id)));
   let cnt=0; const d=new Date(); d.setHours(0,0,0,0);
   while(set.has(dayKey(d.getTime()))){ cnt++; d.setDate(d.getDate()-1); }
   return cnt;
 }
-
-// ═══════════════════════════════════════════
-// KNOWLEDGE SCORE
-// ═══════════════════════════════════════════
 function totalTurns(){ return S.items.reduce((a,i)=>a+Math.floor((i.chatHistory||[]).length/2),0); }
 function calcScore(){
   const turns=totalTurns();
   const cats=new Set(S.items.map(i=>detectCat(i))).size;
-  const avgDepth=S.items.length>0?turns/S.items.length:0;
-  return Math.round((S.items.length*2)+(turns*3)+(cats*10)+(avgDepth>2?avgDepth*5:0));
+  const avg=S.items.length>0?turns/S.items.length:0;
+  return Math.round((S.items.length*2)+(turns*3)+(cats*10)+(avg>2?avg*5:0));
 }
 
 // ═══════════════════════════════════════════
@@ -947,32 +1010,131 @@ function buildPrompt(){
   const p=S.profile;
   const tones={
     friendly:'フレンドリーで親しみやすく、絵文字も適度に使って話す。',
-    grok:'タメ口全開・超カジュアル。「まじで」「笑」「ぶっちゃけ」「やばい」など自然に使う。でも内容は正確に。',
+    grok:'タメ口全開・超カジュアル。「まじで」「笑」「ぶっちゃけ」など自然に使う。内容は正確に。',
     cool:'感情表現は最小限。結論から、箇条書き・数字を多用して簡潔に。',
-    polite:'丁寧な敬語で、落ち着いた温かみのあるトーンで。',
-    teacher:'先生のように情熱を持って、「よし！」「ここがポイント！」など元気な語りかけで。'
+    polite:'丁寧な敬語で落ち着いた温かみのあるトーンで。',
+    teacher:'先生のように情熱を持って「よし！」「ここがポイント！」など元気に。'
   };
   const levels={
     基礎:'専門用語は避け、小学生でもわかるやさしい言葉で。',
     標準:'一般的な語彙で、必要に応じて用語を補足しながら。',
     発展:'専門用語も使いながら詳しく正確に。',
-    専門:'専門家向けの深度で、技術的な詳細も含めて。'
+    専門:'専門家向けの深度で技術的な詳細も含めて。'
   };
   const whoLine=[p.who,p.gradeText,p.detail].filter(Boolean).join(' / ');
-  const interestLine=p.interests.length?`興味関心：${p.interests.join('・')}`:'';
   return `あなたはSnapInというアプリのAIです。ユーザーが写真やメモを起点に質問します。
+【ユーザー情報】名前：${p.name}${whoLine?' / '+whoLine:''}
+【回答スタイル】・${tones[p.tone]}・${levels[p.level]}・写真を的確に分析して答える・Markdownの**太字**・箇条書きを活用して読みやすく構造化する・会話が続くよう適度な長さで`;
+}
 
-【ユーザー情報】
-名前：${p.name}${whoLine?' / '+whoLine:''}
-${interestLine}
+// ═══════════════════════════════════════════
+// VIEW MODE
+// ═══════════════════════════════════════════
+function setViewMode(mode){
+  S.viewMode=mode;
+  document.getElementById('vt-grid').classList.toggle('on', mode==='grid');
+  document.getElementById('vt-feed').classList.toggle('on', mode==='feed');
+  document.getElementById('home-grid-mode').style.display = mode==='grid'?'flex':'none';
+  document.getElementById('home-feed-mode').style.display = mode==='feed'?'block':'none';
+  if(mode==='feed') renderFeed();
+}
 
-【回答スタイル】
-・${tones[p.tone]}
-・${levels[p.level]}
-・写真を的確に分析して答える
-・英語問題→解説と例文。料理→材料・作り方。植物→名前・特徴。看板→翻訳。数学→丁寧な解説
-・Markdownの**太字**・箇条書きを活用して読みやすく構造化する
-・会話が続くよう適度な長さで`;
+// ═══════════════════════════════════════════
+// FEED VIEW
+// ═══════════════════════════════════════════
+function renderFeed(){
+  const scroller=document.getElementById('feed-scroller');
+  const items=getFilteredItems();
+  scroller.innerHTML='';
+  if(!items.length){
+    scroller.innerHTML=`<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;flex-direction:column;gap:12px;"><div style="font-size:32px;">📸</div><div>まだ投稿がありません</div></div>`;
+    return;
+  }
+  items.forEach((item, idx)=>{
+    const el=document.createElement('div');
+    el.className='feed-item';
+    const cat=detectCat(item);
+    const firstUserQ=(item.chatHistory||[]).find(m=>m.role==='user')?.content||'';
+    // 背景
+    if(item.type==='photo'&&item.imageData){
+      el.innerHTML=`<img class="feed-item-bg" src="${item.imageData}" alt="">`;
+    } else {
+      const d=item.deco||{};
+      el.innerHTML=`<div class="feed-item-bg-text" style="background:${d.bg||'#1a1a1a'};width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;">
+        ${d.emoji?`<div style="font-size:56px;margin-bottom:16px;">${d.emoji}</div>`:''}
+        <div style="font-family:${d.font||'system-ui'};font-size:22px;color:${d.tc||'#fff'};text-align:center;line-height:1.55;word-break:break-word;">${item.content}</div>
+      </div>`;
+    }
+    // オーバーレイ
+    el.innerHTML+=`<div class="feed-item-overlay"></div>`;
+    // カウンター
+    el.innerHTML+=`<div class="feed-counter">${idx+1} / ${items.length}</div>`;
+    // 右アクション
+    el.innerHTML+=`<div class="feed-actions">
+      <div class="feed-act">
+        <div class="feed-act-btn" onclick="event.stopPropagation();openFromGrid(${item.id})">
+          <svg width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        </div>
+        <div class="feed-act-lbl">AIに聞く</div>
+      </div>
+    </div>`;
+    // 左下
+    const qHtml=firstUserQ
+      ?`<div class="feed-q-text">${firstUserQ.length>60?firstUserQ.substring(0,60)+'…':firstUserQ}</div>`
+      :`<div class="feed-q-empty">タップしてAIに質問する</div>`;
+    el.innerHTML+=`<div class="feed-bottom">
+      <div class="feed-cat-row">
+        <div class="feed-cat-badge"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${catColor(cat)};"></span>${cat}</div>
+        <div class="feed-date">${item.date}</div>
+      </div>
+      <div class="feed-q-preview" onclick="openFeedSheet(${item.id},this)">
+        <div class="feed-q-bubble">${qHtml}</div>
+        <div class="feed-q-arrow"><svg width="12" height="12" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="2 8 6 4 10 8"/></svg></div>
+      </div>
+    </div>`;
+    // シートオーバーレイ（各アイテム内）
+    const sheet=document.createElement('div');
+    sheet.className='feed-sheet';
+    sheet.dataset.id=item.id;
+    const msgs=(item.chatHistory||[]).filter(m=>m.role==='user'||m.role==='assistant');
+    let sheetContent='';
+    if(msgs.length===0){
+      sheetContent='<div style="color:var(--text3);font-size:12px;">まだ会話がありません。AIに質問してみましょう。</div>';
+    } else {
+      sheetContent=msgs.slice(0,6).map(m=>{
+        if(m.role==='user') return `<div style="margin-bottom:12px;"><div style="font-size:9px;color:var(--text3);margin-bottom:3px;">あなた</div><div style="font-size:13px;line-height:1.65;color:var(--text);font-weight:500;">${m.content}</div></div>`;
+        return `<div style="margin-bottom:14px;padding:10px 12px;background:var(--gl);border-radius:12px;"><div style="font-size:9px;color:var(--gd);margin-bottom:4px;font-weight:600;">SnapIn AI</div><div style="font-size:12px;line-height:1.7;color:var(--gd);">${md(m.content)}</div></div>`;
+      }).join('');
+      if(msgs.length>6) sheetContent+=`<div style="text-align:center;font-size:11px;color:var(--text3);padding:8px 0;">…続きはチャットで見る</div>`;
+    }
+    sheet.innerHTML=`
+      <div class="feed-sheet-handle"></div>
+      <div class="feed-sheet-hdr">
+        <div class="feed-sheet-title">💬 会話ログ</div>
+        <div class="feed-sheet-close" onclick="closeFeedSheet(this)">✕</div>
+      </div>
+      <div class="feed-sheet-body">${sheetContent}</div>
+      <div class="feed-sheet-footer">
+        <button class="feed-sheet-cta" onclick="closeFeedSheetAndChat(${item.id})">続きをAIに聞く</button>
+      </div>`;
+    el.appendChild(sheet);
+    scroller.appendChild(el);
+  });
+}
+
+function openFeedSheet(id, previewEl){
+  // 親のfeed-itemを見つけてシートを開く
+  const feedItem=previewEl.closest('.feed-item');
+  const sheet=feedItem?.querySelector('.feed-sheet');
+  if(!sheet) return;
+  sheet.classList.add('open');
+}
+function closeFeedSheet(closeBtn){
+  const sheet=closeBtn.closest('.feed-sheet');
+  if(sheet) sheet.classList.remove('open');
+}
+function closeFeedSheetAndChat(id){
+  openFromGrid(id);
 }
 
 // ═══════════════════════════════════════════
@@ -989,17 +1151,15 @@ function calcGrade(){
   const yr=new Date().getFullYear();
   const aprilAge=yr-y-((m>4||(m===4&&d>=2))?0:1);
   const G=['未就学','小学1年生','小学2年生','小学3年生','小学4年生','小学5年生','小学6年生','中学1年生','中学2年生','中学3年生','高校1年生','高校2年生','高校3年生','大学1年生','大学2年生','大学3年生','大学4年生'];
-  const GS=['未','小1','小2','小3','小4','小5','小6','中1','中2','中3','高1','高2','高3','大1','大2','大3','大4'];
   let gt='',gs='';
   if(aprilAge<=5){gt='未就学';gs='未';}
-  else if(aprilAge>=6&&aprilAge<=21){gt=G[aprilAge-5];gs=GS[aprilAge-5];}
+  else if(aprilAge>=6&&aprilAge<=21){gt=G[aprilAge-5]||'';gs='';}
   else{gt='卒業済み';gs='';}
   S.profile.gradeText=gt; S.profile.gradeShort=gs;
   document.getElementById('grade-badge-txt').textContent=gt;
   badge.style.display=gt?'inline-flex':'none';
   document.getElementById('prof-grade-lbl').textContent=gt;
 }
-
 function initDob(){
   const yEl=document.getElementById('dob-y'),dEl=document.getElementById('dob-d');
   yEl.innerHTML='<option value="0">-- 年</option>';
@@ -1014,7 +1174,7 @@ function initDob(){
 }
 
 // ═══════════════════════════════════════════
-// PROFILE LOAD/SAVE
+// PROFILE
 // ═══════════════════════════════════════════
 function loadProfileUI(){
   initDob();
@@ -1022,7 +1182,6 @@ function loadProfileUI(){
   document.getElementById('prof-detail-inp').value=S.profile.detail||'';
   updateAvaUI();
   document.querySelectorAll('.chip[data-g]').forEach(c=>c.classList.toggle('on',S.profile[c.dataset.g]===c.dataset.v));
-  document.querySelectorAll('.chip[data-interest]').forEach(c=>c.classList.toggle('on',(S.profile.interests||[]).includes(c.dataset.interest)));
   document.querySelectorAll('.tone-card').forEach(c=>c.classList.toggle('on',c.dataset.tone===S.profile.tone));
   const tb=document.getElementById('trash-badge');
   tb.textContent=S.trash.length; tb.style.display=S.trash.length?'inline-block':'none';
@@ -1031,7 +1190,6 @@ function saveProfile(){
   S.profile.name=document.getElementById('prof-name-inp').value.trim()||'ユーザー';
   S.profile.detail=document.getElementById('prof-detail-inp').value.trim();
   document.querySelectorAll('.chip.on[data-g]').forEach(c=>{S.profile[c.dataset.g]=c.dataset.v;});
-  S.profile.interests=[...document.querySelectorAll('.chip.on[data-interest]')].map(c=>c.dataset.interest);
   const tc2=document.querySelector('.tone-card.on'); if(tc2) S.profile.tone=tc2.dataset.tone;
   calcGrade(); saveState(); updateHomeProfile(); goTo('home');
 }
@@ -1043,7 +1201,10 @@ function goTo(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   if(name==='analytics') updateAna();
-  if(name==='home'){renderGrid(); renderFilterBar(); exitEditMode();}
+  if(name==='home'){
+    renderGrid(); renderFilterBar(); exitEditMode();
+    if(S.viewMode==='feed') renderFeed();
+  }
   if(name==='profile') loadProfileUI();
   if(name==='trash') renderTrash();
   if(name==='share') renderShareCard();
@@ -1051,60 +1212,25 @@ function goTo(name){
 }
 
 // ═══════════════════════════════════════════
-// FILTER BAR
-// Shows categories that actually exist in items, with counts.
-// Tapping filters the grid. No friction — display layer only.
+// FILTER / SEARCH
 // ═══════════════════════════════════════════
 function renderFilterBar(){
-  const bar=document.getElementById('filter-bar');
-  if(!bar) return;
-  // Count items per category (excluding pending)
+  const bar=document.getElementById('filter-bar'); if(!bar) return;
   const counts={};
-  S.items.forEach(i=>{
-    if(i.categoryPending) return;
-    const c=detectCat(i);
-    counts[c]=(counts[c]||0)+1;
-  });
-  // Sort by count desc, but always show "all" first
+  S.items.forEach(i=>{ if(i.categoryPending) return; const c=detectCat(i); counts[c]=(counts[c]||0)+1; });
   const sortedCats=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
   let html=`<button class="fchip ${S.filter==='all'?'on':''}" onclick="setFilter('all')">すべて<span class="fc-cnt">${S.items.length}</span></button>`;
   sortedCats.forEach(([c,n])=>{
-    const active=S.filter===c?'on':'';
-    html+=`<button class="fchip ${active}" onclick="setFilter('${c}')"><span class="fc-dot" style="background:${catColor(c)};"></span>${c}<span class="fc-cnt">${n}</span></button>`;
+    html+=`<button class="fchip ${S.filter===c?'on':''}" onclick="setFilter('${c}')"><span class="fc-dot" style="background:${catColor(c)};"></span>${c}<span class="fc-cnt">${n}</span></button>`;
   });
-  // Eye toggle for showing labels on tiles
   html+=`<button class="fchip-eye ${S.showCatLabels?'on':''}" onclick="toggleCatLabels()">${S.showCatLabels?'ラベル非表示':'ラベル表示'}</button>`;
   bar.innerHTML=html;
 }
-function setFilter(c){
-  S.filter=c;
-  renderFilterBar(); renderGrid();
-}
-function toggleCatLabels(){
-  S.showCatLabels=!S.showCatLabels;
-  renderFilterBar(); renderGrid();
-}
-
-// ═══════════════════════════════════════════
-// SWIPE PREVIEW (long-press peek)
-// Lets users peek through their items without entering the chat.
-// Instagram-like full-screen view with left/right swipe navigation.
-// ═══════════════════════════════════════════
-// ═══════════════════════════════════════════
-// SEARCH
-// ═══════════════════════════════════════════
-function onSearch(q){
-  S.searchQuery=q.trim();
-  document.getElementById('search-clear').style.display=q?'inline':'none';
-  renderGrid(); renderFilterBar();
-}
-function clearSearch(){
-  S.searchQuery='';
-  document.getElementById('search-input').value='';
-  document.getElementById('search-clear').style.display='none';
-  renderGrid(); renderFilterBar();
-}
-function itemMatchesSearch(item, q){
+function setFilter(c){ S.filter=c; renderFilterBar(); renderGrid(); }
+function toggleCatLabels(){ S.showCatLabels=!S.showCatLabels; renderFilterBar(); renderGrid(); }
+function onSearch(q){ S.searchQuery=q.trim(); document.getElementById('search-clear').style.display=q?'inline':'none'; renderGrid(); renderFilterBar(); }
+function clearSearch(){ S.searchQuery=''; document.getElementById('search-input').value=''; document.getElementById('search-clear').style.display='none'; renderGrid(); renderFilterBar(); }
+function itemMatchesSearch(item,q){
   if(!q) return true;
   const lower=q.toLowerCase();
   if(item.type==='text'&&item.content?.toLowerCase().includes(lower)) return true;
@@ -1118,6 +1244,10 @@ function getFilteredItems(){
   if(S.searchQuery) items=items.filter(i=>itemMatchesSearch(i,S.searchQuery));
   return items;
 }
+
+// ═══════════════════════════════════════════
+// SWIPE PREVIEW (long-press)
+// ═══════════════════════════════════════════
 function openSwipePreview(id){
   const list=getFilteredItems();
   const idx=list.findIndex(i=>i.id===id);
@@ -1126,17 +1256,12 @@ function openSwipePreview(id){
   renderSwipePreview();
   document.getElementById('sp-overlay').classList.add('on');
 }
-function closeSwipePreview(){
-  document.getElementById('sp-overlay').classList.remove('on');
-  S.swipeIndex=-1;
-}
+function closeSwipePreview(){ document.getElementById('sp-overlay').classList.remove('on'); S.swipeIndex=-1; }
 function trashFromSwipe(){
   const list=getFilteredItems();
   if(S.swipeIndex<0||S.swipeIndex>=list.length) return;
   const item=list[S.swipeIndex];
-  closeSwipePreview();
-  trashItem(item.id);
-  showToast('ゴミ箱に移動しました');
+  closeSwipePreview(); trashItem(item.id); showToast('ゴミ箱に移動しました');
 }
 function renderSwipePreview(){
   const list=getFilteredItems();
@@ -1146,12 +1271,10 @@ function renderSwipePreview(){
   document.getElementById('sp-cat').innerHTML=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${catColor(cat)};"></span> ${cat}`;
   document.getElementById('sp-date').textContent=item.date;
   document.getElementById('sp-counter').textContent=`${S.swipeIndex+1} / ${list.length}`;
-  const body=document.getElementById('sp-body');
-  body.innerHTML='';
+  const body=document.getElementById('sp-body'); body.innerHTML='';
   const card=document.createElement('div'); card.className='sp-card';
-  if(item.type==='photo'){
-    card.innerHTML=`<img src="${item.imageData}">`;
-  } else {
+  if(item.type==='photo'){ card.innerHTML=`<img src="${item.imageData}">`; }
+  else {
     const d=item.deco||{};
     card.classList.add('sp-text-card');
     card.style.background=d.bg||'#1a1a1a';
@@ -1163,9 +1286,7 @@ function renderSwipePreview(){
 function openCurrentFromSwipe(){
   const list=getFilteredItems();
   if(S.swipeIndex<0||S.swipeIndex>=list.length) return;
-  const item=list[S.swipeIndex];
-  closeSwipePreview();
-  openFromGrid(item.id);
+  closeSwipePreview(); openFromGrid(list[S.swipeIndex].id);
 }
 function setupSwipeEvents(body){
   let startX=null, dx=0;
@@ -1180,8 +1301,8 @@ function setupSwipeEvents(body){
     if(startX===null) return;
     const list=getFilteredItems();
     if(Math.abs(dx)>60){
-      if(dx<0 && S.swipeIndex<list.length-1){ S.swipeIndex++; renderSwipePreview(); }
-      else if(dx>0 && S.swipeIndex>0){ S.swipeIndex--; renderSwipePreview(); }
+      if(dx<0&&S.swipeIndex<list.length-1){ S.swipeIndex++; renderSwipePreview(); }
+      else if(dx>0&&S.swipeIndex>0){ S.swipeIndex--; renderSwipePreview(); }
       else if(card){ card.style.transform=''; }
     } else if(card){ card.style.transform=''; }
     startX=null; dx=0;
@@ -1190,20 +1311,15 @@ function setupSwipeEvents(body){
   body.onmousedown=onStart; body.onmousemove=e=>{if(startX!==null)onMove(e);}; body.onmouseup=onEnd; body.onmouseleave=onEnd;
 }
 
-
 function updateHomeProfile(){
   document.getElementById('home-name').textContent=S.profile.name;
   const whoLine=[S.profile.who,S.profile.gradeText,S.profile.detail].filter(Boolean).join(' · ');
-  const interestHtml=(S.profile.interests||[]).slice(0,3).map(t=>`<span style="font-size:9px;color:var(--text2);">#${t}</span>`).join('');
-  document.getElementById('home-tag').innerHTML=whoLine?`<span class="prof-tag-badge">${whoLine}</span>${interestHtml}`:interestHtml;
+  document.getElementById('home-tag').innerHTML=whoLine?`<span class="prof-tag-badge">${whoLine}</span>`:'';
   updateAvaUI();
 }
-// Click delegation
 document.addEventListener('click',e=>{
   const chip=e.target.closest('.chip[data-g]');
   if(chip){const g=chip.dataset.g;document.querySelectorAll(`.chip[data-g="${g}"]`).forEach(c=>c.classList.remove('on'));chip.classList.add('on');S.profile[g]=chip.dataset.v;if(g==='who')calcGrade();}
-  const mc=e.target.closest('.chip[data-interest]');
-  if(mc) mc.classList.toggle('on');
   const tcard=e.target.closest('.tone-card');
   if(tcard){document.querySelectorAll('.tone-card').forEach(c=>c.classList.remove('on'));tcard.classList.add('on');S.profile.tone=tcard.dataset.tone;}
 });
@@ -1211,26 +1327,17 @@ document.addEventListener('click',e=>{
 // ═══════════════════════════════════════════
 // EDIT MODE + TRASH
 // ═══════════════════════════════════════════
-function enterEditMode(){
-  S.editMode=true;
-  document.getElementById('edit-bar').classList.add('on');
-  renderGrid();
-}
-function exitEditMode(){
-  S.editMode=false;
-  document.getElementById('edit-bar').classList.remove('on');
-  renderGrid();
-}
+function enterEditMode(){ S.editMode=true; document.getElementById('edit-bar').classList.add('on'); renderGrid(); }
+function exitEditMode(){ S.editMode=false; document.getElementById('edit-bar').classList.remove('on'); renderGrid(); }
 function trashItem(id){
   const idx=S.items.findIndex(i=>i.id===id); if(idx===-1) return;
   const item=S.items.splice(idx,1)[0];
   item.deletedAt=Date.now(); S.trash.unshift(item);
   updateStats(); renderGrid(); saveState();
-  const tb=document.getElementById('trash-badge');
-  tb.textContent=S.trash.length; tb.style.display='inline-block';
+  const tb=document.getElementById('trash-badge'); tb.textContent=S.trash.length; tb.style.display='inline-block';
 }
 const TRASH_DAYS=30;
-function pruneTrash(){ const before=S.trash.length; S.trash=S.trash.filter(i=>Date.now()-i.deletedAt<TRASH_DAYS*86400000); if(before!==S.trash.length) saveState();}
+function pruneTrash(){ S.trash=S.trash.filter(i=>Date.now()-i.deletedAt<TRASH_DAYS*86400000); }
 function renderTrash(){
   pruneTrash();
   const body=document.getElementById('trash-body');
@@ -1254,40 +1361,39 @@ function restoreItem(id){
 }
 function emptyTrash(){
   if(!S.trash.length) return;
-  if(!confirm('ゴミ箱を完全に空にしますか？この操作は取り消せません。')) return;
+  if(!confirm('ゴミ箱を完全に空にしますか？')) return;
   S.trash=[]; renderTrash(); saveState();
-  const tb=document.getElementById('trash-badge'); tb.style.display='none';
+  document.getElementById('trash-badge').style.display='none';
 }
 
 // ═══════════════════════════════════════════
 // MARKDOWN PARSER
 // ═══════════════════════════════════════════
 function md(text) {
-  text = text.replace(/```[\s\S]*?```/g, m => `<code style="display:block;background:rgba(0,0,0,0.06);padding:6px 10px;border-radius:6px;font-family:monospace;font-size:11px;white-space:pre-wrap;margin:4px 0;">${m.replace(/```\w*\n?/g,'').replace(/```/g,'')}</code>`);
-  text = text.replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:11px;">$1</code>');
-  text = text.replace(/^###\s+(.+)$/gm, '<strong style="font-size:12px;display:block;margin:6px 0 2px;">$1</strong>');
-  text = text.replace(/^##\s+(.+)$/gm, '<strong style="font-size:13px;display:block;margin:8px 0 3px;">$1</strong>');
-  text = text.replace(/^#\s+(.+)$/gm, '<strong style="font-size:14px;display:block;margin:8px 0 4px;">$1</strong>');
-  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
-  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  text = text.replace(/^[-*]\s+(.+)$/gm,'<li style="margin:2px 0 2px 14px;list-style:disc;">$1</li>');
-  text = text.replace(/^\d+\.\s+(.+)$/gm,'<li style="margin:2px 0 2px 14px;list-style:decimal;">$1</li>');
-  text = text.replace(/(<li[^>]*>[\s\S]*?<\/li>(\n|$))+/g, m=>`<ul style="padding:2px 0;margin:4px 0;">${m}</ul>`);
-  text = text.replace(/^---+$/gm,'<hr style="border:none;border-top:1px solid rgba(0,0,0,0.1);margin:8px 0;">');
-  text = text.replace(/\n/g,'<br>');
+  text=text.replace(/```[\s\S]*?```/g,m=>`<code style="display:block;background:rgba(0,0,0,0.06);padding:6px 10px;border-radius:6px;font-family:monospace;font-size:11px;white-space:pre-wrap;margin:4px 0;">${m.replace(/```\w*\n?/g,'').replace(/```/g,'')}</code>`);
+  text=text.replace(/`([^`]+)`/g,'<code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:11px;">$1</code>');
+  text=text.replace(/^###\s+(.+)$/gm,'<strong style="font-size:12px;display:block;margin:6px 0 2px;">$1</strong>');
+  text=text.replace(/^##\s+(.+)$/gm,'<strong style="font-size:13px;display:block;margin:8px 0 3px;">$1</strong>');
+  text=text.replace(/^#\s+(.+)$/gm,'<strong style="font-size:14px;display:block;margin:8px 0 4px;">$1</strong>');
+  text=text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  text=text.replace(/__(.+?)__/g,'<strong>$1</strong>');
+  text=text.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  text=text.replace(/^[-*]\s+(.+)$/gm,'<li style="margin:2px 0 2px 14px;list-style:disc;">$1</li>');
+  text=text.replace(/^\d+\.\s+(.+)$/gm,'<li style="margin:2px 0 2px 14px;list-style:decimal;">$1</li>');
+  text=text.replace(/(<li[^>]*>[\s\S]*?<\/li>(\n|$))+/g,m=>`<ul style="padding:2px 0;margin:4px 0;">${m}</ul>`);
+  text=text.replace(/\n/g,'<br>');
   return text;
 }
+
 // ═══════════════════════════════════════════
 // AVATAR UI
 // ═══════════════════════════════════════════
 function updateAvaUI(){
   const av=S.profile.avatarUrl,letter=(S.profile.name||'?')[0].toUpperCase();
-  const homeAva=document.getElementById('home-ava');
-  homeAva.innerHTML=av?`<img src="${av}">`:`${letter}`;
-  const bigAva=document.getElementById('prof-ava-big');
-  bigAva.innerHTML=av?`<img src="${av}"><div class="prof-ava-edit">変更</div>`:`<span>${letter}</span><div class="prof-ava-edit">変更</div>`;
+  document.getElementById('home-ava').innerHTML=av?`<img src="${av}">`:`${letter}`;
+  document.getElementById('prof-ava-big').innerHTML=av?`<img src="${av}"><div class="prof-ava-edit">変更</div>`:`<span>${letter}</span><div class="prof-ava-edit">変更</div>`;
 }
+
 // ═══════════════════════════════════════════
 // ACADEMIC ANALYSIS
 // ═══════════════════════════════════════════
@@ -1307,9 +1413,7 @@ document.getElementById('acad-input').addEventListener('change', async e => {
   })));
   analyzingEl.classList.add('on');
   const content=b64list.map(b64=>({type:'image',source:{type:'base64',media_type:b64.startsWith('data:image/png')?'image/png':'image/jpeg',data:b64.split(',')[1]}}));
-  content.push({type:'text',text:`これは学習者の模試・通知表・成績表の写真です。分析してJSONのみ返してください：
-{"level":"基礎" or "標準" or "発展" or "専門","summary":"1〜2文（日本語）","strong":"得意分野","weak":"苦手分野"}
-基準：基礎=偏差値50未満/通知表3以下、標準=偏差値50〜60/通知表4程度、発展=偏差値60〜70/通知表オール5、専門=偏差値70以上`});
+  content.push({type:'text',text:`これは学習者の模試・通知表・成績表の写真です。分析してJSONのみ返してください：\n{"level":"基礎" or "標準" or "発展" or "専門","summary":"1〜2文","strong":"得意分野","weak":"苦手分野"}`});
   try {
     const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content}]})});
     const data=await res.json();
@@ -1322,7 +1426,6 @@ document.getElementById('acad-input').addEventListener('change', async e => {
       let html=`<strong>📊 解析結果：${parsed.level}レベル</strong><br>${parsed.summary||''}`;
       if(parsed.strong) html+=`<br>✅ 得意：${parsed.strong}`;
       if(parsed.weak) html+=`<br>📌 苦手：${parsed.weak}`;
-      html+='<br><span style="font-size:9px;color:var(--text3);">手動で変更することもできます</span>';
       resultEl.innerHTML=html; resultEl.classList.add('on');
     } else { resultEl.innerHTML='読み取れませんでした。手動で選んでください。'; resultEl.classList.add('on'); }
   } catch { analyzingEl.classList.remove('on'); resultEl.innerHTML='通信エラーが発生しました。'; resultEl.classList.add('on'); }
@@ -1334,120 +1437,160 @@ document.getElementById('ava-input').addEventListener('change', e=>{
 });
 
 // ═══════════════════════════════════════════
-// DECO CARD
+// DECO CARD  ★ ここが今回の主な修正箇所 ★
+// ピンチ→テキスト要素のfontSizeだけ変える
+// 1本指→移動
 // ═══════════════════════════════════════════
 (function initDeco(){
+  // 背景スウォッチ
   document.querySelectorAll('#bg-sw .sw').forEach(s=>s.addEventListener('click',()=>{
     document.querySelectorAll('#bg-sw .sw').forEach(x=>x.classList.remove('on'));
     s.classList.add('on'); S.deco.bg=s.dataset.bg;
     document.getElementById('deco-preview').style.background=S.deco.bg;
   }));
+  // 文字色スウォッチ
   document.querySelectorAll('#txt-sw .sw').forEach(s=>s.addEventListener('click',()=>{
     document.querySelectorAll('#txt-sw .sw').forEach(x=>x.classList.remove('on'));
     s.classList.add('on'); S.deco.tc=s.dataset.tc;
     document.getElementById('deco-text-el').style.color=S.deco.tc;
   }));
+  // フォント
   document.querySelectorAll('#font-chips .fc').forEach(c=>c.addEventListener('click',()=>{
     document.querySelectorAll('#font-chips .fc').forEach(x=>x.classList.remove('on'));
     c.classList.add('on'); S.deco.font=c.dataset.font;
     document.getElementById('deco-text-el').style.fontFamily=S.deco.font;
   }));
 
-  // ── ドラッグ＆ピンチ for each deco layer ──
-  // ピンチ→フォントサイズ変更、1本指→移動
-  function makeDraggable(el){
-    let ox=0,oy=0,startX=0,startY=0,dragging=false;
-    let initDist=0,initFontSize=15,initialized=false;
-    function initPos(){
-      if(initialized) return;
-      const pr=document.getElementById('deco-preview').getBoundingClientRect();
-      const er=el.getBoundingClientRect();
-      const cx=er.left+er.width/2-pr.left;
-      const cy=er.top+er.height/2-pr.top;
-      el.style.left='0'; el.style.top='0';
-      el.style.transform='translate('+(cx-er.width/2)+'px,'+(cy-er.height/2)+'px)';
-      initialized=true;
-    }
-    function getXY(){
-      const t=el.style.transform;
-      const m=t.match(/translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/);
-      return m?{x:parseFloat(m[1]),y:parseFloat(m[2])}:{x:0,y:0};
-    }
-    function getFontPx(){
-      return parseFloat(el.style.fontSize)||parseFloat(getComputedStyle(el).fontSize)||15;
-    }
-    el.addEventListener('touchstart',e=>{
-      initPos();
-      if(e.touches.length===1){
-        dragging=true;
-        const p=getXY(); ox=p.x; oy=p.y;
-        startX=e.touches[0].clientX; startY=e.touches[0].clientY;
-      } else if(e.touches.length===2){
-        dragging=false;
-        const p=getXY(); ox=p.x; oy=p.y;
-        const dx=e.touches[0].clientX-e.touches[1].clientX;
-        const dy=e.touches[0].clientY-e.touches[1].clientY;
-        initDist=Math.hypot(dx,dy);
-        initFontSize=getFontPx();
-        startX=(e.touches[0].clientX+e.touches[1].clientX)/2;
-        startY=(e.touches[0].clientY+e.touches[1].clientY)/2;
-      }
-      e.stopPropagation();
-    },{passive:true});
-    el.addEventListener('touchmove',e=>{
-      e.preventDefault();
-      if(e.touches.length===1&&dragging){
-        const dx=e.touches[0].clientX-startX;
-        const dy=e.touches[0].clientY-startY;
-        if(Math.abs(dx)>3||Math.abs(dy)>3){
-          el.style.transform='translate('+(ox+dx)+'px,'+(oy+dy)+'px)';
-        }
-      } else if(e.touches.length===2){
-        const dx=e.touches[0].clientX-e.touches[1].clientX;
-        const dy=e.touches[0].clientY-e.touches[1].clientY;
-        const ratio=Math.hypot(dx,dy)/initDist;
-        const newSize=Math.max(9,Math.min(72,initFontSize*ratio));
-        el.style.fontSize=newSize.toFixed(1)+'px';
-        const mx=(e.touches[0].clientX+e.touches[1].clientX)/2;
-        const my=(e.touches[0].clientY+e.touches[1].clientY)/2;
-        el.style.transform='translate('+(ox+mx-startX)+'px,'+(oy+my-startY)+'px)';
-      }
-    },{passive:false});
-    el.addEventListener('touchend',()=>{dragging=false;},{passive:true});
-    el.addEventListener('mousedown',e=>{
-      if(el.isContentEditable&&e.detail<2) return;
-      initPos(); dragging=true;
-      const p=getXY(); ox=p.x; oy=p.y;
-      startX=e.clientX; startY=e.clientY; e.preventDefault();
-    });
-    window.addEventListener('mousemove',e=>{
-      if(!dragging) return;
-      el.style.transform='translate('+(ox+e.clientX-startX)+'px,'+(oy+e.clientY-startY)+'px)';
-    });
-    window.addEventListener('mouseup',()=>{dragging=false;});
-  }
-  makeDraggable(document.getElementById('deco-text-el'));
-  makeDraggable(document.getElementById('deco-emoji-el'));
+  makeDraggablePinch(document.getElementById('deco-text-el'), true);
+  makeDraggablePinch(document.getElementById('deco-emoji-el'), false);
 })();
-function setEmoji(e){ S.deco.emoji=e; document.getElementById('deco-emoji-el').textContent=e; }
-function setDecoSize(v){
-  const el=document.getElementById('deco-text-el');
-  el.style.fontSize=v+'px';
-  S.deco.fontSize=parseInt(v);
+
+/**
+ * makeDraggablePinch
+ * isText=true のとき、ピンチでfontSizeのみ変える（要素移動なし）
+ * isText=false のとき（絵文字）、ピンチでfontSizeを変える
+ * 1本指はどちらも移動
+ */
+function makeDraggablePinch(el, isText){
+  // 現在のtranslate取得
+  function getTranslate(){
+    const t=el.style.transform;
+    const m=t.match(/translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/);
+    return m?{x:parseFloat(m[1]),y:parseFloat(m[2])}:{x:0,y:0};
+  }
+  function setTranslate(x,y){
+    // fontSizeはtransformに含めない
+    const curTransform=el.style.transform.replace(/translate\([^)]+\)/,'').trim();
+    el.style.transform=`translate(${x}px,${y}px) ${curTransform}`;
+  }
+  function getFontSize(){
+    return parseFloat(el.style.fontSize)||parseFloat(getComputedStyle(el).fontSize)||22;
+  }
+
+  let dragging=false;
+  let ox=0,oy=0,startX=0,startY=0;
+  let pinching=false,initDist=0,initFontSize=22;
+  let initialized=false;
+
+  // 初回タッチ時にcenter基準でtranslateを設定
+  function initPosition(){
+    if(initialized) return;
+    // テキスト要素はCSS上 left:50%;top:50%;transform:translate(-50%,-50%) なのでそのまま
+    initialized=true;
+  }
+
+  el.addEventListener('touchstart', e=>{
+    initPosition();
+    if(e.touches.length===1){
+      // テキスト要素で編集中の場合は移動しない（focusがあるとき）
+      if(isText && document.activeElement===el) return;
+      dragging=true; pinching=false;
+      const p=getTranslate(); ox=p.x; oy=p.y;
+      startX=e.touches[0].clientX; startY=e.touches[0].clientY;
+    } else if(e.touches.length===2){
+      dragging=false; pinching=true;
+      const dx=e.touches[0].clientX-e.touches[1].clientX;
+      const dy=e.touches[0].clientY-e.touches[1].clientY;
+      initDist=Math.hypot(dx,dy)||1;
+      initFontSize=getFontSize();
+    }
+    e.stopPropagation();
+  },{passive:true});
+
+  el.addEventListener('touchmove', e=>{
+    e.preventDefault();
+    if(e.touches.length===1 && dragging){
+      const dx=e.touches[0].clientX-startX;
+      const dy=e.touches[0].clientY-startY;
+      setTranslate(ox+dx, oy+dy);
+    } else if(e.touches.length===2 && pinching){
+      const dx=e.touches[0].clientX-e.touches[1].clientX;
+      const dy=e.touches[0].clientY-e.touches[1].clientY;
+      const ratio=Math.hypot(dx,dy)/initDist;
+      const newSize=Math.max(10, Math.min(96, initFontSize*ratio));
+      el.style.fontSize=newSize.toFixed(1)+'px';
+      // ピンチ中は移動もしない（要素自体のサイズが変わるだけ）
+    }
+  },{passive:false});
+
+  el.addEventListener('touchend', e=>{
+    dragging=false;
+    if(e.touches.length<2) pinching=false;
+  },{passive:true});
+
+  // マウス（PC）
+  el.addEventListener('mousedown', e=>{
+    if(isText && e.detail===1 && !e.shiftKey){ return; } // シングルクリックはフォーカス
+    initPosition(); dragging=true;
+    const p=getTranslate(); ox=p.x; oy=p.y;
+    startX=e.clientX; startY=e.clientY;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    const p=getTranslate();
+    setTranslate(ox+e.clientX-startX, oy+e.clientY-startY);
+  });
+  window.addEventListener('mouseup', ()=>{ dragging=false; });
 }
+
+// テキスト要素をタップしたとき、編集モードに入る（ドラッグと区別）
+function focusDecoText(e){
+  e.stopPropagation();
+  const el=document.getElementById('deco-text-el');
+  el.focus();
+  // カーソルを末尾へ
+  const range=document.createRange();
+  const sel=window.getSelection();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  sel?.removeAllRanges();
+  sel?.addRange(range);
+}
+
+function setEmoji(e){ S.deco.emoji=e; document.getElementById('deco-emoji-el').textContent=e; }
+
 function postDeco(){
   const textEl=document.getElementById('deco-text-el');
   const v=textEl.innerText.trim(); if(!v) return;
-  const fs=document.getElementById('deco-size-slider')?.value||17;const item={id:Date.now(),type:'text',content:v,date:td(),chatted:false,chatHistory:[],deco:{...S.deco,fontSize:parseInt(fs)},isPublic:false,isNew:true,category:null,categoryPending:true};
+  const item={
+    id:Date.now(),type:'text',content:v,date:td(),
+    chatted:false,chatHistory:[],
+    deco:{...S.deco, fontSize:parseFloat(textEl.style.fontSize)||22},
+    isPublic:false,isNew:true,category:null,categoryPending:true
+  };
   S.items.unshift(item);
-  textEl.innerText=''; document.getElementById('deco-preview').style.background='linear-gradient(135deg,#1D9E75,#0F6E56)'; S.deco.bg='linear-gradient(135deg,#1D9E75,#0F6E56)'; document.getElementById('deco-text-el').style.fontSize='15px'; updateStats(); saveState(); goTo('home');
+  textEl.innerText='';
+  document.getElementById('deco-preview').style.background='linear-gradient(135deg,#1D9E75,#0F6E56)';
+  S.deco.bg='linear-gradient(135deg,#1D9E75,#0F6E56)';
+  textEl.style.fontSize='22px';
+  updateStats(); saveState(); goTo('home');
+  if(window.savePostToFirestore) window.savePostToFirestore(item).catch(e=>console.error(e));
   backgroundCategorizeText(item);
 }
 
 // ═══════════════════════════════════════════
 // IMAGE COMPRESSION
-// Resizes before base64 storage to prevent localStorage quota errors.
-// Max 900px on long edge, JPEG 0.82 — enough quality, much smaller.
 // ═══════════════════════════════════════════
 function compressImage(dataUrl, maxPx=900, quality=0.82){
   return new Promise(resolve=>{
@@ -1459,7 +1602,7 @@ function compressImage(dataUrl, maxPx=900, quality=0.82){
       cv.getContext('2d').drawImage(img,0,0,w,h);
       resolve(cv.toDataURL('image/jpeg', quality));
     };
-    img.onerror=()=>resolve(dataUrl); // fallback: return original
+    img.onerror=()=>resolve(dataUrl);
     img.src=dataUrl;
   });
 }
@@ -1472,8 +1615,7 @@ document.getElementById('file-input').addEventListener('change', e=>{
   const r=new FileReader();
   r.onload=async ev=>{
     const compressed=await compressImage(ev.target.result);
-    S.curImgData=compressed;
-    S.croppedData=null; S.trimRect=null;
+    S.curImgData=compressed; S.croppedData=null; S.trimRect=null;
     openQuickPost(compressed);
   };
   r.readAsDataURL(f); e.target.value='';
@@ -1482,99 +1624,50 @@ function triggerCamera(){ document.getElementById('file-input').click(); }
 function td(){ return new Date().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}); }
 
 // ═══════════════════════════════════════════
-// QUICK POST OVERLAY (Stories-like, zero friction)
+// QUICK POST OVERLAY
 // ═══════════════════════════════════════════
 function openQuickPost(imgData){
-  // Always return to home so the overlay appears on top of grid (psychologically the user is already "home")
   goTo('home');
-  const wrap=document.getElementById('qp-photo-wrap');
-  wrap.innerHTML=`<img src="${imgData}" alt="">`;
+  document.getElementById('qp-photo-wrap').innerHTML=`<img src="${imgData}" alt="">`;
   document.getElementById('qp-overlay').classList.add('on');
   S.pendingPhoto={imgData,croppedData:null};
 }
-function closeQuickPost(){
-  document.getElementById('qp-overlay').classList.remove('on');
-  S.pendingPhoto=null; S.curImgData=null; S.croppedData=null;
-}
-// Save only: add to grid, run AI categorization in background, don't open chat
+function closeQuickPost(){ document.getElementById('qp-overlay').classList.remove('on'); S.pendingPhoto=null; S.curImgData=null; S.croppedData=null; }
 function quickPostSave(){
   const imgData=S.pendingPhoto?.croppedData||S.pendingPhoto?.imgData||S.curImgData;
   if(!imgData) return;
-  const item={
-    id:Date.now(),type:'photo',
-    imageData:imgData,fullImageData:S.curImgData||imgData,
-    date:td(),chatted:false,chatHistory:[],
-    isPublic:false,isNew:true,
-    category:null,categoryPending:true
-  };
-  S.items.unshift(item);
-  updateStats(); saveState();
-  closeQuickPost();
-  renderGrid();
-  // Fire-and-forget background categorization
+  const item={id:Date.now(),type:'photo',imageData:imgData,fullImageData:S.curImgData||imgData,date:td(),chatted:false,chatHistory:[],isPublic:false,isNew:true,category:null,categoryPending:true};
+  S.items.unshift(item); updateStats(); saveState(); closeQuickPost(); renderGrid();
   backgroundCategorize(item);
 }
-// Talk to AI: open chat flow (same as current but skip trim)
-function quickPostTalk(){
-  S.croppedData=S.pendingPhoto?.croppedData||S.pendingPhoto?.imgData||S.curImgData;
-  closeQuickPost();
-  openChat();
-}
-// Edit: send to trim screen
-function quickPostEdit(){
-  document.getElementById('qp-overlay').classList.remove('on');
-  // keep pendingPhoto reference; trim screen reads S.curImgData
-  loadTrim(S.curImgData); goTo('trim');
-}
+function quickPostTalk(){ S.croppedData=S.pendingPhoto?.croppedData||S.pendingPhoto?.imgData||S.curImgData; closeQuickPost(); openChat(); }
+function quickPostEdit(){ document.getElementById('qp-overlay').classList.remove('on'); loadTrim(S.curImgData); goTo('trim'); }
 
 // ═══════════════════════════════════════════
 // BACKGROUND CATEGORIZATION
-// AI auto-tags the photo so users never have to think about categories
 // ═══════════════════════════════════════════
 async function backgroundCategorize(item){
   try{
     const b64=item.imageData.split(',')[1];
     const mt=item.imageData.startsWith('data:image/png')?'image/png':'image/jpeg';
     const catNames=CAT_LIST.join('、');
-    const res=await fetch('/api/chat',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:200,
-        messages:[{role:'user',content:[
-          {type:'image',source:{type:'base64',media_type:mt,data:b64}},
-          {type:'text',text:`この写真を見て、必ず以下のJSONのみ返してください（前置きや\`\`\`不要）:\n{"category":"<次のいずれか>","note":"<10文字以内の写真の説明>"}\nカテゴリ候補：${catNames}`}
-        ]}]
-      })
-    });
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:`この写真を見て、必ず以下のJSONのみ返してください（前置きや\`\`\`不要）:\n{"category":"<次のいずれか>","note":"<10文字以内の写真の説明>"}\nカテゴリ候補：${catNames}`}]}]})});
     const data=await res.json();
     const raw=data.content?.[0]?.text||'{}';
     let parsed={}; try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch{}
-    const cat=CAT_LIST.includes(parsed.category)?parsed.category:'その他';
-    item.category=cat;
+    item.category=CAT_LIST.includes(parsed.category)?parsed.category:'その他';
     item.autoNote=parsed.note||'';
     item.categoryPending=false;
-    saveState();
-    renderGrid();
-    renderFilterBar();
+    saveState(); renderGrid(); renderFilterBar();
   }catch(e){
-    item.category='その他';
-    item.categoryPending=false;
-    saveState();
-    renderGrid();
+    item.category='その他'; item.categoryPending=false;
+    saveState(); renderGrid();
   }
 }
-
-// Categorize text memos too (lighter, no image)
 async function backgroundCategorizeText(item){
   try{
     const catNames=CAT_LIST.join('、');
-    const res=await fetch('/api/chat',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:120,
-        messages:[{role:'user',content:`次のメモのカテゴリをJSONで返してください（前置き不要）:\n{"category":"<次のいずれか>"}\nメモ：「${item.content}」\nカテゴリ候補：${catNames}`}]
-      })
-    });
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:120,messages:[{role:'user',content:`次のメモのカテゴリをJSONで返してください（前置き不要）:\n{"category":"<次のいずれか>"}\nメモ：「${item.content}」\nカテゴリ候補：${catNames}`}]})});
     const data=await res.json();
     const raw=data.content?.[0]?.text||'{}';
     let parsed={}; try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch{}
@@ -1582,14 +1675,13 @@ async function backgroundCategorizeText(item){
     item.categoryPending=false;
     saveState(); renderGrid(); renderFilterBar();
   }catch{
-    item.category='その他'; item.categoryPending=false;
-    saveState(); renderGrid();
+    item.category='その他'; item.categoryPending=false; saveState(); renderGrid();
   }
 }
 
-// ============================================================
+// ═══════════════════════════════════════════
 // TRIM
-// ============================================================
+// ═══════════════════════════════════════════
 function loadTrim(dataUrl){
   tc=document.getElementById('trim-canvas'); tctx=tc.getContext('2d');
   tImg=new Image();
@@ -1653,16 +1745,15 @@ function getCropped(){
 function applyTrim(){ S.croppedData=getCropped(); openChat(); }
 function skipTrim(){ S.croppedData=S.curImgData; openChat(); }
 
-// ============================================================
+// ═══════════════════════════════════════════
 // CHAT
-// ============================================================
+// ═══════════════════════════════════════════
 function openChat(){
   S.aiMode=true;
   const item={id:Date.now(),type:'photo',imageData:S.croppedData,fullImageData:S.curImgData,date:td(),chatted:false,chatHistory:[],isPublic:false,isNew:true,category:null,categoryPending:true};
   S.items.unshift(item); S.curId=item.id;
   updateStats(); renderChatUI(item); goTo('chat');
   saveState();
-  // 初回AIコメント自動生成 + カテゴリ判定を1回のAPI呼び出しで
   autoFirstAIComment(item);
 }
 function openFromGrid(id){
@@ -1671,22 +1762,16 @@ function openFromGrid(id){
   S.curId=id; S.croppedData=item.type==='photo'?item.imageData:null;
   renderChatUI(item); goTo('chat');
   if(!item.chatHistory?.length){
-    if(item.type==='text'){
-      setTimeout(()=>addAI(`「${item.content.substring(0,28)}」について、何でも聞いてください。`),400);
-    } else {
-      autoFirstAIComment(item);
-    }
+    if(item.type==='text') setTimeout(()=>addAI(`「${item.content.substring(0,28)}」について、何でも聞いてください。`),400);
+    else autoFirstAIComment(item);
   }
 }
 
-// AIに「写真を見て一言+質問候補3つ+カテゴリ判定」を1回で取得
 async function autoFirstAIComment(item){
   const msgs=document.getElementById('chat-msgs');
-  // typing
   const ty=document.createElement('div'); ty.id='typing-init'; ty.className='msg ai';
   ty.innerHTML='<div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';
   msgs.appendChild(ty); msgs.scrollTop=msgs.scrollHeight;
-
   const catNames=CAT_LIST.join('、');
   try{
     let content;
@@ -1695,42 +1780,25 @@ async function autoFirstAIComment(item){
       const mt=item.imageData.startsWith('data:image/png')?'image/png':'image/jpeg';
       content=[
         {type:'image',source:{type:'base64',media_type:mt,data:b64}},
-        {type:'text',text:`この写真を見て、必ず以下の形式のJSONのみを返してください（前置きや\`\`\`不要）：
-{"comment":"これは〇〇ですね。〜（1〜2文・自然な日本語）","questions":["質問候補1（短く）","質問候補2","質問候補3"],"category":"<次のいずれか>"}
-質問候補は、写真の内容から「ユーザーが聞きたくなりそうな短い問い」を3つ。15文字以内目安。
-カテゴリ候補：${catNames}`}
+        {type:'text',text:`この写真を見て、必ず以下の形式のJSONのみを返してください（前置きや\`\`\`不要）：\n{"comment":"これは〇〇ですね。〜（1〜2文）","questions":["質問候補1","質問候補2","質問候補3"],"category":"<次のいずれか>"}\nカテゴリ候補：${catNames}`}
       ];
     } else {
-      content=`次のメモを読んで、必ずJSONのみ返してください：
-{"comment":"〜という話ですね。〜","questions":["...","...","..."],"category":"<次のいずれか>"}
-メモ：「${item.content}」
-カテゴリ候補：${catNames}`;
+      content=`メモ：「${item.content}」を読んで必ずJSONのみ返してください：\n{"comment":"...","questions":["...","...","..."],"category":"<次のいずれか>"}\nカテゴリ候補：${catNames}`;
     }
-    const res=await fetch('/api/chat',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system:buildPrompt(),messages:[{role:'user',content}]})
-    });
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system:buildPrompt(),messages:[{role:'user',content}]})});
     const data=await res.json();
     const raw=data.content?.[0]?.text||'';
     let parsed={}; try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch{}
     document.getElementById('typing-init')?.remove();
     const cmt=parsed.comment||'写真を見ました。何について知りたいですか？';
     addAI(cmt);
-    if(Array.isArray(parsed.questions)&&parsed.questions.length){
-      renderQuestionChips(parsed.questions);
-    }
-    if(CAT_LIST.includes(parsed.category)){
-      item.category=parsed.category;
-    } else {
-      item.category='その他';
-    }
+    if(Array.isArray(parsed.questions)&&parsed.questions.length) renderQuestionChips(parsed.questions);
+    item.category=CAT_LIST.includes(parsed.category)?parsed.category:'その他';
     item.categoryPending=false;
-    saveState();
-    renderChatUI(item); // refresh to show category tag
-    renderFilterBar();
+    saveState(); renderChatUI(item); renderFilterBar();
   } catch(e){
     document.getElementById('typing-init')?.remove();
-    addAI('写真を見ました。何について知りたいですか？何でも聞いてください！');
+    addAI('写真を見ました。何でも聞いてください！');
     item.category='その他'; item.categoryPending=false; saveState();
   }
 }
@@ -1741,16 +1809,13 @@ function renderQuestionChips(questions){
   const chips=document.createElement('div'); chips.className='q-chips';
   questions.slice(0,3).forEach(q=>{
     const c=document.createElement('button'); c.className='q-chip'; c.textContent=q;
-    c.onclick=()=>{
-      document.getElementById('chat-input').value=q;
-      document.getElementById('q-chips-wrap')?.remove();
-      sendMsg();
-    };
+    c.onclick=()=>{ document.getElementById('chat-input').value=q; document.getElementById('q-chips-wrap')?.remove(); sendMsg(); };
     chips.appendChild(c);
   });
   wrap.appendChild(chips);
   msgs.appendChild(wrap); msgs.scrollTop=msgs.scrollHeight;
 }
+
 function renderChatUI(item){
   const area=document.getElementById('chat-photo-area');
   area.innerHTML=''; area.style.cssText='';
@@ -1759,53 +1824,38 @@ function renderChatUI(item){
     const tags=document.createElement('div'); tags.className='chat-photo-tags';
     tags.innerHTML=`<div class="chat-tag">📷 写真から対話中</div>`;
     if(item.imageData!==item.fullImageData) tags.innerHTML+=`<div class="chat-tag green">✂️ 切り取り済み</div>`;
-    // Show AI-assigned category if present
-    if(item.category && !item.categoryPending){
-      tags.innerHTML+=`<div class="chat-cat-tag"><span class="cct-dot" style="background:${catColor(item.category)};"></span>${item.category}</div>`;
-    }
+    if(item.category&&!item.categoryPending) tags.innerHTML+=`<div class="chat-cat-tag"><span class="cct-dot" style="background:${catColor(item.category)};"></span>${item.category}</div>`;
     area.appendChild(tags);
   } else if(item.type==='text'){
     const d=item.deco||{};
     area.style.cssText=`background:${d.bg||'#1a1a1a'};display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:14px 18px;min-height:60px;position:relative;`;
-    area.innerHTML=`${d.emoji?`<div style="font-size:22px;margin-bottom:4px;">${d.emoji}</div>`:''}<div style="font-family:${d.font||'monospace'};font-size:13px;color:${d.tc||'rgba(255,255,255,0.9)'};line-height:1.6;">${item.content}</div>`;
-    if(item.category && !item.categoryPending){
-      const ct=document.createElement('div');
-      ct.style.cssText='position:absolute;top:8px;right:8px;';
+    area.innerHTML=`${d.emoji?`<div style="font-size:22px;margin-bottom:4px;">${d.emoji}</div>`:''}<div style="font-family:${d.font||'monospace'};font-size:${d.fontSize||16}px;color:${d.tc||'rgba(255,255,255,0.9)'};line-height:1.6;">${item.content}</div>`;
+    if(item.category&&!item.categoryPending){
+      const ct=document.createElement('div'); ct.style.cssText='position:absolute;top:8px;right:8px;';
       ct.innerHTML=`<div class="chat-cat-tag"><span class="cct-dot" style="background:${catColor(item.category)};"></span>${item.category}</div>`;
       area.appendChild(ct);
     }
   }
-  // privacy toggle reflection
   const pt=document.getElementById('priv-toggle');
   const pl=document.getElementById('priv-label');
   if(pt&&pl){
-    if(item.isPublic){
-      pt.classList.add('public');
-      pl.textContent='友達に公開';
-      pt.innerHTML=`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4"/><path d="M1.5 5.5h8"/><path d="M5.5 1.5a6 4 0 0 1 0 8a6 4 0 0 1 0 -8"/></svg><span id="priv-label">友達に公開</span>`;
-    } else {
-      pt.classList.remove('public');
-      pt.innerHTML=`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="7" height="5" rx="1"/><path d="M3.5 5V3.5a1.5 1.5 0 0 1 3 0V5"/></svg><span id="priv-label">非公開</span>`;
-    }
+    if(item.isPublic){ pt.classList.add('public'); pt.innerHTML=`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4"/><path d="M1.5 5.5h8"/><path d="M5.5 1.5a6 4 0 0 1 0 8a6 4 0 0 1 0 -8"/></svg><span id="priv-label">友達に公開</span>`; }
+    else { pt.classList.remove('public'); pt.innerHTML=`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="7" height="5" rx="1"/><path d="M3.5 5V3.5a1.5 1.5 0 0 1 3 0V5"/></svg><span id="priv-label">非公開</span>`; }
   }
-  const msgs=document.getElementById('chat-msgs'); msgs.innerHTML='';
+  const msgsList=document.getElementById('chat-msgs'); msgsList.innerHTML='';
   (item.chatHistory||[]).forEach(m=>{
     if(m.role==='assistant') aiDirect(m.content);
     else if(m.isMemo){
-      // メモモードで書いたもの
-      const msgs=document.getElementById('chat-msgs');
       const d=document.createElement('div'); d.className='msg user';
       d.innerHTML=`<div class="memo-badge">📝 メモ</div><div class="bubble memo">${(m.content||'').replace(/\n/g,'<br>')}</div>`;
-      msgs.appendChild(d);
+      msgsList.appendChild(d);
     } else userDirect(m.content);
   });
 }
+
 function togglePrivacy(){
   const item=S.items.find(i=>i.id===S.curId); if(!item) return;
-  item.isPublic=!item.isPublic;
-  renderChatUI(item);
-  saveState();
-  renderGrid();
+  item.isPublic=!item.isPublic; renderChatUI(item); saveState(); renderGrid();
 }
 function aiDirect(t){
   const m=document.getElementById('chat-msgs');
@@ -1825,6 +1875,7 @@ function addAI(t){
   if(item){item.chatHistory=item.chatHistory||[];item.chatHistory.push({role:'assistant',content:t});}
   aiDirect(t);
 }
+
 async function sendMsg(){
   const inp=document.getElementById('chat-input');
   const t=inp.value.trim();
@@ -1832,25 +1883,14 @@ async function sendMsg(){
   if(!t&&!hasAttach) return;
   inp.value=''; autoResize(inp);
   document.getElementById('q-chips-wrap')?.remove();
-
-  // ── メモモード: AIに送らず履歴に保存するだけ ──
   if(!S.aiMode){
     const item=S.items.find(i=>i.id===S.curId);
-    if(item){
-      item.chatHistory=item.chatHistory||[];
-      item.chatHistory.push({role:'user',content:t,isMemo:true});
-      item.chatted=true;
-    }
-    // メモとして表示（黄色バブル）
+    if(item){item.chatHistory=item.chatHistory||[];item.chatHistory.push({role:'user',content:t,isMemo:true});item.chatted=true;}
     const msgDiv=document.createElement('div'); msgDiv.className='msg user';
     msgDiv.innerHTML=`<div class="memo-badge">📝 メモ</div><div class="bubble memo">${t.replace(/\n/g,'<br>')}</div>`;
-    const msgsEl=document.getElementById('chat-msgs');
-    msgsEl.appendChild(msgDiv); msgsEl.scrollTop=99999;
-    updateStats(); saveState();
-    return;
+    const msgsEl=document.getElementById('chat-msgs'); msgsEl.appendChild(msgDiv); msgsEl.scrollTop=99999;
+    updateStats(); saveState(); return;
   }
-
-  // UI: ユーザーメッセージ表示（サムネ付き）
   const msgDiv=document.createElement('div'); msgDiv.className='msg user';
   let thumbsHtml='';
   [...S.chatAttachPhotos,...S.chatAttachRefs].forEach(a=>{
@@ -1860,21 +1900,11 @@ async function sendMsg(){
   msgDiv.innerHTML=(thumbsHtml?`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">${thumbsHtml}</div>`:'')+(t?`<div class="bubble user">${t}</div>`:'');
   document.getElementById('chat-msgs').appendChild(msgDiv);
   document.getElementById('chat-msgs').scrollTop=99999;
-
-  // 履歴に保存（テキストのみ、画像はAPI送信時に付加）
   const item=S.items.find(i=>i.id===S.curId);
-  const msgRecord={role:'user',content:t||'（写真・参照を送信）',
-    extraPhotos:S.chatAttachPhotos.map(p=>p.imgData),
-    extraRefs:S.chatAttachRefs.map(r=>({id:r.id,label:r.label,imgData:r.imgData,content:r.content}))
-  };
+  const msgRecord={role:'user',content:t||'（写真・参照を送信）',extraPhotos:S.chatAttachPhotos.map(p=>p.imgData),extraRefs:S.chatAttachRefs.map(r=>({id:r.id,label:r.label,imgData:r.imgData,content:r.content}))};
   if(item){item.chatHistory=item.chatHistory||[];item.chatHistory.push(msgRecord);item.chatted=true;}
-  
-  // attachments をコピーしてからリセット
-  const attachPhotos=[...S.chatAttachPhotos];
-  const attachRefs=[...S.chatAttachRefs];
-  S.chatAttachPhotos=[]; S.chatAttachRefs=[];
-  renderAttachRow();
-
+  const attachPhotos=[...S.chatAttachPhotos]; const attachRefs=[...S.chatAttachRefs];
+  S.chatAttachPhotos=[]; S.chatAttachRefs=[]; renderAttachRow();
   updateStats(); saveState();
   await callAI(item, t||'', attachPhotos, attachRefs);
 }
@@ -1889,29 +1919,17 @@ async function callAI(item, latestUserText, attachPhotos=[], attachRefs=[]){
     const history=item?.chatHistory||[];
     const messages=[]; let firstUser=false;
     const imgData=S.croppedData||(item?.type==='photo'?item.imageData:null);
-
-    // 履歴をAPI用メッセージに変換
     for(const h of history){
-      // 最初のユーザーメッセージに元の写真を付加
       if(h.role==='user'&&!firstUser&&imgData&&item?.type==='photo'){
         const b64=imgData.split(',')[1];
         const mt=imgData.startsWith('data:image/png')?'image/png':'image/jpeg';
         const contentArr=[{type:'image',source:{type:'base64',media_type:mt,data:b64}}];
-        // 同時に追加された写真・参照もこのターンに付加
-        (h.extraPhotos||[]).forEach(ep=>{
-          const eb=ep.split(',')[1];
-          const em=ep.startsWith('data:image/png')?'image/png':'image/jpeg';
-          contentArr.push({type:'image',source:{type:'base64',media_type:em,data:eb}});
-        });
-        (h.extraRefs||[]).forEach(ref=>{
-          if(ref.imgData){const rb=ref.imgData.split(',')[1];const rm=ref.imgData.startsWith('data:image/png')?'image/png':'image/jpeg';contentArr.push({type:'image',source:{type:'base64',media_type:rm,data:rb}});}
-          if(ref.content) contentArr.push({type:'text',text:`[参照投稿「${ref.label}」]: ${ref.content}`});
-        });
+        (h.extraPhotos||[]).forEach(ep=>{const eb=ep.split(',')[1];const em=ep.startsWith('data:image/png')?'image/png':'image/jpeg';contentArr.push({type:'image',source:{type:'base64',media_type:em,data:eb}});});
+        (h.extraRefs||[]).forEach(ref=>{if(ref.imgData){const rb=ref.imgData.split(',')[1];const rm=ref.imgData.startsWith('data:image/png')?'image/png':'image/jpeg';contentArr.push({type:'image',source:{type:'base64',media_type:rm,data:rb}});}if(ref.content)contentArr.push({type:'text',text:`[参照投稿「${ref.label}」]: ${ref.content}`});});
         if(h.content) contentArr.push({type:'text',text:h.content});
         messages.push({role:'user',content:contentArr});
         firstUser=true;
       } else if(h.role==='user'){
-        // 2ターン目以降の追加写真・参照
         const hasExtras=(h.extraPhotos?.length||0)+(h.extraRefs?.length||0);
         if(hasExtras){
           const contentArr=[];
@@ -1927,26 +1945,17 @@ async function callAI(item, latestUserText, attachPhotos=[], attachRefs=[]){
         messages.push({role:h.role,content:h.content});
       }
     }
-    if(!messages.length){
-      // 初回（autoFirstAICommentで呼ばれた場合）
-      messages.push({role:'user',content:item?.type==='text'?`メモ：「${item.content}」
-${latestUserText}`:latestUserText});
-    }
-    const res=await fetch('/api/chat',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildPrompt(),messages})
-    });
+    if(!messages.length) messages.push({role:'user',content:item?.type==='text'?`メモ：「${item.content}」\n${latestUserText}`:latestUserText});
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildPrompt(),messages})});
     const data=await res.json();
     const reply=data.content?.[0]?.text||'もう一度試してください。';
     document.getElementById('typing')?.remove();
-    addAI(reply); renderGrid(); saveState();
-    S.lastFailedMsg=null;
+    addAI(reply); renderGrid(); saveState(); S.lastFailedMsg=null;
   } catch(e){
     document.getElementById('typing')?.remove();
     S.lastFailedMsg=latestUserText;
-    // エラーバブル + リトライボタン
     const errWrap=document.createElement('div'); errWrap.className='msg ai';
-    errWrap.innerHTML=`<div class="msg-name">SnapIn AI</div><div class="bubble ai" style="background:#FFF0F0;color:var(--red);">通信エラーが発生しました。もう一度送信できます。</div>`;
+    errWrap.innerHTML=`<div class="msg-name">SnapIn AI</div><div class="bubble ai" style="background:#FFF0F0;color:var(--red);">通信エラーが発生しました。</div>`;
     const retry=document.createElement('button'); retry.className='retry-btn';
     retry.innerHTML='↻ もう一度送る';
     retry.onclick=()=>{ errWrap.remove(); callAI(item,latestUserText); };
@@ -1957,43 +1966,26 @@ ${latestUserText}`:latestUserText});
   msgs.scrollTop=msgs.scrollHeight;
 }
 
-
 // ═══════════════════════════════════════════
 // AI MODE TOGGLE
 // ═══════════════════════════════════════════
-function toggleAiMode(){
-  S.aiMode = !S.aiMode;
-  updateAiModeUI();
-}
+function toggleAiMode(){ S.aiMode=!S.aiMode; updateAiModeUI(); }
 function updateAiModeUI(){
-  const btn = document.getElementById('ai-toggle-btn');
-  const dot = document.getElementById('ai-toggle-dot');
-  const lbl = document.getElementById('ai-toggle-lbl');
-  const inp = document.getElementById('chat-input');
-  const sendBtn = document.getElementById('send-btn');
-  const title = document.getElementById('chat-title');
+  const btn=document.getElementById('ai-toggle-btn');
+  const lbl=document.getElementById('ai-toggle-lbl');
+  const inp=document.getElementById('chat-input');
+  const sendBtn=document.getElementById('send-btn');
+  const title=document.getElementById('chat-title');
   if(!btn) return;
-  if(S.aiMode){
-    btn.classList.remove('off');
-    if(lbl) lbl.textContent='AI ON';
-    if(inp) inp.placeholder='何でも聞いて…';
-    if(sendBtn) sendBtn.classList.remove('memo-mode');
-    if(title) title.textContent='SnapIn AI';
-  } else {
-    btn.classList.add('off');
-    if(lbl) lbl.textContent='メモモード';
-    if(inp) inp.placeholder='メモを書く（AIには送りません）';
-    if(sendBtn) sendBtn.classList.add('memo-mode');
-    if(title) title.textContent='メモ';
-  }
+  if(S.aiMode){ btn.classList.remove('off'); if(lbl) lbl.textContent='AI ON'; if(inp) inp.placeholder='何でも聞いて…'; if(sendBtn) sendBtn.classList.remove('memo-mode'); if(title) title.textContent='SnapIn AI'; }
+  else { btn.classList.add('off'); if(lbl) lbl.textContent='メモモード'; if(inp) inp.placeholder='メモを書く（AIには送りません）'; if(sendBtn) sendBtn.classList.add('memo-mode'); if(title) title.textContent='メモ'; }
 }
 
 // ═══════════════════════════════════════════
 // CHAT ADDITIONAL PHOTOS & REFS
 // ═══════════════════════════════════════════
 function renderAttachRow(){
-  const row=document.getElementById('chat-attach-row');
-  if(!row) return;
+  const row=document.getElementById('chat-attach-row'); if(!row) return;
   row.innerHTML='';
   S.chatAttachPhotos.forEach((p,i)=>{
     const d=document.createElement('div'); d.className='chat-attach-thumb';
@@ -2009,10 +2001,7 @@ function renderAttachRow(){
 }
 function removeAttachPhoto(i){ S.chatAttachPhotos.splice(i,1); renderAttachRow(); }
 function removeAttachRef(i){ S.chatAttachRefs.splice(i,1); renderAttachRow(); }
-
-function triggerChatPhoto(){
-  document.getElementById('chat-photo-input').click();
-}
+function triggerChatPhoto(){ document.getElementById('chat-photo-input').click(); }
 document.addEventListener('DOMContentLoaded',()=>{
   const cp=document.getElementById('chat-photo-input');
   if(cp) cp.addEventListener('change',async e=>{
@@ -2020,90 +2009,53 @@ document.addEventListener('DOMContentLoaded',()=>{
     const r=new FileReader();
     r.onload=async ev=>{
       const compressed=await compressImage(ev.target.result,900,0.82);
-      S.chatAttachPhotos.push({imgData:compressed,label:'追加写真'});
-      renderAttachRow();
+      S.chatAttachPhotos.push({imgData:compressed,label:'追加写真'}); renderAttachRow();
     };
     r.readAsDataURL(f); e.target.value='';
   });
 });
-
 function openRefPicker(){
-  // 現在のitemを除いた全投稿をグリッド表示
   const picker=document.getElementById('ref-picker');
   const grid=document.getElementById('ref-picker-grid');
   picker.classList.add('on');
   const others=S.items.filter(i=>i.id!==S.curId);
   grid.innerHTML='';
-  if(!others.length){
-    grid.innerHTML='<div style="grid-column:span 3;padding:24px;text-align:center;color:var(--text3);font-size:12px;">他の投稿がありません</div>';
-    return;
-  }
+  if(!others.length){ grid.innerHTML='<div style="grid-column:span 3;padding:24px;text-align:center;color:var(--text3);font-size:12px;">他の投稿がありません</div>'; return; }
   others.forEach(item=>{
     const tile=document.createElement('div');
     tile.className='ref-picker-tile'+(S.chatAttachRefs.find(r=>r.id===item.id)?' selected':'');
     const cat=detectCat(item);
-    if(item.type==='photo'&&item.imageData){
-      tile.innerHTML=`<img src="${item.imageData}">`;
-    } else {
-      const d=item.deco||{};
-      tile.className+=' ref-picker-text';
-      tile.style.background=d.bg||'#1a1a1a';
-      tile.innerHTML=`<span style="color:${d.tc||'#fff'};font-size:10px;">${(d.emoji||'')+item.content.substring(0,20)}</span>`;
-    }
-    // カテゴリドット
-    const dot=document.createElement('div');
-    dot.style.cssText=`position:absolute;bottom:4px;left:4px;width:7px;height:7px;border-radius:50%;background:${catColor(cat)};border:1px solid rgba(255,255,255,0.7);`;
-    tile.appendChild(dot);
+    if(item.type==='photo'&&item.imageData){ tile.innerHTML=`<img src="${item.imageData}">`; }
+    else { const d=item.deco||{}; tile.className+=' ref-picker-text'; tile.style.background=d.bg||'#1a1a1a'; tile.innerHTML=`<span style="color:${d.tc||'#fff'};font-size:10px;">${(d.emoji||'')+item.content.substring(0,20)}</span>`; }
+    const dot=document.createElement('div'); dot.style.cssText=`position:absolute;bottom:4px;left:4px;width:7px;height:7px;border-radius:50%;background:${catColor(cat)};border:1px solid rgba(255,255,255,0.7);`; tile.appendChild(dot);
     tile.onclick=()=>toggleRefItem(item,tile);
     grid.appendChild(tile);
   });
 }
 function toggleRefItem(item,tile){
   const idx=S.chatAttachRefs.findIndex(r=>r.id===item.id);
-  if(idx>=0){
-    S.chatAttachRefs.splice(idx,1);
-    tile.classList.remove('selected');
-  } else {
-    const label=item.type==='text'?item.content.substring(0,16)+'…':(item.autoNote||item.date||'写真');
-    S.chatAttachRefs.push({id:item.id,label,imgData:item.type==='photo'?item.imageData:null,content:item.type==='text'?item.content:null});
-    tile.classList.add('selected');
-  }
+  if(idx>=0){ S.chatAttachRefs.splice(idx,1); tile.classList.remove('selected'); }
+  else { const label=item.type==='text'?item.content.substring(0,16)+'…':(item.autoNote||item.date||'写真'); S.chatAttachRefs.push({id:item.id,label,imgData:item.type==='photo'?item.imageData:null,content:item.type==='text'?item.content:null}); tile.classList.add('selected'); }
   renderAttachRow();
 }
-function closeRefPicker(){
-  document.getElementById('ref-picker').classList.remove('on');
-}
-
-function handleKey(e){ /* Enterは改行のみ。送信はボタンだけ */ }
+function closeRefPicker(){ document.getElementById('ref-picker').classList.remove('on'); }
+function handleKey(e){}
 function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
 
 // ═══════════════════════════════════════════
-// GRID（長押し削除 + ターンバッジ）
+// GRID
 // ═══════════════════════════════════════════
 function renderGrid(){
   const grid=document.getElementById('main-grid');
-  // Apply filter
   const filteredItems=S.filter==='all'?S.items:S.items.filter(i=>detectCat(i)===S.filter);
-
   if(!S.items.length){
-    grid.innerHTML=`<div style="grid-column:span 3;" class="empty-hero">
-      <div class="empty-hero-ic">
-        <svg width="30" height="30" fill="none" stroke="var(--g)" stroke-width="1.6" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      </div>
-      <div class="empty-hero-t">まだ何もありません</div>
-      <div class="empty-hero-s">気になったものを撮って貯めよう。<br>盛らなくていい。わからないものを撮るだけ。<br>整理もタグ付けも不要、AIが自動でやります。</div>
-      <button class="empty-cta" onclick="goTo('upload')">＋ 最初の1枚を追加</button>
-    </div>`;
+    grid.innerHTML=`<div style="grid-column:span 3;" class="empty-hero"><div class="empty-hero-ic"><svg width="30" height="30" fill="none" stroke="var(--g)" stroke-width="1.6" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div class="empty-hero-t">まだ何もありません</div><div class="empty-hero-s">気になったものを撮って貯めよう。<br>整理もタグ付けも不要、AIが自動でやります。</div><button class="empty-cta" onclick="goTo('upload')">＋ 最初の1枚を追加</button></div>`;
     return;
   }
   if(filteredItems.length===0){
     const isSearch=!!S.searchQuery;
-    const msg=isSearch
-      ?`「${S.searchQuery}」に一致するSnapInがありません`
-      :`「${S.filter}」のSnapInはまだありません`;
-    const clearBtn=isSearch
-      ?'<button onclick="clearSearch()" style="margin-top:14px;padding:6px 14px;border:0.5px solid var(--g);color:var(--g);background:white;border-radius:12px;font-size:11px;cursor:pointer;">検索をクリア</button>'
-      :'<button onclick="setFilter(\'all\')" style="margin-top:14px;padding:6px 14px;border:0.5px solid var(--g);color:var(--g);background:white;border-radius:12px;font-size:11px;cursor:pointer;">すべて表示</button>';
+    const msg=isSearch?`「${S.searchQuery}」に一致するSnapInがありません`:`「${S.filter}」のSnapInはまだありません`;
+    const clearBtn=isSearch?`<button onclick="clearSearch()" style="margin-top:14px;padding:6px 14px;border:0.5px solid var(--g);color:var(--g);background:white;border-radius:12px;font-size:11px;cursor:pointer;">検索をクリア</button>`:`<button onclick="setFilter('all')" style="margin-top:14px;padding:6px 14px;border:0.5px solid var(--g);color:var(--g);background:white;border-radius:12px;font-size:11px;cursor:pointer;">すべて表示</button>`;
     grid.innerHTML=`<div style="grid-column:span 3;padding:40px 20px;text-align:center;color:var(--text3);font-size:12px;line-height:2;">${msg}<br>${clearBtn}</div>`;
     return;
   }
@@ -2111,105 +2063,50 @@ function renderGrid(){
   filteredItems.forEach((item,idx)=>{
     const el=document.createElement('div');
     el.className='gi'+(S.editMode?' shake edit-mode':'')+(item.isNew?' new-tile':'')+(S.showCatLabels?' show-cat-labels':'');
-    if(item.isNew){ setTimeout(()=>{delete item.isNew;},500); }
-
+    if(item.isNew) setTimeout(()=>{delete item.isNew;},500);
     const turns=Math.floor((item.chatHistory||[]).length/2);
     const cat=detectCat(item);
-
-    // ── 長押し → スワイププレビュー、タップ → チャット ──
-    let lpt=null;
-    let lpFired=false;
-    const startLP=(e)=>{
-      lpFired=false;
-      lpt=setTimeout(()=>{
-        lpFired=true;
-        openSwipePreview(item.id);
-      },420);
-    };
-    const clearLP=()=>{ clearTimeout(lpt); };
-    el.addEventListener('mousedown',startLP);
-    el.addEventListener('mouseup',clearLP);
-    el.addEventListener('mouseleave',clearLP);
-    el.addEventListener('touchstart',startLP,{passive:true});
-    el.addEventListener('touchend',clearLP);
-    el.addEventListener('touchmove',clearLP,{passive:true});
-
-    // ── 削除ボタン（常時表示しない・スワイププレビュー内に移動済み） ──
-    // editModeのときだけ表示
-    const delBtn=document.createElement('div');
-    delBtn.className='gi-del'; delBtn.textContent='×';
+    let lpt=null, lpFired=false;
+    const startLP=()=>{ lpFired=false; lpt=setTimeout(()=>{ lpFired=true; openSwipePreview(item.id); },420); };
+    const clearLP=()=>clearTimeout(lpt);
+    el.addEventListener('mousedown',startLP); el.addEventListener('mouseup',clearLP); el.addEventListener('mouseleave',clearLP);
+    el.addEventListener('touchstart',startLP,{passive:true}); el.addEventListener('touchend',clearLP); el.addEventListener('touchmove',clearLP,{passive:true});
+    const delBtn=document.createElement('div'); delBtn.className='gi-del'; delBtn.textContent='×';
     delBtn.addEventListener('click',e=>{e.stopPropagation();trashItem(item.id);});
     el.appendChild(delBtn);
-
-    // ── タップ → チャット（長押しが発火していたら無視） ──
-    el.onclick=(e)=>{ if(lpFired) return; openFromGrid(item.id); };
-
-    // ── テキストタイル ──
+    el.onclick=()=>{ if(lpFired) return; openFromGrid(item.id); };
     if(item.type==='text'){
       const d=item.deco||{};
       el.classList.add(idx%7===2?'wide':'sq');
       el.style.background=d.bg||'#1a1a1a';
       const preview=item.content.length>50?item.content.substring(0,50)+'…':item.content;
       const inner=document.createElement('div'); inner.className='text-tile-inner';
-      inner.innerHTML=`<div>${d.emoji?`<div class="text-tile-emoji">${d.emoji}</div>`:''}<div class="text-tile-tag" style="color:${d.tc||'rgba(255,255,255,.45)'};">memo</div></div><div class="text-tile-body" style="color:${d.tc||'rgba(255,255,255,.85)'};font-family:${d.font||'monospace'};">${preview}</div>`;
+      inner.innerHTML=`<div>${d.emoji?`<div class="text-tile-emoji">${d.emoji}</div>`:''}</div><div class="text-tile-body" style="color:${d.tc||'rgba(255,255,255,.85)'};font-family:${d.font||'monospace'};font-size:${Math.min(d.fontSize||9,11)}px;">${preview}</div>`;
       el.appendChild(inner);
     } else {
       el.classList.add(idx%5===1?'wide':'sq');
       el.style.background='#ddd';
-      const img=document.createElement('img');
-      img.src=item.imageData;
-      img.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;';
-      el.appendChild(img);
+      const img=document.createElement('img'); img.src=item.imageData; img.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;'; el.appendChild(img);
     }
-
-    // ── オーバーレイ（日付） ──
-    const ov=document.createElement('div'); ov.className='gi-overlay';
-    ov.innerHTML=`<div class="gi-meta">${item.date}</div>`;
-    el.appendChild(ov);
-
-    // ── カテゴリドット or ラベル ──
+    const ov=document.createElement('div'); ov.className='gi-overlay'; ov.innerHTML=`<div class="gi-meta">${item.date}</div>`; el.appendChild(ov);
     if(item.categoryPending){
-      const pnd=document.createElement('div');
-      pnd.className='gi-pending'; pnd.textContent='分類中';
-      el.appendChild(pnd);
+      const pnd=document.createElement('div'); pnd.className='gi-pending'; pnd.textContent='分類中'; el.appendChild(pnd);
     } else {
-      // dot version (always visible)
-      const dot=document.createElement('div');
-      dot.className='gi-cat-dot';
-      dot.style.background=catColor(cat);
-      dot.title=cat;
-      el.appendChild(dot);
-      // label version (toggle)
-      const lbl=document.createElement('div');
-      lbl.className='gi-cat-label';
-      lbl.innerHTML=`<span class="cat-mini" style="background:${catColor(cat)};"></span>${cat}`;
-      el.appendChild(lbl);
+      const dot=document.createElement('div'); dot.className='gi-cat-dot'; dot.style.background=catColor(cat); el.appendChild(dot);
+      const lbl=document.createElement('div'); lbl.className='gi-cat-label'; lbl.innerHTML=`<span class="cat-mini" style="background:${catColor(cat)};"></span>${cat}`; el.appendChild(lbl);
     }
-
-    // ── 鍵アイコン（公開時のみ表示・非公開はデフォルトで邪魔にならないよう非表示に） ──
-    if(!S.editMode && item.isPublic===true){
-      const lk=document.createElement('div'); lk.className='gi-lock'; lk.style.background='rgba(29,158,117,.7)';lk.style.left='auto';lk.style.right='6px';lk.style.top='6px';
-      lk.innerHTML=`<svg width="9" height="9" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4"/><path d="M1.5 5.5h8"/><path d="M5.5 1.5a6 4 0 0 1 0 8a6 4 0 0 1 0 -8"/></svg>`;
-      el.appendChild(lk);
+    if(!S.editMode&&item.isPublic){
+      const lk=document.createElement('div'); lk.className='gi-lock'; lk.style.cssText='background:rgba(29,158,117,.7);left:auto;right:6px;top:6px;';
+      lk.innerHTML=`<svg width="9" height="9" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4"/><path d="M1.5 5.5h8"/><path d="M5.5 1.5a6 4 0 0 1 0 8a6 4 0 0 1 0 -8"/></svg>`; el.appendChild(lk);
     }
-
-    // ── ターンバッジ ──
-    if(turns>0){
-      const tb=document.createElement('div'); tb.className='gi-turn-badge';
-      tb.textContent=`${turns}ターン`; el.appendChild(tb);
-    }
-
-    // ── 未対話ドット（右上） ──
-    if(!item.chatted&&!item.categoryPending){
-      const dot=document.createElement('div'); dot.className='gi-dot'; el.appendChild(dot);
-    }
-
+    if(turns>0){ const tb=document.createElement('div'); tb.className='gi-turn-badge'; tb.textContent=`${turns}ターン`; el.appendChild(tb); }
+    if(!item.chatted&&!item.categoryPending){ const dot=document.createElement('div'); dot.className='gi-dot'; el.appendChild(dot); }
     grid.appendChild(el);
   });
 }
 
 // ═══════════════════════════════════════════
-// STATS（ホームの3指標）
+// STATS
 // ═══════════════════════════════════════════
 function updateStats(){
   document.getElementById('stat-total').textContent=S.items.length;
@@ -2218,85 +2115,41 @@ function updateStats(){
 }
 
 // ═══════════════════════════════════════════
-// ANALYTICS（スコアリング + 深さランク）
+// ANALYTICS
 // ═══════════════════════════════════════════
 function updateAna(){
-  const total=S.items.length;
-  const turns=totalTurns();
-  const chatted=S.items.filter(i=>i.chatted).length;
-  const score=calcScore();
-  const cats=new Set(S.items.map(i=>detectCat(i)));
-  const avgDepth=total>0?(turns/total).toFixed(1):'0';
-
-  // スコアリング
-  const maxScore=500;
-  const pct=Math.min(score/maxScore,1);
-  const circum=175.9;
+  const total=S.items.length, turns=totalTurns(), chatted=S.items.filter(i=>i.chatted).length, score=calcScore();
+  const cats=new Set(S.items.map(i=>detectCat(i))), avgDepth=total>0?(turns/total).toFixed(1):'0';
+  const maxScore=500, pct=Math.min(score/maxScore,1), circum=175.9;
   document.getElementById('score-arc').style.strokeDashoffset=circum*(1-pct);
   document.getElementById('score-ring-txt').textContent=score;
   document.getElementById('ana-score-lbl').textContent=`知識ポイント ${score}pt`;
-  document.getElementById('ana-score-desc').textContent=
-    score===0 ? 'まずは写真を撮ってAIと話してみよう' :
-    score<50  ? '一歩目！どんどん撮ってみよう 📸' :
-    score<150 ? 'いいペース！深く掘り下げると伸びます' :
-    score<300 ? '知識が積み上がっています 📚' :
-                'すごい探求力です 🎯';
+  document.getElementById('ana-score-desc').textContent=score===0?'まずは写真を撮ってAIと話してみよう':score<50?'一歩目！どんどん撮ってみよう 📸':score<150?'いいペース！深く掘り下げると伸びます':score<300?'知識が積み上がっています 📚':'すごい探求力です 🎯';
   document.getElementById('ana-chat-cnt').textContent=`累計 ${chatted}項目 / ${turns}ターン`;
-
-  // stat pills
   document.getElementById('ana-total').textContent=total;
   document.getElementById('ana-turns').textContent=turns;
   document.getElementById('ana-cats').textContent=cats.size;
   document.getElementById('ana-depth').textContent=avgDepth;
-
-  // カテゴリバー
   const catMap={}; S.items.forEach(i=>{if(i.categoryPending)return;const c=detectCat(i);catMap[c]=(catMap[c]||0)+1;});
   const sorted=Object.entries(catMap).sort((a,b)=>b[1]-a[1]),max=sorted[0]?.[1]||1;
-  document.getElementById('ana-bars').innerHTML=sorted.length
-    ?sorted.map(([n,c])=>`<div class="bar-row"><div class="bar-name" style="width:auto;min-width:54px;font-size:10px;">${n}</div><div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(c/max*100)}%;background:${catColor(n)};"></div></div><div class="bar-num">${c}</div></div>`).join('')
-    :'<div style="color:var(--text3);font-size:11px;">まだデータがありません</div>';
-
-  // 深さランキング（ターン数で並べ替え） - now richer "weakness highlights"
-  const withTurns=S.items
-    .filter(i=>i.chatHistory?.length)
-    .map(i=>({...i,turns:Math.floor(i.chatHistory.length/2)}))
-    .sort((a,b)=>b.turns-a.turns);
+  document.getElementById('ana-bars').innerHTML=sorted.length?sorted.map(([n,c])=>`<div class="bar-row"><div class="bar-name" style="width:auto;min-width:54px;font-size:10px;">${n}</div><div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(c/max*100)}%;background:${catColor(n)};"></div></div><div class="bar-num">${c}</div></div>`).join(''):'<div style="color:var(--text3);font-size:11px;">まだデータがありません</div>';
+  const withTurns=S.items.filter(i=>i.chatHistory?.length).map(i=>({...i,turns:Math.floor(i.chatHistory.length/2)})).sort((a,b)=>b.turns-a.turns);
   const ranksEl=document.getElementById('ana-ranks');
   if(withTurns.length){
     ranksEl.innerHTML='<div class="weak-list">'+withTurns.slice(0,5).map(item=>{
       const q=item.chatHistory.find(m=>m.role==='user')?.content||'';
       const s=q.length>26?q.substring(0,26)+'…':q;
       const cat=detectCat(item);
-      const thumb=item.type==='photo'
-        ?`<img class="weak-thumb" src="${item.imageData}">`
-        :`<div class="weak-thumb" style="background:${item.deco?.bg||'#1a1a1a'};display:flex;align-items:center;justify-content:center;font-size:9px;color:${item.deco?.tc||'#fff'};padding:3px;text-align:center;overflow:hidden;">${(item.deco?.emoji||'')+item.content.substring(0,10)}</div>`;
-      return `<div class="weak-item" onclick="openFromGrid(${item.id})">
-        ${thumb}
-        <div class="weak-info">
-          <div class="weak-q">${s||'(写真)'}</div>
-          <div class="weak-meta"><span><span class="weak-cat-dot" style="background:${catColor(cat)};"></span>${cat}</span><span>${item.turns}ターン</span><span>${item.date}</span></div>
-        </div>
-        <button class="weak-reopen" onclick="event.stopPropagation();openFromGrid(${item.id});">続ける</button>
-      </div>`;
+      const thumb=item.type==='photo'?`<img class="weak-thumb" src="${item.imageData}">`:
+        `<div class="weak-thumb" style="background:${item.deco?.bg||'#1a1a1a'};display:flex;align-items:center;justify-content:center;font-size:9px;color:${item.deco?.tc||'#fff'};padding:3px;text-align:center;overflow:hidden;">${(item.deco?.emoji||'')+item.content.substring(0,10)}</div>`;
+      return `<div class="weak-item" onclick="openFromGrid(${item.id})">${thumb}<div class="weak-info"><div class="weak-q">${s||'(写真)'}</div><div class="weak-meta"><span><span class="weak-cat-dot" style="background:${catColor(cat)};"></span>${cat}</span><span>${item.turns}ターン</span><span>${item.date}</span></div></div><button class="weak-reopen" onclick="event.stopPropagation();openFromGrid(${item.id});">続ける</button></div>`;
     }).join('')+'</div>';
-  } else {
-    ranksEl.innerHTML='<div class="rank-item" style="justify-content:center;color:var(--text3);font-size:11px;">まだデータがありません</div>';
-  }
-
-  // アドバイス
-  const adv=
-    total===0 ? 'まず何でも撮ってみよう。好奇心がはじまりです。' :
-    turns===0 ? '写真が撮れたら、AIに何でも聞いてみましょう！' :
-    cats.size<3 ? 'いろんなジャンルを撮ると知識スコアが上がります 📸' :
-    parseFloat(avgDepth)<2 ? '1つの写真でもっと深く質問してみましょう。「なぜ？」「他には？」と続けると理解が深まります' :
-    'すばらしい！深い対話を続けています。次は新しいジャンルに挑戦してみましょう 🚀';
-  document.getElementById('ana-advice').textContent=adv;
+  } else { ranksEl.innerHTML='<div class="rank-item" style="justify-content:center;color:var(--text3);font-size:11px;">まだデータがありません</div>'; }
+  document.getElementById('ana-advice').textContent=total===0?'まず何でも撮ってみよう。好奇心がはじまりです。':turns===0?'写真が撮れたら、AIに何でも聞いてみましょう！':cats.size<3?'いろんなジャンルを撮ると知識スコアが上がります 📸':parseFloat(avgDepth)<2?'1つの写真でもっと深く質問してみましょう。「なぜ？」と続けると理解が深まります':'すばらしい！深い対話を続けています 🚀';
 }
 
 function detectCat(item){
-  // AI-assigned category takes priority (most accurate)
   if(item.category) return item.category;
-  // Fallback to keyword detection for older items
   if(item.type==='text'){
     const c=item.content||'';
     if(/英語|english/i.test(c)) return '英語';
@@ -2305,8 +2158,8 @@ function detectCat(item){
     return '生活メモ';
   }
   const t=(item.chatHistory||[]).map(m=>m.content).join(' ');
-  if(/英語|english|文法|単語|動詞|名詞|grammar/i.test(t)) return '英語';
-  if(/料理|レシピ|食べ|食材|作り方|cook/i.test(t)) return '料理';
+  if(/英語|english|文法|単語|grammar/i.test(t)) return '英語';
+  if(/料理|レシピ|食べ|食材|cook/i.test(t)) return '料理';
   if(/数学|方程式|計算|関数/i.test(t)) return '数学';
   if(/植物|花|虫/i.test(t)) return '植物・自然';
   if(/動物|犬|猫/i.test(t)) return '動物';
@@ -2318,11 +2171,7 @@ function detectCat(item){
 // SHARE CARD
 // ═══════════════════════════════════════════
 function renderShareCard(){
-  const p=S.profile;
-  const total=S.items.length;
-  const turns=totalTurns();
-  const score=calcScore();
-  const streak=getStreakCount();
+  const p=S.profile, total=S.items.length, turns=totalTurns(), score=calcScore(), streak=getStreakCount();
   document.getElementById('sc-name').textContent=p.name||'You';
   const whoLine=[p.who,p.gradeText,p.detail].filter(Boolean).join(' · ');
   document.getElementById('sc-who').textContent=whoLine||'SnapIn user';
@@ -2330,265 +2179,224 @@ function renderShareCard(){
   document.getElementById('sc-snaps').textContent=total;
   document.getElementById('sc-turns').textContent=turns;
   document.getElementById('sc-streak').textContent=streak;
-  const d=new Date();
-  document.getElementById('sc-date').textContent=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}`;
-  // avatar
+  const d=new Date(); document.getElementById('sc-date').textContent=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}`;
   const scAva=document.getElementById('sc-ava');
-  if(p.avatarUrl) scAva.innerHTML=`<img src="${p.avatarUrl}">`;
-  else scAva.textContent=(p.name||'?')[0].toUpperCase();
-  // top categories
+  if(p.avatarUrl) scAva.innerHTML=`<img src="${p.avatarUrl}">`; else scAva.textContent=(p.name||'?')[0].toUpperCase();
   const catMap={}; S.items.forEach(i=>{const c=detectCat(i);catMap[c]=(catMap[c]||0)+1;});
   const sorted=Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const catRow=document.getElementById('sc-cat-row');
-  if(sorted.length){
-    catRow.innerHTML=sorted.map(([n,c])=>`<span class="sc-cat-tag">${n} ${c}</span>`).join('');
-  } else {
-    catRow.innerHTML='<span class="sc-cat-tag">まだ学習開始前</span>';
-  }
+  document.getElementById('sc-cat-row').innerHTML=sorted.length?sorted.map(([n,c])=>`<span class="sc-cat-tag">${n} ${c}</span>`).join(''):'<span class="sc-cat-tag">まだ学習開始前</span>';
 }
-
 function copyShareCardText(){
-  const p=S.profile;
-  const score=calcScore(), total=S.items.length, turns=totalTurns(), streak=getStreakCount();
+  const p=S.profile, score=calcScore(), total=S.items.length, turns=totalTurns(), streak=getStreakCount();
   const catMap={}; S.items.forEach(i=>{const c=detectCat(i);catMap[c]=(catMap[c]||0)+1;});
   const top=Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n])=>'#'+n).join(' ');
-  const text=`📸 SnapIn ${total}枚 / 💬 ${turns}ターン
-🧠 知識ポイント ${score}pt
-🔥 ストリーク ${streak}日
-${top}
-盛らない、わからないものを撮る。
-#SnapIn`;
-  navigator.clipboard?.writeText(text).then(()=>{
-    showToast('コピーしました');
-  }).catch(()=>{
-    // fallback
-    const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta);
-    ta.select(); try{document.execCommand('copy');showToast('コピーしました');}catch{} ta.remove();
-  });
+  const text=`📸 SnapIn ${total}枚 / 💬 ${turns}ターン\n🧠 知識ポイント ${score}pt\n🔥 ストリーク ${streak}日\n${top}\n盛らない、わからないものを撮る。\n#SnapIn`;
+  navigator.clipboard?.writeText(text).then(()=>showToast('コピーしました')).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');showToast('コピーしました');}catch{}ta.remove();});
 }
-
 function showToast(msg){
   const t=document.createElement('div');
   t.textContent=msg;
   t.style.cssText='position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.82);color:white;padding:9px 18px;border-radius:20px;font-size:12px;z-index:9999;pointer-events:none;animation:fadeOut 1.8s forwards;';
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(),1800);
+  document.body.appendChild(t); setTimeout(()=>t.remove(),1800);
 }
-
-// Canvas-based share card image generation
 async function downloadShareCard(){
-  const p=S.profile;
-  const total=S.items.length, turns=totalTurns(), score=calcScore(), streak=getStreakCount();
+  const p=S.profile, total=S.items.length, turns=totalTurns(), score=calcScore(), streak=getStreakCount();
   const catMap={}; S.items.forEach(i=>{const c=detectCat(i);catMap[c]=(catMap[c]||0)+1;});
   const cats=Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
-
-  // Canvas sized 1080×1680 (9:14) for high quality SNS export
   const W=1080,H=1680;
   const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
   const ctx=cv.getContext('2d');
-
-  // Background gradient
-  const grad=ctx.createLinearGradient(0,0,W,H);
-  grad.addColorStop(0,'#0F6E56');
-  grad.addColorStop(0.55,'#1D9E75');
-  grad.addColorStop(1,'#9FE1CB');
+  const grad=ctx.createLinearGradient(0,0,W,H); grad.addColorStop(0,'#0F6E56'); grad.addColorStop(0.55,'#1D9E75'); grad.addColorStop(1,'#9FE1CB');
   ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
-
-  // Radial highlight
-  const rg=ctx.createRadialGradient(W*0.9,H*0.1,50,W*0.9,H*0.1,W*0.7);
-  rg.addColorStop(0,'rgba(255,255,255,0.28)');
-  rg.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
-  const rg2=ctx.createRadialGradient(W*0.1,H*0.95,50,W*0.1,H*0.95,W*0.6);
-  rg2.addColorStop(0,'rgba(255,255,255,0.14)');
-  rg2.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=rg2; ctx.fillRect(0,0,W,H);
-
-  ctx.fillStyle='white';
-  ctx.textAlign='left';
-  // Logo top-left
-  ctx.font='700 56px system-ui,-apple-system,sans-serif';
-  ctx.fillText('Snap',80,130);
-  ctx.fillStyle='#FFF6BC'; ctx.fillText('In',80+ctx.measureText('Snap').width,130);
-  ctx.fillStyle='rgba(255,255,255,0.9)';
-  // Date top-right
-  const d=new Date();
-  const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}`;
-  ctx.textAlign='right'; ctx.font='500 32px system-ui,sans-serif';
-  ctx.fillText(dateStr,W-80,130);
-
-  // Avatar circle
+  ctx.fillStyle='white'; ctx.textAlign='center';
+  ctx.font='700 56px system-ui,sans-serif'; ctx.fillText('SnapIn',W/2,130);
+  const d=new Date(); const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}`;
+  ctx.textAlign='right'; ctx.font='500 32px system-ui,sans-serif'; ctx.fillText(dateStr,W-80,130);
   ctx.textAlign='center';
   const cx=W/2, ay=320, ar=110;
-  ctx.beginPath(); ctx.arc(cx,ay,ar,0,Math.PI*2);
-  ctx.fillStyle='rgba(255,255,255,0.22)'; ctx.fill();
-  ctx.lineWidth=6; ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.stroke();
-
-  // Draw avatar image or letter
-  const drawAfterAvatar=()=>{
-    // Name
-    ctx.fillStyle='white';
-    ctx.font='600 64px system-ui,sans-serif';
-    ctx.fillText(p.name||'You',cx,ay+ar+90);
-    // Who
-    const whoLine=[p.who,p.gradeText,p.detail].filter(Boolean).join(' · ');
-    if(whoLine){
-      ctx.font='400 32px system-ui,sans-serif';
-      ctx.fillStyle='rgba(255,255,255,0.85)';
-      ctx.fillText(whoLine.length>30?whoLine.substring(0,30)+'…':whoLine,cx,ay+ar+140);
-    }
-
-    // Score box
-    const sbY=ay+ar+200;
-    const sbW=620, sbH=160, sbX=(W-sbW)/2;
-    ctx.fillStyle='rgba(255,255,255,0.16)';
-    roundRect(ctx,sbX,sbY,sbW,sbH,28); ctx.fill();
-    ctx.lineWidth=2; ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.stroke();
-    ctx.fillStyle='white';
-    ctx.font='300 120px system-ui,sans-serif';
-    ctx.textBaseline='middle';
-    ctx.textAlign='left';
-    const scoreStr=String(score);
-    const lblStr='知識ポイント';
-    const scoreW=ctx.measureText(scoreStr).width;
-    ctx.font='500 32px system-ui,sans-serif';
-    const lblW=ctx.measureText(lblStr).width;
-    const totalW=scoreW+28+lblW;
-    const startX=cx-totalW/2;
-    ctx.font='300 120px system-ui,sans-serif';
-    ctx.fillText(scoreStr,startX,sbY+sbH/2+4);
-    ctx.font='500 32px system-ui,sans-serif';
-    ctx.fillText(lblStr,startX+scoreW+28,sbY+sbH/2+4);
-    ctx.textBaseline='alphabetic';
-    ctx.textAlign='center';
-
-    // Stat row
-    const stY=sbY+sbH+100;
-    const stats=[
-      {n:total,l:'📸 SNAPS'},
-      {n:turns,l:'💬 TURNS'},
-      {n:streak,l:'🔥 STREAK'}
-    ];
-    stats.forEach((s,i)=>{
-      const sx=W*(0.2+i*0.3);
-      ctx.fillStyle='white';
-      ctx.font='600 56px system-ui,sans-serif';
-      ctx.fillText(String(s.n),sx,stY);
-      ctx.font='500 22px system-ui,sans-serif';
-      ctx.fillStyle='rgba(255,255,255,0.85)';
-      ctx.fillText(s.l,sx,stY+40);
-    });
-
-    // Categories
-    const cY=stY+150;
-    ctx.font='500 24px system-ui,sans-serif';
-    ctx.fillStyle='rgba(255,255,255,0.85)';
-    ctx.textAlign='left';
-    ctx.fillText('LEARNING ABOUT',80,cY);
-    // Tags
-    if(cats.length){
-      let tx=80, ty=cY+50;
-      ctx.font='500 28px system-ui,sans-serif';
-      cats.forEach(([n,c])=>{
-        const label=`${n} ${c}`;
-        const w=ctx.measureText(label).width+44;
-        if(tx+w>W-80){ tx=80; ty+=70; }
-        ctx.fillStyle='rgba(255,255,255,0.22)';
-        roundRect(ctx,tx,ty-36,w,52,26); ctx.fill();
-        ctx.fillStyle='white';
-        ctx.fillText(label,tx+22,ty);
-        tx+=w+14;
-      });
-    } else {
-      ctx.font='400 28px system-ui,sans-serif';
-      ctx.fillStyle='rgba(255,255,255,0.7)';
-      ctx.fillText('まだ学習開始前',80,cY+60);
-    }
-
-    // Foot
-    ctx.font='500 24px system-ui,sans-serif';
-    ctx.fillStyle='rgba(255,255,255,0.7)';
-    ctx.textAlign='center';
-    ctx.fillText('盛らない、わからないものを撮る',W/2,H-80);
-
-    // Download
-    const link=document.createElement('a');
-    link.download=`snapin_${p.name||'card'}_${dateStr}.png`;
-    link.href=cv.toDataURL('image/png');
-    link.click();
-    showToast('画像を保存しました');
-  };
-
-  if(p.avatarUrl){
-    const img=new Image();
-    img.crossOrigin='anonymous';
-    img.onload=()=>{
-      ctx.save();
-      ctx.beginPath(); ctx.arc(cx,ay,ar-3,0,Math.PI*2); ctx.clip();
-      ctx.drawImage(img,cx-ar+3,ay-ar+3,(ar-3)*2,(ar-3)*2);
-      ctx.restore();
-      drawAfterAvatar();
-    };
-    img.onerror=()=>{
-      // fallback to letter
-      ctx.fillStyle='white';
-      ctx.font='700 92px system-ui,sans-serif';
-      ctx.textBaseline='middle';
-      ctx.fillText((p.name||'?')[0].toUpperCase(),cx,ay);
-      ctx.textBaseline='alphabetic';
-      drawAfterAvatar();
-    };
-    img.src=p.avatarUrl;
-  } else {
-    ctx.fillStyle='white';
-    ctx.font='700 92px system-ui,sans-serif';
-    ctx.textBaseline='middle';
-    ctx.fillText((p.name||'?')[0].toUpperCase(),cx,ay);
-    ctx.textBaseline='alphabetic';
-    drawAfterAvatar();
-  }
+  ctx.beginPath(); ctx.arc(cx,ay,ar,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.22)'; ctx.fill(); ctx.lineWidth=6; ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.stroke();
+  ctx.fillStyle='white'; ctx.font='700 92px system-ui,sans-serif'; ctx.textBaseline='middle'; ctx.fillText((p.name||'?')[0].toUpperCase(),cx,ay); ctx.textBaseline='alphabetic';
+  ctx.font='600 64px system-ui,sans-serif'; ctx.fillText(p.name||'You',cx,ay+ar+90);
+  ctx.font='300 120px system-ui,sans-serif'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.fillText(String(score),cx,600);
+  ctx.font='500 32px system-ui,sans-serif'; ctx.fillText('知識ポイント',cx,650);
+  const link=document.createElement('a'); link.download=`snapin_${p.name||'card'}_${dateStr}.png`; link.href=cv.toDataURL('image/png'); link.click();
+  showToast('画像を保存しました');
 }
-function roundRect(ctx,x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
-  ctx.closePath();
-}
+function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath(); }
 
-// ═══════════════════════════════════════════
-// PWA: SERVICE WORKER REGISTRATION
-// ═══════════════════════════════════════════
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{/* offline ok */});
-}
+// PWA
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 
-// fadeOut keyframes for toast
-(function injectToastCSS(){
-  const s=document.createElement('style');
-  s.textContent='@keyframes fadeOut{0%,70%{opacity:1;}100%{opacity:0;transform:translateX(-50%) translateY(8px);}}';
-  document.head.appendChild(s);
-})();
+// Toast CSS
+(function(){ const s=document.createElement('style'); s.textContent='@keyframes fadeOut{0%,70%{opacity:1;}100%{opacity:0;transform:translateX(-50%) translateY(8px);}}'; document.head.appendChild(s); })();
 
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
 pruneTrash();
-// Backfill: any item without a category gets one in background
 S.items.forEach(item=>{
-  if(!item.category && !item.categoryPending){
+  if(!item.category&&!item.categoryPending){
     item.categoryPending=true;
     if(item.type==='photo'&&item.imageData) backgroundCategorize(item);
     else if(item.type==='text') backgroundCategorizeText(item);
   }
 });
 renderGrid(); updateStats(); updateHomeProfile(); renderFilterBar();
-(function(){
-  const tb=document.getElementById('trash-badge');
-  if(tb){ tb.textContent=S.trash.length; tb.style.display=S.trash.length?'inline-block':'none'; }
-})();
+(function(){ const tb=document.getElementById('trash-badge'); if(tb){ tb.textContent=S.trash.length; tb.style.display=S.trash.length?'inline-block':'none'; } })();
 </script>
+
+<script>
+// ── ログインタブ切替 ──
+function switchLoginTab(tab) {
+  document.getElementById('login-panel').style.display = tab === 'login' ? 'flex' : 'none';
+  document.getElementById('reg-panel').style.display   = tab === 'reg'   ? 'flex' : 'none';
+  document.getElementById('tab-login').classList.toggle('on', tab === 'login');
+  document.getElementById('tab-reg').classList.toggle('on',   tab === 'reg');
+}
+</script>
+
+<script type="module">
+import { initializeApp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyBcR_0S7HI-K1_SCQoL7qjCbbQJQpR04XE",
+  authDomain:        "snapin-jukencamp.firebaseapp.com",
+  projectId:         "snapin-jukencamp",
+  storageBucket:     "snapin-jukencamp.firebasestorage.app",
+  messagingSenderId: "132103804067",
+  appId:             "1:132103804067:web:c62a623a88d5b504afdb16",
+};
+
+const app    = initializeApp(firebaseConfig);
+const fbAuth = getAuth(app);
+const fbDb   = getFirestore(app);
+
+// グローバル公開（既存JSから呼べるよう）
+window.FB = { auth: fbAuth, db: fbDb, doc, getDoc, setDoc, updateDoc, serverTimestamp };
+
+// ── 認証状態の監視 ──
+onAuthStateChanged(fbAuth, async (user) => {
+  if (user) {
+    window.currentUid  = user.uid;
+    window.currentUser = user;
+    try {
+      const snap = await getDoc(doc(fbDb, 'users', user.uid));
+      window.currentUserData = snap.exists() ? snap.data() : null;
+      if (window.currentUserData) {
+        S.profile.name     = window.currentUserData.displayName || S.profile.name;
+        S.profile.avatarUrl= window.currentUserData.avatarUrl   || null;
+        S.profile.role     = window.currentUserData.role        || 'student';
+      }
+    } catch(e) { console.error('[Firebase] Firestore read error:', e); }
+
+    // ログイン画面を隠してホームへ
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-home').classList.add('active');
+    updateHomeProfile(); updateStats(); renderGrid(); renderFilterBar();
+
+  } else {
+    window.currentUid      = null;
+    window.currentUser     = null;
+    window.currentUserData = null;
+    // ホーム等を隠してログイン画面を表示
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-login').classList.add('active');
+  }
+});
+
+// ── ログイン ──
+window.doLogin = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-err');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'メールアドレスとパスワードを入力してください。'; return; }
+  try {
+    document.getElementById('login-btn').disabled = true;
+    await signInWithEmailAndPassword(fbAuth, email, pass);
+  } catch(e) {
+    errEl.textContent =
+      (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password')
+        ? 'メールアドレスまたはパスワードが間違っています。'
+      : e.code === 'auth/user-not-found'
+        ? 'このメールアドレスは登録されていません。'
+      : 'ログインに失敗しました。';
+  } finally { document.getElementById('login-btn').disabled = false; }
+};
+
+// ── 新規登録 ──
+window.doRegister = async function() {
+  const email = document.getElementById('reg-email').value.trim();
+  const pass  = document.getElementById('reg-pass').value;
+  const name  = document.getElementById('reg-name').value.trim() || 'SnapIn生徒';
+  const errEl = document.getElementById('reg-err');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'メールアドレスとパスワードを入力してください。'; return; }
+  if (pass.length < 6) { errEl.textContent = 'パスワードは6文字以上にしてください。'; return; }
+  try {
+    document.getElementById('reg-btn').disabled = true;
+    const cred = await createUserWithEmailAndPassword(fbAuth, email, pass);
+    const idToken = await cred.user.getIdToken();
+    const res = await fetch('/api/auth/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+      body: JSON.stringify({ displayName: name })
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.error || 'init failed');
+    }
+  } catch(e) {
+    const errEl2 = document.getElementById('reg-err');
+    errEl2.textContent =
+      e.code === 'auth/email-already-in-use' ? 'このメールアドレスはすでに登録されています。'
+    : e.code === 'auth/invalid-email'        ? 'メールアドレスの形式が正しくありません。'
+    : '登録に失敗しました。(' + (e.message || '') + ')';
+  } finally { document.getElementById('reg-btn').disabled = false; }
+};
+
+// ── ログアウト ──
+window.doLogout = async function() {
+  if (!confirm('ログアウトしますか？')) return;
+  await signOut(fbAuth);
+};
+
+// ── 投稿をFirestoreに保存 ──
+window.savePostToFirestore = async function(item) {
+  const uid = window.currentUid; if (!uid) return;
+  try {
+    await setDoc(doc(fbDb, 'posts', String(item.id)), {
+      postId:       String(item.id),
+      uid,
+      displayName:  window.currentUserData?.displayName || 'SnapIn生徒',
+      avatarUrl:    window.currentUserData?.avatarUrl   || null,
+      imageUrl:     null,
+      imageData:    item.type === 'photo' ? item.imageData : null,
+      caption:      item.content || '',
+      category:     item.category || null,
+      visibility:   item.isPublic ? 'school' : 'private',
+      masteryStatus:'active',
+      likeCount:0, commentCount:0, reportCount:0, hidden:false,
+      aiChatEnabled:true,
+      chatHistory:  item.chatHistory || [],
+      deco:         item.deco || null,
+      createdAt:    serverTimestamp(),
+      updatedAt:    serverTimestamp(),
+    });
+  } catch(e) { console.error('[Firestore] 投稿保存失敗:', e); }
+};
+
+console.log('[SnapIn] Firebase ready ✓');
+</script>
+
 </body>
 </html>
