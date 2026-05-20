@@ -38,10 +38,10 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .ava img{width:100%;height:100%;object-fit:cover;}
 .prof-info{display:flex;flex-direction:column;gap:6px;}
 .prof-stats{display:flex;gap:0;}
-.pst{display:flex;flex-direction:column;align-items:center;padding:0 12px;}
+.pst{display:flex;flex-direction:column;align-items:center;padding:0 7px;}
 .pst:first-child{padding-left:0;}
-.pst-n{font-size:17px;font-weight:700;}
-.pst-l{font-size:9px;color:var(--text2);margin-top:1px;}
+.pst-n{font-size:15px;font-weight:700;}
+.pst-l{font-size:7.5px;color:var(--text2);margin-top:1px;white-space:nowrap;}
 .pst+.pst{border-left:0.5px solid var(--border);}
 .prof-name{padding:0;font-size:14px;font-weight:600;}
 .prof-sub{padding:0 18px 10px;font-size:10px;color:var(--text2);}
@@ -189,6 +189,32 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .comment-inp-row{display:flex;gap:8px;align-items:center;}
 .comment-inp{flex:1;padding:8px 12px;border:0.5px solid var(--border2);border-radius:20px;font-size:12px;background:var(--bg);color:var(--text);outline:none;}
 .comment-send{width:32px;height:32px;border-radius:50%;background:var(--g);border:none;color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+/* ── ライトボックス ── */
+.lightbox{
+  position:fixed;inset:0;z-index:9000;
+  background:rgba(0,0,0,0);
+  display:flex;align-items:center;justify-content:center;
+  transition:background .22s;
+  pointer-events:none;
+}
+.lightbox.open{background:rgba(0,0,0,0.92);pointer-events:all;}
+.lb-img{
+  max-width:100%;max-height:100%;
+  object-fit:contain;
+  border-radius:4px;
+  transform:scale(0.88);opacity:0;
+  transition:transform .25s cubic-bezier(.2,1.3,.4,1), opacity .2s;
+  touch-action:pinch-zoom;
+  cursor:zoom-out;
+}
+.lightbox.open .lb-img{transform:scale(1);opacity:1;}
+.lb-close{
+  position:absolute;top:max(18px,env(safe-area-inset-top));right:18px;
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,.15);backdrop-filter:blur(8px);
+  border:none;color:white;font-size:20px;line-height:36px;text-align:center;
+  cursor:pointer;z-index:9001;
+}
 /* TRIM */
 .trim-body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .trim-ca{position:relative;background:#111;flex-shrink:0;overflow:hidden;}
@@ -557,8 +583,10 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
       <div class="prof-name" id="home-name">Kazuma</div>
       <div class="prof-stats">
         <div class="pst"><span class="pst-n" id="stat-total">0</span><span class="pst-l">SnapIn</span></div>
-        <div class="pst"><span class="pst-n" id="stat-turns">0</span><span class="pst-l">💬 総ターン</span></div>
+        <div class="pst"><span class="pst-n" id="stat-following">0</span><span class="pst-l">フォロー</span></div>
+        <div class="pst"><span class="pst-n" id="stat-followers">0</span><span class="pst-l">フォロワー</span></div>
         <div class="pst" onclick="goTo('analytics')" style="cursor:pointer;"><span class="pst-n" id="stat-score" style="color:var(--g);">0</span><span class="pst-l">🧠 知識Pt</span></div>
+        <div class="pst"><span class="pst-n" id="stat-thanks" style="color:#e05a8a;">0</span><span class="pst-l">🩷 ありがとう</span></div>
       </div>
     </div>
   </div>
@@ -668,7 +696,6 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
           <div class="deco-lbl">書体</div>
           <div class="font-chips" id="font-chips">
             <div class="fc on" data-font="system-ui,-apple-system,sans-serif" style="font-family:system-ui;">ゴシック</div>
-            <div class="fc" data-font="Georgia,'Times New Roman',serif" style="font-family:Georgia,serif;">セリフ</div>
             <div class="fc" data-font="'Hiragino Mincho ProN','Yu Mincho',serif" style="font-family:'Hiragino Mincho ProN',serif;">明朝</div>
             <div class="fc" data-font="Impact,'Arial Black',sans-serif" style="font-family:Impact;">インパクト</div>
           </div>
@@ -1795,7 +1822,8 @@ function renderChatUI(item){
   if(item.type==='photo'&&item.imageData){
     const img=document.createElement('img');
     img.src=item.imageData;
-    img.style.cssText='width:100%;height:auto;max-height:55vh;object-fit:contain;display:block;';
+    img.style.cssText='width:100%;height:auto;max-height:55vh;object-fit:contain;display:block;cursor:zoom-in;';
+    img.onclick=()=>openLightbox(item.fullImageData||item.imageData);
     area.appendChild(img);
     const tags=document.createElement('div'); tags.className='chat-photo-tags';
     tags.innerHTML=`<div class="chat-tag">📷 写真から対話中</div>`;
@@ -2182,9 +2210,11 @@ function renderGrid(){
 // STATS
 // ═══════════════════════════════════════════
 function updateStats(){
-  document.getElementById('stat-total').textContent=S.items.length;
-  document.getElementById('stat-turns').textContent=totalTurns();
-  document.getElementById('stat-score').textContent=calcScore();
+  const setEl=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  setEl('stat-total', S.items.length);
+  setEl('stat-score', calcScore());
+  setEl('stat-thanks', S.items.reduce((a,i)=>a+(i.thanks?.length||0),0));
+  updateFollowStats();
 }
 
 // ═══════════════════════════════════════════
@@ -2349,7 +2379,8 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp,
-  collection, query, where, orderBy, getDocs
+  collection, query, where, orderBy, getDocs,
+  deleteDoc, increment
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -2390,6 +2421,8 @@ onAuthStateChanged(fbAuth, async (user) => {
 
     // Firestoreから投稿を読み込む（端末間同期）
     loadPostsFromFirestore(user.uid);
+    // フォローデータ読み込み
+    if(window.loadFollowData) window.loadFollowData();
 
   } else {
     window.currentUid      = null;
@@ -2458,7 +2491,86 @@ window.doLogout = async function() {
   await signOut(fbAuth);
 };
 
-// ── Firestoreから投稿を読み込む（端末間同期）──
+// ── ライトボックス ──
+function openLightbox(src){
+  const lb=document.getElementById('lightbox');
+  const img=document.getElementById('lb-img');
+  img.src=src;
+  lb.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeLightbox(){
+  const lb=document.getElementById('lightbox');
+  lb.classList.remove('open');
+  document.body.style.overflow='';
+  setTimeout(()=>{ document.getElementById('lb-img').src=''; },250);
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeLightbox(); });
+
+// ── フォローシステム ──
+// S.followingSet: フォロー中uidのSet（メモリ上）
+// S.followerCount / S.followingCount: カウント表示用
+S.followingSet = S.followingSet || new Set();
+
+// Firestoreからフォロー状態を読み込む
+window.loadFollowData = async function(){
+  if(!window.currentUid || !window.FB) return;
+  const {db} = window.FB;
+  try {
+    const snap = await getDocs(query(
+      collection(db,'follows'),
+      where('followerUid','==',window.currentUid)
+    ));
+    S.followingSet = new Set(snap.docs.map(d=>d.data().followingUid));
+    S.followingCount = S.followingSet.size;
+    // フォロワー数
+    const fsnap = await getDocs(query(
+      collection(db,'follows'),
+      where('followingUid','==',window.currentUid)
+    ));
+    S.followerCount = fsnap.size;
+    updateFollowStats();
+  } catch(e){ console.warn('フォローデータ読み込み失敗:',e); }
+};
+
+// フォロー/アンフォロー切り替え
+window.toggleFollow = async function(targetUid, targetName){
+  if(!window.currentUid || !window.FB){ alert('ログインが必要です'); return; }
+  if(targetUid === window.currentUid){ alert('自分はフォローできません'); return; }
+  const {db, serverTimestamp} = window.FB;
+  const docId = `${window.currentUid}_${targetUid}`;
+  const isFollowing = S.followingSet.has(targetUid);
+  try {
+    if(isFollowing){
+      await deleteDoc(doc(db,'follows',docId));
+      S.followingSet.delete(targetUid);
+      // カウント更新
+      await updateDoc(doc(db,'users',window.currentUid),{followingCount:increment(-1)});
+      await updateDoc(doc(db,'users',targetUid),{followerCount:increment(-1)});
+      S.followingCount = Math.max(0,(S.followingCount||1)-1);
+      showToast(`${targetName}のフォローを解除しました`);
+    } else {
+      await setDoc(doc(db,'follows',docId),{
+        followerUid:window.currentUid,
+        followingUid:targetUid,
+        createdAt:serverTimestamp()
+      });
+      S.followingSet.add(targetUid);
+      await updateDoc(doc(db,'users',window.currentUid),{followingCount:increment(1)});
+      await updateDoc(doc(db,'users',targetUid),{followerCount:increment(1)});
+      S.followingCount = (S.followingCount||0)+1;
+      showToast(`${targetName}をフォローしました 🎉`);
+    }
+    updateFollowStats();
+  } catch(e){ console.error('フォロー操作失敗:',e); showToast('エラーが発生しました'); }
+};
+
+function updateFollowStats(){
+  const fw=document.getElementById('stat-following');
+  const fr=document.getElementById('stat-followers');
+  if(fw) fw.textContent = S.followingCount||0;
+  if(fr) fr.textContent = S.followerCount||0;
+}
 window.loadPostsFromFirestore = async function(uid) {
   if (!uid) return;
   try {
@@ -2542,6 +2654,12 @@ window.savePostToFirestore = async function(item) {
 
 console.log('[SnapIn] Firebase ready ✓');
 </script>
+
+<!-- ライトボックス -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <img class="lb-img" id="lb-img" src="" alt="">
+</div>
 
 <!-- Pull-to-Refresh スピナー（fixed・body直下） -->
 <div class="ptr-spinner-wrap" id="ptr-spinner-wrap">
