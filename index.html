@@ -37,7 +37,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .ava{width:60px;height:60px;border-radius:50%;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:var(--gd);border:2px solid var(--g);flex-shrink:0;cursor:pointer;overflow:hidden;}
 .ava img{width:100%;height:100%;object-fit:cover;}
 .prof-info{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;}
-.prof-name{font-size:14px;font-weight:600;padding-left:0;}
+.prof-name{font-size:14px;font-weight:600;}
 .prof-stats{display:flex;flex:1;margin-top:2px;}
 .pst{flex:1;display:flex;flex-direction:column;align-items:center;padding:0;}
 .pst-n{font-size:15px;font-weight:700;line-height:1.2;}
@@ -1391,15 +1391,6 @@ function updateHomeProfile(){
   const whoLine=[S.profile.who,S.profile.gradeText,S.profile.detail].filter(Boolean).join(' · ');
   document.getElementById('home-tag').innerHTML=whoLine?`<span class="prof-tag-badge">${whoLine}</span>`:'';
   updateAvaUI();
-  // 名前の左端をSnapIn（最初のpst）のセンターに揃える
-  requestAnimationFrame(()=>{
-    const stats=document.querySelector('.prof-stats');
-    const name=document.getElementById('home-name');
-    if(stats&&name){
-      const pstWidth=stats.offsetWidth/5;
-      name.style.paddingLeft=Math.round(pstWidth/2)+'px';
-    }
-  });
 }
 document.addEventListener('click',e=>{
   const chip=e.target.closest('.chip[data-g]');
