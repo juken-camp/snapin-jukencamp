@@ -33,15 +33,17 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .ni.active{color:var(--g);}
 .ni svg{display:block;flex-shrink:0;}
 /* HOME */
-.prof{padding:14px 18px 4px;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.prof{padding:14px 18px 6px;display:flex;flex-direction:row;align-items:center;gap:16px;}
 .ava{width:68px;height:68px;border-radius:50%;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:var(--gd);border:2px solid var(--g);flex-shrink:0;cursor:pointer;overflow:hidden;}
 .ava img{width:100%;height:100%;object-fit:cover;}
+.prof-info{display:flex;flex-direction:column;gap:6px;}
 .prof-stats{display:flex;gap:0;}
-.pst{display:flex;flex-direction:column;align-items:center;padding:0 14px;}
-.pst-n{font-size:18px;font-weight:700;}
+.pst{display:flex;flex-direction:column;align-items:center;padding:0 12px;}
+.pst:first-child{padding-left:0;}
+.pst-n{font-size:17px;font-weight:700;}
 .pst-l{font-size:9px;color:var(--text2);margin-top:1px;}
 .pst+.pst{border-left:0.5px solid var(--border);}
-.prof-name{padding:0 18px 2px;font-size:14px;font-weight:600;text-align:center;}
+.prof-name{padding:0;font-size:14px;font-weight:600;}
 .prof-sub{padding:0 18px 10px;font-size:10px;color:var(--text2);}
 /* VIEW TOGGLE */
 .view-toggle{display:flex;align-items:center;gap:0;border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;flex-shrink:0;}
@@ -117,9 +119,9 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .roll-btn{padding:13px 16px;border:0.5px solid var(--border2);border-radius:var(--rs);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);cursor:pointer;background:var(--bg);}
 /* DECO TEXT */
 .deco-box{border:0.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-top:2px;}
-/* プレビュー: 正方形 */
+/* プレビュー: 正方形（小さめ） */
 .deco-preview{
-  position:relative;aspect-ratio:1/1;width:100%;
+  position:relative;aspect-ratio:3/2;width:100%;
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;
   transition:background 0.2s;
@@ -534,13 +536,15 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   </div>
   <div class="prof">
     <div class="ava" id="home-ava" onclick="goTo('profile')">K</div>
-    <div class="prof-stats">
-      <div class="pst"><span class="pst-n" id="stat-total">0</span><span class="pst-l">SnapIn</span></div>
-      <div class="pst"><span class="pst-n" id="stat-turns">0</span><span class="pst-l">💬 総ターン</span></div>
-      <div class="pst" onclick="goTo('analytics')" style="cursor:pointer;"><span class="pst-n" id="stat-score" style="color:var(--g);">0</span><span class="pst-l">🧠 知識Pt</span></div>
+    <div class="prof-info">
+      <div class="prof-name" id="home-name">Kazuma</div>
+      <div class="prof-stats">
+        <div class="pst"><span class="pst-n" id="stat-total">0</span><span class="pst-l">SnapIn</span></div>
+        <div class="pst"><span class="pst-n" id="stat-turns">0</span><span class="pst-l">💬 総ターン</span></div>
+        <div class="pst" onclick="goTo('analytics')" style="cursor:pointer;"><span class="pst-n" id="stat-score" style="color:var(--g);">0</span><span class="pst-l">🧠 知識Pt</span></div>
+      </div>
     </div>
   </div>
-  <div class="prof-name" id="home-name">Kazuma</div>
   <div class="prof-tag" id="home-tag"></div>
 
   <!-- グリッドモード -->
@@ -583,7 +587,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   </div>
   <div class="bnav">
     <div class="ni active" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
-    <div class="ni" onclick="goTo('upload')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
+    <div class="ni" onclick="goTo('upload')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
     <div class="ni" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
     <div class="ni" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
@@ -648,20 +652,6 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
             <div class="fc" data-font="Georgia,'Times New Roman',serif" style="font-family:Georgia,serif;">セリフ</div>
             <div class="fc" data-font="'Hiragino Mincho ProN','Yu Mincho',serif" style="font-family:'Hiragino Mincho ProN',serif;">明朝</div>
             <div class="fc" data-font="Impact,'Arial Black',sans-serif" style="font-family:Impact;">インパクト</div>
-          </div>
-        </div>
-        <div class="deco-row">
-          <div class="deco-lbl">絵文字</div>
-          <div class="emoji-row">
-            <span class="ep" onclick="setEmoji('📚')">📚</span>
-            <span class="ep" onclick="setEmoji('🔥')">🔥</span>
-            <span class="ep" onclick="setEmoji('💡')">💡</span>
-            <span class="ep" onclick="setEmoji('✨')">✨</span>
-            <span class="ep" onclick="setEmoji('🎯')">🎯</span>
-            <span class="ep" onclick="setEmoji('😊')">😊</span>
-            <span class="ep" onclick="setEmoji('🌟')">🌟</span>
-            <span class="ep" onclick="setEmoji('💪')">💪</span>
-            <button class="clr-emoji" onclick="setEmoji('')">なし</button>
           </div>
         </div>
       </div>
@@ -795,7 +785,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   </div>
   <div class="bnav">
     <div class="ni" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
-    <div class="ni" onclick="goTo('upload')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
+    <div class="ni" onclick="goTo('upload')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
     <div class="ni active"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
     <div class="ni" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
@@ -841,7 +831,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   </div>
   <div class="bnav">
     <div class="ni" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
-    <div class="ni" onclick="goTo('upload')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
+    <div class="ni" onclick="goTo('upload')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
     <div class="ni" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
     <div class="ni active"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
