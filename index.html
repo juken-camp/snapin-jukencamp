@@ -37,9 +37,8 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .ava{width:60px;height:60px;border-radius:50%;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:var(--gd);border:2px solid var(--g);flex-shrink:0;cursor:pointer;overflow:hidden;}
 .ava img{width:100%;height:100%;object-fit:cover;}
 .prof-info{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;}
-.prof-stats{display:flex;flex:1;align-items:flex-start;}
-.pst{flex:1;display:flex;flex-direction:column;align-items:center;padding:0 4px;}
-.pst:first-child{align-items:flex-start;padding-left:0;}
+.prof-stats{display:flex;flex:1;}
+.pst{flex:1;display:flex;flex-direction:column;align-items:center;padding:0 2px;}
 .pst-n{font-size:15px;font-weight:700;line-height:1.2;}
 .pst-l{font-size:7px;color:var(--text2);margin-top:1px;white-space:nowrap;}
 .pst+.pst{border-left:0.5px solid var(--border);}
@@ -139,9 +138,9 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .deco-box{display:flex;flex-direction:column;border:0.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-top:2px;flex:1;min-height:0;}
 /* プレビュー: 固定高さ（コンパクト） */
 .deco-preview{
-  position:relative;width:100%;aspect-ratio:1/1;flex-shrink:0;
+  position:relative;width:80%;align-self:center;aspect-ratio:1/1;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  overflow:hidden;
+  overflow:hidden;border-radius:8px;
   transition:background 0.2s;
 }
 /* テキストオーバーレイ（Facebook風：中央寄せ・自動サイズ） */
