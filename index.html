@@ -36,12 +36,11 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .prof{padding:14px 18px 6px;display:flex;flex-direction:row;align-items:center;gap:16px;}
 .ava{width:68px;height:68px;border-radius:50%;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:var(--gd);border:2px solid var(--g);flex-shrink:0;cursor:pointer;overflow:hidden;}
 .ava img{width:100%;height:100%;object-fit:cover;}
-.prof-info{display:flex;flex-direction:column;gap:6px;}
-.prof-stats{display:flex;gap:0;}
-.pst{display:flex;flex-direction:column;align-items:center;padding:0 7px;}
-.pst:first-child{padding-left:0;}
+.prof-info{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;}
+.prof-stats{display:flex;flex:1;}
+.pst{flex:1;display:flex;flex-direction:column;align-items:center;padding:0 2px;}
 .pst-n{font-size:15px;font-weight:700;}
-.pst-l{font-size:7.5px;color:var(--text2);margin-top:1px;white-space:nowrap;}
+.pst-l{font-size:7px;color:var(--text2);margin-top:1px;white-space:nowrap;}
 .pst+.pst{border-left:0.5px solid var(--border);}
 .prof-name{padding:0;font-size:14px;font-weight:600;}
 .prof-sub{padding:0 18px 10px;font-size:10px;color:var(--text2);}
@@ -126,7 +125,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .feed-counter{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);border-radius:12px;padding:4px 10px;font-size:10px;color:rgba(255,255,255,0.85);z-index:5;}
 
 /* UPLOAD */
-.upload-body{flex:1;padding:20px 18px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;}
+.upload-body{flex:1;padding:20px 18px 0;display:flex;flex-direction:column;gap:14px;overflow:hidden;}
 .upload-zone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:row;align-items:center;gap:14px;cursor:pointer;transition:all 0.15s;}
 .upload-zone:hover{background:var(--gl);border-color:var(--g);}
 .uz-title{font-size:15px;font-weight:500;}
@@ -136,10 +135,10 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .or-txt{font-size:11px;color:var(--text3);}
 .roll-btn{padding:13px 16px;border:0.5px solid var(--border2);border-radius:var(--rs);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);cursor:pointer;background:var(--bg);}
 /* DECO TEXT */
-.deco-box{border:0.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-top:2px;}
-/* プレビュー: 正方形（小さめ） */
+.deco-box{flex:1;display:flex;flex-direction:column;border:0.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-top:2px;min-height:0;}
+/* プレビュー: 固定高さ（コンパクト） */
 .deco-preview{
-  position:relative;aspect-ratio:3/2;width:100%;
+  position:relative;height:130px;flex-shrink:0;width:100%;
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;
   transition:background 0.2s;
@@ -156,11 +155,14 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 /* 絵文字（左上固定・小さめ） */
 .deco-emoji-el{position:absolute;top:10px;left:14px;font-size:28px;line-height:1;z-index:3;cursor:grab;}
 .deco-hint{position:absolute;bottom:6px;right:8px;font-size:8px;color:rgba(255,255,255,0.3);pointer-events:none;z-index:1;}
-.deco-toolbar{padding:10px 12px;background:rgba(0,0,0,0.025);border-top:0.5px solid var(--border);display:flex;flex-direction:column;gap:9px;}
+/* ツールバー：残り高さを全部使う */
+.deco-toolbar{flex:1;padding:10px 12px;background:rgba(0,0,0,0.025);border-top:0.5px solid var(--border);display:flex;flex-direction:column;gap:9px;overflow-y:auto;min-height:0;}
 .deco-row{display:flex;align-items:center;gap:7px;}
 .deco-lbl{font-size:9px;color:var(--text3);width:26px;flex-shrink:0;}
-/* テキスト入力エリア（ツールバー内） */
-.deco-inp{width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;resize:none;line-height:1.5;min-height:48px;max-height:100px;overflow-y:auto;}
+/* テキスト入力：ツールバー内で縦に伸びる */
+.deco-inp{width:100%;flex:1;padding:11px 12px;border:0.5px solid var(--border2);border-radius:10px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;resize:none;line-height:1.6;min-height:80px;}
+/* フッター：画面下に固定 */
+.deco-footer{padding:10px 14px max(14px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--surface);flex-shrink:0;}
 .swatches{display:flex;gap:5px;flex-wrap:wrap;flex:1;}
 .sw{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:transform 0.1s;flex-shrink:0;}
 .sw.on{border-color:var(--text);transform:scale(1.15);}
@@ -171,7 +173,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .emoji-row{display:flex;gap:5px;flex-wrap:wrap;flex:1;}
 .ep{font-size:17px;cursor:pointer;padding:2px;border-radius:4px;line-height:1;}
 .ep:active{transform:scale(1.2);}
-.deco-footer{padding:8px 12px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:#fafafa;}
+.emoji-row{display:flex;flex-wrap:wrap;gap:6px;}
 .post-btn{padding:7px 18px;background:var(--g);border:none;border-radius:20px;font-size:11px;color:white;font-weight:500;cursor:pointer;}
 .clr-emoji{font-size:10px;color:var(--text3);border:none;background:none;cursor:pointer;padding:4px;white-space:nowrap;}.emoji-free-inp{flex:1;padding:7px 12px;border:0.5px solid var(--border2);border-radius:20px;font-size:16px;font-family:system-ui,sans-serif;background:var(--bg);outline:none;color:var(--text);}
 /* THANKS & COMMENTS */
@@ -208,13 +210,6 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   cursor:zoom-out;
 }
 .lightbox.open .lb-img{transform:scale(1);opacity:1;}
-.lb-close{
-  position:absolute;top:max(18px,env(safe-area-inset-top));right:18px;
-  width:36px;height:36px;border-radius:50%;
-  background:rgba(255,255,255,.15);backdrop-filter:blur(8px);
-  border:none;color:white;font-size:20px;line-height:36px;text-align:center;
-  cursor:pointer;z-index:9001;
-}
 /* TRIM */
 .trim-body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .trim-ca{position:relative;background:#111;flex-shrink:0;overflow:hidden;}
@@ -586,7 +581,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
         <div class="pst"><span class="pst-n" id="stat-following">0</span><span class="pst-l">フォロー</span></div>
         <div class="pst"><span class="pst-n" id="stat-followers">0</span><span class="pst-l">フォロワー</span></div>
         <div class="pst" onclick="goTo('analytics')" style="cursor:pointer;"><span class="pst-n" id="stat-score" style="color:var(--g);">0</span><span class="pst-l">🧠 知識Pt</span></div>
-        <div class="pst"><span class="pst-n" id="stat-thanks" style="color:#e05a8a;">0</span><span class="pst-l">🩷 ありがとう</span></div>
+        <div class="pst"><span class="pst-n" id="stat-thanks" style="color:#e05a8a;">0</span><span class="pst-l">🩷 ありがと</span></div>
       </div>
     </div>
   </div>
@@ -755,11 +750,11 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     </span>
     <span style="font-size:9px;color:var(--text3);">あなただけが見られます</span>
   </div>
-  <!-- ありがとう・コメント -->
+  <!-- ありがと・コメント -->
   <div class="react-bar" id="react-bar" style="display:none;">
     <button class="btn-thanks" id="btn-thanks" onclick="toggleThanks()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      ありがとう
+      ありがと
     </button>
     <span class="thanks-count" id="thanks-count"></span>
     <button class="btn-comment-open" onclick="toggleCommentSection()">
@@ -1847,7 +1842,7 @@ function renderChatUI(item){
     if(item.isPublic){ pt.classList.add('public'); pt.innerHTML=`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4"/><path d="M1.5 5.5h8"/><path d="M5.5 1.5a6 4 0 0 1 0 8a6 4 0 0 1 0 -8"/></svg><span id="priv-label">友達に公開</span>`; }
     else { pt.classList.remove('public'); pt.innerHTML=`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="7" height="5" rx="1"/><path d="M3.5 5V3.5a1.5 1.5 0 0 1 3 0V5"/></svg><span id="priv-label">非公開</span>`; }
   }
-  // ありがとう・コメントバー（公開投稿のみ表示）
+  // ありがと・コメントバー（公開投稿のみ表示）
   const reactBar=document.getElementById('react-bar');
   const commentSection=document.getElementById('comment-section');
   if(item.isPublic){
@@ -1878,7 +1873,7 @@ function renderReactBar(item){
   const thanks=item.thanks||[];
   const myThanks=thanks.includes(uid);
   btn.classList.toggle('on', myThanks);
-  btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="${myThanks?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> ありがとう`;
+  btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="${myThanks?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> ありがと`;
   cnt.textContent=thanks.length>0?`${thanks.length}件`:'';
   const comments=item.comments||[];
   const lbl=document.getElementById('comment-count-lbl');
@@ -2658,7 +2653,6 @@ console.log('[SnapIn] Firebase ready ✓');
 
 <!-- ライトボックス -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <button class="lb-close" onclick="closeLightbox()">✕</button>
   <img class="lb-img" id="lb-img" src="" alt="">
 </div>
 
