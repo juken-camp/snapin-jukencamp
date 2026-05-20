@@ -2214,7 +2214,8 @@ function updateStats(){
   setEl('stat-total', S.items.length);
   setEl('stat-score', calcScore());
   setEl('stat-thanks', S.items.reduce((a,i)=>a+(i.thanks?.length||0),0));
-  updateFollowStats();
+  setEl('stat-following', S.followingCount||0);
+  setEl('stat-followers', S.followerCount||0);
 }
 
 // ═══════════════════════════════════════════
