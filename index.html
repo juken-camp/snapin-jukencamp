@@ -33,17 +33,16 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .ni.active{color:var(--g);}
 .ni svg{display:block;flex-shrink:0;}
 /* HOME */
-.prof{padding:14px 18px 6px;display:flex;flex-direction:row;align-items:center;gap:12px;}
+.prof{padding:14px 18px 6px;display:flex;flex-direction:row;align-items:center;gap:14px;}
+.ava{width:64px;height:64px;border-radius:50%;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:var(--gd);border:2px solid var(--g);flex-shrink:0;cursor:pointer;overflow:hidden;}
+.ava img{width:100%;height:100%;object-fit:cover;}
 .prof-info{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;}
 .prof-stats{display:flex;flex:1;}
 .pst{flex:1;display:flex;flex-direction:column;align-items:center;padding:0 2px;}
-.pst:first-child{align-items:flex-start;}
 .pst-n{font-size:15px;font-weight:700;}
 .pst-l{font-size:7px;color:var(--text2);margin-top:1px;white-space:nowrap;}
 .pst+.pst{border-left:0.5px solid var(--border);}
 .prof-name{padding:0;font-size:14px;font-weight:600;}
-.ava{width:62px;height:62px;border-radius:50%;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:var(--gd);border:2px solid var(--g);flex-shrink:0;cursor:pointer;overflow:hidden;margin-right:4px;}
-.ava img{width:100%;height:100%;object-fit:cover;}
 .prof-sub{padding:0 18px 10px;font-size:10px;color:var(--text2);}
 /* VIEW TOGGLE */
 .view-toggle{display:flex;align-items:center;gap:0;border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;flex-shrink:0;}
@@ -136,10 +135,10 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .or-txt{font-size:11px;color:var(--text3);}
 .roll-btn{padding:13px 16px;border:0.5px solid var(--border2);border-radius:var(--rs);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);cursor:pointer;background:var(--bg);}
 /* DECO TEXT */
-.deco-box{flex:1;display:flex;flex-direction:column;border:0.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-top:2px;min-height:0;}
+.deco-box{display:flex;flex-direction:column;border:0.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-top:2px;flex:1;min-height:0;}
 /* プレビュー: 固定高さ（コンパクト） */
 .deco-preview{
-  position:relative;height:130px;flex-shrink:0;width:100%;
+  position:relative;width:100%;aspect-ratio:1/1;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;
   transition:background 0.2s;
@@ -157,11 +156,11 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .deco-emoji-el{position:absolute;top:10px;left:14px;font-size:28px;line-height:1;z-index:3;cursor:grab;}
 .deco-hint{position:absolute;bottom:6px;right:8px;font-size:8px;color:rgba(255,255,255,0.3);pointer-events:none;z-index:1;}
 /* ツールバー：残り高さを全部使う */
-.deco-toolbar{flex:1;padding:10px 12px;background:rgba(0,0,0,0.025);border-top:0.5px solid var(--border);display:flex;flex-direction:column;gap:9px;overflow-y:auto;min-height:0;}
-.deco-row{display:flex;align-items:center;gap:7px;}
+.deco-toolbar{flex:1;padding:10px 12px;background:rgba(0,0,0,0.025);border-top:0.5px solid var(--border);display:flex;flex-direction:column;gap:9px;overflow:hidden;min-height:0;}
+.deco-row{display:flex;align-items:center;gap:7px;flex-shrink:0;}
 .deco-lbl{font-size:9px;color:var(--text3);width:26px;flex-shrink:0;}
-/* テキスト入力：ツールバー内で縦に伸びる */
-.deco-inp{width:100%;flex:1;padding:11px 12px;border:0.5px solid var(--border2);border-radius:10px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;resize:none;line-height:1.6;min-height:80px;}
+/* テキスト入力：残り高さをすべて使う */
+.deco-inp{width:100%;flex:1;min-height:0;padding:11px 12px;border:0.5px solid var(--border2);border-radius:10px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;resize:none;line-height:1.6;}
 /* フッター：画面下に固定 */
 .deco-footer{padding:10px 14px max(14px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--surface);flex-shrink:0;}
 .swatches{display:flex;gap:5px;flex-wrap:wrap;flex:1;}
@@ -574,6 +573,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     <div class="edit-bar-done" onclick="exitEditMode()">完了</div>
   </div>
   <div class="prof">
+    <div class="ava" id="home-ava" onclick="goTo('profile')">K</div>
     <div class="prof-info">
       <div class="prof-name" id="home-name">Kazuma</div>
       <div class="prof-stats">
@@ -584,7 +584,6 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
         <div class="pst"><span class="pst-n" id="stat-thanks" style="color:#e05a8a;">0</span><span class="pst-l">🩷 ありがと</span></div>
       </div>
     </div>
-    <div class="ava" id="home-ava" onclick="goTo('profile')">K</div>
   </div>
   <div class="prof-tag" id="home-tag"></div>
 
@@ -702,7 +701,6 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
         <button class="post-btn" onclick="postDeco()">グリッドに追加</button>
       </div>
     </div>
-    <div style="height:24px;"></div>
   </div>
 </div>
 
