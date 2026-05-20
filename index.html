@@ -61,6 +61,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .text-tile-tag{display:none;}
 .text-tile-body{font-size:9px;line-height:1.55;word-break:break-all;flex:1;overflow:hidden;}
 .fab-wrap{position:absolute;bottom:80px;right:18px;}
+.feed-mode-active .fab-wrap{display:none;}
 .fab{width:52px;height:52px;border-radius:50%;background:var(--g);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(29,158,117,0.4);transition:transform 0.15s;}
 .fab:active{transform:scale(0.93);}
 
@@ -69,11 +70,11 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .feed-scroller{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
 .feed-scroller::-webkit-scrollbar{display:none;}
 .feed-item{height:100%;scroll-snap-align:start;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#111;flex-shrink:0;}
-.feed-item-bg{position:absolute;inset:0;object-fit:cover;width:100%;height:100%;}
+.feed-item-bg{position:absolute;inset:0;object-fit:contain;width:100%;height:100%;}
 .feed-item-bg-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;}
 .feed-item-overlay{position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,0.75) 100%);}
 /* 右側アクション */
-.feed-actions{position:absolute;right:14px;bottom:120px;display:flex;flex-direction:column;gap:18px;align-items:center;z-index:5;}
+.feed-actions{position:absolute;right:14px;bottom:80px;display:flex;flex-direction:column;gap:18px;align-items:center;z-index:5;}
 .feed-act{display:flex;flex-direction:column;align-items:center;gap:4px;}
 .feed-act-btn{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);border:0.5px solid rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;transition:all .15s;}
 .feed-act-btn:active{transform:scale(0.9);}
@@ -911,7 +912,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
     </button>
     <button class="sp-foot-action" onclick="openCurrentFromSwipe()">
-      <svg width="13" height="13" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       AIに聞く
     </button>
     <div class="sp-counter" id="sp-counter"></div>
@@ -1040,6 +1041,7 @@ function setViewMode(mode){
   document.getElementById('vt-feed').classList.toggle('on', mode==='feed');
   document.getElementById('home-grid-mode').style.display = mode==='grid'?'flex':'none';
   document.getElementById('home-feed-mode').style.display = mode==='feed'?'block':'none';
+  document.getElementById('screen-home').classList.toggle('feed-mode-active', mode==='feed');
   if(mode==='feed') renderFeed();
 }
 
@@ -1077,7 +1079,7 @@ function renderFeed(){
     el.innerHTML+=`<div class="feed-actions">
       <div class="feed-act">
         <div class="feed-act-btn" onclick="event.stopPropagation();openFromGrid(${item.id})">
-          <svg width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </div>
         <div class="feed-act-lbl">AIに聞く</div>
       </div>
@@ -2282,7 +2284,8 @@ import {
   signOut, onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp
+  getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp,
+  collection, query, where, orderBy, getDocs
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -2320,6 +2323,9 @@ onAuthStateChanged(fbAuth, async (user) => {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-home').classList.add('active');
     updateHomeProfile(); updateStats(); renderGrid(); renderFilterBar();
+
+    // Firestoreから投稿を読み込む（端末間同期）
+    loadPostsFromFirestore(user.uid);
 
   } else {
     window.currentUid      = null;
@@ -2386,6 +2392,63 @@ window.doRegister = async function() {
 window.doLogout = async function() {
   if (!confirm('ログアウトしますか？')) return;
   await signOut(fbAuth);
+};
+
+// ── Firestoreから投稿を読み込む（端末間同期）──
+window.loadPostsFromFirestore = async function(uid) {
+  if (!uid) return;
+  try {
+    const q = query(
+      collection(fbDb, 'posts'),
+      where('uid', '==', uid),
+      orderBy('createdAt', 'desc')
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return;
+
+    let changed = false;
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      const id = Number(d.postId) || d.postId;
+      // 既にlocalStorageにある投稿はスキップ
+      if (S.items.find(i => String(i.id) === String(id))) return;
+
+      // Firestoreのデータをローカル形式に変換
+      const item = {
+        id,
+        type:         d.imageData ? 'photo' : 'text',
+        imageData:    d.imageData  || null,
+        fullImageData:d.imageData  || null,
+        content:      d.caption    || '',
+        category:     d.category   || null,
+        categoryPending: !d.category,
+        isPublic:     d.visibility === 'school',
+        chatHistory:  d.chatHistory || [],
+        deco:         d.deco       || null,
+        masteryStatus:d.masteryStatus || 'active',
+        hidden:       d.hidden     || false,
+        likeCount:    d.likeCount  || 0,
+        commentCount: d.commentCount || 0,
+        chatted:      (d.chatHistory||[]).some(m=>m.role==='assistant'),
+        isNew:        false,
+        date:         d.createdAt?.toDate
+                        ? d.createdAt.toDate().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'})
+                        : new Date().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}),
+      };
+      S.items.push(item);
+      changed = true;
+    });
+
+    if (changed) {
+      // 日付降順にソート
+      S.items.sort((a,b) => Number(b.id) - Number(a.id));
+      saveState();
+      updateStats(); renderGrid(); renderFilterBar();
+      console.log(`[Firestore] ${snap.size}件の投稿を読み込みました`);
+    }
+  } catch(e) {
+    console.error('[Firestore] 投稿読み込み失敗:', e);
+  }
 };
 
 // ── 投稿をFirestoreに保存 ──
