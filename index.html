@@ -176,8 +176,8 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .btn-sec{flex:1;padding:11px;border:0.5px solid var(--border2);border-radius:var(--rs);font-size:12px;color:var(--text2);background:transparent;cursor:pointer;}
 .btn-pri{flex:2;padding:11px;background:var(--g);border:none;border-radius:var(--rs);font-size:12px;font-weight:500;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
 /* CHAT */
-.chat-photo{position:relative;flex-shrink:0;overflow:hidden;max-height:180px;background:#111;display:flex;align-items:center;justify-content:center;}
-.chat-photo img{width:100%;height:auto;max-height:260px;object-fit:contain;display:block;}
+.chat-photo{position:relative;flex-shrink:0;background:#111;display:flex;align-items:center;justify-content:center;}
+.chat-photo img{width:100%;height:auto;max-height:55vh;object-fit:contain;display:block;}
 .chat-photo-tags{position:absolute;top:8px;left:8px;display:flex;gap:6px;}
 .chat-tag{background:rgba(0,0,0,0.5);border-radius:20px;padding:3px 9px;font-size:8px;color:white;display:flex;align-items:center;gap:3px;}
 .chat-tag.green{background:rgba(29,158,117,0.7);}
@@ -371,7 +371,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .empty-hero-s{font-size:11px;line-height:1.8;}
 .empty-cta{margin-top:18px;padding:10px 22px;background:var(--g);color:white;border:none;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;}
 .grid-wrap{scroll-behavior:smooth;}
-.chat-photo{transition:max-height .3s;}
+.chat-photo{transition:none;}
 /* ═══ CATEGORY SYSTEM ═══ */
 .gi-cat-dot{position:absolute;bottom:6px;left:6px;width:9px;height:9px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.85);box-shadow:0 1px 3px rgba(0,0,0,0.25);}
 .gi-cat-label{position:absolute;bottom:5px;left:5px;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);border-radius:8px;padding:2px 7px 2px 5px;font-size:7.5px;color:white;font-weight:600;letter-spacing:.3px;display:flex;align-items:center;gap:3px;opacity:0;transition:opacity .2s;}
@@ -1824,7 +1824,10 @@ function renderChatUI(item){
   const area=document.getElementById('chat-photo-area');
   area.innerHTML=''; area.style.cssText='';
   if(item.type==='photo'&&item.imageData){
-    const img=document.createElement('img'); img.src=item.imageData; area.appendChild(img);
+    const img=document.createElement('img');
+    img.src=item.imageData;
+    img.style.cssText='width:100%;height:auto;max-height:55vh;object-fit:contain;display:block;';
+    area.appendChild(img);
     const tags=document.createElement('div'); tags.className='chat-photo-tags';
     tags.innerHTML=`<div class="chat-tag">📷 写真から対話中</div>`;
     if(item.imageData!==item.fullImageData) tags.innerHTML+=`<div class="chat-tag green">✂️ 切り取り済み</div>`;
