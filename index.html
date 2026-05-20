@@ -177,7 +177,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .btn-pri{flex:2;padding:11px;background:var(--g);border:none;border-radius:var(--rs);font-size:12px;font-weight:500;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
 /* CHAT */
 .chat-photo{position:relative;flex-shrink:0;overflow:hidden;max-height:180px;background:#111;display:flex;align-items:center;justify-content:center;}
-.chat-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+.chat-photo img{width:100%;height:auto;max-height:260px;object-fit:contain;display:block;}
 .chat-photo-tags{position:absolute;top:8px;left:8px;display:flex;gap:6px;}
 .chat-tag{background:rgba(0,0,0,0.5);border-radius:20px;padding:3px 9px;font-size:8px;color:white;display:flex;align-items:center;gap:3px;}
 .chat-tag.green{background:rgba(29,158,117,0.7);}
@@ -480,14 +480,24 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     </div>
     <div id="login-panel" class="login-form">
       <input id="login-email" class="login-input" type="email" placeholder="メールアドレス" autocomplete="email">
-      <input id="login-pass" class="login-input" type="password" placeholder="パスワード" autocomplete="current-password">
+      <div style="position:relative;">
+        <input id="login-pass" class="login-input" type="password" placeholder="パスワード" autocomplete="current-password" style="padding-right:44px;">
+        <button type="button" onclick="togglePw('login-pass','eye-login')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;">
+          <svg id="eye-login" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 9s3.5-6 8-6 8 6 8 6-3.5 6-8 6-8-6-8-6z"/><circle cx="9" cy="9" r="2.5"/></svg>
+        </button>
+      </div>
       <div id="login-err" class="login-err"></div>
       <button id="login-btn" class="login-submit" onclick="doLogin()">ログイン</button>
     </div>
     <div id="reg-panel" class="login-form" style="display:none;">
       <input id="reg-name" class="login-input" type="text" placeholder="ニックネーム（後から変更可）" maxlength="20">
       <input id="reg-email" class="login-input" type="email" placeholder="メールアドレス" autocomplete="email">
-      <input id="reg-pass" class="login-input" type="password" placeholder="パスワード（6文字以上）" autocomplete="new-password">
+      <div style="position:relative;">
+        <input id="reg-pass" class="login-input" type="password" placeholder="パスワード（6文字以上）" autocomplete="new-password" style="padding-right:44px;">
+        <button type="button" onclick="togglePw('reg-pass','eye-reg')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;">
+          <svg id="eye-reg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 9s3.5-6 8-6 8 6 8 6-3.5 6-8 6-8-6-8-6z"/><circle cx="9" cy="9" r="2.5"/></svg>
+        </button>
+      </div>
       <div id="reg-err" class="login-err"></div>
       <button id="reg-btn" class="login-submit" onclick="doRegister()">登録してはじめる</button>
     </div>
@@ -633,13 +643,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
             <div class="fc" data-font="Impact,'Arial Black',sans-serif" style="font-family:Impact;">インパクト</div>
           </div>
         </div>
-        <div class="deco-row">
-          <div class="deco-lbl">絵文字</div>
-          <div style="display:flex;gap:8px;align-items:center;flex:1;">
-            <input id="emoji-free-input" type="text" class="emoji-free-inp" placeholder="ここに絵文字を入れる 🎵🔥📚" maxlength="4" oninput="setEmoji(this.value.trim())">
-            <button class="clr-emoji" onclick="setEmoji('');document.getElementById('emoji-free-input').value=''">✕</button>
-          </div>
-        </div>
+
       </div>
       <div class="deco-footer">
         <span style="font-size:10px;color:var(--text3);">プレビューをタップして編集</span>
@@ -2248,6 +2252,17 @@ renderGrid(); updateStats(); updateHomeProfile(); renderFilterBar();
 
 <script>
 // ── ログインタブ切替 ──
+function togglePw(inputId, eyeId) {
+  const inp = document.getElementById(inputId);
+  const eye = document.getElementById(eyeId);
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    eye.innerHTML = '<path d="M17 17L1 1M10.5 10.7A2.5 2.5 0 0 1 6.3 6.5"/><path d="M6.7 3.2C7.4 3.1 8.2 3 9 3c4.5 0 8 6 8 6a14.4 14.4 0 0 1-2 2.7M3 3s-2 2.7-2 6a14 14 0 0 0 2.1 3.3"/>';
+  } else {
+    inp.type = 'password';
+    eye.innerHTML = '<path d="M1 9s3.5-6 8-6 8 6 8 6-3.5 6-8 6-8-6-8-6z"/><circle cx="9" cy="9" r="2.5"/>';
+  }
+}
 function switchLoginTab(tab) {
   document.getElementById('login-panel').style.display = tab === 'login' ? 'flex' : 'none';
   document.getElementById('reg-panel').style.display   = tab === 'reg'   ? 'flex' : 'none';
