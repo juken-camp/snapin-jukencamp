@@ -40,7 +40,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .pst{flex:1;display:flex;flex-direction:column;align-items:center;}
 .pst-n{font-size:19px;font-weight:600;}
 .pst-l{font-size:9px;color:var(--text2);margin-top:1px;}
-.prof-name{padding:0 18px 2px;font-size:13px;font-weight:500;}
+.prof-name{padding:0 18px 2px;font-size:13px;font-weight:500;text-align:center;}
 .prof-sub{padding:0 18px 10px;font-size:10px;color:var(--text2);}
 /* VIEW TOGGLE */
 .view-toggle{display:flex;align-items:center;gap:0;border:0.5px solid var(--border2);border-radius:10px;overflow:hidden;flex-shrink:0;}
@@ -53,11 +53,11 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .gi:active{opacity:0.78;}
 .gi.sq{aspect-ratio:1;}
 .gi.wide{aspect-ratio:2.05/1;grid-column:span 2;}
-.gi-overlay{position:absolute;bottom:0;left:0;right:0;padding:5px 7px;background:linear-gradient(transparent,rgba(0,0,0,0.32));}
-.gi-meta{font-size:7px;color:rgba(255,255,255,0.92);}
+.gi-overlay{position:absolute;top:0;left:0;right:0;padding:4px 7px;background:linear-gradient(rgba(0,0,0,0.28),transparent);}
+.gi-meta{font-size:7px;color:rgba(255,255,255,0.92);text-align:right;}
 .gi-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--g);border:1.5px solid white;}
-.text-tile-inner{padding:10px;width:100%;height:100%;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;}
-.text-tile-emoji{font-size:16px;line-height:1;margin-bottom:3px;}
+.text-tile-inner{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;position:absolute;inset:0;padding:8px;text-align:center;}
+.text-tile-emoji{font-size:16px;line-height:1;margin-bottom:4px;}
 .text-tile-tag{display:none;}
 .text-tile-body{font-size:9px;line-height:1.55;word-break:break-all;flex:1;overflow:hidden;}
 .fab-wrap{position:absolute;bottom:80px;right:18px;}
@@ -116,42 +116,30 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .roll-btn{padding:13px 16px;border:0.5px solid var(--border2);border-radius:var(--rs);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);cursor:pointer;background:var(--bg);}
 /* DECO TEXT */
 .deco-box{border:0.5px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-top:2px;}
-/* プレビュー: 3:2比率 */
+/* プレビュー: 正方形 */
 .deco-preview{
-  position:relative;aspect-ratio:3/2;width:100%;
-  display:block;overflow:hidden;
+  position:relative;aspect-ratio:1/1;width:100%;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
   transition:background 0.2s;
-  touch-action:none;/* ← スクロール無効化してピンチを取る */
 }
-/* ドラッグ可能レイヤー */
-.deco-layer{
-  position:absolute;cursor:grab;user-select:none;
-  touch-action:none;display:inline-flex;
-  align-items:center;justify-content:center;
-  transform-origin:center center;
+/* テキストオーバーレイ（Facebook風：中央寄せ・自動サイズ） */
+.deco-text-main{
+  position:relative;z-index:2;
+  width:82%;text-align:center;
+  font-weight:700;line-height:1.35;
+  word-break:break-word;white-space:pre-wrap;
+  pointer-events:none;
+  transition:font-size 0.15s;
 }
-.deco-layer:active{cursor:grabbing;}
-/* 絵文字レイヤー */
-.deco-emoji-el{font-size:32px;line-height:1;left:14px;top:12px;}
-/* テキストレイヤー */
-.deco-text-el{
-  font-size:22px;font-weight:500;line-height:1.4;
-  word-break:break-word;
-  outline:1.5px solid rgba(255,255,255,0.45);
-  outline-offset:5px;border-radius:2px;
-  padding:2px 6px;
-  left:50%;top:50%;
-  transform:translate(-50%,-50%);
-  max-width:86%;min-width:50px;
-  text-align:center;white-space:pre-wrap;
-  cursor:text;
-}
-.deco-text-el:focus{outline:1.5px solid rgba(255,255,255,0.9);cursor:text;}
-.deco-text-el:empty:before{content:'タップして入力';opacity:0.3;font-size:14px;}
-.deco-hint{position:absolute;bottom:6px;right:8px;font-size:8px;color:rgba(255,255,255,0.3);pointer-events:none;}
+/* 絵文字（左上固定・小さめ） */
+.deco-emoji-el{position:absolute;top:10px;left:14px;font-size:28px;line-height:1;z-index:3;cursor:grab;}
+.deco-hint{position:absolute;bottom:6px;right:8px;font-size:8px;color:rgba(255,255,255,0.3);pointer-events:none;z-index:1;}
 .deco-toolbar{padding:10px 12px;background:rgba(0,0,0,0.025);border-top:0.5px solid var(--border);display:flex;flex-direction:column;gap:9px;}
 .deco-row{display:flex;align-items:center;gap:7px;}
 .deco-lbl{font-size:9px;color:var(--text3);width:26px;flex-shrink:0;}
+/* テキスト入力エリア（ツールバー内） */
+.deco-inp{width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;resize:none;line-height:1.5;min-height:48px;max-height:100px;overflow-y:auto;}
 .swatches{display:flex;gap:5px;flex-wrap:wrap;flex:1;}
 .sw{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:transform 0.1s;flex-shrink:0;}
 .sw.on{border-color:var(--text);transform:scale(1.15);}
@@ -165,6 +153,21 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .deco-footer{padding:8px 12px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:#fafafa;}
 .post-btn{padding:7px 18px;background:var(--g);border:none;border-radius:20px;font-size:11px;color:white;font-weight:500;cursor:pointer;}
 .clr-emoji{font-size:10px;color:var(--text3);border:none;background:none;cursor:pointer;padding:4px;white-space:nowrap;}.emoji-free-inp{flex:1;padding:7px 12px;border:0.5px solid var(--border2);border-radius:20px;font-size:16px;font-family:system-ui,sans-serif;background:var(--bg);outline:none;color:var(--text);}
+/* THANKS & COMMENTS */
+.react-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:0.5px solid var(--border);}
+.btn-thanks{display:flex;align-items:center;gap:5px;padding:7px 16px;border-radius:20px;border:1.5px solid var(--border2);background:transparent;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;font-weight:500;}
+.btn-thanks.on{background:var(--gl);border-color:var(--g);color:var(--gd);}
+.thanks-count{font-size:11px;color:var(--text3);}
+.btn-comment-open{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;border:1.5px solid var(--border2);background:transparent;font-size:12px;color:var(--text2);cursor:pointer;margin-left:auto;}
+.comment-section{padding:0 16px 12px;display:none;flex-direction:column;gap:8px;}
+.comment-section.open{display:flex;}
+.comment-item{display:flex;gap:8px;align-items:flex-start;}
+.comment-ava{width:26px;height:26px;border-radius:50%;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gd);flex-shrink:0;}
+.comment-bubble{background:var(--bg2,#f5f5f5);border-radius:12px;padding:6px 10px;font-size:12px;line-height:1.5;flex:1;}
+.comment-name{font-size:9px;font-weight:600;color:var(--gd);margin-bottom:1px;}
+.comment-inp-row{display:flex;gap:8px;align-items:center;}
+.comment-inp{flex:1;padding:8px 12px;border:0.5px solid var(--border2);border-radius:20px;font-size:12px;background:var(--bg);color:var(--text);outline:none;}
+.comment-send{width:32px;height:32px;border-radius:50%;background:var(--g);border:none;color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
 /* TRIM */
 .trim-body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .trim-ca{position:relative;background:#111;flex-shrink:0;overflow:hidden;}
@@ -601,11 +604,13 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     <!-- DECO CARD -->
     <div class="deco-box">
       <div class="deco-preview" id="deco-preview" style="background:linear-gradient(135deg,#1D9E75,#0F6E56);">
-        <div class="deco-layer deco-emoji-el" id="deco-emoji-el"></div>
-        <div class="deco-layer deco-text-el" id="deco-text-el" contenteditable="true" style="color:#fff;font-family:system-ui;" onclick="focusDecoText(event)"></div>
-        <div class="deco-hint">ピンチ→文字サイズ変更 / ドラッグ→移動</div>
+        <div class="deco-emoji-el" id="deco-emoji-el"></div>
+        <div class="deco-text-main" id="deco-text-main" style="color:#fff;font-family:system-ui;font-size:36px;"></div>
+        <div class="deco-hint">入力すると自動でプレビュー</div>
       </div>
       <div class="deco-toolbar">
+        <!-- テキスト入力 -->
+        <textarea class="deco-inp" id="deco-inp" placeholder="テキストを入力…" rows="2" oninput="onDecoInput(this)"></textarea>
         <div class="deco-row">
           <div class="deco-lbl">背景</div>
           <div class="swatches" id="bg-sw">
@@ -638,16 +643,27 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
           <div class="font-chips" id="font-chips">
             <div class="fc on" data-font="system-ui,-apple-system,sans-serif" style="font-family:system-ui;">ゴシック</div>
             <div class="fc" data-font="Georgia,'Times New Roman',serif" style="font-family:Georgia,serif;">セリフ</div>
-            <div class="fc" data-font="'Courier New',Courier,monospace" style="font-family:'Courier New',monospace;">等幅</div>
             <div class="fc" data-font="'Hiragino Mincho ProN','Yu Mincho',serif" style="font-family:'Hiragino Mincho ProN',serif;">明朝</div>
-            <div class="fc" data-font="cursive,fantasy" style="font-family:cursive;">筆記体</div>
             <div class="fc" data-font="Impact,'Arial Black',sans-serif" style="font-family:Impact;">インパクト</div>
           </div>
         </div>
-
+        <div class="deco-row">
+          <div class="deco-lbl">絵文字</div>
+          <div class="emoji-row">
+            <span class="ep" onclick="setEmoji('📚')">📚</span>
+            <span class="ep" onclick="setEmoji('🔥')">🔥</span>
+            <span class="ep" onclick="setEmoji('💡')">💡</span>
+            <span class="ep" onclick="setEmoji('✨')">✨</span>
+            <span class="ep" onclick="setEmoji('🎯')">🎯</span>
+            <span class="ep" onclick="setEmoji('😊')">😊</span>
+            <span class="ep" onclick="setEmoji('🌟')">🌟</span>
+            <span class="ep" onclick="setEmoji('💪')">💪</span>
+            <button class="clr-emoji" onclick="setEmoji('')">なし</button>
+          </div>
+        </div>
       </div>
       <div class="deco-footer">
-        <span style="font-size:10px;color:var(--text3);">プレビューをタップして編集</span>
+        <span style="font-size:10px;color:var(--text3);">入力するとリアルタイムでプレビュー</span>
         <button class="post-btn" onclick="postDeco()">グリッドに追加</button>
       </div>
     </div>
@@ -699,6 +715,27 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
       <span id="priv-label">非公開</span>
     </span>
     <span style="font-size:9px;color:var(--text3);">あなただけが見られます</span>
+  </div>
+  <!-- ありがとう・コメント -->
+  <div class="react-bar" id="react-bar" style="display:none;">
+    <button class="btn-thanks" id="btn-thanks" onclick="toggleThanks()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      ありがとう
+    </button>
+    <span class="thanks-count" id="thanks-count"></span>
+    <button class="btn-comment-open" onclick="toggleCommentSection()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span id="comment-count-lbl">コメント</span>
+    </button>
+  </div>
+  <div class="comment-section" id="comment-section">
+    <div id="comment-list"></div>
+    <div class="comment-inp-row">
+      <input class="comment-inp" id="comment-inp" type="text" placeholder="コメントを入力…" maxlength="200" onkeydown="if(event.key==='Enter')submitComment()">
+      <button class="comment-send" onclick="submitComment()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M12 5L6 11M12 5L18 11" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
   </div>
   <div class="chat-msgs" id="chat-msgs"></div>
   <div class="chat-attach-row" id="chat-attach-row"></div>
@@ -1458,138 +1495,55 @@ document.getElementById('ava-input').addEventListener('change', e=>{
   document.querySelectorAll('#txt-sw .sw').forEach(s=>s.addEventListener('click',()=>{
     document.querySelectorAll('#txt-sw .sw').forEach(x=>x.classList.remove('on'));
     s.classList.add('on'); S.deco.tc=s.dataset.tc;
-    document.getElementById('deco-text-el').style.color=S.deco.tc;
+    document.getElementById('deco-text-main').style.color=S.deco.tc;
   }));
   // フォント
   document.querySelectorAll('#font-chips .fc').forEach(c=>c.addEventListener('click',()=>{
     document.querySelectorAll('#font-chips .fc').forEach(x=>x.classList.remove('on'));
     c.classList.add('on'); S.deco.font=c.dataset.font;
-    document.getElementById('deco-text-el').style.fontFamily=S.deco.font;
+    document.getElementById('deco-text-main').style.fontFamily=S.deco.font;
   }));
-
-  makeDraggablePinch(document.getElementById('deco-text-el'), true);
-  makeDraggablePinch(document.getElementById('deco-emoji-el'), false);
 })();
 
-/**
- * makeDraggablePinch
- * isText=true のとき、ピンチでfontSizeのみ変える（要素移動なし）
- * isText=false のとき（絵文字）、ピンチでfontSizeを変える
- * 1本指はどちらも移動
- */
-function makeDraggablePinch(el, isText){
-  // 現在のtranslate取得
-  function getTranslate(){
-    const t=el.style.transform;
-    const m=t.match(/translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/);
-    return m?{x:parseFloat(m[1]),y:parseFloat(m[2])}:{x:0,y:0};
-  }
-  function setTranslate(x,y){
-    // fontSizeはtransformに含めない
-    const curTransform=el.style.transform.replace(/translate\([^)]+\)/,'').trim();
-    el.style.transform=`translate(${x}px,${y}px) ${curTransform}`;
-  }
-  function getFontSize(){
-    return parseFloat(el.style.fontSize)||parseFloat(getComputedStyle(el).fontSize)||22;
-  }
-
-  let dragging=false;
-  let ox=0,oy=0,startX=0,startY=0;
-  let pinching=false,initDist=0,initFontSize=22;
-  let initialized=false;
-
-  // 初回タッチ時にcenter基準でtranslateを設定
-  function initPosition(){
-    if(initialized) return;
-    // テキスト要素はCSS上 left:50%;top:50%;transform:translate(-50%,-50%) なのでそのまま
-    initialized=true;
-  }
-
-  el.addEventListener('touchstart', e=>{
-    initPosition();
-    if(e.touches.length===1){
-      // テキスト要素で編集中の場合は移動しない（focusがあるとき）
-      if(isText && document.activeElement===el) return;
-      dragging=true; pinching=false;
-      const p=getTranslate(); ox=p.x; oy=p.y;
-      startX=e.touches[0].clientX; startY=e.touches[0].clientY;
-    } else if(e.touches.length===2){
-      dragging=false; pinching=true;
-      const dx=e.touches[0].clientX-e.touches[1].clientX;
-      const dy=e.touches[0].clientY-e.touches[1].clientY;
-      initDist=Math.hypot(dx,dy)||1;
-      initFontSize=getFontSize();
-    }
-    e.stopPropagation();
-  },{passive:true});
-
-  el.addEventListener('touchmove', e=>{
-    e.preventDefault();
-    if(e.touches.length===1 && dragging){
-      const dx=e.touches[0].clientX-startX;
-      const dy=e.touches[0].clientY-startY;
-      setTranslate(ox+dx, oy+dy);
-    } else if(e.touches.length===2 && pinching){
-      const dx=e.touches[0].clientX-e.touches[1].clientX;
-      const dy=e.touches[0].clientY-e.touches[1].clientY;
-      const ratio=Math.hypot(dx,dy)/initDist;
-      const newSize=Math.max(10, Math.min(96, initFontSize*ratio));
-      el.style.fontSize=newSize.toFixed(1)+'px';
-      // ピンチ中は移動もしない（要素自体のサイズが変わるだけ）
-    }
-  },{passive:false});
-
-  el.addEventListener('touchend', e=>{
-    dragging=false;
-    if(e.touches.length<2) pinching=false;
-  },{passive:true});
-
-  // マウス（PC）
-  el.addEventListener('mousedown', e=>{
-    if(isText && e.detail===1 && !e.shiftKey){ return; } // シングルクリックはフォーカス
-    initPosition(); dragging=true;
-    const p=getTranslate(); ox=p.x; oy=p.y;
-    startX=e.clientX; startY=e.clientY;
-    e.preventDefault();
-  });
-  window.addEventListener('mousemove', e=>{
-    if(!dragging) return;
-    const p=getTranslate();
-    setTranslate(ox+e.clientX-startX, oy+e.clientY-startY);
-  });
-  window.addEventListener('mouseup', ()=>{ dragging=false; });
-}
-
-// テキスト要素をタップしたとき、編集モードに入る（ドラッグと区別）
-function focusDecoText(e){
-  e.stopPropagation();
-  const el=document.getElementById('deco-text-el');
-  el.focus();
-  // カーソルを末尾へ
-  const range=document.createRange();
-  const sel=window.getSelection();
-  range.selectNodeContents(el);
-  range.collapse(false);
-  sel?.removeAllRanges();
-  sel?.addRange(range);
+// テキスト入力→プレビュー自動更新＋自動フォントサイズ
+function onDecoInput(ta){
+  const v=ta.value;
+  const el=document.getElementById('deco-text-main');
+  el.textContent=v||'';
+  // 文字数で自動フォントサイズ（Facebook風）
+  let fs=36;
+  if(v.length>30) fs=26;
+  if(v.length>60) fs=20;
+  if(v.length>100) fs=16;
+  el.style.fontSize=fs+'px';
+  S.deco._fontSize=fs;
+  S.deco._text=v;
+  // テキスト領域の高さ自動調整
+  ta.style.height='auto';
+  ta.style.height=Math.min(ta.scrollHeight,100)+'px';
 }
 
 function setEmoji(e){ S.deco.emoji=e; document.getElementById('deco-emoji-el').textContent=e; }
 
 function postDeco(){
-  const textEl=document.getElementById('deco-text-el');
-  const v=textEl.innerText.trim(); if(!v) return;
+  const inp=document.getElementById('deco-inp');
+  const v=(inp.value||'').trim(); if(!v) return;
+  const fs=S.deco._fontSize||36;
   const item={
     id:Date.now(),type:'text',content:v,date:td(),
     chatted:false,chatHistory:[],
-    deco:{...S.deco, fontSize:parseFloat(textEl.style.fontSize)||22},
+    deco:{...S.deco, fontSize:fs},
     isPublic:false,isNew:true,category:null,categoryPending:true
   };
   S.items.unshift(item);
-  textEl.innerText='';
+  // リセット
+  inp.value=''; inp.style.height='auto';
+  const textMain=document.getElementById('deco-text-main');
+  textMain.textContent=''; textMain.style.fontSize='36px';
+  document.getElementById('deco-emoji-el').textContent='';
   document.getElementById('deco-preview').style.background='linear-gradient(135deg,#1D9E75,#0F6E56)';
   S.deco.bg='linear-gradient(135deg,#1D9E75,#0F6E56)';
-  textEl.style.fontSize='22px';
+  S.deco.emoji='';
   updateStats(); saveState(); goTo('home');
   if(window.savePostToFirestore) window.savePostToFirestore(item).catch(e=>console.error(e));
   backgroundCategorizeText(item);
@@ -1837,8 +1791,9 @@ function renderChatUI(item){
     area.appendChild(tags);
   } else if(item.type==='text'){
     const d=item.deco||{};
-    area.style.cssText=`background:${d.bg||'#1a1a1a'};display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:14px 18px;min-height:60px;position:relative;`;
-    area.innerHTML=`${d.emoji?`<div style="font-size:22px;margin-bottom:4px;">${d.emoji}</div>`:''}<div style="font-family:${d.font||'monospace'};font-size:${d.fontSize||16}px;color:${d.tc||'rgba(255,255,255,0.9)'};line-height:1.6;">${item.content}</div>`;
+    // テキストカードは正方形で表示
+    area.style.cssText=`background:${d.bg||'#1a1a1a'};display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1/1;position:relative;width:100%;`;
+    area.innerHTML=`${d.emoji?`<div style="font-size:28px;position:absolute;top:10px;left:14px;">${d.emoji}</div>`:''}<div style="font-family:${d.font||'system-ui'};font-size:${d.deco?.fontSize||d.fontSize||22}px;color:${d.tc||'rgba(255,255,255,0.9)'};line-height:1.35;font-weight:700;text-align:center;width:82%;word-break:break-word;">${item.content}</div>`;
     if(item.category&&!item.categoryPending){
       const ct=document.createElement('div'); ct.style.cssText='position:absolute;top:8px;right:8px;';
       ct.innerHTML=`<div class="chat-cat-tag"><span class="cct-dot" style="background:${catColor(item.category)};"></span>${item.category}</div>`;
@@ -1851,6 +1806,19 @@ function renderChatUI(item){
     if(item.isPublic){ pt.classList.add('public'); pt.innerHTML=`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4"/><path d="M1.5 5.5h8"/><path d="M5.5 1.5a6 4 0 0 1 0 8a6 4 0 0 1 0 -8"/></svg><span id="priv-label">友達に公開</span>`; }
     else { pt.classList.remove('public'); pt.innerHTML=`<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="7" height="5" rx="1"/><path d="M3.5 5V3.5a1.5 1.5 0 0 1 3 0V5"/></svg><span id="priv-label">非公開</span>`; }
   }
+  // ありがとう・コメントバー（公開投稿のみ表示）
+  const reactBar=document.getElementById('react-bar');
+  const commentSection=document.getElementById('comment-section');
+  if(item.isPublic){
+    reactBar.style.display='flex';
+    renderReactBar(item);
+    // コメントセクションは閉じた状態にリセット
+    commentSection.classList.remove('open');
+    renderComments(item);
+  } else {
+    reactBar.style.display='none';
+    commentSection.classList.remove('open');
+  }
   const msgsList=document.getElementById('chat-msgs'); msgsList.innerHTML='';
   (item.chatHistory||[]).forEach(m=>{
     if(m.role==='assistant') aiDirect(m.content);
@@ -1860,6 +1828,87 @@ function renderChatUI(item){
       msgsList.appendChild(d);
     } else userDirect(m.content);
   });
+}
+
+function renderReactBar(item){
+  const btn=document.getElementById('btn-thanks');
+  const cnt=document.getElementById('thanks-count');
+  const uid=window.currentUid||'';
+  const thanks=item.thanks||[];
+  const myThanks=thanks.includes(uid);
+  btn.classList.toggle('on', myThanks);
+  btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="${myThanks?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> ありがとう`;
+  cnt.textContent=thanks.length>0?`${thanks.length}件`:'';
+  const comments=item.comments||[];
+  const lbl=document.getElementById('comment-count-lbl');
+  if(lbl) lbl.textContent=comments.length>0?`コメント ${comments.length}`:'コメント';
+}
+
+function toggleThanks(){
+  const item=S.items.find(i=>i.id===S.curId); if(!item||!item.isPublic) return;
+  const uid=window.currentUid||'anon_'+Date.now();
+  if(!item.thanks) item.thanks=[];
+  const idx=item.thanks.indexOf(uid);
+  if(idx>=0) item.thanks.splice(idx,1);
+  else item.thanks.push(uid);
+  saveState(); renderReactBar(item);
+  // Firestoreにも反映（非同期・失敗しても問題なし）
+  if(window.FB&&uid){
+    const {db,doc,setDoc,serverTimestamp}=window.FB;
+    const liked=item.thanks.includes(uid);
+    if(liked){
+      setDoc(doc(db,'likes',`${uid}_${item.id}`),{uid,postId:String(item.id),createdAt:serverTimestamp()}).catch(()=>{});
+    } else {
+      import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js').then(m=>{
+        m.deleteDoc(doc(db,'likes',`${uid}_${item.id}`)).catch(()=>{});
+      });
+    }
+  }
+}
+
+function toggleCommentSection(){
+  const section=document.getElementById('comment-section');
+  section.classList.toggle('open');
+  if(section.classList.contains('open')){
+    document.getElementById('comment-inp').focus();
+  }
+}
+
+function renderComments(item){
+  const list=document.getElementById('comment-list'); if(!list) return;
+  const comments=item.comments||[];
+  if(comments.length===0){ list.innerHTML=''; return; }
+  list.innerHTML=comments.map(c=>{
+    const letter=(c.name||'?')[0].toUpperCase();
+    return `<div class="comment-item">
+      <div class="comment-ava">${letter}</div>
+      <div class="comment-bubble">
+        <div class="comment-name">${c.name||'ユーザー'}</div>
+        <div>${c.text}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function submitComment(){
+  const inp=document.getElementById('comment-inp'); if(!inp) return;
+  const text=inp.value.trim(); if(!text) return;
+  const item=S.items.find(i=>i.id===S.curId); if(!item) return;
+  if(!item.comments) item.comments=[];
+  const name=window.currentUserData?.displayName||S.profile.name||'ユーザー';
+  const uid=window.currentUid||'anon';
+  const comment={id:Date.now(),uid,name,text,createdAt:new Date().toISOString()};
+  item.comments.push(comment);
+  inp.value='';
+  saveState(); renderComments(item); renderReactBar(item);
+  // Firestoreにも保存
+  if(window.FB&&window.currentUid){
+    const {db,doc,setDoc,serverTimestamp}=window.FB;
+    setDoc(doc(db,'comments',String(comment.id)),{
+      commentId:String(comment.id),postId:String(item.id),
+      uid,displayName:name,text,hidden:false,createdAt:serverTimestamp()
+    }).catch(()=>{});
+  }
 }
 
 function togglePrivacy(){
@@ -2086,11 +2135,14 @@ function renderGrid(){
     el.onclick=()=>{ if(lpFired) return; openFromGrid(item.id); };
     if(item.type==='text'){
       const d=item.deco||{};
-      el.classList.add(idx%7===2?'wide':'sq');
+      el.classList.add('sq');
       el.style.background=d.bg||'#1a1a1a';
-      const preview=item.content.length>50?item.content.substring(0,50)+'…':item.content;
+      const preview=item.content.length>40?item.content.substring(0,40)+'…':item.content;
+      // 文字数でフォントサイズ自動調整
+      let fs=13; if(preview.length>20) fs=11; if(preview.length>30) fs=10;
       const inner=document.createElement('div'); inner.className='text-tile-inner';
-      inner.innerHTML=`<div>${d.emoji?`<div class="text-tile-emoji">${d.emoji}</div>`:''}</div><div class="text-tile-body" style="color:${d.tc||'rgba(255,255,255,.85)'};font-family:${d.font||'monospace'};font-size:${Math.min(d.fontSize||9,11)}px;">${preview}</div>`;
+      inner.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;padding:8px;text-align:center;';
+      inner.innerHTML=`${d.emoji?`<div class="text-tile-emoji">${d.emoji}</div>`:''}<div style="color:${d.tc||'rgba(255,255,255,.9)'};font-family:${d.font||'system-ui'};font-size:${fs}px;font-weight:700;line-height:1.35;word-break:break-word;">${preview}</div>`;
       el.appendChild(inner);
     } else {
       el.classList.add(idx%5===1?'wide':'sq');
