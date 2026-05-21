@@ -273,7 +273,7 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
 .tdot{width:6px;height:6px;border-radius:50%;background:var(--g2);animation:bounce 1.2s infinite;}
 .tdot:nth-child(2){animation-delay:0.2s;}.tdot:nth-child(3){animation-delay:0.4s;}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-.chat-iw{padding:10px 10px max(18px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;gap:7px;align-items:flex-end;flex-shrink:0;background:var(--surface);}
+.chat-iw{padding:10px 10px 10px;padding-bottom:max(18px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;gap:7px;align-items:flex-end;flex-shrink:0;background:var(--surface);}
 .chat-input{flex:1;padding:9px 14px;border:0.5px solid var(--border2);border-radius:22px;font-size:13px;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);outline:none;resize:none;max-height:100px;line-height:1.4;}
 .send-btn{width:36px;height:36px;border-radius:50%;background:var(--g);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
 .send-btn:disabled{background:var(--border2);cursor:default;}
@@ -723,7 +723,7 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
     <div class="edit-bar-done" onclick="exitEditMode()">完了</div>
   </div>
   <div class="prof">
-    <div class="ava" id="home-ava" onclick="goTo('profile')">K</div>
+    <div class="ava" id="home-ava" data-nav="profile" onclick="goTo('profile')">K</div>
     <div class="prof-info">
       <div class="prof-name" id="home-name">Kazuma</div>
       <div class="prof-stats">
@@ -778,18 +778,18 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
     <button class="fab" onclick="goTo('upload')"><svg width="26" height="26" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><line x1="13" y1="4" x2="13" y2="22"/><line x1="4" y1="13" x2="22" y2="13"/></svg></button>
   </div>
   <div class="bnav">
-    <div class="ni active" id="ni-home" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
-    <div class="ni" id="ni-knowledge" onclick="openFollowFeed()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
-    <div class="ni" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
-    <div class="ni" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
-    <div class="ni" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
+    <div class="ni active" id="ni-home" data-nav="home" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
+    <div class="ni" id="ni-knowledge" data-nav="knowledge" onclick="openFollowFeed()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
+    <div class="ni" data-nav="upload" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
+    <div class="ni" data-nav="analytics" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
+    <div class="ni" data-nav="profile" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
 </div>
 
 <!-- UPLOAD -->
 <div class="screen" id="screen-upload">
   <div class="back-hdr">
-    <span class="back-btn" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></span>
+    <span class="back-btn" data-nav="home" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></span>
     <span class="back-title">追加する</span>
   </div>
   <div class="upload-body">
@@ -918,7 +918,7 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
 <!-- CHAT -->
 <div class="screen" id="screen-chat">
   <div class="back-hdr">
-    <span class="back-btn" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></span>
+    <span class="back-btn" data-nav="home" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></span>
     <span class="back-title" id="chat-title">SnapIn AI</span>
     <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
       <button class="ai-toggle-btn" id="ai-toggle-btn" onclick="toggleAiMode()">
@@ -1010,18 +1010,18 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
     <div class="advice-card"><div class="advice-lbl">💡 AIより</div><div class="advice-txt" id="ana-advice">写真を撮ってAIと話すと、ここに分析が出ます。</div></div>
   </div>
   <div class="bnav">
-    <div class="ni" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
-    <div class="ni" onclick="openFollowFeed()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
-    <div class="ni" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
-    <div class="ni active" id="ni-analytics-ana"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
-    <div class="ni" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
+    <div class="ni" data-nav="home" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
+    <div class="ni" data-nav="knowledge" onclick="openFollowFeed()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
+    <div class="ni" data-nav="upload" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
+    <div class="ni active" id="ni-analytics" data-nav="analytics"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
+    <div class="ni" data-nav="profile" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
 </div>
 
 <!-- SHARE CARD -->
 <div class="screen" id="screen-share">
   <div class="back-hdr">
-    <span class="back-btn" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></span>
+    <span class="back-btn" data-nav="home" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></span>
     <span class="back-title">シェアカード</span>
   </div>
   <div class="share-body">
@@ -1057,11 +1057,11 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
     </div>
   </div>
   <div class="bnav">
-    <div class="ni" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
-    <div class="ni" onclick="openFollowFeed()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
-    <div class="ni" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
-    <div class="ni" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
-    <div class="ni active"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
+    <div class="ni" data-nav="home" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
+    <div class="ni" data-nav="knowledge" onclick="openFollowFeed()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
+    <div class="ni" data-nav="upload" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
+    <div class="ni" data-nav="analytics" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
+    <div class="ni active" id="ni-profile" data-nav="profile"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
 </div>
 
@@ -1144,18 +1144,18 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
     <div style="height:8px;"></div>
   </div>
   <div class="bnav">
-    <div class="ni" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
-    <div class="ni" onclick="openFollowFeed()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
-    <div class="ni" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
-    <div class="ni" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
-    <div class="ni active"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
+    <div class="ni" data-nav="home" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
+    <div class="ni" data-nav="knowledge" onclick="openFollowFeed()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
+    <div class="ni" data-nav="upload" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
+    <div class="ni" data-nav="analytics" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
+    <div class="ni active" data-nav="profile"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
 </div>
 
 <!-- TRASH -->
 <div class="screen" id="screen-trash">
   <div class="back-hdr">
-    <span class="back-btn" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></span>
+    <span class="back-btn" data-nav="profile" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></span>
     <span class="back-title">ゴミ箱</span>
     <span class="back-action" onclick="emptyTrash()" style="color:var(--red);">全削除</span>
   </div>
@@ -1240,11 +1240,11 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
   <div id="kn-feed-mode" style="flex:1;display:none;overflow-y:auto;"></div>
   <!-- ボトムナビ -->
   <div class="bnav">
-    <div class="ni" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
-    <div class="ni active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
-    <div class="ni" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
-    <div class="ni" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
-    <div class="ni" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
+    <div class="ni" data-nav="home" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
+    <div class="ni active" data-nav="knowledge"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
+    <div class="ni" data-nav="upload" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
+    <div class="ni" data-nav="analytics" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
+    <div class="ni" data-nav="profile" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
 </div>
 
@@ -1618,10 +1618,26 @@ function goTo(name){
   document.getElementById('usearch-sheet')?.classList.remove('open');
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
-  // ボトムナビ同期
+  // ボトムナビ同期：現在アクティブな画面のbnavのniだけをactiveに
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
-  const navMap = {'home':'ni-home','follow-feed':'ni-knowledge'};
-  if(navMap[name]) document.getElementById(navMap[name])?.classList.add('active');
+  const navPage = {
+    'home':        'home',
+    'follow-feed': 'knowledge',
+    'analytics':   'analytics',
+    'profile':     'profile',
+    'upload':      'home',
+    'chat':        'home',
+    'trim':        'home',
+    'share':       'profile',
+    'trash':       'profile',
+    'user-profile':'home',
+    'admin':       'home',
+  };
+  const activeScreen = document.getElementById('screen-'+name);
+  if(activeScreen && navPage[name]){
+    const targetNi = activeScreen.querySelector(`.ni[data-nav="${navPage[name]}"]`);
+    if(targetNi) targetNi.classList.add('active');
+  }
   if(name==='analytics') updateAna();
   if(name==='home'){
     renderGrid(); renderFilterBar(); exitEditMode();
@@ -3392,10 +3408,6 @@ window.rejectReq = async function(reqId) {
 // 知識タブ（ありがとコレクション）- ホームと同じグリッド表示
 // ══════════════════════════════════════════════════════════
 window.openFollowFeed = async function() {
-  // ボトムナビのアクティブ状態を切り替え
-  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
-  document.getElementById('ni-knowledge')?.classList.add('active');
-
   goTo('follow-feed');
 
   // すぐにカテゴリバーを「読み込み中」状態で表示
@@ -3598,7 +3610,6 @@ function renderKnowledge() {
       img.src = post.imageData;
       img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;';
       el.appendChild(img);
-      el.onclick = () => openLightbox(post.imageData);
     } else {
       el.className = 'gi sq';
       const de = post.deco || {};
@@ -3624,15 +3635,79 @@ function renderKnowledge() {
     dot.style.background = catColor(cat);
     el.appendChild(dot);
 
-    // ありがと取消ボタン
-    const unlike = document.createElement('div');
-    unlike.style.cssText = 'position:absolute;bottom:4px;right:4px;width:18px;height:18px;border-radius:50%;background:rgba(229,75,74,0.85);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;';
-    unlike.innerHTML = `<svg width="9" height="9" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
-    unlike.onclick = e => { e.stopPropagation(); unlikeKnowledge(post, el); };
-    el.appendChild(unlike);
+    // クリックで投稿詳細（chat画面）を開く
+    el.onclick = () => openKnowledgePost(post);
 
     grid.appendChild(el);
   });
+}
+
+// 知識タブから投稿詳細（チャット画面）を開く
+function openKnowledgePost(post) {
+  const postId = String(post.postId || post.id || '');
+  // 自分の投稿ならopenFromGrid
+  if (post.uid === window.currentUid || !post.uid) {
+    const localItem = S.items.find(i => String(i.id) === postId);
+    if (localItem) { openFromGrid(localItem.id); return; }
+  }
+  // 他人の投稿：詳細シートを開く
+  openKnowledgeDetail(post);
+}
+
+// 他人の投稿の詳細シートを表示
+function openKnowledgeDetail(post) {
+  const existing = document.getElementById('kn-detail-sheet');
+  if (existing) existing.remove();
+
+  const sheet = document.createElement('div');
+  sheet.id = 'kn-detail-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:500;display:flex;flex-direction:column;background:var(--surface);animation:spIn .2s;';
+
+  const cat = post.category || 'その他';
+  const dateStr = post.createdAt?.toDate
+    ? post.createdAt.toDate().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'})
+    : '';
+
+  const mediaHtml = post.imageData
+    ? `<div style="background:#111;display:flex;align-items:center;justify-content:center;max-height:45vh;overflow:hidden;">
+        <img src="${post.imageData}" style="max-width:100%;max-height:45vh;object-fit:contain;display:block;" onclick="openLightbox('${post.imageData}')">
+       </div>`
+    : (() => {
+        const de = post.deco || {};
+        const txt = post.caption || post.content || '';
+        return `<div style="background:${de.bg||'#1a1a1a'};min-height:180px;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center;font-size:18px;font-weight:700;color:${de.tc||'#fff'};font-family:${de.font||'system-ui'};">${txt}</div>`;
+      })();
+
+  const caption = post.caption || post.content || '';
+  const chatHtml = (post.chatHistory || []).map(m => {
+    const isUser = m.role === 'user';
+    return `<div style="display:flex;justify-content:${isUser?'flex-end':'flex-start'};margin-bottom:8px;">
+      <div style="max-width:82%;padding:9px 13px;border-radius:${isUser?'18px 18px 4px 18px':'18px 18px 18px 4px'};background:${isUser?'var(--g)':'var(--bg)'};color:${isUser?'white':'var(--text)'};font-size:13px;line-height:1.55;">${m.content||''}</div>
+    </div>`;
+  }).join('');
+
+  sheet.innerHTML = `
+    <div style="padding:0 18px;height:52px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid var(--border);flex-shrink:0;">
+      <span style="cursor:pointer;display:flex;align-items:center;color:var(--text2);" onclick="document.getElementById('kn-detail-sheet').remove()">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </span>
+      <span style="font-size:14px;font-weight:600;">知識の詳細</span>
+      <span style="font-size:10px;color:var(--text3);">${dateStr}</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;">
+      ${mediaHtml}
+      <div style="padding:12px 16px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${catColor(cat)};"></span>
+          <span style="font-size:11px;color:var(--text3);font-weight:500;">${cat}</span>
+        </div>
+        ${caption ? `<div style="font-size:14px;line-height:1.7;margin-bottom:12px;color:var(--text);">${caption}</div>` : ''}
+        ${chatHtml ? `<div style="border-top:0.5px solid var(--border);padding-top:12px;margin-top:4px;">${chatHtml}</div>` : ''}
+      </div>
+    </div>
+  `;
+
+  document.querySelector('.app').appendChild(sheet);
 }
 
 async function unlikeKnowledge(post, el) {
