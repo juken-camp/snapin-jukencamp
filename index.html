@@ -256,7 +256,7 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
 .btn-sec{flex:1;padding:11px;border:0.5px solid var(--border2);border-radius:var(--rs);font-size:12px;color:var(--text2);background:transparent;cursor:pointer;}
 .btn-pri{flex:2;padding:11px;background:var(--g);border:none;border-radius:var(--rs);font-size:12px;font-weight:500;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
 /* CHAT */
-.chat-photo{position:relative;flex-shrink:0;background:#111;display:flex;align-items:center;justify-content:center;}
+.chat-photo{position:relative;flex-shrink:0;background:#111;display:flex;align-items:center;justify-content:center;max-height:45dvh;overflow:hidden;}
 .chat-photo img{width:100%;height:auto;max-height:55vh;object-fit:contain;display:block;}
 .chat-photo-tags{position:absolute;top:8px;left:8px;display:flex;gap:6px;}
 .chat-tag{background:rgba(0,0,0,0.5);border-radius:20px;padding:3px 9px;font-size:8px;color:white;display:flex;align-items:center;gap:3px;}
@@ -2245,7 +2245,7 @@ function renderChatUI(item){
   if(item.type==='photo'&&item.imageData){
     const img=document.createElement('img');
     img.src=item.imageData;
-    img.style.cssText='width:100%;height:auto;max-height:55vh;object-fit:contain;display:block;cursor:zoom-in;';
+    img.style.cssText='width:100%;height:auto;max-height:45dvh;object-fit:contain;display:block;cursor:zoom-in;';
     img.onclick=()=>openLightbox(item.fullImageData||item.imageData);
     area.appendChild(img);
     const tags=document.createElement('div'); tags.className='chat-photo-tags';
@@ -2256,7 +2256,7 @@ function renderChatUI(item){
   } else if(item.type==='text'){
     const d=item.deco||{};
     // テキストカードは正方形で表示
-    area.style.cssText=`background:${d.bg||'#1a1a1a'};display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1/1;position:relative;width:100%;max-height:38vh;`;
+    area.style.cssText=`background:${d.bg||'#1a1a1a'};display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1/1;position:relative;width:100%;max-height:40dvh;`;
     area.innerHTML=`${d.emoji?`<div style="font-size:28px;position:absolute;top:10px;left:14px;">${d.emoji}</div>`:''}<div style="font-family:${d.font||'system-ui'};font-size:${d.deco?.fontSize||d.fontSize||22}px;color:${d.tc||'rgba(255,255,255,0.9)'};line-height:1.35;font-weight:700;text-align:center;width:82%;word-break:break-word;">${item.content}</div>`;
     if(item.category&&!item.categoryPending){
       const ct=document.createElement('div'); ct.style.cssText='position:absolute;top:8px;right:8px;';
