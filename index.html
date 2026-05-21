@@ -170,12 +170,15 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 }
 .deco-mini-text{
   position:relative;z-index:2;
-  width:90%;text-align:center;
-  font-weight:700;line-height:1.3;
-  word-break:break-word;white-space:pre-wrap;
+  width:88%;max-height:72px;
+  text-align:center;
+  font-weight:700;line-height:1.25;
+  word-break:break-all;white-space:pre-wrap;
+  overflow:hidden;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:6;
   pointer-events:none;
 }
-.deco-mini-hint{font-size:8px;color:rgba(255,255,255,0.4);text-align:center;}
+.deco-mini-hint{font-size:8px;color:rgba(255,255,255,0.4);text-align:center;font-weight:400;}
 
 /* フッター */
 .deco-footer{padding:10px 14px max(12px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;justify-content:flex-end;align-items:center;background:var(--surface);flex-shrink:0;}
@@ -754,7 +757,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   <div class="bnav">
     <div class="ni active" id="ni-home" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
     <div class="ni" id="ni-knowledge" onclick="openFollowFeed()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
-    <div class="ni" onclick="goTo('upload')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
+    <div class="ni" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
     <div class="ni" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
     <div class="ni" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
@@ -818,19 +821,13 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
         </div>
       </div>
 
-      <!-- ④ 書体 + 絵文字（同一行） -->
+      <!-- ④ 書体 -->
       <div class="deco-ctrl-row">
         <span class="deco-ctrl-lbl">書体</span>
         <div class="font-chips" id="font-chips">
           <div class="fc on" data-font="system-ui,-apple-system,sans-serif" style="font-family:system-ui;">ゴシック</div>
           <div class="fc" data-font="'Hiragino Mincho ProN','Yu Mincho',serif" style="font-family:'Hiragino Mincho ProN',serif;">明朝</div>
           <div class="fc" data-font="Impact,'Arial Black',sans-serif" style="font-family:Impact;">太字</div>
-        </div>
-        <div style="margin-left:auto;display:flex;gap:4px;align-items:center;">
-          <span style="font-size:9px;color:var(--text3);">絵文字</span>
-          <input class="emoji-free-inp" id="emoji-inp" type="text" placeholder="😊" maxlength="2"
-            style="width:40px;padding:4px 6px;font-size:14px;border-radius:8px;text-align:center;"
-            oninput="setEmojiFromInput(this.value)">
         </div>
       </div>
 
@@ -964,7 +961,8 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   </div>
   <div class="bnav">
     <div class="ni" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
-    <div class="ni" onclick="goTo('upload')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
+    <div class="ni" onclick="openFollowFeed()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
+    <div class="ni" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
     <div class="ni active"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
     <div class="ni" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
@@ -1010,7 +1008,8 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
   </div>
   <div class="bnav">
     <div class="ni" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
-    <div class="ni" onclick="goTo('upload')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
+    <div class="ni" onclick="openFollowFeed()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
+    <div class="ni" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
     <div class="ni" onclick="goTo('analytics')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
     <div class="ni active"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
@@ -1773,21 +1772,24 @@ function onDecoInput(ta){
   const el = document.getElementById('deco-text-main');
   const btn = document.getElementById('deco-post-btn');
 
-  // ミニプレビュー更新
+  // ミニプレビュー更新（80px枠内に収めるための細かい段階）
   if (v) {
-    // 80px幅のミニプレビュー向けフォントサイズ
-    let fs = 11;
-    if (v.length <= 6)  fs = 14;
-    else if (v.length <= 15) fs = 12;
-    else if (v.length <= 30) fs = 10;
-    else fs = 9;
+    const len = v.length;
+    let fs;
+    if      (len <= 4)  fs = 15;
+    else if (len <= 8)  fs = 13;
+    else if (len <= 14) fs = 11;
+    else if (len <= 22) fs = 9.5;
+    else if (len <= 35) fs = 8.5;
+    else if (len <= 55) fs = 7.5;
+    else                fs = 6.5;
     el.innerHTML = v.replace(/\n/g, '<br>');
     el.style.fontSize = fs + 'px';
-    // フルサイズ用フォントサイズも計算して保存
+    // グリッド実表示用フォントサイズ（別途保存）
     let fullFs = 36;
-    if (v.length > 30)  fullFs = 26;
-    if (v.length > 60)  fullFs = 20;
-    if (v.length > 100) fullFs = 16;
+    if (len > 30)  fullFs = 26;
+    if (len > 60)  fullFs = 20;
+    if (len > 100) fullFs = 16;
     S.deco._fontSize = fullFs;
   } else {
     el.innerHTML = '<span class="deco-mini-hint">プレビュー</span>';
@@ -1823,8 +1825,6 @@ function postDeco(){
   textMain.innerHTML = '<span class="deco-mini-hint">プレビュー</span>';
   textMain.style.fontSize = '11px';
   document.getElementById('deco-emoji-el').textContent = '';
-  const emojiInp = document.getElementById('emoji-inp');
-  if (emojiInp) emojiInp.value = '';
   document.getElementById('deco-preview').style.background = 'linear-gradient(135deg,#1D9E75,#0F6E56)';
   S.deco.bg = 'linear-gradient(135deg,#1D9E75,#0F6E56)';
   S.deco.emoji = '';
