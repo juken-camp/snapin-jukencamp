@@ -125,7 +125,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .feed-counter{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);border-radius:12px;padding:4px 10px;font-size:10px;color:rgba(255,255,255,0.85);z-index:5;}
 
 /* UPLOAD */
-.upload-body{flex:1;padding:16px;display:flex;flex-direction:column;gap:12px;overflow:hidden;}
+.upload-body{flex:1;padding:16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;}
 .upload-zone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:row;align-items:center;gap:14px;cursor:pointer;transition:all 0.15s;}
 .upload-zone:hover{background:var(--gl);border-color:var(--g);}
 .uz-title{font-size:15px;font-weight:500;}
@@ -134,46 +134,60 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .or-line{flex:1;height:0.5px;background:var(--border);}
 .or-txt{font-size:11px;color:var(--text3);}
 .roll-btn{padding:13px 16px;border:0.5px solid var(--border2);border-radius:var(--rs);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);cursor:pointer;background:var(--bg);}
-/* DECO TEXT */
-.deco-box{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
-/* プレビュー正方形：左右余白なし・角丸のみ */
-.deco-preview{
-  position:relative;width:100%;aspect-ratio:1/1;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  overflow:hidden;border-radius:12px;
-  transition:background 0.2s;
+/* DECO TEXT - ミニマルリデザイン */
+.deco-box{display:flex;flex-direction:column;gap:0;flex:1;min-height:0;overflow:hidden;}
+
+/* テキスト入力（最上部・大きめ・シンプル） */
+.deco-inp{
+  width:100%;padding:12px 14px;
+  border:none;border-bottom:0.5px solid var(--border);
+  font-size:15px;font-family:inherit;background:var(--surface);color:var(--text);
+  outline:none;resize:none;line-height:1.6;
+  min-height:52px;max-height:120px;
 }
-.deco-text-main{
+.deco-inp::placeholder{color:var(--text3);}
+
+/* コントロール行 */
+.deco-ctrl-row{display:flex;align-items:center;gap:6px;padding:8px 14px;border-bottom:0.5px solid var(--border);}
+.deco-ctrl-lbl{font-size:9px;color:var(--text3);width:22px;flex-shrink:0;letter-spacing:.4px;}
+
+/* スウォッチ（小さめ） */
+.sw{width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .1s;flex-shrink:0;}
+.sw.on{border-color:var(--text);transform:scale(1.18);}
+.sw.lite{border-color:#ccc;}
+
+/* フォントチップ（コンパクト） */
+.font-chips{display:flex;gap:5px;}
+.fc{padding:3px 8px;border-radius:10px;border:1px solid var(--border2);font-size:10px;cursor:pointer;background:var(--bg);color:var(--text2);white-space:nowrap;}
+.fc.on{background:var(--gl);border-color:var(--g);color:var(--gd);}
+
+/* ミニプレビュー（投稿サイズ相当・正方形） */
+.deco-mini-preview{
+  width:80px;height:80px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative;cursor:pointer;
+  transition:background .2s;
+}
+.deco-mini-text{
   position:relative;z-index:2;
-  width:82%;text-align:center;
-  font-weight:700;line-height:1.35;
+  width:90%;text-align:center;
+  font-weight:700;line-height:1.3;
   word-break:break-word;white-space:pre-wrap;
   pointer-events:none;
-  transition:font-size 0.15s;
 }
-.deco-emoji-el{position:absolute;top:10px;left:14px;font-size:28px;line-height:1;z-index:3;}
-.deco-hint{position:absolute;bottom:6px;right:10px;font-size:8px;color:rgba(255,255,255,0.35);pointer-events:none;z-index:1;}
-/* ツールバー：上に12pxだけあけてあとは詰める */
-.deco-toolbar{flex:1;padding:12px 0 0;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-height:0;}
-.deco-row{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.deco-lbl{font-size:9px;color:var(--text3);width:28px;flex-shrink:0;}
-/* テキスト入力：同じ左右幅で伸びる */
-.deco-inp{width:100%;flex:1;min-height:0;padding:12px 14px;border:0.5px solid var(--border2);border-radius:10px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;resize:none;line-height:1.6;}
+.deco-mini-hint{font-size:8px;color:rgba(255,255,255,0.4);text-align:center;}
+
 /* フッター */
-.deco-footer{padding:10px 0 max(14px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--surface);flex-shrink:0;}
-.swatches{display:flex;gap:5px;flex-wrap:wrap;flex:1;}
-.sw{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:transform 0.1s;flex-shrink:0;}
-.sw.on{border-color:var(--text);transform:scale(1.15);}
-.sw.lite{border-color:#ccc;}
-.font-chips{display:flex;gap:5px;flex:1;flex-wrap:wrap;}
-.fc{padding:3px 9px;border-radius:12px;border:1px solid var(--border2);font-size:10px;cursor:pointer;background:var(--bg);color:var(--text2);white-space:nowrap;}
-.fc.on{background:var(--gl);border-color:var(--g);color:var(--gd);}
+.deco-footer{padding:10px 14px max(12px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;justify-content:flex-end;align-items:center;background:var(--surface);flex-shrink:0;}
+.post-btn{padding:8px 20px;background:var(--g);border:none;border-radius:20px;font-size:12px;color:white;font-weight:600;cursor:pointer;}
+.post-btn:disabled{opacity:.4;cursor:default;}
+
+/* 絵文字行 */
 .emoji-row{display:flex;gap:5px;flex-wrap:wrap;flex:1;}
 .ep{font-size:17px;cursor:pointer;padding:2px;border-radius:4px;line-height:1;}
 .ep:active{transform:scale(1.2);}
-.emoji-row{display:flex;flex-wrap:wrap;gap:6px;}
-.post-btn{padding:7px 18px;background:var(--g);border:none;border-radius:20px;font-size:11px;color:white;font-weight:500;cursor:pointer;}
-.clr-emoji{font-size:10px;color:var(--text3);border:none;background:none;cursor:pointer;padding:4px;white-space:nowrap;}.emoji-free-inp{flex:1;padding:7px 12px;border:0.5px solid var(--border2);border-radius:20px;font-size:16px;font-family:system-ui,sans-serif;background:var(--bg);outline:none;color:var(--text);}
+.clr-emoji{font-size:10px;color:var(--text3);border:none;background:none;cursor:pointer;padding:4px;white-space:nowrap;}
+.emoji-free-inp{flex:1;padding:5px 10px;border:0.5px solid var(--border2);border-radius:16px;font-size:15px;font-family:system-ui,sans-serif;background:var(--bg);outline:none;color:var(--text);}
 /* THANKS & COMMENTS */
 .react-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:0.5px solid var(--border);}
 .btn-thanks{display:flex;align-items:center;gap:5px;padding:7px 16px;border-radius:20px;border:1.5px solid var(--border2);background:transparent;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;font-weight:500;}
@@ -761,56 +775,70 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
       </div>
     </div>
     <div class="or-row"><div class="or-line"></div><div class="or-txt">またはテキストメモを作る</div><div class="or-line"></div></div>
-    <!-- DECO CARD -->
+    <!-- DECO CARD - ミニマルUI -->
     <div class="deco-box">
-      <div class="deco-preview" id="deco-preview" style="background:linear-gradient(135deg,#1D9E75,#0F6E56);">
-        <div class="deco-emoji-el" id="deco-emoji-el"></div>
-        <div class="deco-text-main" id="deco-text-main" style="color:#fff;font-family:system-ui;font-size:36px;"></div>
-        <div class="deco-hint">入力すると自動でプレビュー</div>
-      </div>
-      <div class="deco-toolbar">
-        <!-- テキスト入力 -->
-        <textarea class="deco-inp" id="deco-inp" placeholder="テキストを入力…" rows="2" oninput="onDecoInput(this)"></textarea>
-        <div class="deco-row">
-          <div class="deco-lbl">背景</div>
-          <div class="swatches" id="bg-sw">
-            <div class="sw" data-bg="#1a1a1a" style="background:#1a1a1a;"></div>
-            <div class="sw lite" data-bg="#ffffff" style="background:#fff;"></div>
-            <div class="sw" data-bg="#E1F5EE" style="background:#E1F5EE;"></div>
-            <div class="sw" data-bg="#FFF0F5" style="background:#FFF0F5;"></div>
-            <div class="sw" data-bg="#F0F4FF" style="background:#F0F4FF;"></div>
-            <div class="sw" data-bg="#FFFBE6" style="background:#FFFBE6;"></div>
-            <div class="sw" data-bg="linear-gradient(135deg,#FF6B9D,#FFB347)" style="background:linear-gradient(135deg,#FF6B9D,#FFB347);"></div>
-            <div class="sw" data-bg="linear-gradient(135deg,#667EEA,#764BA2)" style="background:linear-gradient(135deg,#667EEA,#764BA2);"></div>
-            <div class="sw on" data-bg="linear-gradient(135deg,#1D9E75,#0F6E56)" style="background:linear-gradient(135deg,#1D9E75,#0F6E56);"></div>
-            <div class="sw" data-bg="linear-gradient(135deg,#FF8C00,#FF4500)" style="background:linear-gradient(135deg,#FF8C00,#FF4500);"></div>
-          </div>
+
+      <!-- ① テキスト入力（最上部） -->
+      <textarea class="deco-inp" id="deco-inp" placeholder="テキストを入力…" rows="2" oninput="onDecoInput(this)"></textarea>
+
+      <!-- ② 背景色 + ミニプレビュー（同一行） -->
+      <div class="deco-ctrl-row">
+        <span class="deco-ctrl-lbl">背景</span>
+        <div id="bg-sw" style="display:flex;gap:5px;flex:1;align-items:center;">
+          <div class="sw on" data-bg="linear-gradient(135deg,#1D9E75,#0F6E56)" style="background:linear-gradient(135deg,#1D9E75,#0F6E56);"></div>
+          <div class="sw" data-bg="#1a1a1a" style="background:#1a1a1a;"></div>
+          <div class="sw lite" data-bg="#ffffff" style="background:#fff;"></div>
+          <div class="sw" data-bg="#FFF0F5" style="background:#FFF0F5;"></div>
+          <div class="sw" data-bg="#F0F4FF" style="background:#F0F4FF;"></div>
+          <div class="sw" data-bg="#FFFBE6" style="background:#FFFBE6;"></div>
+          <div class="sw" data-bg="linear-gradient(135deg,#667EEA,#764BA2)" style="background:linear-gradient(135deg,#667EEA,#764BA2);"></div>
+          <div class="sw" data-bg="linear-gradient(135deg,#FF6B9D,#FFB347)" style="background:linear-gradient(135deg,#FF6B9D,#FFB347);"></div>
+          <div class="sw" data-bg="linear-gradient(135deg,#FF8C00,#FF4500)" style="background:linear-gradient(135deg,#FF8C00,#FF4500);"></div>
         </div>
-        <div class="deco-row">
-          <div class="deco-lbl">文字色</div>
-          <div class="swatches" id="txt-sw">
-            <div class="sw on lite" data-tc="#ffffff" style="background:#fff;"></div>
-            <div class="sw" data-tc="#1a1a1a" style="background:#1a1a1a;"></div>
-            <div class="sw" data-tc="#1D9E75" style="background:#1D9E75;"></div>
-            <div class="sw" data-tc="#FF6B9D" style="background:#FF6B9D;"></div>
-            <div class="sw" data-tc="#667EEA" style="background:#667EEA;"></div>
-            <div class="sw" data-tc="#FF8C00" style="background:#FF8C00;"></div>
-            <div class="sw" data-tc="#EF9F27" style="background:#EF9F27;"></div>
+        <!-- ミニプレビュー -->
+        <div class="deco-mini-preview" id="deco-preview" style="background:linear-gradient(135deg,#1D9E75,#0F6E56);">
+          <div class="deco-mini-text" id="deco-text-main" style="color:#fff;font-family:system-ui;font-size:11px;">
+            <span class="deco-mini-hint">プレビュー</span>
           </div>
-        </div>
-        <div class="deco-row">
-          <div class="deco-lbl">書体</div>
-          <div class="font-chips" id="font-chips">
-            <div class="fc on" data-font="system-ui,-apple-system,sans-serif" style="font-family:system-ui;">ゴシック</div>
-            <div class="fc" data-font="'Hiragino Mincho ProN','Yu Mincho',serif" style="font-family:'Hiragino Mincho ProN',serif;">明朝</div>
-            <div class="fc" data-font="Impact,'Arial Black',sans-serif" style="font-family:Impact;">インパクト</div>
-          </div>
+          <div id="deco-emoji-el" style="position:absolute;top:4px;left:6px;font-size:14px;line-height:1;"></div>
         </div>
       </div>
+
+      <!-- ③ 文字色 -->
+      <div class="deco-ctrl-row">
+        <span class="deco-ctrl-lbl">文字色</span>
+        <div id="txt-sw" style="display:flex;gap:5px;">
+          <div class="sw on lite" data-tc="#ffffff" style="background:#fff;"></div>
+          <div class="sw" data-tc="#1a1a1a" style="background:#1a1a1a;"></div>
+          <div class="sw" data-tc="#1D9E75" style="background:#1D9E75;"></div>
+          <div class="sw" data-tc="#FF6B9D" style="background:#FF6B9D;"></div>
+          <div class="sw" data-tc="#667EEA" style="background:#667EEA;"></div>
+          <div class="sw" data-tc="#FF8C00" style="background:#FF8C00;"></div>
+          <div class="sw" data-tc="#EF9F27" style="background:#EF9F27;"></div>
+        </div>
+      </div>
+
+      <!-- ④ 書体 + 絵文字（同一行） -->
+      <div class="deco-ctrl-row">
+        <span class="deco-ctrl-lbl">書体</span>
+        <div class="font-chips" id="font-chips">
+          <div class="fc on" data-font="system-ui,-apple-system,sans-serif" style="font-family:system-ui;">ゴシック</div>
+          <div class="fc" data-font="'Hiragino Mincho ProN','Yu Mincho',serif" style="font-family:'Hiragino Mincho ProN',serif;">明朝</div>
+          <div class="fc" data-font="Impact,'Arial Black',sans-serif" style="font-family:Impact;">太字</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:4px;align-items:center;">
+          <span style="font-size:9px;color:var(--text3);">絵文字</span>
+          <input class="emoji-free-inp" id="emoji-inp" type="text" placeholder="😊" maxlength="2"
+            style="width:40px;padding:4px 6px;font-size:14px;border-radius:8px;text-align:center;"
+            oninput="setEmojiFromInput(this.value)">
+        </div>
+      </div>
+
+      <!-- ⑤ 投稿ボタン -->
       <div class="deco-footer">
-        <span style="font-size:10px;color:var(--text3);">入力するとリアルタイムでプレビュー</span>
-        <button class="post-btn" onclick="postDeco()">グリッドに追加</button>
+        <button class="post-btn" id="deco-post-btn" onclick="postDeco()" disabled>グリッドに追加</button>
       </div>
+
     </div>
   </div>
 </div>
@@ -1741,45 +1769,69 @@ document.getElementById('ava-input').addEventListener('change', e=>{
 
 // テキスト入力→プレビュー自動更新＋自動フォントサイズ
 function onDecoInput(ta){
-  const v=ta.value;
-  const el=document.getElementById('deco-text-main');
-  el.textContent=v||'';
-  // 文字数で自動フォントサイズ（Facebook風）
-  let fs=36;
-  if(v.length>30) fs=26;
-  if(v.length>60) fs=20;
-  if(v.length>100) fs=16;
-  el.style.fontSize=fs+'px';
-  S.deco._fontSize=fs;
-  S.deco._text=v;
-  // テキスト領域の高さ自動調整
-  ta.style.height='auto';
-  ta.style.height=Math.min(ta.scrollHeight,100)+'px';
+  const v = ta.value;
+  const el = document.getElementById('deco-text-main');
+  const btn = document.getElementById('deco-post-btn');
+
+  // ミニプレビュー更新
+  if (v) {
+    // 80px幅のミニプレビュー向けフォントサイズ
+    let fs = 11;
+    if (v.length <= 6)  fs = 14;
+    else if (v.length <= 15) fs = 12;
+    else if (v.length <= 30) fs = 10;
+    else fs = 9;
+    el.innerHTML = v.replace(/\n/g, '<br>');
+    el.style.fontSize = fs + 'px';
+    // フルサイズ用フォントサイズも計算して保存
+    let fullFs = 36;
+    if (v.length > 30)  fullFs = 26;
+    if (v.length > 60)  fullFs = 20;
+    if (v.length > 100) fullFs = 16;
+    S.deco._fontSize = fullFs;
+  } else {
+    el.innerHTML = '<span class="deco-mini-hint">プレビュー</span>';
+    el.style.fontSize = '11px';
+  }
+  S.deco._text = v;
+
+  // 投稿ボタン活性制御
+  if (btn) btn.disabled = !v.trim();
+
+  // textarea高さ自動調整
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
 }
 
-function setEmoji(e){ S.deco.emoji=e; document.getElementById('deco-emoji-el').textContent=e; }
+function setEmoji(e){ S.deco.emoji = e; document.getElementById('deco-emoji-el').textContent = e; }
+function setEmojiFromInput(v){ S.deco.emoji = v; document.getElementById('deco-emoji-el').textContent = v; }
 
 function postDeco(){
-  const inp=document.getElementById('deco-inp');
-  const v=(inp.value||'').trim(); if(!v) return;
-  const fs=S.deco._fontSize||36;
-  const item={
-    id:Date.now(),type:'text',content:v,date:td(),
-    chatted:false,chatHistory:[],
-    deco:{...S.deco, fontSize:fs},
-    isPublic:false,isNew:true,category:null,categoryPending:true
+  const inp = document.getElementById('deco-inp');
+  const v = (inp.value || '').trim(); if (!v) return;
+  const fs = S.deco._fontSize || 36;
+  const item = {
+    id: Date.now(), type: 'text', content: v, date: td(),
+    chatted: false, chatHistory: [],
+    deco: { ...S.deco, fontSize: fs },
+    isPublic: false, isNew: true, category: null, categoryPending: true
   };
   S.items.unshift(item);
   // リセット
-  inp.value=''; inp.style.height='auto';
-  const textMain=document.getElementById('deco-text-main');
-  textMain.textContent=''; textMain.style.fontSize='36px';
-  document.getElementById('deco-emoji-el').textContent='';
-  document.getElementById('deco-preview').style.background='linear-gradient(135deg,#1D9E75,#0F6E56)';
-  S.deco.bg='linear-gradient(135deg,#1D9E75,#0F6E56)';
-  S.deco.emoji='';
+  inp.value = ''; inp.style.height = 'auto';
+  const textMain = document.getElementById('deco-text-main');
+  textMain.innerHTML = '<span class="deco-mini-hint">プレビュー</span>';
+  textMain.style.fontSize = '11px';
+  document.getElementById('deco-emoji-el').textContent = '';
+  const emojiInp = document.getElementById('emoji-inp');
+  if (emojiInp) emojiInp.value = '';
+  document.getElementById('deco-preview').style.background = 'linear-gradient(135deg,#1D9E75,#0F6E56)';
+  S.deco.bg = 'linear-gradient(135deg,#1D9E75,#0F6E56)';
+  S.deco.emoji = '';
+  const btn = document.getElementById('deco-post-btn');
+  if (btn) btn.disabled = true;
   updateStats(); saveState(); goTo('home');
-  if(window.savePostToFirestore) window.savePostToFirestore(item).catch(e=>console.error(e));
+  if (window.savePostToFirestore) window.savePostToFirestore(item).catch(e => console.error(e));
   backgroundCategorizeText(item);
 }
 
