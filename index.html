@@ -1232,7 +1232,7 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
   <div class="filter-bar" id="kn-filter-bar"></div>
   <!-- グリッドモード -->
   <div id="kn-grid-mode" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
-    <div class="grid-wrap">
+    <div class="grid-wrap" id="kn-grid-wrap">
       <div class="grid" id="kn-main-grid"></div>
     </div>
   </div>
@@ -3436,38 +3436,14 @@ window.openFollowFeed = async function() {
         </div>`;
         return;
       }
-      // ローカルデータでグリッド表示（自分の投稿でありがとしたもの）
-      document.getElementById('kn-main-grid').innerHTML = '';
-      const g2 = document.createElement('div');
-      g2.className = 'grid'; g2.style.padding = '3px';
-      (document.getElementById('kn-main-grid')||{}).style.overflowY = 'auto';
-      localLiked.forEach((item, idx) => {
-        const el = document.createElement('div');
-        el.className = 'gi sq';
-        if (item.imageData) {
-          el.style.background = '#ddd';
-          const img = document.createElement('img');
-          img.src = item.imageData;
-          img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;';
-          el.appendChild(img);
-          el.onclick = () => openLightbox(item.imageData);
-        } else {
-          el.className = 'gi sq';
-          const de = item.deco || {};
-          el.style.background = de.bg || '#1a1a1a';
-          const inner = document.createElement('div');
-          inner.className = 'text-tile-inner';
-          const preview = (item.content || '').substring(0, 40);
-          inner.innerHTML = `<div style="color:${de.tc||'rgba(255,255,255,.9)'};font-size:11px;font-weight:700;line-height:1.35;word-break:break-word;">${preview}</div>`;
-          el.appendChild(inner);
-        }
-        const dot = document.createElement('div');
-        dot.className = 'gi-cat-dot';
-        dot.style.background = catColor(detectCat(item));
-        el.appendChild(dot);
-        g2.appendChild(el);
-      });
-      document.getElementById('kn-main-grid').appendChild(g2);
+      // ローカルデータでグリッド表示（renderKnowledge()に委譲）
+      _knAllPosts = localLiked.map(item => ({
+        ...item,
+        postId: String(item.id || ''),
+        category: item.category || detectCat(item)
+      }));
+      renderKnowledgeCategoryBar(_knAllPosts);
+      renderKnowledge();
       return;
     }
 
