@@ -125,7 +125,26 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .feed-counter{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);border-radius:12px;padding:4px 10px;font-size:10px;color:rgba(255,255,255,0.85);z-index:5;}
 
 /* UPLOAD */
-.upload-body{flex:1;padding:16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;}
+.upload-body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── 上半分：3択ボタンエリア ── */
+.upload-choices{display:flex;flex-direction:column;gap:0;padding:10px 16px;flex-shrink:0;}
+.upload-choice{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:14px;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent;}
+.upload-choice:active{background:var(--gl);}
+.uc-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.uc-text{flex:1;min-width:0;}
+.uc-title{font-size:15px;font-weight:600;color:var(--text);}
+.uc-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.uc-chevron{color:var(--text3);}
+
+/* 区切り線 */
+.upload-divider{display:flex;align-items:center;gap:10px;padding:0 16px;margin:2px 0;}
+.upload-divider-line{flex:1;height:0.5px;background:var(--border);}
+.upload-divider-txt{font-size:11px;color:var(--text3);white-space:nowrap;}
+
+/* ── 下半分：テキストメモエリア ── */
+.upload-memo{flex:1;display:flex;flex-direction:column;border-top:0.5px solid var(--border);min-height:0;overflow:hidden;}
+.upload-memo-hdr{padding:10px 16px 0;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.4px;display:flex;align-items:center;gap:6px;}
 .upload-zone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:row;align-items:center;gap:14px;cursor:pointer;transition:all 0.15s;}
 .upload-zone:hover{background:var(--gl);border-color:var(--g);}
 .uz-title{font-size:15px;font-weight:500;}
@@ -343,7 +362,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .trash-link{margin:14px 18px 0;padding:12px 14px;border-radius:var(--rs);border:.5px solid var(--border2);display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--bg);}
 .trash-link-txt{font-size:13px;color:var(--text2);flex:1;}
 .trash-link-badge{background:var(--red);color:white;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:600;display:none;}
-#file-input,#acad-input,#ava-input{display:none;}
+#file-input,#camera-input,#acad-input,#ava-input{display:none;}
 /* ── GRID POLISH ── */
 .gi.new-tile{animation:tileIn .45s cubic-bezier(.2,.9,.3,1.2);}
 @keyframes tileIn{0%{transform:scale(.7);opacity:0;}60%{transform:scale(1.04);opacity:1;}100%{transform:scale(1);opacity:1;}}
@@ -633,6 +652,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 <body>
 <div class="app">
 <input type="file" id="file-input" accept="image/*">
+<input type="file" id="camera-input" accept="image/*" capture="environment">
 <input type="file" id="acad-input" accept="image/*" multiple>
 <input type="file" id="ava-input" accept="image/*">
 
@@ -767,76 +787,117 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 <div class="screen" id="screen-upload">
   <div class="back-hdr">
     <span class="back-btn" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></span>
-    <span class="back-title">何を追加しますか？</span>
+    <span class="back-title">追加する</span>
   </div>
   <div class="upload-body">
-    <div class="upload-zone" onclick="triggerCamera()">
-      <svg width="36" height="36" fill="none" stroke="var(--g)" stroke-width="1.6" stroke-linecap="round" style="flex-shrink:0;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" transform="scale(1.4) translate(1,1)"/><circle cx="18" cy="18" r="5.5"/></svg>
-      <div>
-        <div class="uz-title">写真を撮る / 選ぶ</div>
-        <div class="uz-sub" style="text-align:left;">問題・料理・看板・植物など<br><strong style="color:var(--g);">タイトル・タグ不要</strong>。AIが自動整理</div>
-      </div>
-    </div>
-    <div class="or-row"><div class="or-line"></div><div class="or-txt">またはテキストメモを作る</div><div class="or-line"></div></div>
-    <!-- DECO CARD - ミニマルUI -->
-    <div class="deco-box">
 
-      <!-- ① テキスト入力（最上部） -->
-      <textarea class="deco-inp" id="deco-inp" placeholder="テキストを入力…" rows="2" oninput="onDecoInput(this)"></textarea>
+    <!-- 3択：写真系 -->
+    <div class="upload-choices">
 
-      <!-- ② 背景色 + ミニプレビュー（同一行） -->
-      <div class="deco-ctrl-row">
-        <span class="deco-ctrl-lbl">背景</span>
-        <div id="bg-sw" style="display:flex;gap:5px;flex:1;align-items:center;">
-          <div class="sw on" data-bg="linear-gradient(135deg,#1D9E75,#0F6E56)" style="background:linear-gradient(135deg,#1D9E75,#0F6E56);"></div>
-          <div class="sw" data-bg="#1a1a1a" style="background:#1a1a1a;"></div>
-          <div class="sw lite" data-bg="#ffffff" style="background:#fff;"></div>
-          <div class="sw" data-bg="#FFF0F5" style="background:#FFF0F5;"></div>
-          <div class="sw" data-bg="#F0F4FF" style="background:#F0F4FF;"></div>
-          <div class="sw" data-bg="#FFFBE6" style="background:#FFFBE6;"></div>
-          <div class="sw" data-bg="linear-gradient(135deg,#667EEA,#764BA2)" style="background:linear-gradient(135deg,#667EEA,#764BA2);"></div>
-          <div class="sw" data-bg="linear-gradient(135deg,#FF6B9D,#FFB347)" style="background:linear-gradient(135deg,#FF6B9D,#FFB347);"></div>
-          <div class="sw" data-bg="linear-gradient(135deg,#FF8C00,#FF4500)" style="background:linear-gradient(135deg,#FF8C00,#FF4500);"></div>
+      <div class="upload-choice" onclick="triggerLibrary()">
+        <div class="uc-icon" style="background:#E8F4FE;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         </div>
-        <!-- ミニプレビュー -->
-        <div class="deco-mini-preview" id="deco-preview" style="background:linear-gradient(135deg,#1D9E75,#0F6E56);">
-          <div class="deco-mini-text" id="deco-text-main" style="color:#fff;font-family:system-ui;font-size:11px;">
-            <span class="deco-mini-hint">プレビュー</span>
+        <div class="uc-text">
+          <div class="uc-title">写真ライブラリ</div>
+          <div class="uc-sub">保存済みの写真から選ぶ</div>
+        </div>
+        <svg class="uc-chevron" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="5 10 10 5 15 10"/><polyline points="5 15 10 10 15 15" opacity=".3"/></svg>
+      </div>
+
+      <div class="upload-choice" onclick="triggerCameraOnly()">
+        <div class="uc-icon" style="background:#E8F7F0;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <div class="uc-text">
+          <div class="uc-title">写真を撮る</div>
+          <div class="uc-sub">今すぐカメラで撮影する</div>
+        </div>
+        <svg class="uc-chevron" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="5 10 10 5 15 10"/><polyline points="5 15 10 10 15 15" opacity=".3"/></svg>
+      </div>
+
+      <div class="upload-choice" onclick="triggerFile()">
+        <div class="uc-icon" style="background:#F3EFFE;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9B59B6" stroke-width="1.8" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div class="uc-text">
+          <div class="uc-title">ファイルを選択</div>
+          <div class="uc-sub">PDFや書類から取り込む</div>
+        </div>
+        <svg class="uc-chevron" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="5 10 10 5 15 10"/><polyline points="5 15 10 10 15 15" opacity=".3"/></svg>
+      </div>
+
+    </div>
+
+    <!-- 区切り -->
+    <div class="upload-divider">
+      <div class="upload-divider-line"></div>
+      <div class="upload-divider-txt">テキストメモを作る</div>
+      <div class="upload-divider-line"></div>
+    </div>
+
+    <!-- テキストメモ入力 -->
+    <div class="upload-memo">
+      <!-- DECO CARD - ミニマルUI -->
+      <div class="deco-box" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+
+        <!-- テキスト入力 -->
+        <textarea class="deco-inp" id="deco-inp" placeholder="テキストを入力…" rows="2" oninput="onDecoInput(this)"></textarea>
+
+        <!-- 背景色 + ミニプレビュー -->
+        <div class="deco-ctrl-row">
+          <span class="deco-ctrl-lbl">背景</span>
+          <div id="bg-sw" style="display:flex;gap:5px;flex:1;align-items:center;">
+            <div class="sw on" data-bg="linear-gradient(135deg,#1D9E75,#0F6E56)" style="background:linear-gradient(135deg,#1D9E75,#0F6E56);"></div>
+            <div class="sw" data-bg="#1a1a1a" style="background:#1a1a1a;"></div>
+            <div class="sw lite" data-bg="#ffffff" style="background:#fff;"></div>
+            <div class="sw" data-bg="#FFF0F5" style="background:#FFF0F5;"></div>
+            <div class="sw" data-bg="#F0F4FF" style="background:#F0F4FF;"></div>
+            <div class="sw" data-bg="#FFFBE6" style="background:#FFFBE6;"></div>
+            <div class="sw" data-bg="linear-gradient(135deg,#667EEA,#764BA2)" style="background:linear-gradient(135deg,#667EEA,#764BA2);"></div>
+            <div class="sw" data-bg="linear-gradient(135deg,#FF6B9D,#FFB347)" style="background:linear-gradient(135deg,#FF6B9D,#FFB347);"></div>
+            <div class="sw" data-bg="linear-gradient(135deg,#FF8C00,#FF4500)" style="background:linear-gradient(135deg,#FF8C00,#FF4500);"></div>
           </div>
-          <div id="deco-emoji-el" style="position:absolute;top:4px;left:6px;font-size:14px;line-height:1;"></div>
+          <div class="deco-mini-preview" id="deco-preview" style="background:linear-gradient(135deg,#1D9E75,#0F6E56);">
+            <div class="deco-mini-text" id="deco-text-main" style="color:#fff;font-family:system-ui;font-size:11px;">
+              <span class="deco-mini-hint">プレビュー</span>
+            </div>
+            <div id="deco-emoji-el" style="position:absolute;top:4px;left:6px;font-size:14px;line-height:1;"></div>
+          </div>
         </div>
-      </div>
 
-      <!-- ③ 文字色 -->
-      <div class="deco-ctrl-row">
-        <span class="deco-ctrl-lbl">文字色</span>
-        <div id="txt-sw" style="display:flex;gap:5px;">
-          <div class="sw on lite" data-tc="#ffffff" style="background:#fff;"></div>
-          <div class="sw" data-tc="#1a1a1a" style="background:#1a1a1a;"></div>
-          <div class="sw" data-tc="#1D9E75" style="background:#1D9E75;"></div>
-          <div class="sw" data-tc="#FF6B9D" style="background:#FF6B9D;"></div>
-          <div class="sw" data-tc="#667EEA" style="background:#667EEA;"></div>
-          <div class="sw" data-tc="#FF8C00" style="background:#FF8C00;"></div>
-          <div class="sw" data-tc="#EF9F27" style="background:#EF9F27;"></div>
+        <!-- 文字色 -->
+        <div class="deco-ctrl-row">
+          <span class="deco-ctrl-lbl">文字色</span>
+          <div id="txt-sw" style="display:flex;gap:5px;">
+            <div class="sw on lite" data-tc="#ffffff" style="background:#fff;"></div>
+            <div class="sw" data-tc="#1a1a1a" style="background:#1a1a1a;"></div>
+            <div class="sw" data-tc="#1D9E75" style="background:#1D9E75;"></div>
+            <div class="sw" data-tc="#FF6B9D" style="background:#FF6B9D;"></div>
+            <div class="sw" data-tc="#667EEA" style="background:#667EEA;"></div>
+            <div class="sw" data-tc="#FF8C00" style="background:#FF8C00;"></div>
+            <div class="sw" data-tc="#EF9F27" style="background:#EF9F27;"></div>
+          </div>
         </div>
-      </div>
 
-      <!-- ④ 書体 -->
-      <div class="deco-ctrl-row">
-        <span class="deco-ctrl-lbl">書体</span>
-        <div class="font-chips" id="font-chips">
-          <div class="fc on" data-font="system-ui,-apple-system,sans-serif" style="font-family:system-ui;">ゴシック</div>
-          <div class="fc" data-font="'Hiragino Mincho ProN','Yu Mincho',serif" style="font-family:'Hiragino Mincho ProN',serif;">明朝</div>
-          <div class="fc" data-font="Impact,'Arial Black',sans-serif" style="font-family:Impact;">太字</div>
+        <!-- 書体 -->
+        <div class="deco-ctrl-row">
+          <span class="deco-ctrl-lbl">書体</span>
+          <div class="font-chips" id="font-chips">
+            <div class="fc on" data-font="system-ui,-apple-system,sans-serif" style="font-family:system-ui;">ゴシック</div>
+            <div class="fc" data-font="'Hiragino Mincho ProN','Yu Mincho',serif" style="font-family:'Hiragino Mincho ProN',serif;">明朝</div>
+            <div class="fc" data-font="Impact,'Arial Black',sans-serif" style="font-family:Impact;">太字</div>
+          </div>
         </div>
-      </div>
 
-      <!-- ⑤ 投稿ボタン -->
-      <div class="deco-footer">
-        <button class="post-btn" id="deco-post-btn" onclick="postDeco()" disabled>グリッドに追加</button>
-      </div>
+        <!-- 投稿ボタン -->
+        <div class="deco-footer">
+          <button class="post-btn" id="deco-post-btn" onclick="postDeco()" disabled>グリッドに追加</button>
+        </div>
 
+      </div>
     </div>
+
   </div>
 </div>
 
@@ -1866,7 +1927,37 @@ document.getElementById('file-input').addEventListener('change', e=>{
   };
   r.readAsDataURL(f); e.target.value='';
 });
-function triggerCamera(){ document.getElementById('file-input').click(); }
+
+// カメラ専用input（ボトムナビの「撮る」用）
+document.getElementById('camera-input').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=async ev=>{
+    const compressed=await compressImage(ev.target.result);
+    S.curImgData=compressed; S.croppedData=null; S.trimRect=null;
+    openQuickPost(compressed);
+  };
+  r.readAsDataURL(f); e.target.value='';
+});
+// ボトムナビ「撮る」→ カメラ直接起動（選択肢なし）
+function triggerCamera(){ document.getElementById('camera-input').click(); }
+
+// 写真ライブラリのみ
+function triggerLibrary(){
+  const inp = document.getElementById('file-input');
+  inp.removeAttribute('capture');
+  inp.click();
+}
+// カメラ直接起動（upload画面から）
+function triggerCameraOnly(){
+  document.getElementById('camera-input').click();
+}
+// ファイル選択（PDFなど）
+function triggerFile(){
+  const inp = document.getElementById('file-input');
+  inp.removeAttribute('capture');
+  inp.click();
+}
 function td(){ return new Date().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}); }
 
 // ═══════════════════════════════════════════
@@ -3251,11 +3342,10 @@ window.openFollowFeed = async function() {
   }
 
   try {
-    // 自分がいいねしたlikesレコードを日時降順で取得
+    // インデックス不要：whereのみ取得してJS側でソート
     const likesSnap = await getDocs(query(
       collection(fbDb, 'likes'),
-      where('uid', '==', window.currentUid),
-      orderBy('likedAt', 'desc')
+      where('uid', '==', window.currentUid)
     ));
 
     if (likesSnap.empty) {
@@ -3266,6 +3356,14 @@ window.openFollowFeed = async function() {
       </div>`;
       return;
     }
+
+    // JS側で日時降順ソート（likedAt or createdAt を使用）
+    const sortedDocs = likesSnap.docs.slice().sort((a, b) => {
+      const da = a.data(), db2 = b.data();
+      const ta = da.likedAt?.toMillis?.() ?? da.createdAt?.toMillis?.() ?? 0;
+      const tb = db2.likedAt?.toMillis?.() ?? db2.createdAt?.toMillis?.() ?? 0;
+      return tb - ta;
+    });
 
     body.innerHTML = '';
 
@@ -3278,7 +3376,7 @@ window.openFollowFeed = async function() {
     const followingSet = S.followingSet || new Set();
     let idx = 0;
 
-    for (const likeDoc of likesSnap.docs) {
+    for (const likeDoc of sortedDocs) {
       const likeData = likeDoc.data();
       const postId = likeData.postId;
       if (!postId) continue;
@@ -3381,12 +3479,7 @@ window.openFollowFeed = async function() {
 
   } catch(e) {
     console.error('[Knowledge]', e);
-    // likedAtインデックス未作成の場合のフォールバック
-    if (e.code === 'failed-precondition' || e.message?.includes('index')) {
-      body.innerHTML = `<div style="padding:40px 24px;text-align:center;font-size:11px;color:var(--text3);line-height:2;">Firestoreのインデックスを作成中です。<br>しばらくお待ちください。<br><small>likes コレクションに likedAt の降順インデックスが必要です</small></div>`;
-    } else {
-      body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--red);font-size:12px;">読み込みに失敗しました</div>';
-    }
+    body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--red);font-size:12px;">読み込みに失敗しました。<br>時間をおいて再試行してください。</div>';
   }
 };
 
