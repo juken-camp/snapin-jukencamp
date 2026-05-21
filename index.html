@@ -730,8 +730,8 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
         <div class="pst"><span class="pst-n" id="stat-total">0</span><span class="pst-l">SnapIn</span></div>
         <div class="pst"><span class="pst-n" id="stat-following">0</span><span class="pst-l">フォロー</span></div>
         <div class="pst"><span class="pst-n" id="stat-followers">0</span><span class="pst-l">フォロワー</span></div>
-        <div class="pst" onclick="goTo('analytics')" style="cursor:pointer;"><span class="pst-n" id="stat-score" style="color:var(--g);">0</span><span class="pst-l">🧠 知識Pt</span></div>
-        <div class="pst"><span class="pst-n" id="stat-thanks" style="color:#e05a8a;">0</span><span class="pst-l">🩷 ありがと</span></div>
+        <div class="pst" onclick="goTo('analytics')" style="cursor:pointer;"><span class="pst-n" id="stat-score" style="color:var(--g);">0</span><span class="pst-l">知識pt</span></div>
+        <div class="pst"><span class="pst-n" id="stat-thanks" style="color:#e05a8a;">0</span><span class="pst-l">ありがと</span></div>
       </div>
     </div>
   </div>
@@ -3566,71 +3566,97 @@ function setKnCategory(cat) {
 
 function renderKnowledge() {
   const grid = document.getElementById('kn-main-grid');
-  const feedEl = document.getElementById('kn-feed-mode');
   if (!grid) return;
+  const feedEl = document.getElementById('kn-feed-mode');
+  const gridMode = document.getElementById('kn-grid-mode');
+
   const q = (document.getElementById('kn-search')?.value || '').toLowerCase();
-  let posts = _knAllPosts;
+  let posts = _knAllPosts.slice();
   if (_knCategory !== 'すべて') posts = posts.filter(p => (p.category || 'その他') === _knCategory);
   if (q) posts = posts.filter(p => (p.caption || p.content || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q));
 
+  // モード切替
+  if (_knViewMode === 'grid') {
+    if (gridMode) gridMode.style.display = 'flex';
+    if (feedEl) feedEl.style.display = 'none';
+  } else {
+    if (gridMode) gridMode.style.display = 'none';
+    if (feedEl) feedEl.style.display = 'block';
+  }
+
   grid.innerHTML = '';
-  if (feedEl) feedEl.innerHTML = '';
 
   if (!posts.length) {
-    grid.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;">該当する投稿がありません</div>`;
+    grid.innerHTML = `<div style="grid-column:span 3;padding:40px;text-align:center;color:var(--text3);font-size:12px;">まだ知識がありません</div>`;
     return;
   }
 
-  if (_knViewMode === 'grid') {
-    document.getElementById('kn-grid-mode').style.display = 'flex';
-    if (feedEl) feedEl.style.display = 'none';
-    grid.className = 'grid';
-    posts.forEach((post, idx) => {
-      const el = document.createElement('div');
-      el.className = 'gi sq';
-      if (post.imageData) {
-        el.style.background = '#ddd';
-        const img = document.createElement('img');
-        img.src = post.imageData;
-        img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;';
-        el.appendChild(img);
-        el.onclick = () => openLightbox(post.imageData);
-      } else {
-        el.className = 'gi sq';
-        const de = post.deco || {};
-        el.style.background = de.bg || '#1a1a1a';
-        const inner = document.createElement('div');
-        inner.className = 'text-tile-inner';
-        const txt = (post.caption || post.content || '').substring(0, 40);
-        const fs = txt.length > 20 ? 10 : 12;
-        inner.innerHTML = `<div style="color:${de.tc||'rgba(255,255,255,.9)'};font-size:${fs}px;font-weight:700;line-height:1.35;word-break:break-word;">${txt}</div>`;
-        el.appendChild(inner);
-      }
-      const unlike = document.createElement('div');
-      unlike.style.cssText = 'position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:rgba(229,75,74,0.85);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;';
-      unlike.innerHTML = `<svg width="9" height="9" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
-      unlike.onclick = e => { e.stopPropagation(); unlikeKnowledge(post, el); };
-      el.appendChild(unlike);
-      const dot = document.createElement('div');
-      dot.className = 'gi-cat-dot'; dot.style.background = catColor(post.category || 'その他');
-      el.appendChild(dot);
-      grid.appendChild(el);
-    });
-  } else {
-    document.getElementById('kn-grid-mode').style.display = 'none';
-    if (feedEl) feedEl.style.display = 'block';
-    posts.forEach(post => {
-      const card = document.createElement('div');
-      card.style.borderBottom = '6px solid var(--bg)';
-      const cat = post.category || 'その他';
-      const dateStr = post.createdAt?.toDate ? post.createdAt.toDate().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}) : (post.date||'');
-      const mediaHtml = post.imageData
-        ? `<img src="${post.imageData}" onclick="openLightbox('${post.imageData}')" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;cursor:zoom-in;">`
-        : (() => { const de=post.deco||{}; return `<div style="background:${de.bg||'#1a1a1a'};min-height:160px;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;font-size:16px;font-weight:700;color:${de.tc||'#fff'};font-family:${de.font||'system-ui'};">${post.caption||post.content||''}</div>`; })();
-      card.innerHTML = `${mediaHtml}<div style="padding:8px 14px 10px;display:flex;align-items:center;gap:8px;"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text3);"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${catColor(cat)};"></span>${cat}</span><span style="font-size:10px;color:var(--text3);margin-left:auto;">${dateStr}</span></div>`;
-      if (feedEl) feedEl.appendChild(card);
-    });
+  if (_knViewMode === 'feed') {
+    if (feedEl) {
+      feedEl.innerHTML = '';
+      posts.forEach(post => {
+        const cat = post.category || 'その他';
+        const dateStr = post.createdAt?.toDate ? post.createdAt.toDate().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}) : '';
+        const card = document.createElement('div');
+        card.style.cssText = 'border-bottom:6px solid var(--bg);';
+        const mediaHtml = post.imageData
+          ? `<img src="${post.imageData}" onclick="openLightbox('${post.imageData}')" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;cursor:zoom-in;">`
+          : (()=>{ const de=post.deco||{}; return `<div style="background:${de.bg||'#1a1a1a'};min-height:160px;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;font-size:16px;font-weight:700;color:${de.tc||'#fff'};font-family:${de.font||'system-ui'};">${post.caption||post.content||''}</div>`; })();
+        card.innerHTML = `${mediaHtml}<div style="padding:8px 14px 10px;display:flex;align-items:center;gap:8px;"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text3);"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${catColor(cat)};"></span>${cat}</span><span style="font-size:10px;color:var(--text3);margin-left:auto;">${dateStr}</span></div>`;
+        feedEl.appendChild(card);
+      });
+    }
+    return;
   }
+
+  // グリッドモード：ホームのrenderGridと同じ構造
+  posts.forEach(post => {
+    const el = document.createElement('div');
+    const cat = post.category || 'その他';
+    const dateStr = post.createdAt?.toDate ? post.createdAt.toDate().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'}) : '';
+
+    if (post.imageData) {
+      el.className = 'gi sq';
+      el.style.background = '#ddd';
+      const img = document.createElement('img');
+      img.src = post.imageData;
+      img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;';
+      el.appendChild(img);
+      el.onclick = () => openLightbox(post.imageData);
+    } else {
+      el.className = 'gi sq';
+      const de = post.deco || {};
+      el.style.background = de.bg || '#1a1a1a';
+      const inner = document.createElement('div');
+      inner.className = 'text-tile-inner';
+      inner.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;padding:8px;text-align:center;';
+      const txt = (post.caption || post.content || '').substring(0, 40);
+      let fs = 13; if (txt.length > 20) fs = 11; if (txt.length > 30) fs = 10;
+      inner.innerHTML = `<div style="color:${de.tc||'rgba(255,255,255,.9)'};font-family:${de.font||'system-ui'};font-size:${fs}px;font-weight:700;line-height:1.35;word-break:break-word;">${txt}</div>`;
+      el.appendChild(inner);
+    }
+
+    // 日付オーバーレイ
+    const ov = document.createElement('div');
+    ov.className = 'gi-overlay';
+    ov.innerHTML = `<div class="gi-meta">${dateStr}</div>`;
+    el.appendChild(ov);
+
+    // カテゴリドット
+    const dot = document.createElement('div');
+    dot.className = 'gi-cat-dot';
+    dot.style.background = catColor(cat);
+    el.appendChild(dot);
+
+    // ありがと取消ボタン
+    const unlike = document.createElement('div');
+    unlike.style.cssText = 'position:absolute;bottom:4px;right:4px;width:18px;height:18px;border-radius:50%;background:rgba(229,75,74,0.85);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;';
+    unlike.innerHTML = `<svg width="9" height="9" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+    unlike.onclick = e => { e.stopPropagation(); unlikeKnowledge(post, el); };
+    el.appendChild(unlike);
+
+    grid.appendChild(el);
+  });
 }
 
 async function unlikeKnowledge(post, el) {
