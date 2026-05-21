@@ -983,7 +983,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 
 <!-- ANALYTICS -->
 <div class="screen" id="screen-analytics">
-  <div class="hdr"><div class="logo">Snap<em>In</em><span class="logo-by"> by JUKEN CAMP</span></div></div>
+  <div class="hdr"><div class="logo">Snap<em>In</em><span class="logo-by"> 分析</span></div></div>
   <div class="ana-body">
     <div>
       <div class="sec-title">知識スコア</div>
@@ -1014,7 +1014,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     <div class="ni" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
     <div class="ni" onclick="openFollowFeed()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>知識</span></div>
     <div class="ni" onclick="triggerCamera()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>撮る</span></div>
-    <div class="ni active"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
+    <div class="ni active" id="ni-analytics-ana"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>分析</span></div>
     <div class="ni" onclick="goTo('profile')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>マイページ</span></div>
   </div>
 </div>
@@ -1068,10 +1068,9 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 
 <!-- PROFILE -->
 <div class="screen" id="screen-profile">
-  <div class="back-hdr">
-    <span class="back-btn" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></span>
-    <span class="back-title">マイページ</span>
-    <span class="back-action" onclick="saveProfile()">保存</span>
+  <div class="hdr">
+    <div class="logo">Snap<em>In</em><span class="logo-by"> マイページ</span></div>
+    <span class="back-action" onclick="saveProfile()" style="font-size:13px;color:var(--g);font-weight:500;cursor:pointer;">保存</span>
   </div>
   <div class="profile-body">
     <div class="prof-ava-sec">
@@ -1199,7 +1198,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 <div class="screen" id="screen-follow-feed">
   <!-- ヘッダー -->
   <div class="hdr">
-    <div class="logo">知<em>識</em><span class="logo-by"> コレクション</span></div>
+    <div class="logo">Snap<em>In</em><span class="logo-by"> 知識をあつめよう</span></div>
     <div style="display:flex;align-items:center;gap:10px;">
       <div class="view-toggle">
         <button class="vt-btn on" id="kn-vt-grid" onclick="setKnowledgeView('grid')">
@@ -1608,13 +1607,14 @@ function saveProfile(){
 function goTo(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
+  // ボトムナビ同期
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  const navMap = {'home':'ni-home','follow-feed':'ni-knowledge'};
+  if(navMap[name]) document.getElementById(navMap[name])?.classList.add('active');
   if(name==='analytics') updateAna();
   if(name==='home'){
     renderGrid(); renderFilterBar(); exitEditMode();
     if(S.viewMode==='feed') renderFeed();
-    // ボトムナビをホームに戻す
-    document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
-    document.getElementById('ni-home')?.classList.add('active');
   }
   if(name==='profile') loadProfileUI();
   if(name==='trash') renderTrash();
@@ -3388,15 +3388,13 @@ window.openFollowFeed = async function() {
   document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
   document.getElementById('ni-knowledge')?.classList.add('active');
 
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  const scr = document.getElementById('screen-follow-feed');
-  scr.classList.add('active');
-  scr.style.display = 'flex';
+  goTo('follow-feed');
   const knGrid = document.getElementById('kn-main-grid');
   if(knGrid) knGrid.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;">読み込み中…</div>';
 
   if (!window.currentUid) {
-    body.innerHTML = '<div style="padding:60px 24px;text-align:center;color:var(--text3);font-size:12px;line-height:2.2;">ログインが必要です</div>';
+    const g = document.getElementById('kn-main-grid');
+    if(g) g.innerHTML = '<div style="padding:60px 24px;text-align:center;color:var(--text3);font-size:12px;">ログインが必要です</div>';
     return;
   }
 
@@ -3420,7 +3418,7 @@ window.openFollowFeed = async function() {
       // Firestoreルール等でアクセス不可の場合、ローカルデータから代替表示
       const localLiked = S.items.filter(i => i.thanks?.includes(window.currentUid));
       if (localLiked.length === 0) {
-        body.innerHTML = `<div style="padding:60px 24px;text-align:center;color:var(--text3);font-size:12px;line-height:2.4;display:flex;flex-direction:column;align-items:center;gap:10px;">
+        document.getElementById('kn-main-grid').innerHTML = `<div style="padding:60px 24px;text-align:center;color:var(--text3);font-size:12px;line-height:2.4;display:flex;flex-direction:column;align-items:center;gap:10px;">
           <div style="font-size:36px;">🩷</div>
           <div>まだ知識がありません</div>
           <div style="font-size:10px;">他のユーザーの投稿に<br>ありがとボタンを押すと<br>ここに集まります</div>
@@ -3428,10 +3426,10 @@ window.openFollowFeed = async function() {
         return;
       }
       // ローカルデータでグリッド表示（自分の投稿でありがとしたもの）
-      body.innerHTML = '';
+      document.getElementById('kn-main-grid').innerHTML = '';
       const g2 = document.createElement('div');
       g2.className = 'grid'; g2.style.padding = '3px';
-      body.style.overflowY = 'auto';
+      (document.getElementById('kn-main-grid')||{}).style.overflowY = 'auto';
       localLiked.forEach((item, idx) => {
         const el = document.createElement('div');
         el.className = 'gi ' + (idx % 5 === 1 ? 'wide' : 'sq');
@@ -3458,12 +3456,12 @@ window.openFollowFeed = async function() {
         el.appendChild(dot);
         g2.appendChild(el);
       });
-      body.appendChild(g2);
+      document.getElementById('kn-main-grid').appendChild(g2);
       return;
     }
 
     if (sortedDocs.length === 0) {
-      body.innerHTML = `<div style="padding:60px 24px;text-align:center;color:var(--text3);font-size:12px;line-height:2.4;display:flex;flex-direction:column;align-items:center;gap:10px;">
+      document.getElementById('kn-main-grid').innerHTML = `<div style="padding:60px 24px;text-align:center;color:var(--text3);font-size:12px;line-height:2.4;display:flex;flex-direction:column;align-items:center;gap:10px;">
         <div style="font-size:36px;">🩷</div>
         <div>まだ知識がありません</div>
         <div style="font-size:10px;">他のユーザーの投稿に<br>ありがとボタンを押すと<br>ここに集まります</div>
@@ -3471,7 +3469,7 @@ window.openFollowFeed = async function() {
       return;
     }
 
-    body.innerHTML = '';
+    document.getElementById('kn-main-grid').innerHTML = '';
     _knAllPosts = []; // リセット
     _knCategory = 'すべて'; // カテゴリリセット
 
@@ -3479,7 +3477,7 @@ window.openFollowFeed = async function() {
     const grid = document.createElement('div');
     grid.className = 'grid';
     grid.style.padding = '3px';
-    body.style.overflowY = 'auto';
+    (document.getElementById('kn-main-grid')||{}).style.overflowY = 'auto';
 
     const followingSet = S.followingSet || new Set();
     let idx = 0;
@@ -3581,7 +3579,7 @@ window.openFollowFeed = async function() {
     }
 
     if (!grid.children.length) {
-      body.innerHTML = `<div style="padding:60px 24px;text-align:center;color:var(--text3);font-size:12px;line-height:2.2;">表示できる投稿がありません</div>`;
+      document.getElementById('kn-main-grid').innerHTML = `<div style="padding:60px 24px;text-align:center;color:var(--text3);font-size:12px;line-height:2.2;">表示できる投稿がありません</div>`;
     } else {
       // grid は renderKnowledge で再描画するので、ここでは _knAllPosts だけ渡す
     }
@@ -3590,7 +3588,7 @@ window.openFollowFeed = async function() {
 
   } catch(e) {
     console.error('[Knowledge]', e);
-    body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--red);font-size:12px;">読み込みに失敗しました。<br>時間をおいて再試行してください。</div>';
+    document.getElementById('kn-main-grid').innerHTML = '<div style="padding:40px;text-align:center;color:var(--red);font-size:12px;">読み込みに失敗しました。<br>時間をおいて再試行してください。</div>';
   }
 };
 
@@ -3615,13 +3613,7 @@ window.unlikeFromGrid = async function(postId, el) {
 };
 
 function closeFollowFeed() {
-  const scr = document.getElementById('screen-follow-feed');
-  scr.classList.remove('active');
-  scr.style.display = 'none';
-  // ホームタブに戻す
-  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
-  document.getElementById('ni-home')?.classList.add('active');
-  document.getElementById('screen-home').classList.add('active');
+  goTo('home');
 }
 // ══════════════════════════════════════════════════════════
 // 知識タブ - グリッド/フィード切替・検索・カテゴリ
