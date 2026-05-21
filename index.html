@@ -633,6 +633,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .req-reject{padding:6px 10px;background:var(--bg);border:0.5px solid var(--border2);border-radius:14px;font-size:11px;color:var(--text2);cursor:pointer;}
 .req-sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:299;display:none;}
 .req-sheet-overlay.on{display:block;}
+.req-sheet-overlay.on{display:block;}
 
 /* ありがとコレクション カード */
 .thanks-post-card{background:var(--surface);border-radius:14px;overflow:hidden;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,0.07);}
@@ -1611,6 +1612,10 @@ function saveProfile(){
 // NAVIGATION
 // ═══════════════════════════════════════════
 function goTo(name){
+  // 全overlayをリセット
+  document.querySelectorAll('.req-sheet-overlay,.req-sheet').forEach(el=>el.classList.remove('on','open'));
+  document.getElementById('usearch-overlay')?.classList.remove('on');
+  document.getElementById('usearch-sheet')?.classList.remove('open');
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   // ボトムナビ同期
@@ -1621,6 +1626,11 @@ function goTo(name){
   if(name==='home'){
     renderGrid(); renderFilterBar(); exitEditMode();
     if(S.viewMode==='feed') renderFeed();
+  }
+  if(name==='follow-feed'){
+    // カテゴリバーは既にopenFollowFeedで描画済みだが念のため
+    renderKnowledgeCategoryBar(_knAllPosts);
+    renderKnowledge();
   }
   if(name==='profile') loadProfileUI();
   if(name==='trash') renderTrash();
@@ -2600,7 +2610,7 @@ function renderGrid(){
       inner.innerHTML=`${d.emoji?`<div class="text-tile-emoji">${d.emoji}</div>`:''}<div style="color:${d.tc||'rgba(255,255,255,.9)'};font-family:${d.font||'system-ui'};font-size:${fs}px;font-weight:700;line-height:1.35;word-break:break-word;">${preview}</div>`;
       el.appendChild(inner);
     } else {
-      el.classList.add(idx%5===1?'wide':'sq');
+      el.classList.add('sq');
       el.style.background='#ddd';
       const img=document.createElement('img'); img.src=item.imageData; img.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;'; el.appendChild(img);
     }
@@ -3438,7 +3448,7 @@ window.openFollowFeed = async function() {
       (document.getElementById('kn-main-grid')||{}).style.overflowY = 'auto';
       localLiked.forEach((item, idx) => {
         const el = document.createElement('div');
-        el.className = 'gi ' + (idx % 5 === 1 ? 'wide' : 'sq');
+        el.className = 'gi sq';
         if (item.imageData) {
           el.style.background = '#ddd';
           const img = document.createElement('img');
@@ -3511,7 +3521,7 @@ window.openFollowFeed = async function() {
 
       const el = document.createElement('div');
       // ホームと同じグリッドタイル
-      el.className = 'gi ' + (idx % 5 === 1 ? 'wide' : 'sq');
+      el.className = 'gi sq';
       el.style.cursor = 'pointer';
 
       if (postData.imageData) {
@@ -3638,11 +3648,16 @@ function setKnowledgeView(mode) {
 function renderKnowledgeCategoryBar(posts) {
   const bar = document.getElementById('kn-filter-bar');
   if (!bar) return;
-  const cats = ['すべて', ...new Set(posts.map(p => p.category || 'その他').filter(Boolean))];
-  bar.innerHTML = cats.map(c => {
-    const on = c === _knCategory;
-    const dot = c !== 'すべて' ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${catColor(c)};margin-right:4px;"></span>` : '';
-    return `<span class="chip${on?' on':''}" onclick="setKnCategory('${c}')" style="margin-right:6px;cursor:pointer;">${dot}${c}${on ? ' '+posts.filter(p=>(p.category||'その他')===c||c==='すべて').length : ''}</span>`;
+  if (!posts.length) {
+    bar.innerHTML = `<span class="chip on" onclick="setKnCategory('すべて')" style="cursor:pointer;">すべて 0</span>`;
+    return;
+  }
+  const cats = ['すべて', ...new Set(posts.map(p => p.category || 'その他'))];
+  bar.innerHTML = cats.map(cat => {
+    const on = cat === _knCategory;
+    const cnt = cat === 'すべて' ? posts.length : posts.filter(p=>(p.category||'その他')===cat).length;
+    const dot = cat !== 'すべて' ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${catColor(cat)};margin-right:4px;vertical-align:middle;"></span>` : '';
+    return `<span class="chip${on?' on':''}" onclick="setKnCategory('${cat}')" style="cursor:pointer;">${dot}${cat} ${cnt}</span>`;
   }).join('');
 }
 
@@ -3676,7 +3691,7 @@ function renderKnowledge() {
     grid.className = 'grid';
     posts.forEach((post, idx) => {
       const el = document.createElement('div');
-      el.className = 'gi ' + (idx % 5 === 1 ? 'wide' : 'sq');
+      el.className = 'gi sq';
       if (post.imageData) {
         el.style.background = '#ddd';
         const img = document.createElement('img');
