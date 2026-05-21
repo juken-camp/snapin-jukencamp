@@ -256,12 +256,12 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
 .btn-sec{flex:1;padding:11px;border:0.5px solid var(--border2);border-radius:var(--rs);font-size:12px;color:var(--text2);background:transparent;cursor:pointer;}
 .btn-pri{flex:2;padding:11px;background:var(--g);border:none;border-radius:var(--rs);font-size:12px;font-weight:500;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
 /* CHAT */
-.chat-photo{position:relative;flex-shrink:0;background:#111;display:flex;align-items:center;justify-content:center;max-height:45dvh;overflow:hidden;}
+.chat-photo{position:relative;flex-shrink:0;background:#111;display:flex;align-items:center;justify-content:center;}
 .chat-photo img{width:100%;height:auto;max-height:55vh;object-fit:contain;display:block;}
 .chat-photo-tags{position:absolute;top:8px;left:8px;display:flex;gap:6px;}
 .chat-tag{background:rgba(0,0,0,0.5);border-radius:20px;padding:3px 9px;font-size:8px;color:white;display:flex;align-items:center;gap:3px;}
 .chat-tag.green{background:rgba(29,158,117,0.7);}
-.chat-msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px 16px calc(80px + env(safe-area-inset-bottom,18px));display:flex;flex-direction:column;gap:12px;}
 .msg{display:flex;flex-direction:column;gap:3px;}
 .msg.ai{align-items:flex-start;}
 .msg.user{align-items:flex-end;}
@@ -273,7 +273,7 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
 .tdot{width:6px;height:6px;border-radius:50%;background:var(--g2);animation:bounce 1.2s infinite;}
 .tdot:nth-child(2){animation-delay:0.2s;}.tdot:nth-child(3){animation-delay:0.4s;}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-.chat-iw{padding:10px 10px max(18px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:flex;gap:7px;align-items:flex-end;flex-shrink:0;background:var(--surface);}
+.chat-iw{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;padding:10px 10px max(18px,env(safe-area-inset-bottom));border-top:0.5px solid var(--border);display:none;gap:7px;align-items:flex-end;background:var(--surface);z-index:50;}
 .chat-input{flex:1;padding:9px 14px;border:0.5px solid var(--border2);border-radius:22px;font-size:13px;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);outline:none;resize:none;max-height:100px;line-height:1.4;}
 .send-btn{width:36px;height:36px;border-radius:50%;background:var(--g);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
 .send-btn:disabled{background:var(--border2);cursor:default;}
@@ -372,7 +372,7 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
 /* ── CHAT ADDITIONAL PHOTOS & REFS ── */
 .chat-sub-btn{width:34px;height:34px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;}
 .chat-sub-btn:hover{background:var(--gl);border-color:var(--g);color:var(--g);}
-.chat-attach-row{display:flex;gap:8px;padding:0 14px 6px;flex-wrap:wrap;}
+.chat-attach-row{display:flex;gap:8px;padding:0 14px 6px;flex-wrap:wrap;position:fixed;bottom:calc(60px + env(safe-area-inset-bottom,18px));left:50%;transform:translateX(-50%);width:100%;max-width:420px;background:var(--surface);z-index:49;}
 .chat-attach-row:empty{display:none;}
 .chat-attach-thumb{position:relative;width:52px;height:52px;border-radius:8px;overflow:hidden;flex-shrink:0;border:1.5px solid var(--g);}
 .chat-attach-thumb img{width:100%;height:100%;object-fit:cover;}
@@ -958,7 +958,7 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
   </div>
   <div class="chat-msgs" id="chat-msgs"></div>
   <div class="chat-attach-row" id="chat-attach-row"></div>
-  <div class="chat-iw">
+  <div class="chat-iw" id="chat-iw-fixed">
     <button class="chat-sub-btn" onclick="triggerChatPhoto()" title="写真を追加">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3"/></svg>
     </button>
@@ -1646,7 +1646,13 @@ function goTo(name){
   if(name==='profile') loadProfileUI();
   if(name==='trash') renderTrash();
   if(name==='share') renderShareCard();
-  if(name==='chat') updateAiModeUI();
+  if(name==='chat') { 
+    document.getElementById('chat-iw-fixed').style.display='flex';
+    updateAiModeUI();
+  } else {
+    const ciw = document.getElementById('chat-iw-fixed');
+    if(ciw) ciw.style.display='none';
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -2245,7 +2251,7 @@ function renderChatUI(item){
   if(item.type==='photo'&&item.imageData){
     const img=document.createElement('img');
     img.src=item.imageData;
-    img.style.cssText='width:100%;height:auto;max-height:45dvh;object-fit:contain;display:block;cursor:zoom-in;';
+    img.style.cssText='width:100%;height:auto;max-height:55vh;object-fit:contain;display:block;cursor:zoom-in;';
     img.onclick=()=>openLightbox(item.fullImageData||item.imageData);
     area.appendChild(img);
     const tags=document.createElement('div'); tags.className='chat-photo-tags';
@@ -2256,7 +2262,7 @@ function renderChatUI(item){
   } else if(item.type==='text'){
     const d=item.deco||{};
     // テキストカードは正方形で表示
-    area.style.cssText=`background:${d.bg||'#1a1a1a'};display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1/1;position:relative;width:100%;max-height:40dvh;`;
+    area.style.cssText=`background:${d.bg||'#1a1a1a'};display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1/1;position:relative;width:100%;`;
     area.innerHTML=`${d.emoji?`<div style="font-size:28px;position:absolute;top:10px;left:14px;">${d.emoji}</div>`:''}<div style="font-family:${d.font||'system-ui'};font-size:${d.deco?.fontSize||d.fontSize||22}px;color:${d.tc||'rgba(255,255,255,0.9)'};line-height:1.35;font-weight:700;text-align:center;width:82%;word-break:break-word;">${item.content}</div>`;
     if(item.category&&!item.categoryPending){
       const ct=document.createElement('div'); ct.style.cssText='position:absolute;top:8px;right:8px;';
