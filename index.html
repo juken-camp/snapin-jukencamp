@@ -167,7 +167,7 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
 .deco-inp::placeholder{color:var(--text3);}
 
 /* コントロール行 */
-.deco-ctrl-row{display:flex;align-items:center;gap:6px;padding:8px 14px;border-bottom:0.5px solid var(--border);}
+.deco-ctrl-row{display:flex;align-items:center;gap:6px;padding:7px 14px;}
 .deco-ctrl-lbl{font-size:9px;color:var(--text3);width:22px;flex-shrink:0;letter-spacing:.4px;}
 
 /* スウォッチ（小さめ） */
@@ -794,38 +794,29 @@ html,body{height:100%;background:var(--bg);font-family:system-ui,-apple-system,'
     <!-- 4択：縦リスト -->
     <div class="upload-choices">
 
-      <div class="upload-choice" onclick="triggerLibrary()">
-        <div class="uc-icon" style="background:#E8F4FE;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        </div>
-        <div class="uc-text">
-          <div class="uc-title">写真ライブラリ</div>
-          <div class="uc-sub">保存済みの写真から選ぶ</div>
-        </div>
-        <svg class="uc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    <!-- 写真ライブラリ／ファイル -->
+    <div class="upload-choice" onclick="triggerLibrary()">
+      <div class="uc-icon" style="background:#E8F4FE;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
       </div>
+      <div class="uc-text">
+        <div class="uc-title">写真・ファイルを選ぶ</div>
+        <div class="uc-sub">ライブラリ・書類から取り込む</div>
+      </div>
+      <svg class="uc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
 
-      <div class="upload-choice" onclick="triggerCameraOnly()">
-        <div class="uc-icon" style="background:#E8F7F0;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        </div>
-        <div class="uc-text">
-          <div class="uc-title">写真を撮る</div>
-          <div class="uc-sub">今すぐカメラで撮影する</div>
-        </div>
-        <svg class="uc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    <!-- カメラ直接起動 -->
+    <div class="upload-choice" onclick="triggerCameraOnly()">
+      <div class="uc-icon" style="background:#E8F7F0;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </div>
-
-      <div class="upload-choice" onclick="triggerFile()">
-        <div class="uc-icon" style="background:#F3EFFE;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9B59B6" stroke-width="1.8" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-        </div>
-        <div class="uc-text">
-          <div class="uc-title">ファイルを選択</div>
-          <div class="uc-sub">PDFや書類から取り込む</div>
-        </div>
-        <svg class="uc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <div class="uc-text">
+        <div class="uc-title">写真を撮る</div>
+        <div class="uc-sub">今すぐカメラで撮影する</div>
       </div>
+      <svg class="uc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
 
       <!-- テキストメモ：タップで開閉 -->
       <div class="upload-choice" id="memo-toggle" onclick="toggleMemoPanel()" style="background:var(--gl);">
@@ -3355,12 +3346,67 @@ window.openFollowFeed = async function() {
 
   try {
     // インデックス不要：whereのみ取得してJS側でソート
-    const likesSnap = await getDocs(query(
-      collection(fbDb, 'likes'),
-      where('uid', '==', window.currentUid)
-    ));
+    let sortedDocs = [];
+    try {
+      const likesSnap = await getDocs(query(
+        collection(fbDb, 'likes'),
+        where('uid', '==', window.currentUid)
+      ));
+      // JS側で日時降順ソート（likedAt or createdAt を使用）
+      sortedDocs = likesSnap.docs.slice().sort((a, b) => {
+        const da = a.data(), db2 = b.data();
+        const ta = da.likedAt?.toMillis?.() ?? da.createdAt?.toMillis?.() ?? 0;
+        const tb = db2.likedAt?.toMillis?.() ?? db2.createdAt?.toMillis?.() ?? 0;
+        return tb - ta;
+      });
+    } catch(e2) {
+      console.warn('[Knowledge] Firestore likes read failed:', e2.code, e2.message);
+      // Firestoreルール等でアクセス不可の場合、ローカルデータから代替表示
+      const localLiked = S.items.filter(i => i.thanks?.includes(window.currentUid));
+      if (localLiked.length === 0) {
+        body.innerHTML = `<div style="padding:60px 24px;text-align:center;color:var(--text3);font-size:12px;line-height:2.4;display:flex;flex-direction:column;align-items:center;gap:10px;">
+          <div style="font-size:36px;">🩷</div>
+          <div>まだ知識がありません</div>
+          <div style="font-size:10px;">他のユーザーの投稿に<br>ありがとボタンを押すと<br>ここに集まります</div>
+        </div>`;
+        return;
+      }
+      // ローカルデータでグリッド表示（自分の投稿でありがとしたもの）
+      body.innerHTML = '';
+      const g2 = document.createElement('div');
+      g2.className = 'grid'; g2.style.padding = '3px';
+      body.style.overflowY = 'auto';
+      localLiked.forEach((item, idx) => {
+        const el = document.createElement('div');
+        el.className = 'gi ' + (idx % 5 === 1 ? 'wide' : 'sq');
+        if (item.imageData) {
+          el.style.background = '#ddd';
+          const img = document.createElement('img');
+          img.src = item.imageData;
+          img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;';
+          el.appendChild(img);
+          el.onclick = () => openLightbox(item.imageData);
+        } else {
+          el.className = 'gi sq';
+          const de = item.deco || {};
+          el.style.background = de.bg || '#1a1a1a';
+          const inner = document.createElement('div');
+          inner.className = 'text-tile-inner';
+          const preview = (item.content || '').substring(0, 40);
+          inner.innerHTML = `<div style="color:${de.tc||'rgba(255,255,255,.9)'};font-size:11px;font-weight:700;line-height:1.35;word-break:break-word;">${preview}</div>`;
+          el.appendChild(inner);
+        }
+        const dot = document.createElement('div');
+        dot.className = 'gi-cat-dot';
+        dot.style.background = catColor(detectCat(item));
+        el.appendChild(dot);
+        g2.appendChild(el);
+      });
+      body.appendChild(g2);
+      return;
+    }
 
-    if (likesSnap.empty) {
+    if (sortedDocs.length === 0) {
       body.innerHTML = `<div style="padding:60px 24px;text-align:center;color:var(--text3);font-size:12px;line-height:2.4;display:flex;flex-direction:column;align-items:center;gap:10px;">
         <div style="font-size:36px;">🩷</div>
         <div>まだ知識がありません</div>
@@ -3368,14 +3414,6 @@ window.openFollowFeed = async function() {
       </div>`;
       return;
     }
-
-    // JS側で日時降順ソート（likedAt or createdAt を使用）
-    const sortedDocs = likesSnap.docs.slice().sort((a, b) => {
-      const da = a.data(), db2 = b.data();
-      const ta = da.likedAt?.toMillis?.() ?? da.createdAt?.toMillis?.() ?? 0;
-      const tb = db2.likedAt?.toMillis?.() ?? db2.createdAt?.toMillis?.() ?? 0;
-      return tb - ta;
-    });
 
     body.innerHTML = '';
 
