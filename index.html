@@ -12,7 +12,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
 
 <style>
 /* ═══════════════════════════════════════════════════════════
@@ -23,48 +23,94 @@
    ═══════════════════════════════════════════════════════════ */
 
 :root{
-  /* 主役色：深緑（ブランド継承） */
-  --ink:#0F6E56;          /* 主役 / 文字寄りの深緑 */
-  --ink-hover:#0a5644;
-  --mint:#7DD3B8;         /* ガラスの照り返し */
-  --mint-soft:#E3F4EC;    /* 淡いミント背景 */
-  --mint-bg:#F1F9F5;      /* もっと淡い */
+  /* 主役色：明るめの緑（ブランド継承するけど少し若く） */
+  --ink:#2BAA86;          /* メインのアクセント緑 */
+  --ink-deep:#1D9E75;     /* ブランド継承の深緑（控えめに） */
+  --ink-hover:#249570;
+  --mint:#A8E5CF;         /* 元気なミント */
+  --mint-soft:#D9F2E8;
+  --mint-bg:#EAF8F1;      /* タップ反応用 */
 
   /* 紙の白 */
-  --paper:#FAFBFA;        /* 全体背景。紙よりほんの少し冷たい */
-  --paper-warm:#FDFDFB;   /* カード内側 */
+  --paper:#FCFCFA;        /* 全体背景。少し暖かい */
+  --paper-warm:#FFFFFF;
   --white:#FFFFFF;
   --surface:#FFFFFF;
 
   /* テキスト */
-  --text:#1a1f1d;
-  --text2:#5b6560;
-  --text3:#9aa39e;
-  --text4:#c5ccc8;
+  --text:#1F2421;
+  --text2:#646E68;
+  --text3:#9CA59F;
+  --text4:#CCD3CE;
 
   /* 線・影 */
-  --line:rgba(15,30,25,0.07);
-  --line-strong:rgba(15,30,25,0.13);
+  --line:rgba(15,30,25,0.06);
+  --line-strong:rgba(15,30,25,0.11);
   --photo-edge:rgba(0,0,0,0.05);
   --shadow-sm:0 1px 2px rgba(10,30,25,0.04);
-  --shadow:0 1px 3px rgba(10,30,25,0.05), 0 6px 20px rgba(10,30,25,0.06);
-  --shadow-lg:0 4px 12px rgba(10,30,25,0.08), 0 24px 48px rgba(10,30,25,0.10);
-  --glass:rgba(255,255,255,0.72);
+  --shadow:0 1px 3px rgba(10,30,25,0.05), 0 6px 18px rgba(10,30,25,0.07);
+  --shadow-lg:0 4px 12px rgba(10,30,25,0.10), 0 20px 40px rgba(10,30,25,0.12);
+  --shadow-pop:0 4px 16px rgba(43,170,134,0.25);
+  --glass:rgba(255,255,255,0.78);
 
-  /* アクセント（控えめに） */
-  --warn:#D97757;
-  --red:#C84B3A;
+  /* アクセント色 */
+  --warn:#E89B5C;
+  --red:#E66B5C;
+  --pink-accent:#F5A0BC;
+
+  /* ───── カードの背景色（カテゴリ別パステル） ───── */
+  --card-en:#EDE5FF;        /* 英語：ラベンダー薄紫 */
+  --card-en-ink:#7257C9;
+  --card-math:#D4F3E6;      /* 数学：ミント */
+  --card-math-ink:#1E8062;
+  --card-sci:#FFF4C2;       /* 理科：レモン */
+  --card-sci-ink:#A07B0E;
+  --card-soc:#FFE3CC;       /* 社会：アプリコット */
+  --card-soc-ink:#C2660E;
+  --card-jp:#FFD9DC;        /* 国語：ローズ */
+  --card-jp-ink:#B84B5C;
+  --card-cook:#FFD4BD;      /* 料理：ピーチ */
+  --card-cook-ink:#B85530;
+  --card-life:#FFE0EC;      /* 生活メモ：桜 */
+  --card-life-ink:#B85878;
+  --card-shop:#CCE8F5;      /* 買い物：スカイ */
+  --card-shop-ink:#2E7A9B;
+  --card-music:#E8D9F5;     /* 音楽：ライラック */
+  --card-music-ink:#7E4DA8;
+  --card-art:#FFD9E8;       /* アート：ピンクローズ */
+  --card-art-ink:#B85883;
+  --card-it:#D9E5F5;        /* IT・技術：ダスティブルー */
+  --card-it-ink:#3D6090;
+  --card-plant:#D9F0D9;     /* 植物・自然：若草 */
+  --card-plant-ink:#3D8040;
+  --card-animal:#FFE8CC;    /* 動物：アンバー */
+  --card-animal-ink:#B57D1E;
+  --card-travel:#CCEBE8;    /* 旅行：シーフォーム */
+  --card-travel-ink:#2D7A75;
+  --card-work:#E0E0E8;      /* 仕事：ペールパープル */
+  --card-work-ink:#5D5D80;
+  --card-health:#FFD9D4;    /* 健康：コーラル */
+  --card-health-ink:#B84F45;
+  --card-word:#F0E5D5;      /* 言葉：ベージュ */
+  --card-word-ink:#8A6E47;
+  --card-other:#FFF4E0;     /* その他：クリーム */
+  --card-other-ink:#998249;
 
   /* 角丸 */
-  --r-card:14px;
-  --r-sheet:22px;
-  --r-photo:6px;
+  --r-card:16px;
+  --r-sheet:24px;
+  --r-photo:10px;
   --r-pill:999px;
 
   /* フォント */
   --font-display:"Shippori Mincho","Hiragino Mincho ProN",serif;
   --font-body:"Inter","Noto Sans JP",-apple-system,"Hiragino Sans",sans-serif;
+  --font-display-jp:"Zen Maru Gothic","Hiragino Sans","Noto Sans JP",sans-serif;
   --font-num:"Inter",system-ui,sans-serif;
+
+  /* イージング（共通） */
+  --ease-pop:cubic-bezier(0.34, 1.56, 0.64, 1);  /* バウンス感 */
+  --ease-out:cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -126,7 +172,7 @@ input,textarea{border:none;outline:none;background:none;}
 .logo{
   font-family:var(--font-display);
   font-size:24px;
-  font-weight:600;
+  font-weight:700;
   letter-spacing:-0.01em;
   color:var(--text);
   line-height:1;
@@ -141,14 +187,14 @@ input,textarea{border:none;outline:none;background:none;}
 .logo-tag{
   font-family:var(--font-body);
   font-size:9.5px;
-  font-weight:400;
+  font-weight:500;
   color:var(--text3);
   letter-spacing:0.04em;
   margin-left:6px;
 }
 .hdr-icons{
   display:flex;
-  gap:14px;
+  gap:10px;
   align-items:center;
   color:var(--text2);
 }
@@ -160,11 +206,12 @@ input,textarea{border:none;outline:none;background:none;}
   height:36px;
   border-radius:50%;
   cursor:pointer;
-  transition:background 0.15s, color 0.15s;
+  transition:background 0.18s, color 0.18s, transform 0.18s var(--ease-pop);
 }
-.hdr-icon:hover, .hdr-icon:active{
+.hdr-icon:active{
   background:var(--mint-bg);
   color:var(--ink);
+  transform:scale(0.88);
 }
 
 /* 戻るヘッダー */
@@ -245,15 +292,36 @@ input,textarea{border:none;outline:none;background:none;}
   padding-top:2px;
 }
 .ni-camera-btn{
-  width:46px;height:46px;
+  width:50px;height:50px;
   border-radius:50%;
-  background:linear-gradient(180deg, #168A6B 0%, #0F6E56 100%);
+  background:linear-gradient(140deg, #5FCFA3 0%, #2BAA86 50%, #1D9E75 100%);
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 14px rgba(15,110,86,0.35), inset 0 1px 0 rgba(255,255,255,0.18);
+  box-shadow:
+    0 4px 12px rgba(43,170,134,0.45),
+    0 0 0 4px rgba(168,229,207,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.35);
   margin-bottom:2px;
+  margin-top:-6px;
+  transition:transform 0.2s var(--ease-pop), box-shadow 0.2s ease-out;
+  position:relative;
 }
-.ni-camera-btn:active{transform:scale(0.93);}
-.ni-camera span{font-size:9px;color:var(--ink);font-weight:600;}
+.ni-camera-btn::after{
+  content:'';
+  position:absolute;
+  inset:-4px;
+  border-radius:50%;
+  background:linear-gradient(140deg, #F5A0BC, #FFD9DC, #A8E5CF, #5FCFA3);
+  opacity:0;
+  z-index:-1;
+  filter:blur(8px);
+  transition:opacity 0.3s ease-out;
+}
+.ni-camera-btn:active{
+  transform:scale(0.88) rotate(8deg);
+  box-shadow:0 2px 8px rgba(43,170,134,0.3);
+}
+.ni-camera-btn:active::after{opacity:0.6;}
+.ni-camera span{font-size:9px;color:var(--ink);font-weight:700;}
 
 /* ═══ プロフィール帯（ホーム上部） ═══ */
 .prof{
@@ -265,40 +333,42 @@ input,textarea{border:none;outline:none;background:none;}
 .ava{
   width:54px;height:54px;
   border-radius:50%;
-  background:var(--mint-bg);
+  background:linear-gradient(135deg, #FFE0EC 0%, #EDE5FF 50%, #D4F3E6 100%);
   display:flex;
   align-items:center;
   justify-content:center;
-  font-family:var(--font-display);
+  font-family:var(--font-display-jp);
   font-size:22px;
-  font-weight:600;
-  color:var(--ink);
-  border:1px solid var(--mint);
+  font-weight:700;
+  color:var(--ink-deep);
   flex-shrink:0;
   cursor:pointer;
   overflow:hidden;
-  box-shadow:var(--shadow-sm);
+  box-shadow:0 2px 8px rgba(43,170,134,0.18), inset 0 1px 0 rgba(255,255,255,0.5);
+  transition:transform 0.22s var(--ease-pop);
 }
+.ava:active{transform:scale(0.92);}
 .ava img{width:100%;height:100%;object-fit:cover;}
 .prof-info{flex:1;min-width:0;}
 .prof-name{
-  font-family:var(--font-display);
+  font-family:var(--font-display-jp);
   font-size:18px;
-  font-weight:500;
+  font-weight:700;
   color:var(--text);
   letter-spacing:0.01em;
   line-height:1.2;
 }
 .prof-meta{
-  font-size:11px;
+  font-size:11.5px;
   color:var(--text2);
   margin-top:4px;
   line-height:1.4;
+  font-weight:500;
 }
 .prof-meta b{
   font-family:var(--font-num);
-  font-weight:600;
-  color:var(--text);
+  font-weight:700;
+  color:var(--ink);
 }
 
 /* ═══ 検索バー（控えめ） ═══ */
@@ -307,23 +377,25 @@ input,textarea{border:none;outline:none;background:none;}
   display:flex;
   align-items:center;
   gap:8px;
-  background:var(--mint-bg);
+  background:var(--white);
   border-radius:var(--r-pill);
-  padding:9px 14px;
-  border:1px solid transparent;
-  transition:border-color 0.15s, background 0.15s;
+  padding:11px 16px;
+  border:1.5px solid var(--line);
+  transition:all 0.2s ease-out;
+  box-shadow:var(--shadow-sm);
 }
 .search-box:focus-within{
   border-color:var(--mint);
-  background:var(--white);
+  box-shadow:0 0 0 4px rgba(168,229,207,0.3);
 }
 .search-input{
   flex:1;
   font-size:13px;
   color:var(--text);
   letter-spacing:0.01em;
+  font-weight:500;
 }
-.search-input::placeholder{color:var(--text3);}
+.search-input::placeholder{color:var(--text3);font-weight:400;}
 .search-clear{
   width:18px;height:18px;
   border-radius:50%;
@@ -337,33 +409,35 @@ input,textarea{border:none;outline:none;background:none;}
 /* ═══ フィルタチップ ═══ */
 .filter-bar{
   display:flex;
-  gap:6px;
+  gap:7px;
   overflow-x:auto;
-  padding:4px 18px 12px;
+  padding:4px 18px 14px;
   scrollbar-width:none;
 }
 .filter-bar::-webkit-scrollbar{display:none;}
 .chip{
   flex-shrink:0;
-  padding:6px 12px;
-  font-size:11.5px;
-  font-weight:500;
+  padding:7px 14px;
+  font-size:12px;
+  font-weight:600;
   border-radius:var(--r-pill);
   background:var(--white);
-  border:1px solid var(--line-strong);
+  border:1.5px solid var(--line-strong);
   color:var(--text2);
   cursor:pointer;
-  transition:all 0.15s;
+  transition:all 0.2s var(--ease-pop);
   display:flex;align-items:center;gap:5px;
   letter-spacing:0.02em;
 }
-.chip-emoji{font-size:11px;line-height:1;}
+.chip-emoji{font-size:12px;line-height:1;}
+.chip:active{transform:scale(0.92);}
 .chip.on{
-  background:var(--ink);
+  background:linear-gradient(135deg, var(--ink), #1D9E75);
   color:white;
-  border-color:var(--ink);
+  border-color:transparent;
+  box-shadow:0 2px 8px rgba(43,170,134,0.35);
+  transform:translateY(-1px);
 }
-.chip.on .chip-emoji{filter:saturate(0) brightness(2);}
 
 /* ═══ グリッド ═══ */
 .grid-wrap{
@@ -377,82 +451,122 @@ input,textarea{border:none;outline:none;background:none;}
 .grid{
   display:grid;
   grid-template-columns:repeat(3, 1fr);
-  gap:2px;
-  padding:2px 2px 120px;
+  gap:7px;
+  padding:8px 10px 120px;
 }
 .gi{
   position:relative;
   overflow:hidden;
   cursor:pointer;
   aspect-ratio:1;
-  background:var(--mint-bg);
-  border-radius:2px;
-  transition:opacity 0.15s, transform 0.18s;
-  box-shadow:var(--shadow-sm);
+  background:var(--card-other);
+  border-radius:14px;
+  transition:transform 0.22s var(--ease-pop), box-shadow 0.18s ease-out;
+  box-shadow:0 1px 2px rgba(20,30,25,0.04), 0 2px 6px rgba(20,30,25,0.03);
 }
-.gi:active{opacity:0.8;transform:scale(0.985);}
+.gi:active{
+  transform:scale(0.94);
+  box-shadow:0 1px 2px rgba(20,30,25,0.05);
+}
+.gi:hover{
+  transform:translateY(-2px);
+  box-shadow:0 4px 12px rgba(20,30,25,0.08), 0 8px 24px rgba(20,30,25,0.06);
+}
 .gi img{
   width:100%;height:100%;
   object-fit:cover;
   display:block;
+  border-radius:inherit;
+}
+
+/* カテゴリ別カラー（カード背景） */
+.gi[data-color="英語"]       { background:var(--card-en); }
+.gi[data-color="数学"]       { background:var(--card-math); }
+.gi[data-color="理科"]       { background:var(--card-sci); }
+.gi[data-color="社会"]       { background:var(--card-soc); }
+.gi[data-color="国語"]       { background:var(--card-jp); }
+.gi[data-color="料理"]       { background:var(--card-cook); }
+.gi[data-color="生活メモ"]   { background:var(--card-life); }
+.gi[data-color="買い物"]     { background:var(--card-shop); }
+.gi[data-color="音楽"]       { background:var(--card-music); }
+.gi[data-color="アート"]     { background:var(--card-art); }
+.gi[data-color="IT・技術"]   { background:var(--card-it); }
+.gi[data-color="植物・自然"] { background:var(--card-plant); }
+.gi[data-color="動物"]       { background:var(--card-animal); }
+.gi[data-color="旅行・場所"] { background:var(--card-travel); }
+.gi[data-color="仕事"]       { background:var(--card-work); }
+.gi[data-color="健康"]       { background:var(--card-health); }
+.gi[data-color="言葉・名前"] { background:var(--card-word); }
+.gi[data-color="その他"]     { background:var(--card-other); }
+
+/* 新着Snap：登場アニメ＋グロー */
+.gi-fresh{
+  animation:freshIn 0.5s var(--ease-pop) backwards;
 }
 .gi-fresh::before{
-  /* 新着Snapがふわっと浮き上がる */
   content:'';
   position:absolute;inset:0;
-  background:linear-gradient(135deg, rgba(125,211,184,0.4), transparent 60%);
-  animation:freshPulse 1.6s ease-out;
+  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7), transparent 60%);
+  animation:freshGlow 1.8s ease-out;
   pointer-events:none;
   z-index:2;
+  border-radius:inherit;
 }
-@keyframes freshPulse{
+@keyframes freshIn{
+  0%{transform:scale(0.5) rotate(-8deg);opacity:0;}
+  60%{transform:scale(1.05) rotate(2deg);opacity:1;}
+  100%{transform:scale(1) rotate(0);opacity:1;}
+}
+@keyframes freshGlow{
   0%{opacity:0;}
   20%{opacity:1;}
   100%{opacity:0;}
 }
+
+/* テキストSnap（旧式） */
 .gi-text{
   width:100%;height:100%;
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   padding:10px 8px;
   text-align:center;
-  background:linear-gradient(180deg, var(--paper-warm), var(--mint-bg));
   position:relative;
 }
-.gi-text-emoji{font-size:18px;margin-bottom:6px;opacity:0.85;}
+.gi-text-emoji{font-size:20px;margin-bottom:6px;}
 .gi-text-body{
   font-size:9.5px;
-  line-height:1.5;
+  line-height:1.55;
   color:var(--text);
-  font-family:var(--font-display);
   font-weight:500;
   overflow:hidden;
   display:-webkit-box;
   -webkit-line-clamp:4;
   -webkit-box-orient:vertical;
-  letter-spacing:0.01em;
 }
+
+/* カテゴリドット（写真カードのみ） */
 .gi-cat-dot{
   position:absolute;
-  top:6px;left:6px;
-  width:7px;height:7px;
+  top:8px;left:8px;
+  width:8px;height:8px;
   border-radius:50%;
   border:1.5px solid white;
-  box-shadow:0 1px 2px rgba(0,0,0,0.2);
+  box-shadow:0 1px 3px rgba(0,0,0,0.2);
+  z-index:2;
 }
 .gi-ai-mark{
   position:absolute;
-  bottom:5px;right:5px;
-  width:18px;height:18px;
-  background:rgba(255,255,255,0.92);
+  bottom:6px;right:6px;
+  width:20px;height:20px;
+  background:rgba(255,255,255,0.95);
   backdrop-filter:blur(6px);
   border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-size:10px;
-  font-weight:600;
+  font-size:11px;
+  font-weight:700;
   color:var(--ink);
-  font-family:var(--font-display);
   box-shadow:0 1px 3px rgba(0,0,0,0.15);
+  z-index:2;
 }
 
 /* ═══ 編集モード（長押し削除） ═══ */
@@ -537,24 +651,24 @@ input,textarea{border:none;outline:none;background:none;}
   padding:8px 16px 120px;
 }
 .section-title{
-  font-family:var(--font-display);
-  font-size:14px;
-  font-weight:600;
+  font-family:var(--font-display-jp);
+  font-size:14.5px;
+  font-weight:700;
   color:var(--text);
-  padding:18px 2px 12px;
+  padding:18px 4px 12px;
   letter-spacing:0.04em;
   display:flex;align-items:center;justify-content:space-between;
 }
 .section-title-sub{
   font-family:var(--font-body);
   font-size:10.5px;
-  font-weight:400;
+  font-weight:500;
   color:var(--text3);
   letter-spacing:0.02em;
 }
 .shelf-card{
   background:var(--white);
-  border-radius:var(--r-card);
+  border-radius:18px;
   padding:14px;
   display:flex;
   align-items:center;
@@ -563,36 +677,53 @@ input,textarea{border:none;outline:none;background:none;}
   box-shadow:var(--shadow-sm);
   border:1px solid var(--line);
   cursor:pointer;
-  transition:transform 0.15s, box-shadow 0.15s;
+  transition:transform 0.22s var(--ease-pop), box-shadow 0.22s ease-out;
 }
 .shelf-card:active{
-  transform:scale(0.99);
+  transform:scale(0.98);
+  box-shadow:var(--shadow);
+}
+.shelf-card:hover{
+  transform:translateY(-2px);
   box-shadow:var(--shadow);
 }
 .shelf-icon{
-  width:48px;height:48px;
-  border-radius:12px;
+  width:52px;height:52px;
+  border-radius:14px;
   display:flex;align-items:center;justify-content:center;
-  font-size:22px;
+  font-size:24px;
   flex-shrink:0;
-  background:var(--mint-bg);
+  background:linear-gradient(135deg, #FFE0EC 0%, #EDE5FF 100%);
   position:relative;
+  box-shadow:0 2px 6px rgba(20,30,25,0.08);
+}
+.shelf-card:nth-child(4n+1) .shelf-icon{
+  background:linear-gradient(135deg, #FFE0EC 0%, #FFD9E8 100%);
+}
+.shelf-card:nth-child(4n+2) .shelf-icon{
+  background:linear-gradient(135deg, #D4F3E6 0%, #A8E5CF 100%);
+}
+.shelf-card:nth-child(4n+3) .shelf-icon{
+  background:linear-gradient(135deg, #FFF4C2 0%, #FFE0B0 100%);
+}
+.shelf-card:nth-child(4n) .shelf-icon{
+  background:linear-gradient(135deg, #CCE8F5 0%, #D9E5F5 100%);
 }
 .shelf-icon-stack{
-  /* 本の重なり感 */
   box-shadow:
     3px 3px 0 -1px var(--white),
-    3px 3px 0 0 var(--mint),
+    3px 3px 0 0 rgba(168,229,207,0.6),
     6px 6px 0 -1px var(--white),
-    6px 6px 0 0 var(--line-strong);
+    6px 6px 0 0 rgba(15,30,25,0.08);
 }
 .shelf-info{flex:1;min-width:0;}
 .shelf-name{
-  font-size:14px;
-  font-weight:600;
+  font-size:14.5px;
+  font-weight:700;
   color:var(--text);
   line-height:1.3;
   letter-spacing:0.01em;
+  font-family:var(--font-display-jp);
 }
 .shelf-handle{
   font-size:11px;
@@ -690,9 +821,9 @@ input,textarea{border:none;outline:none;background:none;}
   text-align:left;
 }
 .recall-greeting{
-  font-family:var(--font-display);
-  font-size:18px;
-  font-weight:500;
+  font-family:var(--font-display-jp);
+  font-size:20px;
+  font-weight:700;
   color:var(--text);
   letter-spacing:0.02em;
   line-height:1.4;
@@ -702,19 +833,40 @@ input,textarea{border:none;outline:none;background:none;}
   color:var(--text2);
   margin-top:6px;
   line-height:1.6;
+  font-weight:500;
 }
 .recall-controls{
   padding:6px 18px 14px;
   display:flex;gap:6px;
 }
 .recall-card{
-  margin:14px 16px 18px;
+  margin:14px 14px 18px;
   background:var(--white);
-  border-radius:var(--r-card);
+  border-radius:20px;
   overflow:hidden;
   box-shadow:var(--shadow);
   border:1px solid var(--line);
+  transition:transform 0.22s var(--ease-pop);
 }
+.recall-card:active{transform:scale(0.99);}
+.recall-card[data-color="英語"]       { background:linear-gradient(165deg, var(--card-en) 0%, #FFFFFF 70%); }
+.recall-card[data-color="数学"]       { background:linear-gradient(165deg, var(--card-math) 0%, #FFFFFF 70%); }
+.recall-card[data-color="理科"]       { background:linear-gradient(165deg, var(--card-sci) 0%, #FFFFFF 70%); }
+.recall-card[data-color="社会"]       { background:linear-gradient(165deg, var(--card-soc) 0%, #FFFFFF 70%); }
+.recall-card[data-color="国語"]       { background:linear-gradient(165deg, var(--card-jp) 0%, #FFFFFF 70%); }
+.recall-card[data-color="料理"]       { background:linear-gradient(165deg, var(--card-cook) 0%, #FFFFFF 70%); }
+.recall-card[data-color="生活メモ"]   { background:linear-gradient(165deg, var(--card-life) 0%, #FFFFFF 70%); }
+.recall-card[data-color="買い物"]     { background:linear-gradient(165deg, var(--card-shop) 0%, #FFFFFF 70%); }
+.recall-card[data-color="音楽"]       { background:linear-gradient(165deg, var(--card-music) 0%, #FFFFFF 70%); }
+.recall-card[data-color="アート"]     { background:linear-gradient(165deg, var(--card-art) 0%, #FFFFFF 70%); }
+.recall-card[data-color="IT・技術"]   { background:linear-gradient(165deg, var(--card-it) 0%, #FFFFFF 70%); }
+.recall-card[data-color="植物・自然"] { background:linear-gradient(165deg, var(--card-plant) 0%, #FFFFFF 70%); }
+.recall-card[data-color="動物"]       { background:linear-gradient(165deg, var(--card-animal) 0%, #FFFFFF 70%); }
+.recall-card[data-color="旅行・場所"] { background:linear-gradient(165deg, var(--card-travel) 0%, #FFFFFF 70%); }
+.recall-card[data-color="仕事"]       { background:linear-gradient(165deg, var(--card-work) 0%, #FFFFFF 70%); }
+.recall-card[data-color="健康"]       { background:linear-gradient(165deg, var(--card-health) 0%, #FFFFFF 70%); }
+.recall-card[data-color="言葉・名前"] { background:linear-gradient(165deg, var(--card-word) 0%, #FFFFFF 70%); }
+.recall-card[data-color="その他"]     { background:linear-gradient(165deg, var(--card-other) 0%, #FFFFFF 70%); }
 .recall-card-img{
   width:100%;
   aspect-ratio:1;
@@ -734,22 +886,27 @@ input,textarea{border:none;outline:none;background:none;}
   text-align:center;
 }
 .recall-card-meta{
-  padding:12px 16px;
+  padding:12px 18px;
   display:flex;
   align-items:center;
   justify-content:space-between;
   font-size:11px;
   color:var(--text2);
-  border-top:0.5px solid var(--line);
+  background:rgba(255,255,255,0.65);
+  backdrop-filter:blur(8px);
+  border-top:0.5px solid rgba(255,255,255,0.7);
 }
 .recall-card-date{
   font-family:var(--font-num);
   letter-spacing:0.04em;
   color:var(--text3);
+  font-weight:500;
 }
 .recall-card-cat{
   display:flex;align-items:center;gap:5px;
-  font-weight:500;
+  font-weight:700;
+  font-size:11px;
+  color:var(--text);
 }
 
 /* ═══ 私室（プロフィール） ═══ */
@@ -767,14 +924,16 @@ input,textarea{border:none;outline:none;background:none;}
   border-bottom:0.5px solid var(--line);
 }
 .room-hero .ava{
-  width:84px;height:84px;
-  font-size:32px;
+  width:90px;height:90px;
+  font-size:36px;
   margin-bottom:14px;
+  background:linear-gradient(135deg, #FFD9E8 0%, #FFE0EC 25%, #EDE5FF 60%, #D4F3E6 100%);
+  box-shadow:0 8px 24px rgba(245,160,188,0.3), inset 0 2px 0 rgba(255,255,255,0.6);
 }
 .room-name{
-  font-family:var(--font-display);
-  font-size:22px;
-  font-weight:500;
+  font-family:var(--font-display-jp);
+  font-size:24px;
+  font-weight:700;
   color:var(--text);
   letter-spacing:0.02em;
 }
@@ -783,15 +942,17 @@ input,textarea{border:none;outline:none;background:none;}
   color:var(--text2);
   margin-top:6px;
   line-height:1.6;
+  font-weight:500;
 }
 .room-stats{
   display:flex;
   margin-top:18px;
-  padding:14px 16px;
-  background:var(--white);
-  border:1px solid var(--line);
-  border-radius:var(--r-card);
+  padding:16px 14px;
+  background:linear-gradient(135deg, var(--card-life) 0%, var(--card-en) 50%, var(--card-math) 100%);
+  border:1px solid rgba(255,255,255,0.5);
+  border-radius:18px;
   width:100%;
+  box-shadow:0 2px 8px rgba(20,30,25,0.06), inset 0 1px 0 rgba(255,255,255,0.4);
 }
 .rst{
   flex:1;
@@ -800,22 +961,22 @@ input,textarea{border:none;outline:none;background:none;}
 }
 .rst + .rst::before{
   content:'';position:absolute;left:0;top:8px;bottom:8px;width:0.5px;
-  background:var(--line-strong);
+  background:rgba(20,30,25,0.12);
 }
 .rst-n{
   font-family:var(--font-num);
-  font-size:20px;
-  font-weight:600;
-  color:var(--ink);
+  font-size:22px;
+  font-weight:700;
+  color:var(--text);
   line-height:1.1;
   letter-spacing:-0.02em;
 }
 .rst-l{
   font-size:9.5px;
-  color:var(--text3);
+  color:var(--text2);
   margin-top:4px;
-  letter-spacing:0.04em;
-  font-weight:500;
+  letter-spacing:0.06em;
+  font-weight:700;
 }
 
 .room-list{padding:18px 16px 0;}
@@ -825,65 +986,86 @@ input,textarea{border:none;outline:none;background:none;}
   padding:14px 14px;
   background:var(--white);
   border:1px solid var(--line);
-  border-radius:10px;
-  margin-bottom:6px;
+  border-radius:14px;
+  margin-bottom:7px;
   cursor:pointer;
-  transition:background 0.15s;
+  transition:all 0.22s var(--ease-pop);
+  box-shadow:var(--shadow-sm);
 }
-.room-item:active{background:var(--mint-bg);}
-.room-item-icon{
-  width:34px;height:34px;
-  border-radius:8px;
+.room-item:active{
   background:var(--mint-bg);
+  transform:scale(0.98);
+}
+.room-item-icon{
+  width:36px;height:36px;
+  border-radius:10px;
+  background:linear-gradient(135deg, var(--card-life), var(--card-en));
   display:flex;align-items:center;justify-content:center;
-  color:var(--ink);
-  margin-right:12px;
+  color:var(--ink-deep);
+  margin-right:14px;
   flex-shrink:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.room-item:nth-child(2) .room-item-icon{
+  background:linear-gradient(135deg, var(--card-shop), var(--card-math));
+}
+.room-item:nth-child(3) .room-item-icon{
+  background:linear-gradient(135deg, var(--card-sci), var(--card-soc));
+}
+.room-item:nth-child(4) .room-item-icon{
+  background:linear-gradient(135deg, var(--card-music), var(--card-jp));
 }
 .room-item-title{
   flex:1;
-  font-size:13.5px;
-  font-weight:500;
+  font-size:14px;
+  font-weight:600;
   color:var(--text);
   letter-spacing:0.01em;
+  font-family:var(--font-display-jp);
 }
 .room-item-sub{
   font-size:10.5px;
   color:var(--text3);
   margin-top:2px;
+  font-weight:500;
 }
 .room-item-arrow{color:var(--text4);flex-shrink:0;}
 
 .room-account-switch{
-  margin:18px 16px 6px;
+  margin:18px 16px 14px;
   padding:14px 16px;
-  background:linear-gradient(135deg, var(--ink), #0a5644);
+  background:linear-gradient(120deg, #2BAA86 0%, #5FCFA3 60%, #A8E5CF 100%);
   color:white;
-  border-radius:var(--r-card);
+  border-radius:18px;
   display:flex;
   align-items:center;
   gap:12px;
   cursor:pointer;
-  box-shadow:0 4px 16px rgba(15,110,86,0.25);
+  box-shadow:0 6px 20px rgba(43,170,134,0.3);
+  transition:transform 0.22s var(--ease-pop);
 }
+.room-account-switch:active{transform:scale(0.98);}
 .room-account-switch-icon{
-  width:36px;height:36px;
+  width:38px;height:38px;
   border-radius:50%;
-  background:rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.25);
+  backdrop-filter:blur(8px);
   display:flex;align-items:center;justify-content:center;
   flex-shrink:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.4);
 }
 .room-account-switch-body{flex:1;}
 .room-account-switch-title{
-  font-family:var(--font-display);
-  font-size:13px;
-  font-weight:500;
+  font-family:var(--font-display-jp);
+  font-size:13.5px;
+  font-weight:700;
   letter-spacing:0.02em;
 }
 .room-account-switch-sub{
-  font-size:10.5px;
-  opacity:0.8;
+  font-size:11px;
+  opacity:0.85;
   margin-top:2px;
+  font-weight:500;
 }
 
 /* ═══ Snap詳細（ボトムシート） ═══ */
@@ -1262,7 +1444,11 @@ input,textarea{border:none;outline:none;background:none;}
 
 /* ═══ ログイン ═══ */
 #screen-login{
-  background:linear-gradient(165deg, var(--mint-bg) 0%, var(--paper) 50%);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255,224,236,0.6) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(237,229,255,0.5) 0%, transparent 50%),
+    radial-gradient(circle at 50% 100%, rgba(212,243,230,0.6) 0%, transparent 60%),
+    var(--paper);
   align-items:center;
   justify-content:flex-start;
   padding:80px 28px max(40px, env(safe-area-inset-bottom));
@@ -1274,19 +1460,26 @@ input,textarea{border:none;outline:none;background:none;}
 }
 .login-logo{
   font-family:var(--font-display);
-  font-size:44px;
-  font-weight:500;
+  font-size:48px;
+  font-weight:700;
   letter-spacing:-0.01em;
   color:var(--text);
   margin-bottom:6px;
+  position:relative;
 }
-.login-logo em{color:var(--ink);font-style:normal;}
+.login-logo em{
+  background:linear-gradient(135deg, #2BAA86, #1D9E75, #F5A0BC);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  font-style:normal;
+}
 .login-tagline{
   font-family:var(--font-display);
   font-size:13px;
   color:var(--text2);
-  letter-spacing:0.04em;
-  margin-bottom:38px;
+  letter-spacing:0.05em;
+  margin-bottom:42px;
 }
 .login-tabs{
   display:flex;
@@ -1363,22 +1556,22 @@ input,textarea{border:none;outline:none;background:none;}
   position:absolute;
   bottom:110px;
   left:50%;
-  transform:translateX(-50%) translateY(10px);
-  background:rgba(20,30,25,0.92);
-  backdrop-filter:blur(10px);
+  transform:translateX(-50%) translateY(20px) scale(0.9);
+  background:linear-gradient(135deg, #2BAA86, #1D9E75);
   color:white;
-  padding:11px 20px;
+  padding:12px 22px;
   border-radius:var(--r-pill);
-  font-size:12.5px;
-  font-weight:500;
+  font-size:13px;
+  font-weight:700;
   letter-spacing:0.04em;
   opacity:0;
-  transition:all 0.2s;
+  transition:all 0.35s var(--ease-pop);
   z-index:200;
   pointer-events:none;
-  box-shadow:0 8px 28px rgba(0,0,0,0.25);
+  box-shadow:0 8px 28px rgba(43,170,134,0.4), 0 2px 8px rgba(43,170,134,0.3);
+  font-family:var(--font-display-jp);
 }
-.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
 
 /* ═══ アカウント切替（モーダル） ═══ */
 .modal-overlay{
@@ -1567,14 +1760,13 @@ input,textarea{border:none;outline:none;background:none;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
 /* ═══════════════════════════════════════════════════════════
-   メモSnap・リストSnap（Keepの軽さを継承）
+   メモSnap・リストSnap（カラーカードの中身）
    ═══════════════════════════════════════════════════════════ */
 
 /* グリッド内のメモタイル */
 .gi-memo{
   width:100%;height:100%;
-  padding:10px 9px;
-  background:var(--paper-warm);
+  padding:11px 10px 9px;
   display:flex;
   flex-direction:column;
   position:relative;
@@ -1582,11 +1774,10 @@ input,textarea{border:none;outline:none;background:none;}
   text-align:left;
 }
 .gi-memo-body{
-  font-size:10px;
-  line-height:1.55;
+  font-size:10.5px;
+  line-height:1.6;
   color:var(--text);
-  font-family:var(--font-body);
-  font-weight:400;
+  font-weight:500;
   letter-spacing:0.01em;
   flex:1;
   overflow:hidden;
@@ -1597,18 +1788,18 @@ input,textarea{border:none;outline:none;background:none;}
 }
 .gi-memo-time{
   font-size:8.5px;
-  color:var(--text3);
   font-family:var(--font-num);
   letter-spacing:0.04em;
-  margin-top:4px;
+  margin-top:6px;
   flex-shrink:0;
+  font-weight:500;
+  opacity:0.55;
 }
 
 /* グリッド内のリストタイル */
 .gi-list{
   width:100%;height:100%;
-  padding:9px 8px 8px;
-  background:var(--paper-warm);
+  padding:10px 9px 9px;
   display:flex;
   flex-direction:column;
   position:relative;
@@ -1616,21 +1807,21 @@ input,textarea{border:none;outline:none;background:none;}
   text-align:left;
 }
 .gi-list-title{
-  font-size:9.5px;
-  font-weight:600;
+  font-size:10.5px;
+  font-weight:700;
   color:var(--text);
-  letter-spacing:0.02em;
-  margin-bottom:4px;
+  letter-spacing:0.01em;
+  margin-bottom:6px;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  font-family:var(--font-display);
+  font-family:var(--font-display-jp);
 }
 .gi-list-items{
   flex:1;
   display:flex;
   flex-direction:column;
-  gap:2px;
+  gap:3px;
   overflow:hidden;
 }
 .gi-list-item{
@@ -1638,17 +1829,18 @@ input,textarea{border:none;outline:none;background:none;}
   align-items:flex-start;
   gap:4px;
   font-size:9px;
-  line-height:1.4;
+  line-height:1.45;
   color:var(--text);
+  font-weight:500;
 }
 .gi-list-item.done{
-  color:var(--text3);
+  opacity:0.5;
   text-decoration:line-through;
 }
 .gi-list-check{
-  width:8px;height:8px;
-  border:1px solid var(--text3);
-  border-radius:2px;
+  width:9px;height:9px;
+  border:1.3px solid var(--text2);
+  border-radius:2.5px;
   flex-shrink:0;
   margin-top:2px;
 }
@@ -1662,21 +1854,23 @@ input,textarea{border:none;outline:none;background:none;}
   position:absolute;
   inset:0;
   display:flex;align-items:center;justify-content:center;
-  font-size:6px;
+  font-size:6.5px;
   color:white;
-  font-weight:700;
+  font-weight:800;
 }
 .gi-list-more{
   font-size:8.5px;
-  color:var(--text3);
-  margin-top:2px;
+  margin-top:3px;
   letter-spacing:0.04em;
+  opacity:0.55;
+  font-weight:500;
 }
 .gi-list-mark{
   position:absolute;
-  top:5px;right:5px;
+  top:7px;right:7px;
   width:14px;height:14px;
   display:flex;align-items:center;justify-content:center;
+  opacity:0.5;
 }
 
 /* ═══ クイック作成シート（メモ・リスト・写真） ═══ */
@@ -1727,37 +1921,54 @@ input,textarea{border:none;outline:none;background:none;}
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  padding:18px 8px 14px;
+  padding:20px 8px 16px;
   background:var(--white);
   border:1px solid var(--line);
-  border-radius:14px;
+  border-radius:18px;
   cursor:pointer;
-  transition:transform 0.15s, background 0.15s;
+  transition:all 0.22s var(--ease-pop);
   text-align:center;
+  position:relative;
+  overflow:hidden;
 }
 .create-opt:active{
-  transform:scale(0.96);
-  background:var(--mint-bg);
+  transform:scale(0.93) rotate(-1deg);
+}
+.create-opt:nth-child(1){
+  background:linear-gradient(160deg, #FFE0EC 0%, #FFD9E8 100%);
+}
+.create-opt:nth-child(2){
+  background:linear-gradient(160deg, #D4F3E6 0%, #A8E5CF 100%);
+}
+.create-opt:nth-child(3){
+  background:linear-gradient(160deg, #FFF4C2 0%, #FFE0B0 100%);
 }
 .create-opt-icon{
-  width:42px;height:42px;
+  width:44px;height:44px;
   border-radius:50%;
-  background:var(--mint-bg);
+  background:rgba(255,255,255,0.65);
+  backdrop-filter:blur(8px);
   display:flex;align-items:center;justify-content:center;
-  color:var(--ink);
-  margin-bottom:8px;
+  color:var(--text);
+  margin-bottom:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
 }
+.create-opt:nth-child(1) .create-opt-icon{color:#B84B5C;}
+.create-opt:nth-child(2) .create-opt-icon{color:#1E8062;}
+.create-opt:nth-child(3) .create-opt-icon{color:#A07B0E;}
 .create-opt-label{
-  font-size:11.5px;
-  font-weight:600;
+  font-family:var(--font-display-jp);
+  font-size:12.5px;
+  font-weight:700;
   color:var(--text);
   letter-spacing:0.04em;
 }
 .create-opt-sub{
   font-size:9.5px;
-  color:var(--text3);
-  margin-top:2px;
+  color:var(--text2);
+  margin-top:3px;
   letter-spacing:0.02em;
+  font-weight:500;
 }
 
 /* ═══ メモ作成シート（フルスクリーン風） ═══ */
@@ -1925,19 +2136,44 @@ input,textarea{border:none;outline:none;background:none;}
 }
 .list-drag-handle:active{cursor:grabbing;color:var(--ink);}
 .list-check-btn{
-  width:22px;height:22px;
-  border:1.5px solid var(--text3);
+  width:24px;height:24px;
+  border:2px solid var(--text3);
   border-radius:50%;
   flex-shrink:0;
-  margin-top:6px;
+  margin-top:5px;
   cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  transition:all 0.15s;
+  transition:all 0.25s var(--ease-pop);
   background:transparent;
+  position:relative;
 }
+.list-check-btn:active{transform:scale(0.82);}
 .list-check-btn.on{
-  background:var(--ink);
-  border-color:var(--ink);
+  background:linear-gradient(135deg, #2BAA86, #1D9E75);
+  border-color:transparent;
+  box-shadow:0 2px 8px rgba(43,170,134,0.4);
+  animation:checkPop 0.4s var(--ease-pop);
+}
+@keyframes checkPop{
+  0%{transform:scale(1);}
+  40%{transform:scale(1.25);}
+  100%{transform:scale(1);}
+}
+.list-check-btn::after{
+  content:'';
+  position:absolute;
+  inset:-4px;
+  border-radius:50%;
+  border:2px solid var(--mint);
+  opacity:0;
+  pointer-events:none;
+}
+.list-check-btn.on::after{
+  animation:ripple 0.6s ease-out;
+}
+@keyframes ripple{
+  0%{transform:scale(0.6);opacity:0.7;}
+  100%{transform:scale(1.6);opacity:0;}
 }
 .list-check-btn.on svg{display:block;}
 .list-check-btn svg{display:none;}
@@ -2035,25 +2271,37 @@ input,textarea{border:none;outline:none;background:none;}
   text-decoration:line-through;
 }
 .detail-list-cb{
-  width:20px;height:20px;
-  border:1.5px solid var(--text3);
+  width:22px;height:22px;
+  border:2px solid var(--text3);
   border-radius:50%;
   flex-shrink:0;
   margin-top:2px;
   cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  transition:all 0.15s;
+  transition:all 0.25s var(--ease-pop);
+  position:relative;
 }
+.detail-list-cb:active{transform:scale(0.82);}
 .detail-list-cb.on{
-  background:var(--ink);
-  border-color:var(--ink);
+  background:linear-gradient(135deg, #2BAA86, #1D9E75);
+  border-color:transparent;
+  box-shadow:0 2px 8px rgba(43,170,134,0.35);
+}
+.detail-list-cb.on::before{
+  content:'';
+  width:8px;height:5px;
+  border-left:2.5px solid white;
+  border-bottom:2.5px solid white;
+  transform:rotate(-45deg) translate(1px,-1px);
 }
 .detail-list-cb.on::after{
   content:'';
-  width:8px;height:5px;
-  border-left:2px solid white;
-  border-bottom:2px solid white;
-  transform:rotate(-45deg) translate(1px,-1px);
+  position:absolute;
+  inset:-5px;
+  border-radius:50%;
+  border:2px solid var(--mint);
+  animation:ripple 0.6s ease-out;
+  pointer-events:none;
 }
 
 /* ═══ ホームグリッド：ドラッグ並び替え ═══ */
@@ -2118,17 +2366,41 @@ input,textarea{border:none;outline:none;background:none;}
 .feed-wrap{
   flex:1;
   overflow-y:auto;
-  padding:6px 0 120px;
+  padding:10px 12px 120px;
 }
 .feed-card{
-  margin:0 0 14px;
+  margin:0 0 12px;
   background:var(--white);
-  border-top:0.5px solid var(--line);
-  border-bottom:0.5px solid var(--line);
+  border-radius:18px;
   overflow:hidden;
+  box-shadow:var(--shadow);
+  border:1px solid var(--line);
+  transition:transform 0.22s var(--ease-pop), box-shadow 0.22s ease-out;
 }
+.feed-card:active{
+  transform:scale(0.99);
+}
+.feed-card[data-color="英語"]       { background:linear-gradient(165deg, var(--card-en) 0%, #FFFFFF 60%); }
+.feed-card[data-color="数学"]       { background:linear-gradient(165deg, var(--card-math) 0%, #FFFFFF 60%); }
+.feed-card[data-color="理科"]       { background:linear-gradient(165deg, var(--card-sci) 0%, #FFFFFF 60%); }
+.feed-card[data-color="社会"]       { background:linear-gradient(165deg, var(--card-soc) 0%, #FFFFFF 60%); }
+.feed-card[data-color="国語"]       { background:linear-gradient(165deg, var(--card-jp) 0%, #FFFFFF 60%); }
+.feed-card[data-color="料理"]       { background:linear-gradient(165deg, var(--card-cook) 0%, #FFFFFF 60%); }
+.feed-card[data-color="生活メモ"]   { background:linear-gradient(165deg, var(--card-life) 0%, #FFFFFF 60%); }
+.feed-card[data-color="買い物"]     { background:linear-gradient(165deg, var(--card-shop) 0%, #FFFFFF 60%); }
+.feed-card[data-color="音楽"]       { background:linear-gradient(165deg, var(--card-music) 0%, #FFFFFF 60%); }
+.feed-card[data-color="アート"]     { background:linear-gradient(165deg, var(--card-art) 0%, #FFFFFF 60%); }
+.feed-card[data-color="IT・技術"]   { background:linear-gradient(165deg, var(--card-it) 0%, #FFFFFF 60%); }
+.feed-card[data-color="植物・自然"] { background:linear-gradient(165deg, var(--card-plant) 0%, #FFFFFF 60%); }
+.feed-card[data-color="動物"]       { background:linear-gradient(165deg, var(--card-animal) 0%, #FFFFFF 60%); }
+.feed-card[data-color="旅行・場所"] { background:linear-gradient(165deg, var(--card-travel) 0%, #FFFFFF 60%); }
+.feed-card[data-color="仕事"]       { background:linear-gradient(165deg, var(--card-work) 0%, #FFFFFF 60%); }
+.feed-card[data-color="健康"]       { background:linear-gradient(165deg, var(--card-health) 0%, #FFFFFF 60%); }
+.feed-card[data-color="言葉・名前"] { background:linear-gradient(165deg, var(--card-word) 0%, #FFFFFF 60%); }
+.feed-card[data-color="その他"]     { background:linear-gradient(165deg, var(--card-other) 0%, #FFFFFF 60%); }
+
 .feed-card-hdr{
-  padding:10px 16px 8px;
+  padding:13px 18px 8px;
   display:flex;
   align-items:center;
   gap:10px;
@@ -2139,12 +2411,14 @@ input,textarea{border:none;outline:none;background:none;}
   display:inline-flex;
   align-items:center;
   gap:5px;
-  padding:3px 9px;
+  padding:4px 11px;
   border-radius:var(--r-pill);
-  background:var(--mint-bg);
-  font-size:10.5px;
-  font-weight:500;
-  color:var(--ink);
+  background:rgba(255,255,255,0.7);
+  backdrop-filter:blur(8px);
+  font-size:11px;
+  font-weight:700;
+  color:var(--text);
+  letter-spacing:0.02em;
 }
 .feed-card-date{
   margin-left:auto;
@@ -2152,6 +2426,7 @@ input,textarea{border:none;outline:none;background:none;}
   font-size:10.5px;
   color:var(--text3);
   letter-spacing:0.04em;
+  font-weight:500;
 }
 .feed-card-img{
   width:100%;
@@ -2162,7 +2437,7 @@ input,textarea{border:none;outline:none;background:none;}
   cursor:pointer;
 }
 .feed-card-memo{
-  padding:18px 22px;
+  padding:14px 22px 22px;
   font-family:var(--font-body);
   font-size:14.5px;
   line-height:1.85;
@@ -2170,16 +2445,18 @@ input,textarea{border:none;outline:none;background:none;}
   letter-spacing:0.01em;
   white-space:pre-wrap;
   word-break:break-word;
+  font-weight:500;
 }
 .feed-card-list{
-  padding:14px 20px 18px;
+  padding:6px 20px 18px;
 }
 .feed-card-list-title{
-  font-family:var(--font-display);
-  font-size:17px;
-  font-weight:500;
-  margin-bottom:10px;
+  font-family:var(--font-display-jp);
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:12px;
   letter-spacing:0.02em;
+  padding:0 2px;
 }
 
 /* ═══ 小さなユーティリティ ═══ */
@@ -2853,7 +3130,8 @@ function renderGrid(){
   grid.innerHTML = items.map(i => {
     const fresh = isFreshTime(i.t) ? 'gi-fresh' : '';
     let inner;
-    const dot = i.cat
+    const colorKey = i.cat || 'その他';
+    const dot = (i.imgData && i.cat)
       ? `<div class="gi-cat-dot" style="background:${catColor(i.cat)};"></div>`
       : '';
     const ai = (i.chatHistory && i.chatHistory.length > 1)
@@ -2877,28 +3155,25 @@ function renderGrid(){
             ${remain > 0 ? `<div class="gi-list-more">他 ${remain} 件</div>` : ''}
           </div>
           <div class="gi-list-mark">
-            <svg width="11" height="11" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/></svg>
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/></svg>
           </div>
         </div>`;
     } else if(i.type === 'memo' || (!i.imgData && i.body)){
-      // メモ
       const body = i.body || '';
       inner = `
         <div class="gi-memo">
           <div class="gi-memo-body">${escapeHtml(body)}</div>
           <div class="gi-memo-time">${fmtDate(i.t)}</div>
-        </div>${dot}`;
+        </div>`;
     } else if(i.imgData){
-      // 写真
       inner = `<img src="${i.imgData}" alt="" loading="lazy" draggable="false">${dot}${ai}`;
     } else {
-      // フォールバック
       const emoji = i.emoji || catEmoji(i.cat || 'その他');
       inner = `
         <div class="gi-text">
           <div class="gi-text-emoji">${emoji}</div>
           <div class="gi-text-body">${escapeHtml((i.body || '').slice(0, 60))}</div>
-        </div>${dot}`;
+        </div>`;
     }
 
     const clickHandler = S.editMode
@@ -2907,7 +3182,12 @@ function renderGrid(){
         ? ''
         : `openDetail('${i.id}')`;
 
-    return `<div class="gi ${editable} ${fresh}" data-id="${i.id}" ${reorderAttr}
+    // 写真Snapにはdata-colorをつけない（写真の色が優先）
+    const dataColor = i.imgData ? '' : `data-color="${colorKey}"`;
+    const delay = `style="animation-delay:${(items.indexOf(i) * 0.03)}s"`;
+
+    return `<div class="gi ${editable} ${fresh}" data-id="${i.id}" ${dataColor} ${reorderAttr}
+              ${fresh ? delay : ''}
               ${clickHandler ? `onclick="${clickHandler}"` : ''}>${inner}</div>`;
   }).join('');
 
@@ -2947,6 +3227,7 @@ function renderFeed(){
 
   feed.innerHTML = items.map(i => {
     const cat = i.cat || 'その他';
+    const dataColor = i.imgData ? '' : `data-color="${cat}"`;
     const catPill = `
       <span class="feed-card-cat">
         <span style="color:${catColor(cat)};">●</span> ${cat}
@@ -2973,7 +3254,7 @@ function renderFeed(){
       body = '';
     }
     return `
-      <div class="feed-card">
+      <div class="feed-card" ${dataColor}>
         <div class="feed-card-hdr">
           ${catPill}
           <span class="feed-card-date">${fmtDateFull(i.t)}</span>
@@ -3951,16 +4232,15 @@ function openShelf(handle){
           `<button class="shelf-btn" onclick="subscribeShelf('${handle}')">この棚を登録</button>`
       }
     </div>
-    <div class="grid" style="padding:2px;">
+    <div class="grid" style="padding:8px 10px;">
       ${snaps.length ? snaps.map(sn => `
-        <div class="gi" onclick="openShelfSnap('${handle}','${sn.id}')">
+        <div class="gi" data-color="${sn.cat || 'その他'}" onclick="openShelfSnap('${handle}','${sn.id}')">
           ${sn.imgData ?
             `<img src="${sn.imgData}" alt="">` :
             `<div class="gi-memo">
                <div class="gi-memo-body">${escapeHtml((sn.body||'').slice(0, 70))}</div>
-               <div class="gi-memo-time" style="color:var(--ink);">@${shelf.handle.split('-').slice(-1)[0]}</div>
-             </div>
-             <div class="gi-cat-dot" style="background:${catColor(sn.cat||'その他')};"></div>`
+               <div class="gi-memo-time" style="opacity:0.7;">@${shelf.handle.split('-').slice(-1)[0]}</div>
+             </div>`
           }
         </div>
       `).join('') : `
@@ -4140,33 +4420,34 @@ function getRecallGreeting(){
 }
 function recallCardHtml(item){
   const cat = item.cat || 'その他';
+  const dataColor = item.imgData ? '' : `data-color="${cat}"`;
   let card;
   if(item.type === 'list'){
     const items = item.listItems || [];
     const done = items.filter(it => it.done).length;
     card = `
-      <div class="recall-card-text" onclick="openDetail('${item.id}')" style="padding:30px 26px;align-items:stretch;text-align:left;">
-        <div style="width:100%;">
-          <div style="font-family:var(--font-display);font-size:18px;font-weight:500;margin-bottom:14px;letter-spacing:0.02em;">${escapeHtml(item.title || 'リスト')}</div>
-          ${items.slice(0, 5).map(it => `
-            <div style="display:flex;align-items:flex-start;gap:10px;padding:5px 0;font-size:13.5px;line-height:1.6;${it.done ? 'color:var(--text3);text-decoration:line-through;' : ''}">
-              <div style="width:16px;height:16px;border:1.5px solid ${it.done?'var(--ink)':'var(--text3)'};${it.done?'background:var(--ink);':''}border-radius:50%;flex-shrink:0;margin-top:3px;"></div>
-              <span>${escapeHtml(it.text||'')}</span>
+      <div onclick="openDetail('${item.id}')" style="padding:28px 26px 24px;">
+        <div style="font-family:var(--font-display-jp);font-size:19px;font-weight:700;margin-bottom:14px;letter-spacing:0.02em;">${escapeHtml(item.title || 'リスト')}</div>
+        ${items.slice(0, 5).map(it => `
+          <div style="display:flex;align-items:flex-start;gap:11px;padding:6px 0;font-size:14px;line-height:1.6;${it.done ? 'color:var(--text3);text-decoration:line-through;' : 'color:var(--text);'}">
+            <div style="width:18px;height:18px;border:2px solid ${it.done?'var(--ink)':'var(--text3)'};${it.done?'background:linear-gradient(135deg,#2BAA86,#1D9E75);':''}border-radius:50%;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;">
+              ${it.done?'<svg width="10" height="10" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>':''}
             </div>
-          `).join('')}
-          ${items.length > 5 ? `<div style="font-size:11px;color:var(--text3);margin-top:8px;padding-left:26px;">他 ${items.length - 5} 件</div>` : ''}
-          ${done > 0 ? `<div style="font-size:11px;color:var(--ink);margin-top:12px;padding-left:26px;letter-spacing:0.04em;font-weight:500;">${done} / ${items.length} 完了</div>` : ''}
-        </div>
+            <span>${escapeHtml(it.text||'')}</span>
+          </div>
+        `).join('')}
+        ${items.length > 5 ? `<div style="font-size:11px;color:var(--text3);margin-top:10px;padding-left:29px;font-weight:500;">他 ${items.length - 5} 件</div>` : ''}
+        ${done > 0 ? `<div style="font-size:11.5px;color:var(--ink);margin-top:14px;padding-left:29px;letter-spacing:0.04em;font-weight:700;">${done} / ${items.length} 完了</div>` : ''}
       </div>`;
   } else if(item.imgData){
     card = `<img class="recall-card-img" src="${item.imgData}" alt="" onclick="openDetail('${item.id}')">`;
   } else {
     // メモ
     card = `
-      <div class="recall-card-text" onclick="openDetail('${item.id}')" style="padding:32px 28px;text-align:left;align-items:flex-start;font-family:var(--font-body);font-size:15px;line-height:1.85;letter-spacing:0.01em;white-space:pre-wrap;">${escapeHtml(item.body||'')}</div>`;
+      <div onclick="openDetail('${item.id}')" style="padding:30px 28px;font-family:var(--font-body);font-size:15px;line-height:1.9;letter-spacing:0.01em;white-space:pre-wrap;font-weight:500;color:var(--text);">${escapeHtml(item.body||'')}</div>`;
   }
   return `
-    <div class="recall-card">
+    <div class="recall-card" ${dataColor}>
       ${card}
       <div class="recall-card-meta">
         <span class="recall-card-cat">
@@ -4730,18 +5011,42 @@ function generateDemoItems(){
         {text:'進路相談の準備', done:false},
       ], chatHistory:[]},
     { id:'demo_3', t: now-5*3600000, type:'memo', cat:'数学',
-      body:'三平方の定理 a² + b² = c²\n直角三角形の斜辺と他の2辺の関係', chatHistory:[]},
-    { id:'demo_4', t: now-1*86400000, type:'memo', cat:'言葉・名前',
+      body:'三平方の定理\na² + b² = c²\n直角三角形の斜辺と他の2辺の関係', chatHistory:[]},
+    { id:'demo_4', t: now-7*3600000, type:'memo', cat:'国語',
       body:'「逡巡」(しゅんじゅん)\nためらって決められないこと', chatHistory:[]},
-    { id:'demo_5', t: now-2*86400000, type:'list', cat:'買い物',
+    { id:'demo_5', t: now-12*3600000, type:'list', cat:'買い物',
       title:'コンビニで買う',
       listItems:[
         {text:'お茶', done:false},
         {text:'プリン', done:false},
         {text:'付箋', done:true},
       ], chatHistory:[]},
-    { id:'demo_6', t: now-3*86400000, type:'memo', cat:'料理',
-      body:'だしの取り方\n1. 昆布を水に30分\n2. 火にかけて沸騰直前に取り出す\n3. かつおぶしを入れて1分\n4. こす', chatHistory:[]},
+    { id:'demo_6', t: now-1*86400000, type:'memo', cat:'理科',
+      body:'光合成\n葉緑体で水と二酸化炭素から\nブドウ糖と酸素を作る', chatHistory:[]},
+    { id:'demo_7', t: now-1*86400000, type:'memo', cat:'社会',
+      body:'明治維新 1868年\n大政奉還→王政復古→五箇条の御誓文', chatHistory:[]},
+    { id:'demo_8', t: now-2*86400000, type:'list', cat:'英語',
+      title:'英単語 覚える',
+      listItems:[
+        {text:'remember 思い出す', done:false},
+        {text:'although 〜だけれども', done:false},
+        {text:'imagine 想像する', done:true},
+        {text:'experience 経験', done:false},
+        {text:'opportunity 機会', done:true},
+      ], chatHistory:[]},
+    { id:'demo_9', t: now-3*86400000, type:'memo', cat:'料理',
+      body:'だしの取り方\n1. 昆布を水に30分\n2. 沸騰直前に取り出す\n3. かつおぶしを1分\n4. こす', chatHistory:[]},
+    { id:'demo_10', t: now-4*86400000, type:'memo', cat:'音楽',
+      body:'コード進行\nIV → V → iii → vi\n王道のJ-POP', chatHistory:[]},
+    { id:'demo_11', t: now-5*86400000, type:'memo', cat:'植物・自然',
+      body:'シロツメクサ\n葉が3枚→4枚で幸運\n春の校庭でよく見る', chatHistory:[]},
+    { id:'demo_12', t: now-6*86400000, type:'list', cat:'仕事',
+      title:'今日の宿題',
+      listItems:[
+        {text:'国語のワーク', done:true},
+        {text:'数学のプリント', done:true},
+        {text:'理科レポート', done:false},
+      ], chatHistory:[]},
   ];
 }
 
