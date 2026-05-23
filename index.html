@@ -501,7 +501,8 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
 /* グリッドのサムネをぼかす */
 .gi.recall-hidden img{filter:blur(18px) brightness(0.92);transition:filter .35s ease;}
 .gi.recall-hidden .text-tile-inner{filter:blur(7px);transition:filter .35s ease;}
-.gi.recall-revealed img,.gi.recall-revealed .text-tile-inner{filter:none !important;}
+.gi.recall-hidden .checklist-tile-body{filter:blur(7px);transition:filter .35s ease;}
+.gi.recall-revealed img,.gi.recall-revealed .text-tile-inner,.gi.recall-revealed .checklist-tile-body{filter:none !important;}
 .gi-recall-q{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);color:white;font-size:13px;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3;letter-spacing:0;}
 .gi.recall-revealed .gi-recall-q{display:none;}
 /* デイリー想起カード */
@@ -525,6 +526,90 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
 #screen-chat.recall-veiled .chat-msgs > *:not(#recall-veil-el){display:none !important;}
 #screen-chat.recall-veiled #chat-iw-fixed{display:none !important;}
 #screen-chat.recall-veiled .chat-attach-row{display:none !important;}
+
+/* ═══ FLASHCARD (答え隠し) ═══ */
+.flashcard-hint{display:inline-flex;align-items:center;gap:5px;background:var(--gl);color:var(--gd);padding:3px 9px;border-radius:10px;font-size:9px;font-weight:600;margin-left:6px;}
+.flashcard-answer-veil{margin:10px 16px;padding:14px;background:linear-gradient(135deg,#F8F4E8,#F2EDD8);border:0.5px dashed #C9A857;border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;}
+.flashcard-answer-veil:active{transform:scale(0.985);}
+.flashcard-answer-veil-title{font-size:11px;font-weight:700;color:#7A4F0E;margin-bottom:3px;}
+.flashcard-answer-veil-sub{font-size:9.5px;color:#9C6E26;line-height:1.4;}
+.flashcard-answer-revealed{margin:10px 16px;padding:12px 14px;background:#FBF9F1;border:0.5px solid #E6DBB7;border-radius:12px;font-size:13px;line-height:1.75;color:#5C4012;white-space:pre-wrap;word-wrap:break-word;}
+.flashcard-answer-label{font-size:9px;font-weight:700;color:#9C6E26;letter-spacing:0.5px;margin-bottom:5px;text-transform:uppercase;}
+
+/* ═══ SRS BUTTONS (覚えた/まだ怪しい) ═══ */
+.srs-bar{margin:14px 16px 8px;padding:13px 14px;background:linear-gradient(135deg,#F0F9F5,#FFFFFF);border:0.5px solid var(--g2);border-radius:14px;display:flex;flex-direction:column;gap:10px;}
+.srs-bar-q{font-size:11px;font-weight:600;color:var(--gd);text-align:center;}
+.srs-bar-btns{display:flex;gap:8px;}
+.srs-btn{flex:1;padding:11px 6px;border-radius:11px;border:none;font-size:12px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:transform .12s;}
+.srs-btn:active{transform:scale(0.95);}
+.srs-btn-emoji{font-size:18px;line-height:1;}
+.srs-btn-lbl{font-size:9px;font-weight:500;opacity:0.85;}
+.srs-btn.forgot{background:#FCE9E9;color:#A8302F;}
+.srs-btn.fuzzy{background:#FFF3E0;color:#854F0B;}
+.srs-btn.got{background:var(--gl);color:var(--gd);}
+.srs-meta{font-size:9.5px;color:var(--text3);text-align:center;line-height:1.4;}
+
+/* ═══ CHECKLIST CARD ═══ */
+.checklist-tile-wrap{position:absolute;inset:0;display:flex;flex-direction:column;padding:7px 8px;background:linear-gradient(135deg,#F7F8FC,#FFFFFF);}
+.checklist-tile-head{display:flex;align-items:center;gap:4px;margin-bottom:4px;}
+.checklist-tile-icon{font-size:11px;line-height:1;}
+.checklist-tile-title{font-size:9px;font-weight:700;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.checklist-tile-body{flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden;}
+.checklist-tile-item{display:flex;align-items:center;gap:3px;font-size:7.5px;line-height:1.3;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.checklist-tile-check{width:6px;height:6px;border-radius:1.5px;border:0.7px solid var(--text3);flex-shrink:0;}
+.checklist-tile-check.done{background:var(--g);border-color:var(--g);}
+.checklist-tile-item.done{color:var(--text3);text-decoration:line-through;}
+.checklist-tile-progress{position:absolute;bottom:4px;left:8px;right:8px;height:2.5px;background:rgba(0,0,0,0.06);border-radius:2px;overflow:hidden;}
+.checklist-tile-progress-fill{height:100%;background:var(--g);border-radius:2px;transition:width .25s;}
+.checklist-tile-count{position:absolute;top:7px;right:8px;font-size:8px;font-weight:700;color:var(--g);background:rgba(255,255,255,0.85);padding:1px 5px;border-radius:8px;}
+/* チェックリスト編集 */
+.checklist-edit-wrap{padding:14px 16px 20px;background:var(--surface);}
+.checklist-title-inp{width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:10px;font-size:15px;font-weight:600;margin-bottom:12px;outline:none;background:var(--bg);font-family:inherit;}
+.checklist-title-inp:focus{border-color:var(--g);background:white;}
+.checklist-items-wrap{display:flex;flex-direction:column;gap:6px;}
+.checklist-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:10px;border:0.5px solid var(--border);transition:all .15s;}
+.checklist-row.done{opacity:0.55;}
+.checklist-row.done .checklist-row-inp{text-decoration:line-through;}
+.checklist-row-handle{cursor:grab;color:var(--text3);display:flex;align-items:center;flex-shrink:0;touch-action:none;padding:2px;}
+.checklist-row-handle:active{cursor:grabbing;}
+.checklist-row-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;background:white;}
+.checklist-row-check.on{background:var(--g);border-color:var(--g);}
+.checklist-row-inp{flex:1;border:none;background:transparent;font-size:13px;outline:none;color:var(--text);font-family:inherit;min-width:0;}
+.checklist-row-del{color:var(--text3);cursor:pointer;font-size:16px;padding:4px 6px;line-height:1;opacity:0.55;}
+.checklist-row-del:hover{opacity:1;color:var(--red);}
+.checklist-row.dragging{opacity:0.4;}
+.checklist-row.drag-over{border-top:2px solid var(--g);}
+.checklist-add-row{margin-top:10px;display:flex;gap:6px;}
+.checklist-add-inp{flex:1;padding:9px 12px;border:0.5px dashed var(--border2);border-radius:10px;font-size:13px;background:var(--bg);outline:none;color:var(--text);font-family:inherit;}
+.checklist-add-inp:focus{border-style:solid;border-color:var(--g);background:white;}
+.checklist-summary{padding:8px 14px;background:var(--gl);color:var(--gd);border-radius:10px;font-size:11px;font-weight:600;text-align:center;margin-top:14px;}
+
+/* ═══ QUICK FAB (3択ポップアップ) ═══ */
+.fab-menu{position:absolute;bottom:152px;right:18px;display:flex;flex-direction:column;gap:10px;align-items:flex-end;opacity:0;pointer-events:none;transform:translateY(8px);transition:all .22s cubic-bezier(.2,.9,.4,1);z-index:10;}
+.fab-menu.open{opacity:1;pointer-events:all;transform:translateY(0);}
+.fab-item{display:flex;align-items:center;gap:10px;}
+.fab-item-lbl{background:rgba(0,0,0,0.78);backdrop-filter:blur(6px);color:white;padding:6px 11px;border-radius:14px;font-size:11px;font-weight:600;white-space:nowrap;}
+.fab-item-btn{width:46px;height:46px;border-radius:50%;background:white;border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.14);transition:transform .15s;}
+.fab-item-btn:active{transform:scale(0.93);}
+.fab-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0);pointer-events:none;transition:background .22s;z-index:9;}
+.fab-backdrop.on{background:rgba(0,0,0,0.16);pointer-events:all;}
+.fab.x-rotated{transform:rotate(45deg);background:var(--text);}
+
+/* ═══ QUIZ / EXPLAIN BUTTONS (チャット内) ═══ */
+.chat-action-row{display:flex;gap:7px;padding:8px 14px 0;flex-wrap:wrap;}
+.chat-action-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:14px;background:var(--gl);border:0.5px solid var(--g2);color:var(--gd);font-size:10.5px;font-weight:600;cursor:pointer;transition:all .15s;}
+.chat-action-btn:active{transform:scale(0.96);}
+.chat-action-btn.warm{background:#FFF3E0;border-color:#F0C880;color:#854F0B;}
+.chat-action-btn.cool{background:#E8F1FC;border-color:#A8C9F0;color:#1F5FA8;}
+
+/* ═══ DRAG REORDER (グリッド) ═══ */
+.gi.gi-dragging{opacity:0.35;transform:scale(0.94);transition:transform .15s,opacity .15s;z-index:5;}
+.gi.gi-drag-over{outline:2px solid var(--g);outline-offset:-2px;}
+
+/* ═══ 新プロフィール統計 ═══ */
+.pst-n.retain{color:var(--g);}
+.pst-n.streak-n{color:#EF9F27;}
+.pst-n.cats{color:#9B59B6;}
 
 /* ═══ SWIPE PREVIEW ═══ */
 .sp-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:none;flex-direction:column;animation:spIn .25s;}
@@ -767,10 +852,14 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
       <div class="prof-name" id="home-name">Kazuma</div>
       <div class="prof-stats">
         <div class="pst"><span class="pst-n" id="stat-total">0</span><span class="pst-l">SnapIn</span></div>
-        <div class="pst"><span class="pst-n" id="stat-following">0</span><span class="pst-l">フォロー</span></div>
-        <div class="pst"><span class="pst-n" id="stat-followers">0</span><span class="pst-l">フォロワー</span></div>
-        <div class="pst" onclick="goTo('analytics')" style="cursor:pointer;"><span class="pst-n" id="stat-score" style="color:var(--g);">0</span><span class="pst-l">知識pt</span></div>
-        <div class="pst"><span class="pst-n" id="stat-thanks" style="color:#e05a8a;">0</span><span class="pst-l">ありがと</span></div>
+        <div class="pst"><span class="pst-n streak-n" id="stat-streak">0</span><span class="pst-l">連続日数</span></div>
+        <div class="pst" onclick="goTo('analytics')" style="cursor:pointer;"><span class="pst-n retain" id="stat-retain">—</span><span class="pst-l">定着率</span></div>
+        <div class="pst"><span class="pst-n cats" id="stat-cats">0</span><span class="pst-l">カテゴリ</span></div>
+        <!-- 旧SNS指標は内部状態として保持（公式アカウント機能用）：非表示 -->
+        <span id="stat-following" style="display:none;">0</span>
+        <span id="stat-followers" style="display:none;">0</span>
+        <span id="stat-score" style="display:none;">0</span>
+        <span id="stat-thanks" style="display:none;">0</span>
       </div>
     </div>
   </div>
@@ -814,8 +903,35 @@ html,body{height:100%;background:#FFF;font-family:system-ui,-apple-system,'Helve
       </div>
     </div>
   </div>
+  <div class="fab-backdrop" id="fab-backdrop" onclick="closeFabMenu()"></div>
+  <div class="fab-menu" id="fab-menu">
+    <div class="fab-item">
+      <span class="fab-item-lbl">📷 写真を撮る</span>
+      <button class="fab-item-btn" onclick="fabAction('camera')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </button>
+    </div>
+    <div class="fab-item">
+      <span class="fab-item-lbl">📝 メモを書く</span>
+      <button class="fab-item-btn" onclick="fabAction('memo')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </button>
+    </div>
+    <div class="fab-item">
+      <span class="fab-item-lbl">☑ リストを作る</span>
+      <button class="fab-item-btn" onclick="fabAction('checklist')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9B59B6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 8 9 4"/><polyline points="3 12 5 14 9 10"/><polyline points="3 18 5 20 9 16"/><line x1="13" y1="6" x2="21" y2="6"/><line x1="13" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="fab-item">
+      <span class="fab-item-lbl">🖼 ライブラリから</span>
+      <button class="fab-item-btn" onclick="fabAction('library')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#378ADD" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </button>
+    </div>
+  </div>
   <div class="fab-wrap">
-    <button class="fab" onclick="goTo('upload')"><svg width="26" height="26" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><line x1="13" y1="4" x2="13" y2="22"/><line x1="4" y1="13" x2="22" y2="13"/></svg></button>
+    <button class="fab" id="main-fab" onclick="toggleFabMenu()"><svg width="26" height="26" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><line x1="13" y1="4" x2="13" y2="22"/><line x1="4" y1="13" x2="22" y2="13"/></svg></button>
   </div>
   <div class="bnav">
     <div class="ni active" id="ni-home" data-nav="home" onclick="goTo('home')"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ホーム</span></div>
@@ -1394,6 +1510,8 @@ const S = {
   viewMode:'grid',   // 'grid' | 'feed'
   recallMode:false,  // ON: thumbs blur, chat history veiled on reopen
   _recallOneShot:false, // one-time recall trigger from daily card
+  fabOpen:false,
+  draggingIdx:-1,
   profile:{ name:'Kazuma', avatarUrl:null, who:'', detail:'', dob:{year:0,month:0,day:0}, gradeText:'', gradeShort:'', interests:[], level:'標準', tone:'friendly' },
   deco:{ bg:'linear-gradient(135deg,#1D9E75,#0F6E56)', tc:'#ffffff', font:'system-ui,-apple-system,sans-serif', emoji:'' }
 };
@@ -1533,20 +1651,29 @@ function dismissRecallDaily(){
 function pickRecallCandidate(){
   const now = Date.now();
   const DAY = 86400000;
+  // まずSRSで「期限到来」のものを優先
+  const due = S.items.filter(i => {
+    if(i.categoryPending) return false;
+    const s = i.recallStats;
+    if(!s || !s.nextDueAt) return false;
+    return s.nextDueAt <= now;
+  });
+  if(due.length){
+    // 最も期限を過ぎているものを返す
+    due.sort((a,b) => (a.recallStats.nextDueAt) - (b.recallStats.nextDueAt));
+    return due[0];
+  }
+  // SRSデータがない場合：2〜30日前のもの
   const candidates = S.items.filter(i => {
     if(i.categoryPending) return false;
     const age = now - i.id;
-    // 2〜30日前のものから（記憶の忘却カーブが効く時期）
     if(age < 2*DAY || age > 30*DAY) return false;
-    // 直近24時間以内に開いていれば対象外
     const lastV = i.lastViewedAt || i.id;
     if(now - lastV < DAY) return false;
     return true;
   });
   if(!candidates.length) return null;
-  // 古いほど忘却が進んでいる前提で、古い方を少し重み付け
-  candidates.sort((a,b) => a.id - b.id); // 古い順
-  // 上位1/3からランダム、なければ全体からランダム
+  candidates.sort((a,b) => a.id - b.id);
   const pool = candidates.slice(0, Math.max(1, Math.ceil(candidates.length/3)));
   return pool[Math.floor(Math.random() * pool.length)];
 }
@@ -1595,6 +1722,404 @@ function startRecallFlow(id){
   openFromGrid(id);
   // デイリーカードは今日のぶんは消す（再表示しない）
   dismissRecallDaily();
+}
+
+
+// ═══════════════════════════════════════════
+// FAB MENU (3択ポップアップ)
+// ═══════════════════════════════════════════
+function toggleFabMenu(){
+  S.fabOpen = !S.fabOpen;
+  document.getElementById('fab-menu')?.classList.toggle('open', S.fabOpen);
+  document.getElementById('fab-backdrop')?.classList.toggle('on', S.fabOpen);
+  document.getElementById('main-fab')?.classList.toggle('x-rotated', S.fabOpen);
+}
+function closeFabMenu(){
+  S.fabOpen = false;
+  document.getElementById('fab-menu')?.classList.remove('open');
+  document.getElementById('fab-backdrop')?.classList.remove('on');
+  document.getElementById('main-fab')?.classList.remove('x-rotated');
+}
+function fabAction(kind){
+  closeFabMenu();
+  if(kind === 'camera'){
+    triggerCameraOnly();
+  } else if(kind === 'library'){
+    triggerLibrary();
+  } else if(kind === 'memo'){
+    goTo('upload');
+    setTimeout(()=>document.getElementById('deco-inp')?.focus(), 200);
+  } else if(kind === 'checklist'){
+    createNewChecklist();
+  }
+}
+
+
+// ═══════════════════════════════════════════
+// CHECKLIST
+// ═══════════════════════════════════════════
+function uid4(){ return Math.random().toString(36).slice(2,6); }
+
+function createNewChecklist(){
+  const item = {
+    id: Date.now(),
+    type: 'checklist',
+    title: '',
+    listItems: [],
+    date: td(),
+    chatted: false,
+    chatHistory: [],
+    isPublic: false,
+    isNew: true,
+    category: null,
+    categoryPending: true,
+    deco: { emoji: '☑' }
+  };
+  S.items.unshift(item);
+  S.curId = item.id;
+  saveState();
+  renderChatUI(item);
+  goTo('chat');
+  setTimeout(()=>document.getElementById('checklist-title-inp')?.focus(), 150);
+}
+
+function renderChecklistEditor(item){
+  const area = document.getElementById('chat-photo-area');
+  area.innerHTML = '';
+  area.style.cssText = 'background:var(--surface);display:block;';
+  const wrap = document.createElement('div');
+  wrap.className = 'checklist-edit-wrap';
+  const total = (item.listItems||[]).length;
+  const done = (item.listItems||[]).filter(x=>x.done).length;
+  const cat = item.category && !item.categoryPending ? item.category : '';
+  wrap.innerHTML = `
+    <input id="checklist-title-inp" class="checklist-title-inp" type="text"
+      placeholder="リストのタイトル（例：英単語30個）" value="${(item.title||'').replace(/"/g,'&quot;')}" maxlength="60">
+    <div class="checklist-items-wrap" id="checklist-items-wrap"></div>
+    <div class="checklist-add-row">
+      <input id="checklist-add-inp" class="checklist-add-inp" type="text"
+        placeholder="＋ 新しい項目を追加" maxlength="120">
+    </div>
+    ${total>0 ? `<div class="checklist-summary">${done} / ${total} 完了 ${cat?'・ '+cat:''}</div>` : ''}
+  `;
+  area.appendChild(wrap);
+  // タイトル入力
+  document.getElementById('checklist-title-inp').oninput = (e) => {
+    item.title = e.target.value;
+    saveState();
+  };
+  // 項目追加
+  const addInp = document.getElementById('checklist-add-inp');
+  addInp.onkeydown = (e) => {
+    if(e.key === 'Enter'){
+      const v = addInp.value.trim();
+      if(v){
+        if(!item.listItems) item.listItems = [];
+        item.listItems.push({ id: uid4(), text: v, done: false });
+        addInp.value = '';
+        saveState();
+        renderChecklistEditor(item);
+        renderGrid();
+        document.getElementById('checklist-add-inp')?.focus();
+      }
+    }
+  };
+  // 各項目をレンダリング
+  renderChecklistRows(item);
+}
+
+function renderChecklistRows(item){
+  const host = document.getElementById('checklist-items-wrap');
+  if(!host) return;
+  host.innerHTML = '';
+  (item.listItems||[]).forEach((li, idx) => {
+    const row = document.createElement('div');
+    row.className = 'checklist-row' + (li.done ? ' done' : '');
+    row.dataset.idx = idx;
+    row.innerHTML = `
+      <span class="checklist-row-handle" data-handle="1">
+        <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor"><circle cx="3" cy="3" r="1.3"/><circle cx="9" cy="3" r="1.3"/><circle cx="3" cy="7" r="1.3"/><circle cx="9" cy="7" r="1.3"/><circle cx="3" cy="11" r="1.3"/><circle cx="9" cy="11" r="1.3"/></svg>
+      </span>
+      <div class="checklist-row-check ${li.done?'on':''}">
+        ${li.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+      </div>
+      <input class="checklist-row-inp" type="text" value="${(li.text||'').replace(/"/g,'&quot;')}" maxlength="120">
+      <span class="checklist-row-del">×</span>
+    `;
+    // 完了切り替え
+    row.querySelector('.checklist-row-check').onclick = () => {
+      li.done = !li.done;
+      saveState();
+      renderChecklistEditor(item);
+      renderGrid();
+    };
+    // テキスト変更
+    row.querySelector('.checklist-row-inp').oninput = (e) => {
+      li.text = e.target.value;
+      saveState();
+    };
+    // 削除
+    row.querySelector('.checklist-row-del').onclick = () => {
+      item.listItems.splice(idx, 1);
+      saveState();
+      renderChecklistEditor(item);
+      renderGrid();
+    };
+    // ドラッグ並び替え
+    attachChecklistDrag(row, item, idx);
+    host.appendChild(row);
+  });
+}
+
+function attachChecklistDrag(row, item, idx){
+  const handle = row.querySelector('.checklist-row-handle');
+  if(!handle) return;
+  let startY = 0, currentY = 0, dragging = false, host = null, rows = [];
+  const onStart = (e) => {
+    e.preventDefault();
+    dragging = true;
+    startY = (e.touches?.[0]?.clientY) ?? e.clientY;
+    currentY = startY;
+    row.classList.add('dragging');
+    host = document.getElementById('checklist-items-wrap');
+    rows = Array.from(host.children);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('touchend', onEnd);
+  };
+  const onMove = (e) => {
+    if(!dragging) return;
+    e.preventDefault?.();
+    currentY = (e.touches?.[0]?.clientY) ?? e.clientY;
+    // 現在位置にあるrowを見つける
+    rows.forEach(r => r.classList.remove('drag-over'));
+    const elAt = document.elementFromPoint(row.getBoundingClientRect().left + row.offsetWidth/2, currentY);
+    const overRow = elAt?.closest('.checklist-row');
+    if(overRow && overRow !== row){
+      overRow.classList.add('drag-over');
+    }
+  };
+  const onEnd = (e) => {
+    if(!dragging) return;
+    dragging = false;
+    row.classList.remove('dragging');
+    const elAt = document.elementFromPoint(row.getBoundingClientRect().left + row.offsetWidth/2, currentY);
+    const overRow = elAt?.closest('.checklist-row');
+    rows.forEach(r => r.classList.remove('drag-over'));
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+    if(overRow && overRow !== row){
+      const fromIdx = parseInt(row.dataset.idx, 10);
+      const toIdx = parseInt(overRow.dataset.idx, 10);
+      const moved = item.listItems.splice(fromIdx, 1)[0];
+      item.listItems.splice(toIdx, 0, moved);
+      saveState();
+      renderChecklistEditor(item);
+      renderGrid();
+    }
+  };
+  handle.addEventListener('mousedown', onStart);
+  handle.addEventListener('touchstart', onStart, {passive:false});
+}
+
+
+// ═══════════════════════════════════════════
+// FLASHCARD (答え隠し)
+// ═══════════════════════════════════════════
+// テキストメモが「---」または「→」「：答え」などで区切られていれば
+// 上半分が問題、下半分が答えとして、答えを隠す
+function detectFlashcard(item){
+  if(item.type !== 'text') return null;
+  const c = item.content || '';
+  // パターン1: 「---」区切り
+  let parts = c.split(/\n\s*---+\s*\n/);
+  if(parts.length >= 2){
+    return { question: parts[0].trim(), answer: parts.slice(1).join('\n---\n').trim() };
+  }
+  // パターン2: 「答え:」「Answer:」「A:」
+  const m = c.match(/^([\s\S]+?)\n+(?:答え|Answer|A)[:：]\s*([\s\S]+)$/i);
+  if(m){
+    return { question: m[1].trim(), answer: m[2].trim() };
+  }
+  return null;
+}
+
+
+// ═══════════════════════════════════════════
+// SRS-LITE (軽量間隔反復)
+// ═══════════════════════════════════════════
+function ensureSrs(item){
+  if(!item.recallStats){
+    item.recallStats = {
+      tested: 0,
+      remembered: 0,
+      lastTestedAt: 0,
+      nextDueAt: 0,
+      ease: 1
+    };
+  }
+  return item.recallStats;
+}
+
+function recordRecall(itemId, result){
+  // result: 'forgot' | 'fuzzy' | 'got'
+  const item = S.items.find(i => i.id === itemId);
+  if(!item) return;
+  const s = ensureSrs(item);
+  const DAY = 86400000;
+  const now = Date.now();
+  s.tested++;
+  if(result === 'got'){
+    s.remembered++;
+    s.ease = Math.min(3, s.ease + 0.5);
+    s.nextDueAt = now + Math.round(DAY * 2 * s.ease);
+  } else if(result === 'fuzzy'){
+    s.nextDueAt = now + DAY * 2;
+  } else { // forgot
+    s.ease = Math.max(0.6, s.ease - 0.5);
+    s.nextDueAt = now + Math.round(DAY * 0.5);
+  }
+  s.lastTestedAt = now;
+  item.lastViewedAt = now;
+  saveState();
+}
+
+function calcRetention(){
+  // 「定着率」= (覚えた回数 / テスト回数) の全体平均
+  const tested = S.items.filter(i => (i.recallStats?.tested||0) > 0);
+  if(!tested.length) return null;
+  const total = tested.reduce((sum, i) => {
+    return sum + (i.recallStats.remembered / i.recallStats.tested);
+  }, 0);
+  return Math.round((total / tested.length) * 100);
+}
+
+function recallEligibleItems(){
+  const now = Date.now();
+  return S.items.filter(i => {
+    if(i.categoryPending) return false;
+    const s = i.recallStats;
+    if(!s || !s.nextDueAt) {
+      // 一度もテストしてないが、2日以上経過しているなら対象
+      return (now - i.id) >= 2*86400000;
+    }
+    return s.nextDueAt <= now;
+  });
+}
+
+
+// ═══════════════════════════════════════════
+// AI クイズ・説明モード
+// ═══════════════════════════════════════════
+async function aiQuizMe(){
+  const item = S.items.find(i => i.id === S.curId);
+  if(!item) return;
+  const msgs = document.getElementById('chat-msgs');
+  const ty = document.createElement('div'); ty.id = 'typing-quiz'; ty.className = 'msg ai';
+  ty.innerHTML = '<div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';
+  msgs.appendChild(ty); msgs.scrollTop = msgs.scrollHeight;
+  let userContext = '';
+  if(item.type === 'text'){
+    userContext = `メモ: ${item.content}`;
+  } else if(item.type === 'checklist'){
+    userContext = `チェックリスト「${item.title||'無題'}」: ${(item.listItems||[]).map(x=>x.text).join('、')}`;
+  } else {
+    userContext = `写真の内容（カテゴリ: ${item.category||'?'}）。これまでの会話も参考に。`;
+  }
+  try{
+    let content;
+    if(item.type === 'photo' && item.imageData){
+      const b64 = item.imageData.split(',')[1];
+      const mt = item.imageData.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+      content = [
+        {type:'image', source:{type:'base64', media_type:mt, data:b64}},
+        {type:'text', text: `この写真の内容について、ユーザーが覚えているかテストする問題を1つだけ作って。問題のみ。答えは出さないこと。1-2文の短い問題で。`}
+      ];
+    } else {
+      content = `${userContext}\n\nこの内容について、ユーザーが覚えているかテストする問題を1つだけ作って。問題のみ。答えは出さないこと。1-2文の短い問題で。`;
+    }
+    const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,system:buildPrompt(),messages:[{role:'user',content}]})});
+    const data = await res.json();
+    const q = data.content?.[0]?.text || '問題を作れませんでした。';
+    document.getElementById('typing-quiz')?.remove();
+    addAI('🎯 クイズです：\n\n' + q);
+    if(!item.chatHistory) item.chatHistory = [];
+    item.chatHistory.push({role:'assistant', content:'🎯 クイズです：\n\n' + q});
+    saveState();
+  } catch(e){
+    document.getElementById('typing-quiz')?.remove();
+    addAI('クイズを作れませんでした。もう一度試してみてください。');
+  }
+}
+
+async function aiExplainBack(){
+  const inp = document.getElementById('chat-input');
+  if(!inp) return;
+  inp.placeholder = '自分の言葉で説明してみよう（送信するとAIがチェックします）';
+  inp.dataset.explainMode = '1';
+  inp.focus();
+  showToast('💬 自分の言葉で説明してみよう');
+}
+
+
+// ═══════════════════════════════════════════
+// グリッドのドラッグ並び替え（編集モード中のみ）
+// ═══════════════════════════════════════════
+function attachGridDrag(el, item, idx){
+  if(!S.editMode) return;
+  let dragging = false, startX = 0, startY = 0;
+  const onStart = (e) => {
+    if(!S.editMode) return;
+    dragging = true;
+    startX = (e.touches?.[0]?.clientX) ?? e.clientX;
+    startY = (e.touches?.[0]?.clientY) ?? e.clientY;
+    el.classList.add('gi-dragging');
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('touchend', onEnd);
+  };
+  const onMove = (e) => {
+    if(!dragging) return;
+    e.preventDefault?.();
+    const cx = (e.touches?.[0]?.clientX) ?? e.clientX;
+    const cy = (e.touches?.[0]?.clientY) ?? e.clientY;
+    document.querySelectorAll('.gi.gi-drag-over').forEach(x=>x.classList.remove('gi-drag-over'));
+    const elAt = document.elementFromPoint(cx, cy);
+    const overTile = elAt?.closest('.gi');
+    if(overTile && overTile !== el){
+      overTile.classList.add('gi-drag-over');
+    }
+  };
+  const onEnd = (e) => {
+    if(!dragging) return;
+    dragging = false;
+    el.classList.remove('gi-dragging');
+    const overTile = document.querySelector('.gi.gi-drag-over');
+    document.querySelectorAll('.gi.gi-drag-over').forEach(x=>x.classList.remove('gi-drag-over'));
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+    if(overTile){
+      const toIdxStr = overTile.dataset.idx;
+      if(toIdxStr != null){
+        const fromIdx = parseInt(el.dataset.idx, 10);
+        const toIdx = parseInt(toIdxStr, 10);
+        if(!isNaN(fromIdx) && !isNaN(toIdx) && fromIdx !== toIdx){
+          const moved = S.items.splice(fromIdx, 1)[0];
+          S.items.splice(toIdx, 0, moved);
+          saveState();
+          renderGrid();
+        }
+      }
+    }
+  };
+  el.addEventListener('mousedown', onStart);
+  el.addEventListener('touchstart', onStart, {passive:false});
 }
 
 
@@ -1840,6 +2365,21 @@ function goTo(name){
   }
   if(name==='analytics') updateAna();
   if(name==='home'){
+    // チャット画面から戻る時：チェックリストがあって未分類なら分類を走らせる
+    const prev = S.curId;
+    if(prev){
+      const prevItem = S.items.find(i => i.id === prev);
+      if(prevItem && prevItem.type === 'checklist' && prevItem.categoryPending){
+        const hasContent = prevItem.title || (prevItem.listItems||[]).length > 0;
+        if(hasContent){
+          backgroundCategorizeChecklist(prevItem);
+        } else {
+          // 空のチェックリストは削除
+          S.items = S.items.filter(i => i.id !== prev);
+          saveState();
+        }
+      }
+    }
     renderGrid(); renderFilterBar(); exitEditMode();
     renderRecallDailyCard();
     applyRecallModeUI();
@@ -1849,7 +2389,16 @@ function goTo(name){
   if(name==='trash') renderTrash();
   if(name==='share') renderShareCard();
   const chatIw = document.getElementById('chat-iw-fixed');
-  if(name==='chat'){ if(chatIw) chatIw.style.display='flex'; updateAiModeUI(); }
+  if(name==='chat'){
+    const item = S.items.find(i => i.id === S.curId);
+    if(item && item.type === 'checklist'){
+      // チェックリストはチャット入力不要
+      if(chatIw) chatIw.style.display='none';
+    } else {
+      if(chatIw) chatIw.style.display='flex';
+      updateAiModeUI();
+    }
+  }
   else { if(chatIw) chatIw.style.display='none'; }
 }
 
@@ -1876,6 +2425,10 @@ function itemMatchesSearch(item,q){
   if(!q) return true;
   const lower=q.toLowerCase();
   if(item.type==='text'&&item.content?.toLowerCase().includes(lower)) return true;
+  if(item.type==='checklist'){
+    if(item.title?.toLowerCase().includes(lower)) return true;
+    if((item.listItems||[]).some(x=>x.text?.toLowerCase().includes(lower))) return true;
+  }
   if(item.autoNote?.toLowerCase().includes(lower)) return true;
   if(item.category?.toLowerCase().includes(lower)) return true;
   if((item.chatHistory||[]).some(m=>m.content?.toLowerCase().includes(lower))) return true;
@@ -2291,6 +2844,23 @@ async function backgroundCategorize(item){
     saveState(); renderGrid();
   }
 }
+async function backgroundCategorizeChecklist(item){
+  try{
+    if(!item.listItems?.length && !item.title) return;
+    const txt = `タイトル：${item.title||'(無題)'}\n項目：${(item.listItems||[]).map(x=>x.text).join('、')}`;
+    const catNames=CAT_LIST.join('、');
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:120,messages:[{role:'user',content:`次のチェックリストのカテゴリをJSONで返してください（前置き不要）:\n{"category":"<次のいずれか>"}\n${txt}\nカテゴリ候補：${catNames}`}]})});
+    const data=await res.json();
+    const raw=data.content?.[0]?.text||'{}';
+    let parsed={}; try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch{}
+    item.category=CAT_LIST.includes(parsed.category)?parsed.category:detectCat(item);
+    item.categoryPending=false;
+    saveState(); renderGrid(); renderFilterBar();
+  }catch{
+    item.category=detectCat(item); item.categoryPending=false; saveState(); renderGrid();
+  }
+}
+
 async function backgroundCategorizeText(item){
   try{
     const catNames=CAT_LIST.join('、');
@@ -2391,8 +2961,13 @@ function openFromGrid(id){
   renderChatUI(item); goTo('chat'); updateAiModeUI();
   const hasHistory=(item.chatHistory||[]).length>0;
   if(!hasHistory){
-    if(item.type==='text') setTimeout(()=>addAI(`「${item.content.substring(0,28)}」について、何でも聞いてください。`),400);
-    else autoFirstAIComment(item);
+    if(item.type==='checklist'){
+      // チェックリストはAIの自動コメント不要（ユーザーがリストを書く）
+    } else if(item.type==='text'){
+      setTimeout(()=>addAI(`「${item.content.substring(0,28)}」について、何でも聞いてください。`),400);
+    } else {
+      autoFirstAIComment(item);
+    }
   } else if(S.recallMode || S._recallOneShot){
     maybeShowChatVeil(item);
   }
@@ -2455,7 +3030,10 @@ function renderChatUI(item){
   document.getElementById('recall-veil-el')?.remove();
   const area=document.getElementById('chat-photo-area');
   area.innerHTML=''; area.style.cssText='';
-  if(item.type==='photo'&&item.imageData){
+  if(item.type==='checklist'){
+    // チェックリスト編集UIを描画
+    renderChecklistEditor(item);
+  } else if(item.type==='photo'&&item.imageData){
     const img=document.createElement('img');
     img.src=item.imageData;
     img.style.cssText='width:100%;height:auto;max-height:55vh;object-fit:contain;display:block;cursor:zoom-in;';
@@ -2468,13 +3046,29 @@ function renderChatUI(item){
     area.appendChild(tags);
   } else if(item.type==='text'){
     const d=item.deco||{};
-    // テキストカードは正方形で表示
-    area.style.cssText=`background:${d.bg||'#1a1a1a'};display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1/1;position:relative;width:100%;`;
-    area.innerHTML=`${d.emoji?`<div style="font-size:28px;position:absolute;top:10px;left:14px;">${d.emoji}</div>`:''}<div style="font-family:${d.font||'system-ui'};font-size:${d.deco?.fontSize||d.fontSize||22}px;color:${d.tc||'rgba(255,255,255,0.9)'};line-height:1.35;font-weight:700;text-align:center;width:82%;word-break:break-word;">${item.content}</div>`;
-    if(item.category&&!item.categoryPending){
-      const ct=document.createElement('div'); ct.style.cssText='position:absolute;top:8px;right:8px;';
-      ct.innerHTML=`<div class="chat-cat-tag"><span class="cct-dot" style="background:${catColor(item.category)};"></span>${item.category}</div>`;
-      area.appendChild(ct);
+    const fc = detectFlashcard(item);
+    if(fc){
+      // フラッシュカード形式：問題のみ表示
+      area.style.cssText=`background:${d.bg||'#1a1a1a'};display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1/1;position:relative;width:100%;`;
+      area.innerHTML=`
+        ${d.emoji?`<div style="font-size:28px;position:absolute;top:10px;left:14px;">${d.emoji}</div>`:''}
+        <div class="flashcard-hint" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.9);color:#1D9E75;">🎴 フラッシュカード</div>
+        <div style="font-family:${d.font||'system-ui'};font-size:${Math.min(d.deco?.fontSize||d.fontSize||22, 28)}px;color:${d.tc||'rgba(255,255,255,0.9)'};line-height:1.4;font-weight:700;text-align:center;width:85%;word-break:break-word;">${fc.question}</div>
+      `;
+      if(item.category&&!item.categoryPending){
+        const ct=document.createElement('div'); ct.style.cssText='position:absolute;bottom:10px;left:10px;';
+        ct.innerHTML=`<div class="chat-cat-tag" style="background:rgba(0,0,0,0.45);"><span class="cct-dot" style="background:${catColor(item.category)};"></span>${item.category}</div>`;
+        area.appendChild(ct);
+      }
+    } else {
+      // 通常のテキストカード
+      area.style.cssText=`background:${d.bg||'#1a1a1a'};display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1/1;position:relative;width:100%;`;
+      area.innerHTML=`${d.emoji?`<div style="font-size:28px;position:absolute;top:10px;left:14px;">${d.emoji}</div>`:''}<div style="font-family:${d.font||'system-ui'};font-size:${d.deco?.fontSize||d.fontSize||22}px;color:${d.tc||'rgba(255,255,255,0.9)'};line-height:1.35;font-weight:700;text-align:center;width:82%;word-break:break-word;">${item.content}</div>`;
+      if(item.category&&!item.categoryPending){
+        const ct=document.createElement('div'); ct.style.cssText='position:absolute;top:8px;right:8px;';
+        ct.innerHTML=`<div class="chat-cat-tag"><span class="cct-dot" style="background:${catColor(item.category)};"></span>${item.category}</div>`;
+        area.appendChild(ct);
+      }
     }
   }
   const pt=document.getElementById('priv-toggle');
@@ -2490,7 +3084,6 @@ function renderChatUI(item){
   if(item.isPublic && !isOwnPost){
     reactBar.style.display='flex';
     renderReactBar(item);
-    // コメントセクションは閉じた状態にリセット
     commentSection.classList.remove('open');
     renderComments(item);
   } else {
@@ -2498,6 +3091,36 @@ function renderChatUI(item){
     commentSection.classList.remove('open');
   }
   const msgsList=document.getElementById('chat-msgs'); msgsList.innerHTML='';
+  // フラッシュカードの答え（タップで開示）
+  const fc = detectFlashcard(item);
+  if(fc){
+    const veil = document.createElement('div');
+    veil.className = 'flashcard-answer-veil';
+    veil.innerHTML = `
+      <div class="flashcard-answer-veil-title">🧠 答えを思い出してから…</div>
+      <div class="flashcard-answer-veil-sub">タップで答えを表示</div>
+    `;
+    veil.onclick = () => {
+      const revealed = document.createElement('div');
+      revealed.className = 'flashcard-answer-revealed';
+      revealed.innerHTML = `<div class="flashcard-answer-label">答え</div>${(fc.answer||'').replace(/\n/g,'<br>')}`;
+      veil.replaceWith(revealed);
+      // SRSバーを答えの直下に表示
+      showSrsBar(item, revealed);
+    };
+    msgsList.appendChild(veil);
+  }
+  // チャットアクション行（クイズ・説明）
+  if(item.type !== 'checklist'){
+    const actRow = document.createElement('div');
+    actRow.className = 'chat-action-row';
+    actRow.innerHTML = `
+      <button class="chat-action-btn" onclick="aiQuizMe()">🎯 クイズして</button>
+      <button class="chat-action-btn warm" onclick="aiExplainBack()">💬 自分の言葉で説明</button>
+    `;
+    msgsList.appendChild(actRow);
+  }
+  // 既存のチャット履歴をレンダリング
   (item.chatHistory||[]).forEach(m=>{
     if(m.role==='assistant') aiDirect(m.content);
     else if(m.isMemo){
@@ -2506,6 +3129,58 @@ function renderChatUI(item){
       msgsList.appendChild(d);
     } else userDirect(m.content);
   });
+  // SRSバー：再オープン時で、すでに会話があり、フラッシュカードでない場合に表示
+  if(!fc && (item.chatHistory||[]).length >= 2 && item.type !== 'checklist'){
+    showSrsBar(item, msgsList);
+  }
+}
+
+function showSrsBar(item, afterEl){
+  // 既存のSRSバーは消す
+  document.getElementById('srs-bar-el')?.remove();
+  const bar = document.createElement('div');
+  bar.id = 'srs-bar-el';
+  bar.className = 'srs-bar';
+  const s = ensureSrs(item);
+  const tested = s.tested || 0;
+  const got = s.remembered || 0;
+  const retain = tested > 0 ? Math.round(100*got/tested) : null;
+  bar.innerHTML = `
+    <div class="srs-bar-q">この内容、覚えてた？</div>
+    <div class="srs-bar-btns">
+      <button class="srs-btn forgot" onclick="onSrsRecord('forgot')">
+        <span class="srs-btn-emoji">🌀</span>
+        <span>忘れてた</span>
+        <span class="srs-btn-lbl">明日もう一度</span>
+      </button>
+      <button class="srs-btn fuzzy" onclick="onSrsRecord('fuzzy')">
+        <span class="srs-btn-emoji">🤔</span>
+        <span>あやふや</span>
+        <span class="srs-btn-lbl">2日後に</span>
+      </button>
+      <button class="srs-btn got" onclick="onSrsRecord('got')">
+        <span class="srs-btn-emoji">✨</span>
+        <span>覚えてた</span>
+        <span class="srs-btn-lbl">長めの間隔で</span>
+      </button>
+    </div>
+    ${tested > 0 ? `<div class="srs-meta">これまで ${tested}回テスト ・ 定着率 ${retain}%</div>` : '<div class="srs-meta">初めての答え合わせ</div>'}
+  `;
+  if(afterEl && afterEl.parentNode){
+    afterEl.parentNode.insertBefore(bar, afterEl.nextSibling);
+  } else {
+    document.getElementById('chat-msgs')?.appendChild(bar);
+  }
+}
+
+function onSrsRecord(result){
+  const item = S.items.find(i => i.id === S.curId);
+  if(!item) return;
+  recordRecall(item.id, result);
+  document.getElementById('srs-bar-el')?.remove();
+  const msg = result === 'got' ? '✨ よく覚えてた！' : result === 'fuzzy' ? '🤔 もう一度近いうちに' : '🌀 明日もう一度トライしよう';
+  showToast(msg);
+  updateStats();
 }
 
 function renderReactBar(item){
@@ -2628,6 +3303,55 @@ async function sendMsg(){
   const t=inp.value.trim();
   const hasAttach=S.chatAttachPhotos.length>0||S.chatAttachRefs.length>0;
   if(!t&&!hasAttach) return;
+  // 「自分の言葉で説明」モード：AIに採点させる
+  if(inp.dataset.explainMode === '1' && t){
+    inp.dataset.explainMode = '';
+    inp.placeholder = '';
+    const item=S.items.find(i=>i.id===S.curId);
+    inp.value=''; autoResize(inp);
+    // ユーザーの説明をメモとして保存
+    const msgDiv=document.createElement('div'); msgDiv.className='msg user';
+    msgDiv.innerHTML=`<div class="memo-badge">💬 自分の言葉</div><div class="bubble memo">${t.replace(/\n/g,'<br>')}</div>`;
+    const msgsEl=document.getElementById('chat-msgs'); msgsEl.appendChild(msgDiv); msgsEl.scrollTop=99999;
+    if(item){
+      item.chatHistory=item.chatHistory||[];
+      item.chatHistory.push({role:'user',content:t,isMemo:true,isExplain:true});
+      item.chatted=true;
+    }
+    saveState();
+    // AIに軽く判定させる
+    const ty=document.createElement('div'); ty.id='typing-explain'; ty.className='msg ai';
+    ty.innerHTML='<div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';
+    msgsEl.appendChild(ty); msgsEl.scrollTop=99999;
+    try{
+      let context = '';
+      if(item.type==='text') context = `元の内容: ${item.content}`;
+      else if(item.type==='checklist') context = `元のリスト「${item.title||'無題'}」: ${(item.listItems||[]).map(x=>x.text).join('、')}`;
+      else context = `元の写真と過去の会話を参考に。`;
+      let content;
+      if(item.type==='photo' && item.imageData){
+        const b64 = item.imageData.split(',')[1];
+        const mt = item.imageData.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+        content = [
+          {type:'image', source:{type:'base64', media_type:mt, data:b64}},
+          {type:'text', text: `ユーザーがこの写真について自分の言葉で説明しました：\n「${t}」\n\nこの説明の良い点と、足りない/惜しい点を、温かく短く2-3文でフィードバックしてください。完璧でなくてもOKと伝えること。`}
+        ];
+      } else {
+        content = `${context}\n\nユーザーが自分の言葉で説明しました：\n「${t}」\n\nこの説明の良い点と、足りない/惜しい点を、温かく短く2-3文でフィードバックしてください。完璧でなくてもOKと伝えること。`;
+      }
+      const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:buildPrompt(),messages:[{role:'user',content}]})});
+      const data = await res.json();
+      const fb = data.content?.[0]?.text || 'いい説明です！';
+      document.getElementById('typing-explain')?.remove();
+      addAI('💭 ' + fb);
+      if(item){item.chatHistory.push({role:'assistant',content:'💭 ' + fb});}
+      saveState();
+    } catch(e){
+      document.getElementById('typing-explain')?.remove();
+      addAI('フィードバックを取得できませんでした。');
+    }
+    return;
+  }
   inp.value=''; autoResize(inp);
   document.getElementById('q-chips-wrap')?.remove();
   if(!S.aiMode){
@@ -2812,19 +3536,23 @@ function renderGrid(){
   filteredItems.forEach((item,idx)=>{
     const el=document.createElement('div');
     el.className='gi'+(S.editMode?' shake edit-mode':'')+(item.isNew?' new-tile':'')+(S.showCatLabels?' show-cat-labels':'')+(S.recallMode?' recall-hidden':'');
+    el.dataset.idx = String(S.items.indexOf(item));
     if(item.isNew) setTimeout(()=>{delete item.isNew;},500);
     const turns=Math.floor((item.chatHistory||[]).length/2);
     const cat=detectCat(item);
     let lpt=null, lpFired=false;
     const startLP=()=>{ lpFired=false; lpt=setTimeout(()=>{ lpFired=true; openSwipePreview(item.id); },420); };
     const clearLP=()=>clearTimeout(lpt);
-    el.addEventListener('mousedown',startLP); el.addEventListener('mouseup',clearLP); el.addEventListener('mouseleave',clearLP);
-    el.addEventListener('touchstart',startLP,{passive:true}); el.addEventListener('touchend',clearLP); el.addEventListener('touchmove',clearLP,{passive:true});
+    if(!S.editMode){
+      el.addEventListener('mousedown',startLP); el.addEventListener('mouseup',clearLP); el.addEventListener('mouseleave',clearLP);
+      el.addEventListener('touchstart',startLP,{passive:true}); el.addEventListener('touchend',clearLP); el.addEventListener('touchmove',clearLP,{passive:true});
+    }
     const delBtn=document.createElement('div'); delBtn.className='gi-del'; delBtn.textContent='×';
     delBtn.addEventListener('click',e=>{e.stopPropagation();trashItem(item.id);});
     el.appendChild(delBtn);
     el.onclick=()=>{
       if(lpFired) return;
+      if(S.editMode) return; // 編集モードはタップ無効（ドラッグ＆削除のみ）
       // 想起モード：1タップ目はベール解除のみ、2タップ目で開く
       if(S.recallMode && !el.classList.contains('recall-revealed')){
         el.classList.add('recall-revealed');
@@ -2832,17 +3560,48 @@ function renderGrid(){
       }
       openFromGrid(item.id);
     };
-    if(item.type==='text'){
+    if(item.type==='checklist'){
+      // チェックリストカード
+      el.classList.add('sq');
+      el.style.background = '#F7F8FC';
+      const wrap = document.createElement('div');
+      wrap.className = 'checklist-tile-wrap';
+      const li = item.listItems || [];
+      const total = li.length;
+      const done = li.filter(x => x.done).length;
+      const pct = total > 0 ? Math.round(100*done/total) : 0;
+      const title = item.title || '無題のリスト';
+      const previewItems = li.slice(0, 4).map(x =>
+        `<div class="checklist-tile-item ${x.done?'done':''}"><div class="checklist-tile-check ${x.done?'done':''}"></div>${(x.text||'').substring(0,14)}</div>`
+      ).join('');
+      wrap.innerHTML = `
+        <div class="checklist-tile-head">
+          <span class="checklist-tile-icon">☑</span>
+          <span class="checklist-tile-title">${title.substring(0,16)}</span>
+        </div>
+        <div class="checklist-tile-body">${previewItems || '<div style="font-size:7.5px;color:var(--text3);">空のリスト</div>'}</div>
+        ${total>0?`<div class="checklist-tile-count">${done}/${total}</div>`:''}
+        ${total>0?`<div class="checklist-tile-progress"><div class="checklist-tile-progress-fill" style="width:${pct}%;"></div></div>`:''}
+      `;
+      el.appendChild(wrap);
+    } else if(item.type==='text'){
       const d=item.deco||{};
       el.classList.add('sq');
       el.style.background=d.bg||'#1a1a1a';
-      const preview=item.content.length>40?item.content.substring(0,40)+'…':item.content;
+      const fc = detectFlashcard(item);
+      const preview = fc ? fc.question : (item.content.length>40?item.content.substring(0,40)+'…':item.content);
       // 文字数でフォントサイズ自動調整
       let fs=13; if(preview.length>20) fs=11; if(preview.length>30) fs=10;
       const inner=document.createElement('div'); inner.className='text-tile-inner';
       inner.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;padding:8px;text-align:center;';
       inner.innerHTML=`${d.emoji?`<div class="text-tile-emoji">${d.emoji}</div>`:''}<div style="color:${d.tc||'rgba(255,255,255,.9)'};font-family:${d.font||'system-ui'};font-size:${fs}px;font-weight:700;line-height:1.35;word-break:break-word;">${preview}</div>`;
       el.appendChild(inner);
+      if(fc){
+        const fcBadge = document.createElement('div');
+        fcBadge.style.cssText = 'position:absolute;top:4px;right:4px;background:rgba(255,255,255,0.88);color:#1D9E75;font-size:7px;font-weight:700;padding:2px 5px;border-radius:6px;letter-spacing:0.3px;';
+        fcBadge.textContent = '🎴';
+        el.appendChild(fcBadge);
+      }
     } else {
       el.classList.add('sq');
       el.style.background='#ddd';
@@ -2854,6 +3613,10 @@ function renderGrid(){
     } else {
       const dot=document.createElement('div'); dot.className='gi-cat-dot'; dot.style.background=catColor(cat); el.appendChild(dot);
       const lbl=document.createElement('div'); lbl.className='gi-cat-label'; lbl.innerHTML=`<span class="cat-mini" style="background:${catColor(cat)};"></span>${cat}`; el.appendChild(lbl);
+    }
+    // 編集モード中はドラッグで並び替え
+    if(S.editMode){
+      attachGridDrag(el, item, idx);
     }
     // 公開マーク非表示
     // ターンバッジ非表示
@@ -2874,6 +3637,12 @@ function updateStats(){
   setEl('stat-thanks', S.items.reduce((a,i)=>a+(i.thanks?.length||0),0));
   setEl('stat-following', S.followingCount||0);
   setEl('stat-followers', S.followerCount||0);
+  // 新しい学習指標
+  setEl('stat-streak', getStreakCount());
+  const retain = calcRetention();
+  setEl('stat-retain', retain==null ? '—' : retain+'%');
+  const cats = new Set(S.items.filter(i=>!i.categoryPending).map(i=>detectCat(i)));
+  setEl('stat-cats', cats.size);
 }
 
 // ═══════════════════════════════════════════
@@ -2912,6 +3681,16 @@ function updateAna(){
 
 function detectCat(item){
   if(item.category) return item.category;
+  if(item.type==='checklist'){
+    const all = ((item.title||'')+' '+(item.listItems||[]).map(x=>x.text||'').join(' ')).toLowerCase();
+    if(/英語|english|単語|grammar/i.test(all)) return '英語';
+    if(/数学|計算|公式|関数|方程式/i.test(all)) return '数学';
+    if(/理科|物理|化学|生物|地学/i.test(all)) return '理科';
+    if(/社会|歴史|地理|公民/i.test(all)) return '社会';
+    if(/国語|漢字|古文/i.test(all)) return '国語';
+    if(/買|スーパー|食材|買い物/i.test(all)) return '買い物';
+    return '生活メモ';
+  }
   if(item.type==='text'){
     const c=item.content||'';
     if(/英語|english/i.test(c)) return '英語';
