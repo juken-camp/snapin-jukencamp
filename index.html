@@ -75,8 +75,17 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .logo em{color:var(--g);font-style:italic;}
 .hdr-icons{display:flex;gap:8px;color:var(--ink2);align-items:center;}
-.hdr-icons button{padding:8px;display:flex;align-items:center;justify-content:center;}
+.hdr-icons button{
+  padding:8px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50%;
+  transition:all .15s;
+}
 .hdr-icons button:active{color:var(--g);transform:scale(0.92);}
+.hdr-icons button.on{
+  color:var(--g);
+  background:var(--gl);
+}
 
 /* 戻るヘッダー */
 .bhdr{
@@ -104,6 +113,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-top:0.5px solid var(--line);
   padding:7px 0 max(12px,env(safe-area-inset-bottom));
   flex-shrink:0;
+  position:relative;
+  z-index:10;
 }
 .bnav-item{
   flex:1;
@@ -125,6 +136,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   justify-content:center;
   align-items:flex-start;
   margin-top:-22px;
+  position:relative;
+  z-index:11;
 }
 .bnav-add{
   width:54px;
@@ -137,6 +150,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   justify-content:center;
   box-shadow:0 4px 14px rgba(29,158,117,.4);
   transition:transform .15s;
+  position:relative;
+  z-index:12;
 }
 .bnav-add:active{transform:scale(0.92);}
 
@@ -147,6 +162,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
   min-height:0;
+  padding-bottom:20px;
 }
 .scroll::-webkit-scrollbar{width:6px;}
 .scroll::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
@@ -340,6 +356,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   z-index:2;
   pointer-events:none;
 }
+/* フラグ付きのカードは、モザイクモード時にじんわり脈打って優先表示 */
+.card.mosaic.has-flag::before{
+  background:linear-gradient(135deg,rgba(232,163,61,.5),rgba(180,120,40,.6));
+  animation:flag-pulse 2.2s infinite ease-in-out;
+}
+@keyframes flag-pulse{
+  0%,100%{opacity:1;}
+  50%{opacity:0.7;}
+}
 
 /* 編集モード時のグリッド: ぐにゃぐにゃ揺れる */
 .grid.editing .card{
@@ -359,6 +384,47 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   outline:2px solid var(--g);
   outline-offset:-2px;
 }
+
+/* 編集モード完了ボタン */
+.edit-done{
+  position:absolute;
+  bottom:80px;
+  right:18px;
+  z-index:50;
+  background:var(--g);
+  color:white;
+  padding:10px 20px;
+  border-radius:24px;
+  font-size:13px;
+  font-weight:600;
+  box-shadow:0 4px 14px rgba(29,158,117,.4);
+  display:none;
+  align-items:center;
+  gap:6px;
+}
+.edit-done.on{display:flex;animation:fadeInUp 0.2s;}
+@keyframes fadeInUp{
+  from{opacity:0;transform:translateY(8px);}
+  to{opacity:1;transform:translateY(0);}
+}
+/* 編集モード時の削除ボタン (iOSのホーム画面みたいに) */
+.card-del{
+  position:absolute;
+  top:-6px;left:-6px;
+  width:22px;height:22px;
+  border-radius:50%;
+  background:#1a1a1a;
+  color:white;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:3;
+  box-shadow:0 1px 3px rgba(0,0,0,.3);
+}
+.grid.editing .card-del{display:flex;}
+.grid.editing .card{overflow:visible;}
+.grid.editing .card .ctxt,
+.grid.editing .card img{border-radius:2px;}
 
 /* ────────────────────────────────────────────
    FEED / REEL (縦スクロール)
@@ -667,7 +733,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   text-align:left;
 }
 .detail-action.ai{background:linear-gradient(135deg,#E8F5EF,#F0F9F4);}
-.detail-action.test{background:linear-gradient(135deg,#F0F4FF,#E6EEFF);}
 .detail-action.copy{background:var(--gl);}
 .detail-action-icon{
   width:36px;height:36px;
@@ -677,11 +742,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   flex-shrink:0;
 }
 .detail-action.ai .detail-action-icon{color:var(--g);}
-.detail-action.test .detail-action-icon{color:var(--sky);}
 .detail-action.copy .detail-action-icon{color:var(--gd);}
 .detail-action-text{flex:1;}
-.detail-action-title{font-size:13px;font-weight:600;color:var(--ink);}
-.detail-action-sub{font-size:11px;color:var(--ink2);margin-top:2px;}
+.detail-action-title{font-size:14px;font-weight:600;color:var(--ink);}
 
 /* メニュー */
 .menu{
@@ -771,48 +834,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;align-items:center;justify-content:center;
   flex-shrink:0;
 }
-
-.test-msg{
-  background:var(--surface);
-  border-radius:14px;
-  padding:14px;
-  margin-bottom:12px;
-  box-shadow:var(--shadow);
-}
-.test-num{
-  font-family:var(--font-en);
-  font-size:11px;
-  color:var(--g);
-  font-weight:600;
-  letter-spacing:0.05em;
-  margin-bottom:6px;
-}
-.test-q{font-size:14px;font-weight:600;margin-bottom:10px;line-height:1.6;}
-.test-input{
-  width:100%;
-  padding:8px 12px;
-  border:1px solid var(--line2);
-  border-radius:10px;
-  font-size:14px;
-  margin-bottom:8px;
-}
-.test-submit{
-  padding:7px 14px;
-  background:var(--g);
-  color:white;
-  border-radius:14px;
-  font-size:12px;
-  font-weight:500;
-}
-.test-result{
-  margin-top:8px;
-  padding:10px;
-  border-radius:8px;
-  font-size:13px;
-  line-height:1.5;
-}
-.test-result.correct{background:#E8F5EF;color:var(--gd);}
-.test-result.wrong{background:#FFE8E5;color:#A93020;}
 
 /* ────────────────────────────────────────────
    LIBRARY (公式棚) — シンプル化
@@ -1085,19 +1106,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 /* ────────────────────────────────────────────
    SETTINGS
    ──────────────────────────────────────────── */
-.set-block{
-  padding:14px 18px;
-  background:var(--surface);
-  border-bottom:0.5px solid var(--line);
-  font-size:12px;
-  color:var(--ink2);
-  line-height:1.7;
-}
-.set-block-title{
-  display:flex;align-items:center;gap:8px;
-  color:var(--g);font-weight:600;font-size:13px;
-  margin-bottom:6px;
-}
+/* (シンプル化により設定固有のスタイルは削除) */
 
 /* ────────────────────────────────────────────
    TOAST
@@ -1131,24 +1140,20 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="login-wrap">
     <div class="login-logo">Snap<em>In</em></div>
     <div class="login-tag">
-      写真と思考を<span class="accent">置いておく場所</span>。<br>
-      他人には見えない、あなたの知識庫。
+      写真とメモを置いておく場所。
     </div>
     <button class="login-card" data-action="login-personal">
       <div class="login-card-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
         個人としてはじめる
       </div>
-      <div class="login-card-desc">あなた専用の知識庫。完全非公開。誰にも見られません。</div>
     </button>
     <button class="login-card" data-action="login-official">
       <div class="login-card-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-6 9 6v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
         公式アカウントで入る
       </div>
-      <div class="login-card-desc">JUKEN CAMP 専用。生徒に向けた知識棚を公開できます。</div>
     </button>
-    <div style="padding:30px 0 14px;font-size:10px;color:var(--ink3);letter-spacing:0.05em;font-family:var(--font-en);">SnapIn — Knowledge, kept.</div>
   </div>
 </div>
 
@@ -1157,10 +1162,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="hdr">
     <div class="logo">Snap<em>In</em></div>
     <div class="hdr-icons">
-      <button data-action="toggle-mosaic" title="モザイクで思い出す" id="mosaic-btn">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>
+      <button data-action="toggle-mosaic" id="mosaic-btn" aria-label="思い出す">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" stroke-linecap="round"/></svg>
       </button>
-      <button data-action="toggle-edit" title="並べ替え" id="edit-btn">
+      <button data-action="toggle-edit" id="edit-btn" aria-label="並べ替え">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
       </button>
     </div>
@@ -1192,15 +1197,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="rs-head">
         <div class="rs-title">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-          今日見返したいカード
+          見返す
         </div>
-        <div class="rs-count"><span id="rs-count">0</span> CARDS</div>
+        <div class="rs-count"><span id="rs-count">0</span></div>
       </div>
       <div class="rs-body">
         <div class="rs-preview" id="rs-preview"></div>
         <div class="rs-cta">
-          見返す
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
         </div>
       </div>
     </div>
@@ -1210,10 +1214,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="empty-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.81.01L6 21"/></svg>
       </div>
-      <div class="empty-title">まだ何もありません</div>
-      <div class="empty-sub">わからない問題を写す。<br>覚えたいことをメモする。<br>あなたの知識庫はここからはじまります。</div>
+      <div class="empty-title">空っぽです</div>
+      <div class="empty-sub">右下の + から、写真かメモを<br>残してみてください。</div>
     </div>
   </div>
+
+  <button class="edit-done" id="edit-done" data-action="toggle-edit">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+    完了
+  </button>
 
   <div class="bnav" data-bnav="home"></div>
 </div>
@@ -1221,15 +1230,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <!-- ═════════════════════════════════════════════ LIBRARY -->
 <div class="screen" id="screen-library">
   <div class="hdr">
-    <div>
-      <div class="hdr-title">公式棚</div>
-      <div class="hdr-sub">JUKEN CAMP のライブラリ</div>
-    </div>
+    <div class="hdr-title">公式棚</div>
   </div>
   <div class="scroll">
-    <div class="lib-section">登録中</div>
     <div id="lib-subscribed"></div>
-    <div class="lib-section">おすすめ・新着</div>
+    <div class="lib-section">他の棚</div>
     <div id="lib-available"></div>
   </div>
   <div class="bnav" data-bnav="library"></div>
@@ -1279,7 +1284,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <button class="scope-chip" data-scope="list">リスト</button>
   </div>
   <div class="scroll" id="search-results">
-    <div class="search-hint">検索対象 — 自分の棚 + 公式棚</div>
   </div>
   <div class="bnav" data-bnav="search"></div>
 </div>
@@ -1338,7 +1342,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <button class="bhdr-back" data-action="back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
-    <div class="bhdr-title" id="chat-title">知識司書AI</div>
+    <div class="bhdr-title" id="chat-title">AI</div>
   </div>
   <div class="chat-body" id="chat-body"></div>
   <div class="chat-input">
@@ -1370,7 +1374,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <div class="hdr-title">設定</div>
   </div>
   <div class="scroll">
-    <div class="lib-section">あなた</div>
     <div class="lib-item">
       <div class="lib-avatar" id="set-avatar">?</div>
       <div class="lib-info">
@@ -1378,32 +1381,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
         <div class="lib-handle" id="set-mode">―</div>
       </div>
     </div>
-
-    <div class="lib-section">記憶定着の仕組み</div>
-    <div class="set-block">
-      SnapInは脳科学にもとづいています。<br><br>
-      ① <b>間隔反復</b> — カードは 1日後・3日後・1週間後・2週間後 にホーム上部にそっと現れます。<br>
-      ② <b>能動的想起</b> — モザイクボタン、復習モード、ミニテスト。「思い出す」練習が一番効きます。<br>
-      ③ <b>接触頻度</b> — 並んだカードを眺めるだけでも、脳は知識と再会します。
-    </div>
-
-    <div class="lib-section">プライバシー</div>
-    <div class="set-block">
-      <div class="set-block-title">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        あなたの棚は完全非公開です
-      </div>
-      他のユーザーから検索されることはありません。フォロー機能はありません。JUKEN CAMP管理者も中身を見ることはできません。
-    </div>
-
-    <div class="lib-section">SnapInについて</div>
-    <div class="set-block">
-      SnapInはSNSではありません。<br>
-      フォロワー、いいね、コメント、ランキング、おすすめアルゴリズム — これらは存在しません。<br><br>
-      あるのは、あなたの知識と、JUKEN CAMPからの教材棚だけです。
-    </div>
-
-    <div style="padding:20px 18px;">
+    <div style="padding:30px 18px 20px;">
       <button class="login-card" style="background:#FFF5F4;" data-action="logout">
         <div class="login-card-title" style="color:var(--rose);">ログアウト</div>
       </button>
@@ -1477,7 +1455,6 @@ const state={
   searchScope:'all',
   chatRef:null,
   chatLog:[],
-  miniTest:null,
   currentOfficial:null,
   editMode:false,
   mosaicMode:false,
@@ -1661,6 +1638,7 @@ function renderHome(){
   // ボタン状態
   $('edit-btn').classList.toggle('on',state.editMode);
   $('mosaic-btn').classList.toggle('on',state.mosaicMode);
+  $('edit-done').classList.toggle('on',state.editMode);
 }
 
 function renderReviewStrip(){
@@ -1695,6 +1673,7 @@ function renderGrid(el,cards,origin){
     const card=document.createElement('div');
     card.className='card '+c.type;
     if(state.mosaicMode && origin==='mine')card.classList.add('mosaic');
+    if(c.flagged && origin==='mine')card.classList.add('has-flag');
     card.dataset.idx=idx;
     card.dataset.origin=origin;
     card.dataset.id=c.id;
@@ -1721,6 +1700,10 @@ function renderGrid(el,cards,origin){
       const stage=c.stage||0;
       const dots=[0,1,2,3,4].map(i=>`<div class="dot ${i<stage?'on':''}"></div>`).join('');
       inner+=`<div class="card-stage">${dots}</div>`;
+    }
+    // 編集モード時の削除ボタン
+    if(origin==='mine'){
+      inner=`<button class="card-del" data-del="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></button>`+inner;
     }
     card.innerHTML=inner;
     el.appendChild(card);
@@ -1811,7 +1794,6 @@ function attachCardInteraction(card,gridEl){
           gridEl.classList.add('editing');
           $('edit-btn').classList.add('on');
           if(navigator.vibrate)navigator.vibrate(40);
-          toast('ドラッグで並べ替え。完了したらメニューバーをタップ');
         }
       },500);
     }
@@ -1911,12 +1893,26 @@ function attachCardInteraction(card,gridEl){
       }
       isDragging=false;
     }else if(!didMove){
-      // タップ → 詳細を開く
+      // タップ
+      // 編集モード時の削除ボタンか判定
+      if(ev.target && ev.target.closest('.card-del')){
+        const idx=parseInt(card.dataset.idx);
+        const c=state.cards[idx];
+        if(c){
+          if(confirm('このカードを削除しますか?')){
+            state.cards.splice(idx,1);
+            save();
+            renderHome();
+          }
+        }
+        return;
+      }
+      // 通常タップ → 詳細を開く (編集モード中はタップで詳細開かない)
+      if(state.editMode)return;
       const idx=parseInt(card.dataset.idx);
       const c=state.cards[idx];
       if(c){
         if(state.mosaicMode){
-          // モザイクモード時は、タップでそのカードのモザイクだけ解除→再タップで詳細
           if(card.classList.contains('mosaic')){
             card.classList.remove('mosaic');
           }else{
@@ -2069,8 +2065,7 @@ function renderUpload(){
         ${c.flagged?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4L19 7"/></svg>':''}
       </div>
       <div class="flag-toggle-text">
-        <div class="flag-toggle-title">これはまだ覚えていない</div>
-        <div class="flag-toggle-sub">復習で優先的に出てくる</div>
+        <div class="flag-toggle-title">まだ覚えていない</div>
       </div>
     `;
     flag.addEventListener('click',()=>{
@@ -2254,25 +2249,10 @@ function openDetail(c,origin){
       </div>
       <div class="detail-action-text">
         <div class="detail-action-title">自分の棚にコピー</div>
-        <div class="detail-action-sub">あとで編集も追加もできる</div>
       </div>
     `;
     copy.addEventListener('click',copyToShelf);
     actionsWrap.appendChild(copy);
-  }else if(c.type!=='list'){
-    const test=document.createElement('button');
-    test.className='detail-action test';
-    test.innerHTML=`
-      <div class="detail-action-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      </div>
-      <div class="detail-action-text">
-        <div class="detail-action-title">ミニテストを受ける</div>
-        <div class="detail-action-sub">AIが問題を作ります。思い出す練習が一番効きます</div>
-      </div>
-    `;
-    test.addEventListener('click',startMiniTest);
-    actionsWrap.appendChild(test);
   }
 
   const ai=document.createElement('button');
@@ -2282,15 +2262,14 @@ function openDetail(c,origin){
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
     </div>
     <div class="detail-action-text">
-      <div class="detail-action-title">このカードについてAIに聞く</div>
-      <div class="detail-action-sub">わからない単語、もっと知りたいこと</div>
+      <div class="detail-action-title">AIに聞く</div>
     </div>
   `;
   ai.addEventListener('click',askAI);
   actionsWrap.appendChild(ai);
 
   // メニューフラグテキスト更新
-  $('menu-flag-text').textContent=c.flagged?'「覚えた」にする':'「覚えてない」にする';
+  $('menu-flag-text').textContent=c.flagged?'覚えた、にする':'まだ覚えていない';
 
   goto('screen-detail');
 }
@@ -2358,10 +2337,12 @@ function renderLibrary(){
   const subList=$('lib-subscribed');
   const availList=$('lib-available');
 
-  if(subbed.length===0){
-    subList.innerHTML=`<div class="set-block" style="color:var(--ink3);">まだ登録している棚はありません</div>`;
-  }else{
-    subList.innerHTML='';
+  subList.innerHTML='';
+  if(subbed.length>0){
+    const h=document.createElement('div');
+    h.className='lib-section';
+    h.textContent='登録中';
+    subList.appendChild(h);
     subbed.forEach(s=>subList.appendChild(libItem(s,true)));
   }
   availList.innerHTML='';
@@ -2433,7 +2414,7 @@ function doSearch(){
   const q=$('search-q').value.trim().toLowerCase();
   const out=$('search-results');
   if(!q){
-    out.innerHTML=`<div class="search-hint">検索対象 — 自分の棚 + 公式棚</div>`;
+    out.innerHTML='';
     return;
   }
   const scope=state.searchScope;
@@ -2471,9 +2452,6 @@ function doSearch(){
   out.innerHTML='';
   const shelfHits=results.filter(r=>r.shelf && !r.card);
   if(shelfHits.length){
-    const h=document.createElement('div');
-    h.className='search-hint';h.textContent='公式棚';
-    out.appendChild(h);
     shelfHits.forEach(r=>{
       const el=libItem(r.shelf,state.subscribed.includes(r.shelf.id));
       out.appendChild(el);
@@ -2481,9 +2459,6 @@ function doSearch(){
   }
   const cardHits=results.filter(r=>r.card);
   if(cardHits.length){
-    const h=document.createElement('div');
-    h.className='search-hint';h.textContent=`カード (${cardHits.length})`;
-    out.appendChild(h);
     const grid=document.createElement('div');
     grid.className='grid';
     out.appendChild(grid);
@@ -2593,14 +2568,8 @@ function renderReviewCard(){
         <div class="review-done-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
         </div>
-        <h2>復習を終えました</h2>
-        <p>今日見たカードは、また数日後に<br>そっとここに現れます。</p>
-        <div class="review-done-stats">
-          <div class="rd-stat"><div class="n">${revStats.good+revStats.easy}</div><div class="l">OK</div></div>
-          <div class="rd-stat"><div class="n">${revStats.hard}</div><div class="l">あいまい</div></div>
-          <div class="rd-stat"><div class="n">${revStats.again}</div><div class="l">もう一度</div></div>
-        </div>
-        <button class="review-reveal" style="margin-top:30px;" id="rev-close-btn">棚に戻る</button>
+        <h2>おつかれさま</h2>
+        <button class="review-reveal" style="margin-top:24px;" id="rev-close-btn">棚に戻る</button>
       </div>
     `;
     $('rev-progress').style.width='100%';
@@ -2647,13 +2616,11 @@ function renderReviewCard(){
     }
     html+='</div>';
     stage.innerHTML=`
-      <div class="review-prompt">思い出した内容と合っていましたか?</div>
+      <div class="review-prompt">思い出せましたか?</div>
       ${html}
       <div class="review-actions">
-        <button class="review-btn again" data-grade="again"><span>もう一度</span><span class="sub">SOON</span></button>
-        <button class="review-btn hard" data-grade="hard"><span>あいまい</span><span class="sub">SAME</span></button>
-        <button class="review-btn good" data-grade="good"><span>覚えた</span><span class="sub">+1</span></button>
-        <button class="review-btn easy" data-grade="easy"><span>楽勝</span><span class="sub">+2</span></button>
+        <button class="review-btn again" data-grade="again"><span>もう一度</span></button>
+        <button class="review-btn good" data-grade="good"><span>覚えた</span></button>
       </div>
     `;
     stage.querySelectorAll('[data-grade]').forEach(b=>{
@@ -2676,8 +2643,7 @@ function askAI(){
   $('detail-menu').classList.remove('on');
   state.chatRef=state.current;
   state.chatLog=[];
-  state.miniTest=null;
-  $('chat-title').textContent='知識司書AI';
+  $('chat-title').textContent='AI';
   renderChat();
   goto('screen-chat');
 }
@@ -2722,123 +2688,7 @@ function demoAI(q,ref){
     else if(ref.image)prefix='写真を見ました。';
     else if(ref.type==='list')prefix='リストを見ました。';
   }
-  return prefix+'「'+q+'」についてですね。\n\n(デモ応答です。本番では Anthropic API を使い、保存したカードを文脈にした回答を返します。AIは知識司書として、必要な時だけ静かに答えます。)';
-}
-
-// ═══════════════════════════════════════════════════════════════
-// MINI TEST
-// ═══════════════════════════════════════════════════════════════
-function startMiniTest(){
-  const c=state.current;
-  if(!c)return;
-  state.chatRef=c;
-  state.chatLog=[];
-  state.miniTest={
-    questions:generateTestQuestions(c),
-    current:0,
-    answers:[],
-  };
-  $('chat-title').textContent='ミニテスト';
-  renderChat();
-  goto('screen-chat');
-  setTimeout(showNextTestQuestion,200);
-}
-
-function generateTestQuestions(c){
-  const text=c.text||c.title||'';
-  if(c.image && !text){
-    return [{q:'保存したこの写真には、何が写っていましたか?',a:'(写真を見て自分の言葉で説明)'}];
-  }
-  const sentences=text.split(/[。\n]/).filter(s=>s.trim().length>3);
-  const qs=[];
-  if(sentences.length>=1){
-    qs.push({q:'このメモの内容を、自分の言葉で説明してみてください。',a:text});
-  }
-  if(sentences.length>=2){
-    const s=sentences[0];
-    const words=(s.match(/[一-龥ァ-ヴa-zA-Z]+/g)||[]).filter(w=>w.length>=2);
-    if(words.length>0){
-      const key=words.sort((a,b)=>b.length-a.length)[0];
-      qs.push({q:s.replace(key,'＿＿＿')+' の空欄に入る言葉は?',a:key});
-    }
-  }
-  if(qs.length<3){
-    qs.push({q:'このカードで一番覚えておきたいポイントは何ですか?',a:'(自分の言葉で答える)'});
-  }
-  return qs.slice(0,3);
-}
-
-function showNextTestQuestion(){
-  const body=$('chat-body');
-  if(state.miniTest.current>=state.miniTest.questions.length){
-    const correct=state.miniTest.answers.filter(a=>a.correct).length;
-    const total=state.miniTest.questions.length;
-    const msg=document.createElement('div');
-    msg.className='msg a';
-    msg.innerHTML=`<div class="bubble">テストおつかれさまでした。<br><br>${correct}/${total} 正解。<br><br>${correct===total?'完璧です。次の復習は数日後にそっと棚に現れます。':'思い出せなかった部分は、また数日後に出てきます。'}</div>`;
-    body.appendChild(msg);
-    if(state.chatRef){
-      const grade=correct===total?'easy':correct>=Math.ceil(total*0.6)?'good':correct>0?'hard':'again';
-      applyReviewGrade(state.chatRef,grade);
-    }
-    state.miniTest=null;
-    body.scrollTop=body.scrollHeight;
-    return;
-  }
-  const idx=state.miniTest.current;
-  const q=state.miniTest.questions[idx];
-  const wrap=document.createElement('div');
-  wrap.className='test-msg';
-  wrap.innerHTML=`
-    <div class="test-num">問題 ${idx+1} / ${state.miniTest.questions.length}</div>
-    <div class="test-q">${esc(q.q)}</div>
-    <input class="test-input" placeholder="答えを入力 (またはわからない)">
-    <div style="display:flex;gap:6px;">
-      <button class="test-submit" data-act="ans">答える</button>
-      <button class="test-submit" style="background:var(--ink3);" data-act="skip">わからない</button>
-    </div>
-  `;
-  body.appendChild(wrap);
-  body.scrollTop=body.scrollHeight;
-  const inp=wrap.querySelector('.test-input');
-  setTimeout(()=>inp.focus(),100);
-  const submit=()=>{
-    const v=inp.value.trim();
-    if(!v)return skip();
-    const correct=judgeAnswer(v,q.a);
-    state.miniTest.answers.push({user:v,correct});
-    const r=document.createElement('div');
-    r.className='test-result '+(correct?'correct':'wrong');
-    r.innerHTML=correct?'<b>正解</b><br>よく覚えていました。':`<b>もう一度確認</b><br>あなたの答え: ${esc(v)}<br>正解: ${esc(q.a.slice(0,100))}`;
-    wrap.appendChild(r);
-    inp.disabled=true;
-    wrap.querySelectorAll('button').forEach(b=>b.style.display='none');
-    state.miniTest.current++;
-    setTimeout(showNextTestQuestion,500);
-  };
-  const skip=()=>{
-    state.miniTest.answers.push({user:'(スキップ)',correct:false});
-    const r=document.createElement('div');
-    r.className='test-result wrong';
-    r.innerHTML=`<b>答え</b><br>${esc(q.a.slice(0,150))}`;
-    wrap.appendChild(r);
-    inp.disabled=true;
-    wrap.querySelectorAll('button').forEach(b=>b.style.display='none');
-    state.miniTest.current++;
-    setTimeout(showNextTestQuestion,500);
-  };
-  inp.addEventListener('keydown',e=>{if(e.key==='Enter')submit();});
-  wrap.querySelector('[data-act="ans"]').addEventListener('click',submit);
-  wrap.querySelector('[data-act="skip"]').addEventListener('click',skip);
-}
-
-function judgeAnswer(user,answer){
-  if(answer.startsWith('(') && answer.endsWith(')'))return user.length>=3;
-  const keys=(answer.match(/[一-龥ァ-ヴa-zA-Z0-9]+/g)||[]).filter(w=>w.length>=2);
-  if(keys.length===0)return user.length>=2;
-  const userLower=user.toLowerCase();
-  const hits=keys.filter(k=>userLower.includes(k.toLowerCase())).length;
-  return hits>=Math.max(1,Math.floor(keys.length*0.3));
+  return prefix+'「'+q+'」についてですね。\n\n(デモ応答です。本番では Anthropic API を使って、保存したカードを文脈にした回答を返します。)';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2881,17 +2731,11 @@ function setView(v){
 function toggleEditMode(){
   state.editMode=!state.editMode;
   renderHome();
-  if(state.editMode){
-    toast('ドラッグで並べ替え。完了したら✓');
-  }
 }
 
 function toggleMosaic(){
   state.mosaicMode=!state.mosaicMode;
   renderHome();
-  if(state.mosaicMode){
-    toast('カードがモザイクに。タップで開く');
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════
