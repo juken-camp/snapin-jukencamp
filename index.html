@@ -347,15 +347,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 /* SortableJS — 長押しで持ち上がった瞬間 */
 .card.sortable-chosen{
   box-shadow:0 6px 18px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.12);
-  transform:scale(1.04);
   z-index:2;
   cursor:grabbing;
 }
-/* SortableJS — ドラッグ中の実体(指に追従) */
-.card.sortable-drag{
+/* SortableJS — forceFallback時、指に追従するクローン要素 */
+.card.sortable-fallback{
   box-shadow:0 12px 32px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.18);
   opacity:1 !important;
   transform:scale(1.05);
+  z-index:9999;
+}
+/* SortableJS — ドラッグ中の実体 */
+.card.sortable-drag{
+  opacity:1 !important;
 }
 /* SortableJS — 元位置のゴースト(透明にする) */
 .card.sortable-ghost{
@@ -2010,6 +2014,8 @@ function renderGrid(el,cards,origin){
         animation:180,
         delay:350,
         delayOnTouchOnly:true,
+        forceFallback:true,
+        fallbackTolerance:3,
         ghostClass:'sortable-ghost',
         chosenClass:'sortable-chosen',
         dragClass:'sortable-drag',
