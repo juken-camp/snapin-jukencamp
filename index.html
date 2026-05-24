@@ -1945,6 +1945,7 @@ function renderGrid(el,cards,origin){
     card.className='card '+c.type;
     if(state.mosaicMode && origin==='mine')card.classList.add('mosaic');
     card.dataset.idx=idx;
+    card.dataset.id=c.id;
     card.dataset.origin=origin;
 
     let inner='';
