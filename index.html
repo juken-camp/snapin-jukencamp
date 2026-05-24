@@ -279,7 +279,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   gap:2px;
   padding:2px;
 }
-.grid.editing{padding:2px;}
 .card{
   aspect-ratio:1;
   background:var(--surface);
@@ -344,69 +343,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   pointer-events:none;
 }
 
-/* 編集モード */
-.grid.editing .card{
-  animation:wiggle 0.5s infinite ease-in-out;
-  cursor:grab;
-  overflow:visible;
-  box-shadow:0 3px 10px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.12);
-  transition:transform 0.28s cubic-bezier(0.2,0.7,0.3,1);
-  z-index:1;
+/* ドラッグ中(長押しで持ち上がった状態): そのカードだけ影が出る */
+.card.lifting{
+  box-shadow:0 6px 18px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.12);
+  z-index:2;
+  transition:box-shadow 0.18s, transform 0.18s;
 }
-.grid.editing .card:nth-child(odd){animation-delay:-0.25s;}
-.grid.editing .card:nth-child(3n){animation-delay:-0.12s;}
-@keyframes wiggle{
-  0%,100%{transform:rotate(-0.8deg);}
-  50%{transform:rotate(0.8deg);}
-}
-.grid.editing .card.dragging{animation:none;opacity:0.35;box-shadow:none;}
-.grid.editing .card.slide-in{animation:none;}
-.grid.editing .card.drop-here{outline:2px solid var(--g);outline-offset:-2px;}
-/* 編集モードで overflow:visible にした分、内側の角丸を継承 */
-.grid.editing .card>img,
-.grid.editing .card>.ctxt{
-  border-radius:2px;
-}
-
-/* 編集モードの削除ボタン — 最前面に */
-.card-del{
-  position:absolute;
-  top:-9px;left:-9px;
-  width:24px;height:24px;
-  border-radius:50%;
-  background:#1a1a1a;
-  color:white;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:999;
-  box-shadow:0 2px 6px rgba(0,0,0,.4);
-  border:2px solid white;
-}
-.grid.editing .card-del{display:flex;}
-
-/* 編集モード完了ボタン */
-.edit-done{
-  position:absolute;
-  bottom:80px;
-  right:18px;
-  z-index:50;
-  background:var(--g);
-  color:white;
-  padding:11px 22px;
-  border-radius:24px;
-  font-size:13px;
-  font-weight:600;
-  box-shadow:0 4px 14px rgba(29,158,117,.4);
-  display:none;
-  align-items:center;
-  gap:6px;
-}
-.edit-done.on{display:flex;animation:fadeInUp 0.2s;}
-@keyframes fadeInUp{
-  from{opacity:0;transform:translateY(8px);}
-  to{opacity:1;transform:translateY(0);}
-}
+.card.dragging{opacity:0;}
+/* 入れ替えで移動するカードは滑らかに */
+.grid .card{transition:transform 0.28s cubic-bezier(0.2,0.7,0.3,1);}
 
 /* FEED */
 .feed{scroll-snap-type:y mandatory;background:#000;overflow-y:auto;}
@@ -1320,9 +1265,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button data-action="toggle-mosaic" id="mosaic-btn" aria-label="思い出す">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" stroke-linecap="round"/></svg>
       </button>
-      <button data-action="toggle-edit" id="edit-btn" aria-label="並べ替え">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-      </button>
       <button data-action="logout-confirm" aria-label="ログアウト">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
       </button>
@@ -1371,11 +1313,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="empty-sub">上の入力欄か、右下の + から<br>残してみてください。</div>
     </div>
   </div>
-
-  <button class="edit-done" id="edit-done" data-action="toggle-edit">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
-    完了
-  </button>
 
   <div class="bnav" data-bnav="home"></div>
 </div>
@@ -1553,6 +1490,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="sheet-opt-title">メモ</div>
       <div class="sheet-opt-desc">テキストだけ</div>
     </button>
+    <button class="sheet-opt" data-action="create-file">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.41 17.41a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg>
+      </div>
+      <div class="sheet-opt-title">ファイル</div>
+      <div class="sheet-opt-desc">保存した画像から</div>
+    </button>
     <button class="sheet-opt" data-action="create-list">
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -1565,6 +1509,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <div class="toast" id="toast">保存しました</div>
 <input type="file" id="file-input" accept="image/*" style="display:none;">
+<input type="file" id="file-input-any" accept=".png,.jpg,.jpeg,.gif,.webp,.heic,.heif" style="display:none;">
 
 </div><!-- .app -->
 
@@ -1585,7 +1530,6 @@ const state={
   searchScope:'all',
   chatRef:null,
   currentOfficial:null,
-  editMode:false,
   mosaicMode:false,
   detailAiMode:false,  // 詳細画面でAI送信モードか
   photoMode:null,      // クイック写真撮影中 'photo' | 'photonote' | null
@@ -1984,16 +1928,13 @@ function renderHome(){
       grid.classList.remove('hide');
       feed.classList.add('hide');
       renderGrid(grid,state.cards,'mine');
-      grid.classList.toggle('editing',state.editMode);
     }else{
       feed.classList.remove('hide');
       grid.classList.add('hide');
       renderFeed(feed,state.cards);
     }
   }
-  $('edit-btn').classList.toggle('on',state.editMode);
   $('mosaic-btn').classList.toggle('on',state.mosaicMode);
-  $('edit-done').classList.toggle('on',state.editMode);
 }
 
 // ═══ GRID ═══
@@ -2024,9 +1965,6 @@ function renderGrid(el,cards,origin){
       ).join('');
       const title=c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;color:var(--gd);">${esc(c.title)}</div>`:'';
       inner=`<div class="ctxt">${title}${items}</div>`;
-    }
-    if(origin==='mine'){
-      inner=`<button class="card-del"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></button>`+inner;
     }
     card.innerHTML=inner;
     el.appendChild(card);
@@ -2075,7 +2013,7 @@ function renderFeed(el,cards){
 
 // ═══ CARD INTERACTION (drag + tap) ═══
 function attachCard(card,gridEl){
-  let startX=0,startY=0,didMove=false,isDragging=false;
+  let startX=0,startY=0,didMove=false,isDragging=false,lifted=false;
   let pressTimer=null,ghost=null;
   let lastSwapTarget=null; // 連続スワップ防止
   let swapCooldown=false;
@@ -2086,11 +2024,19 @@ function attachCard(card,gridEl){
     return [ev.clientX,ev.clientY];
   };
 
+  // 長押しで「持ち上がった」状態に: そのカードだけに影が出る
+  const lift=()=>{
+    lifted=true;
+    card.classList.add('lifting');
+    if(navigator.vibrate)navigator.vibrate(15);
+  };
+
+  // 持ち上がった状態から実際にドラッグを開始(指が動いた瞬間)
   const startDrag=()=>{
     isDragging=true;
-    if(navigator.vibrate)navigator.vibrate(20);
     const rect=card.getBoundingClientRect();
     ghost=card.cloneNode(true);
+    ghost.classList.remove('lifting');
     Object.assign(ghost.style,{
       position:'fixed',
       left:rect.left+'px',
@@ -2111,18 +2057,30 @@ function attachCard(card,gridEl){
 
   const onMove=ev=>{
     const [x,y]=xy(ev);
-    if(Math.abs(x-startX)>6 || Math.abs(y-startY)>6)didMove=true;
+    const moved=Math.abs(x-startX)>6 || Math.abs(y-startY)>6;
 
-    if(!isDragging){
-      if(didMove && !state.editMode){clearTimeout(pressTimer);}
+    // まだ持ち上がっていない: 動いたら長押しタイマーをキャンセル(スクロール優先)
+    if(!lifted){
+      if(moved){
+        didMove=true;
+        clearTimeout(pressTimer);
+      }
       return;
     }
+
+    // 持ち上がっているがまだドラッグ開始していない: 動き出したらドラッグ開始
+    if(!isDragging){
+      if(moved)startDrag();
+      return;
+    }
+
+    // ドラッグ中
     ev.preventDefault();
     const rect=ghost.getBoundingClientRect();
     ghost.style.left=(x-rect.width/2)+'px';
     ghost.style.top=(y-rect.height/2)+'px';
 
-    // 指の下のカードを検出して、その位置と入れ替え (Google Keep風)
+    // 指の下のカードを検出して、その位置と入れ替え
     if(swapCooldown)return;
     ghost.style.display='none';
     const target=document.elementFromPoint(x,y);
@@ -2131,9 +2089,8 @@ function attachCard(card,gridEl){
     if(!target)return;
     const t=target.closest('.card');
     if(!t || t===card || t.parentElement!==gridEl)return;
-    if(t===lastSwapTarget)return; // 同じカードで連続スワップ防止
+    if(t===lastSwapTarget)return;
 
-    // ★ リアルタイム入れ替え
     const fromIdx=parseInt(card.dataset.idx);
     const toIdx=parseInt(t.dataset.idx);
     if(isNaN(fromIdx) || isNaN(toIdx))return;
@@ -2147,14 +2104,14 @@ function attachCard(card,gridEl){
     });
 
     // state.cards の順序を入れ替え
-    const moved=state.cards.splice(fromIdx,1)[0];
-    state.cards.splice(toIdx,0,moved);
+    const movedCard=state.cards.splice(fromIdx,1)[0];
+    state.cards.splice(toIdx,0,movedCard);
     save();
 
     lastSwapTarget=t;
     swapCooldown=true;
 
-    // グリッドを再描画 (ドラッグ中のカードは引き続きドラッグ状態を維持)
+    // グリッドを再描画
     renderGrid(gridEl,state.cards,'mine');
 
     // FLIP: 再描画後、位置が変わったカードを旧位置に瞬時に戻し、次フレームで本来位置へ滑らせる
@@ -2167,11 +2124,8 @@ function attachCard(card,gridEl){
       const dx=before.left-after.left;
       const dy=before.top-after.top;
       if(dx===0 && dy===0)return;
-      // 旧位置へ瞬時に移動 (animationとtransitionを一旦切る)
-      el.classList.add('slide-in');
       el.style.transition='none';
       el.style.transform=`translate(${dx}px,${dy}px)`;
-      // 次フレームで本来位置へ滑らせる
       requestAnimationFrame(()=>{
         requestAnimationFrame(()=>{
           el.style.transition='transform 0.28s cubic-bezier(0.2,0.7,0.3,1)';
@@ -2179,7 +2133,6 @@ function attachCard(card,gridEl){
           setTimeout(()=>{
             el.style.transition='';
             el.style.transform='';
-            el.classList.remove('slide-in');
           },300);
         });
       });
@@ -2189,15 +2142,10 @@ function attachCard(card,gridEl){
     const newCard=gridEl.querySelector(`.card[data-id="${draggingId}"]`);
     if(newCard){
       newCard.classList.add('dragging');
-      // attachCardで上書きされたリスナーは新しいカードに付くが、
-      // 現在のドラッグセッションは古い card 変数を使い続ける
-      // → 古いcardの位置情報は無効になるので、card変数を更新
       card=newCard;
     }
 
-    // クールダウン (FLIPアニメーション完了まで連続スワップを防ぐ)
     setTimeout(()=>{swapCooldown=false;},220);
-    // 別のカードに指が移動したら再びスワップ可能に
     setTimeout(()=>{lastSwapTarget=null;},260);
   };
 
@@ -2211,29 +2159,23 @@ function attachCard(card,gridEl){
 
     if(isDragging){
       if(ghost){ghost.remove();ghost=null;}
-      // 既にリアルタイムで入れ替えが完了しているので、dragging クラスを外すだけ
-      const draggingCards=gridEl.querySelectorAll('.card.dragging');
-      draggingCards.forEach(c=>c.classList.remove('dragging'));
+      gridEl.querySelectorAll('.card.dragging').forEach(c=>c.classList.remove('dragging'));
+      gridEl.querySelectorAll('.card.lifting').forEach(c=>c.classList.remove('lifting'));
       isDragging=false;
+      lifted=false;
       return;
     }
+
+    // 持ち上がったがドラッグしなかった: 影を消す
+    if(lifted){
+      card.classList.remove('lifting');
+      lifted=false;
+      return;
+    }
+
     if(didMove)return;
 
-    // 削除ボタン判定
-    if(ev.target && ev.target.closest('.card-del')){
-      const idx=parseInt(card.dataset.idx);
-      const c=state.cards[idx];
-      if(c && confirm('削除しますか?')){
-        state.cards.splice(idx,1);
-        save();
-        renderHome();
-      }
-      return;
-    }
-
-    // 編集モード中は詳細を開かない
-    if(state.editMode)return;
-
+    // 普通のタップ: 詳細を開く
     const idx=parseInt(card.dataset.idx);
     const c=state.cards[idx];
     if(c){
@@ -2251,25 +2193,13 @@ function attachCard(card,gridEl){
 
   const onStart=ev=>{
     const [x,y]=xy(ev);
-    startX=x;startY=y;didMove=false;isDragging=false;
+    startX=x;startY=y;didMove=false;isDragging=false;lifted=false;
 
-    if(state.editMode){
-      // 編集モード中: 短い長押しでドラッグ開始
-      pressTimer=setTimeout(()=>{
-        if(!didMove)startDrag();
-      },100);
-    }else{
-      // 通常モード: 長押しで編集モードへ
-      pressTimer=setTimeout(()=>{
-        if(!didMove){
-          state.editMode=true;
-          gridEl.classList.add('editing');
-          $('edit-btn').classList.add('on');
-          $('edit-done').classList.add('on');
-          if(navigator.vibrate)navigator.vibrate(40);
-        }
-      },500);
-    }
+    // 長押しで持ち上がる
+    pressTimer=setTimeout(()=>{
+      if(!didMove)lift();
+    },400);
+
     document.addEventListener('mousemove',onMove,{passive:false});
     document.addEventListener('mouseup',onEnd);
     document.addEventListener('touchmove',onMove,{passive:false});
@@ -2305,6 +2235,11 @@ function startCreate(type){
     // iOS Safari は accept="image/*" で標準シート(ライブラリ/撮影/ファイル)を出す
     state.photoMode=type;
     $('file-input').click();
+  }else if(type==='file'){
+    // 「ファイル」: Files アプリから画像を選ぶ(カメラロール以外の画像)
+    // 拡張子指定にすることで iOS は写真ライブラリ経由ではなく Files を直接開く
+    state.photoMode='photo';
+    $('file-input-any').click();
   }else if(type==='note'){
     renderUpload();
     goto('screen-upload');
@@ -2329,6 +2264,14 @@ function onFilePick(e){
   if(!file){
     state.current=null;
     state.photoMode=null;
+    return;
+  }
+  // 画像ファイルでなければ弾く (Filesアプリから非画像を選んだ場合の保険)
+  if(!file.type.startsWith('image/')){
+    toast('画像ファイルを選んでください');
+    state.current=null;
+    state.photoMode=null;
+    e.target.value='';
     return;
   }
   // 画像を圧縮 (長辺1280px、JPEG 0.85品質)
@@ -3364,10 +3307,6 @@ function setView(v){
   renderHome();
 }
 
-function toggleEditMode(){
-  state.editMode=!state.editMode;
-  renderHome();
-}
 function toggleMosaic(){
   state.mosaicMode=!state.mosaicMode;
   renderHome();
@@ -3398,13 +3337,13 @@ document.addEventListener('click',e=>{
     case 'close-add':closeAddSheet();break;
     case 'create-photo':startCreate('photo');break;
     case 'create-note':startCreate('note');break;
+    case 'create-file':startCreate('file');break;
     case 'create-list':startCreate('list');break;
     case 'save-card':saveCard();break;
     case 'cancel-upload':cancelUpload();break;
     case 'goto-search':goto('screen-search');break;
     case 'view-grid':setView('grid');break;
     case 'view-reel':setView('reel');break;
-    case 'toggle-edit':toggleEditMode();break;
     case 'toggle-mosaic':toggleMosaic();break;
     case 'start-review':startReview();break;
     case 'close-review':closeReview();break;
@@ -3460,6 +3399,7 @@ $('detail-input').addEventListener('keydown',e=>{
 });
 
 $('file-input').addEventListener('change',onFilePick);
+$('file-input-any').addEventListener('change',onFilePick);
 
 // 起動
 setupNavs();
