@@ -54,28 +54,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .hdr-title{font-size:17px;font-weight:600;}
 .logo{
-  font-family:var(--font-en);
-  font-size:24px;
-  font-weight:600;
-  letter-spacing:-0.02em;
+  font-family:-apple-system,"Helvetica Neue",sans-serif;
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:-0.01em;
   display:flex;
   align-items:baseline;
   gap:6px;
+  color:var(--ink);
 }
 .logo em{
   color:var(--g);
-  font-style:italic;
-  position:relative;
-  padding:0 1px;
-}
-.logo em::after{
-  content:"";
-  position:absolute;
-  left:0;right:0;bottom:-2px;
-  height:2px;
-  background:var(--g);
-  border-radius:2px;
-  opacity:0.85;
+  font-style:normal;
+  font-weight:700;
 }
 .logo-by{
   font-family:-apple-system,sans-serif;
@@ -83,7 +74,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-weight:500;
   color:var(--ink3);
   letter-spacing:0.05em;
-  text-transform:uppercase;
   font-style:normal;
 }
 .hdr-icons{display:flex;gap:4px;color:var(--ink2);align-items:center;}
@@ -95,6 +85,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .hdr-icons button:active{color:var(--g);transform:scale(0.92);}
 .hdr-icons button.on{color:var(--g);background:var(--gl);}
+/* 目のマーク: 通常は普通の目、モザイクON時は斜線入り */
+#mosaic-btn .eye-off{display:none;}
+#mosaic-btn.on .eye-on{display:none;}
+#mosaic-btn.on .eye-off{display:block;}
 
 /* 戻るヘッダー */
 .bhdr{
@@ -348,25 +342,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   pointer-events:none;
 }
 
-/* モザイク */
+/* モザイク (思い出すモード): うっすらヒントが見える程度 */
 .card.mosaic .ctxt,
-.card.mosaic img{filter:blur(14px) saturate(1.2);}
+.card.mosaic img{filter:blur(5px) saturate(0.9);}
 .card.mosaic::before{
   content:"";
   position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(29,158,117,.4),rgba(15,110,86,.5));
+  background:linear-gradient(135deg,rgba(29,158,117,.15),rgba(15,110,86,.18));
   pointer-events:none;
   z-index:1;
-}
-.card.mosaic::after{
-  content:"?";
-  position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  color:white;font-size:24px;font-weight:700;
-  font-family:var(--font-en);
-  text-shadow:0 2px 8px rgba(0,0,0,.3);
-  z-index:2;
-  pointer-events:none;
 }
 
 /* FEED */
@@ -1043,39 +1027,29 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--surface);
 }
 .login-logo{
-  font-family:var(--font-en);
-  font-size:52px;
-  font-weight:600;
-  letter-spacing:-0.03em;
-  margin-bottom:6px;
+  font-family:-apple-system,"Helvetica Neue",sans-serif;
+  font-size:48px;
+  font-weight:700;
+  letter-spacing:-0.02em;
+  margin-bottom:4px;
   display:flex;
   align-items:baseline;
   justify-content:center;
+  color:var(--ink);
 }
 .login-logo em{
   color:var(--g);
-  font-style:italic;
-  position:relative;
-  padding:0 2px;
-}
-.login-logo em::after{
-  content:"";
-  position:absolute;
-  left:0;right:0;bottom:-3px;
-  height:4px;
-  background:var(--g);
-  border-radius:3px;
-  opacity:0.85;
+  font-style:normal;
+  font-weight:700;
 }
 .login-by{
   font-family:-apple-system,sans-serif;
   font-size:11px;
   font-weight:500;
   color:var(--ink3);
-  letter-spacing:0.15em;
-  text-transform:uppercase;
+  letter-spacing:0.1em;
   text-align:center;
-  margin-bottom:24px;
+  margin-bottom:28px;
 }
 .login-tag{
   font-size:13px;
@@ -1330,7 +1304,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <!-- LOGIN -->
 <div class="screen active" id="screen-login">
   <div class="login-wrap">
-    <div class="login-logo">Snap<em>In</em></div>
+    <div class="login-logo">Snap<em>in</em></div>
     <div class="login-by">by Juken Camp</div>
     <div class="login-tag">写真とメモを置いておく場所。</div>
     <button class="login-card" data-action="login-personal">
@@ -1351,10 +1325,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <!-- HOME -->
 <div class="screen" id="screen-home">
   <div class="hdr">
-    <div class="logo">Snap<em>In</em><span class="logo-by">by Juken Camp</span></div>
+    <div class="logo">Snap<em>in</em><span class="logo-by">by Juken Camp</span></div>
     <div class="hdr-icons">
       <button data-action="toggle-mosaic" id="mosaic-btn" aria-label="思い出す">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" stroke-linecap="round"/></svg>
+        <svg class="eye-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" stroke-linecap="round"/></svg>
       </button>
       <button data-action="logout-confirm" aria-label="ログアウト">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
