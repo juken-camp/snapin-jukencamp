@@ -1544,6 +1544,7 @@ const state={
   mosaicMode:false,
   detailAiMode:false,  // 詳細画面でAI送信モードか
   photoMode:null,      // クイック写真撮影中 'photo' | 'photonote' | null
+  isDragging:false,    // SortableJSでドラッグ中(再描画を止めるため)
 };
 
 function save(){
@@ -1925,6 +1926,8 @@ function getTodayOpenTasks(){
 
 // ═══ HOME ═══
 function renderHome(){
+  // ドラッグ中は再描画しない(SortableJSの動作を壊さないため)
+  if(state.isDragging)return;
   const empty=$('empty-home');
   const grid=$('grid-home');
   const feed=$('feed-home');
@@ -2001,23 +2004,21 @@ function renderGrid(el,cards,origin){
     });
 
     // SortableJS で長押しドラッグ&ドロップ並べ替え
-    // 既存のインスタンスがあれば破棄してから作り直す
     if(el._sortable){el._sortable.destroy();el._sortable=null;}
     if(window.Sortable){
       el._sortable=Sortable.create(el,{
-        animation:200,
-        delay:400,
+        animation:180,
+        delay:350,
         delayOnTouchOnly:true,
-        touchStartThreshold:5,
         ghostClass:'sortable-ghost',
         chosenClass:'sortable-chosen',
         dragClass:'sortable-drag',
-        forceFallback:true, // iOS Safari でも一貫した挙動にする
-        fallbackTolerance:5,
         onStart:()=>{
+          state.isDragging=true;
           if(navigator.vibrate)navigator.vibrate(15);
         },
         onEnd:evt=>{
+          state.isDragging=false;
           if(evt.oldIndex===evt.newIndex)return;
           // state.cards の順序を実際に入れ替える
           const moved=state.cards.splice(evt.oldIndex,1)[0];
