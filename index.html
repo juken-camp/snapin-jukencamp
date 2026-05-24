@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="SnapIn">
 <link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"SnapIn","short_name":"SnapIn","start_url":"./","display":"standalone","background_color":"%23FAFAF7","theme_color":"%231D9E75","orientation":"portrait","icons":[{"src":"data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22%3E%3Crect width=%22512%22 height=%22512%22 rx=%22112%22 fill=%22%231D9E75%22/%3E%3Ctext x=%22256%22 y=%22360%22 font-family=%22Georgia,serif%22 font-size=%22300%22 font-weight=%22600%22 font-style=%22italic%22 fill=%22white%22 text-anchor=%22middle%22%3ES%3C/text%3E%3C/svg%3E","sizes":"512x512","type":"image/svg+xml"}]}'>
 <link rel="apple-touch-icon" href='data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="%231D9E75"/><text x="256" y="360" font-family="Georgia,serif" font-size="300" font-weight="600" font-style="italic" fill="white" text-anchor="middle">S</text></svg>'>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
 :root{
   --g:#1D9E75; --gl:#E8F5EF; --gd:#0F6E56;
@@ -343,15 +344,25 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   pointer-events:none;
 }
 
-/* ドラッグ中(長押しで持ち上がった状態): そのカードだけ影が出る */
-.card.lifting{
+/* SortableJS — 長押しで持ち上がった瞬間 */
+.card.sortable-chosen{
   box-shadow:0 6px 18px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.12);
+  transform:scale(1.04);
   z-index:2;
-  transition:box-shadow 0.18s, transform 0.18s;
+  cursor:grabbing;
 }
-.card.dragging{opacity:0;}
-/* 入れ替えで移動するカードは滑らかに */
-.grid .card{transition:transform 0.28s cubic-bezier(0.2,0.7,0.3,1);}
+/* SortableJS — ドラッグ中の実体(指に追従) */
+.card.sortable-drag{
+  box-shadow:0 12px 32px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.18);
+  opacity:1 !important;
+  transform:scale(1.05);
+}
+/* SortableJS — 元位置のゴースト(透明にする) */
+.card.sortable-ghost{
+  opacity:0;
+}
+/* グリッドのカードはアニメーション可能に */
+.grid .card{transition:transform 0.18s, box-shadow 0.18s;}
 
 /* FEED */
 .feed{scroll-snap-type:y mandatory;background:#000;overflow-y:auto;}
@@ -1972,7 +1983,51 @@ function renderGrid(el,cards,origin){
   });
 
   if(origin==='mine'){
-    el.querySelectorAll('.card').forEach(card=>attachCard(card,el));
+    // タップで詳細画面を開く
+    el.querySelectorAll('.card').forEach(card=>{
+      card.addEventListener('click',()=>{
+        const c=state.cards[parseInt(card.dataset.idx)];
+        if(!c)return;
+        if(state.mosaicMode){
+          if(card.classList.contains('mosaic')){
+            card.classList.remove('mosaic');
+          }else{
+            openDetail(c,'mine');
+          }
+        }else{
+          openDetail(c,'mine');
+        }
+      });
+    });
+
+    // SortableJS で長押しドラッグ&ドロップ並べ替え
+    // 既存のインスタンスがあれば破棄してから作り直す
+    if(el._sortable){el._sortable.destroy();el._sortable=null;}
+    if(window.Sortable){
+      el._sortable=Sortable.create(el,{
+        animation:200,
+        delay:400,
+        delayOnTouchOnly:true,
+        touchStartThreshold:5,
+        ghostClass:'sortable-ghost',
+        chosenClass:'sortable-chosen',
+        dragClass:'sortable-drag',
+        forceFallback:true, // iOS Safari でも一貫した挙動にする
+        fallbackTolerance:5,
+        onStart:()=>{
+          if(navigator.vibrate)navigator.vibrate(15);
+        },
+        onEnd:evt=>{
+          if(evt.oldIndex===evt.newIndex)return;
+          // state.cards の順序を実際に入れ替える
+          const moved=state.cards.splice(evt.oldIndex,1)[0];
+          state.cards.splice(evt.newIndex,0,moved);
+          save();
+          // インデックスを振り直す
+          el.querySelectorAll('.card').forEach((c,i)=>{c.dataset.idx=i;});
+        },
+      });
+    }
   }else{
     el.querySelectorAll('.card').forEach(card=>{
       card.addEventListener('click',()=>{
@@ -2012,205 +2067,6 @@ function renderFeed(el,cards){
   });
 }
 
-// ═══ CARD INTERACTION (drag + tap) ═══
-function attachCard(card,gridEl){
-  let startX=0,startY=0,didMove=false,isDragging=false,lifted=false;
-  let pressTimer=null,ghost=null;
-  let lastSwapTarget=null; // 連続スワップ防止
-  let swapCooldown=false;
-
-  const xy=ev=>{
-    if(ev.touches&&ev.touches.length)return [ev.touches[0].clientX,ev.touches[0].clientY];
-    if(ev.changedTouches&&ev.changedTouches.length)return [ev.changedTouches[0].clientX,ev.changedTouches[0].clientY];
-    return [ev.clientX,ev.clientY];
-  };
-
-  // 長押しで「持ち上がった」状態に: そのカードだけに影が出る
-  const lift=()=>{
-    lifted=true;
-    card.classList.add('lifting');
-    if(navigator.vibrate)navigator.vibrate(15);
-  };
-
-  // 持ち上がった状態から実際にドラッグを開始(指が動いた瞬間)
-  const startDrag=()=>{
-    isDragging=true;
-    const rect=card.getBoundingClientRect();
-    ghost=card.cloneNode(true);
-    ghost.classList.remove('lifting');
-    Object.assign(ghost.style,{
-      position:'fixed',
-      left:rect.left+'px',
-      top:rect.top+'px',
-      width:rect.width+'px',
-      height:rect.height+'px',
-      zIndex:'1000',
-      opacity:'1',
-      pointerEvents:'none',
-      boxShadow:'0 12px 32px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.18)',
-      transform:'scale(1.05)',
-      transition:'none',
-      animation:'none',
-    });
-    document.body.appendChild(ghost);
-    card.classList.add('dragging');
-  };
-
-  const onMove=ev=>{
-    const [x,y]=xy(ev);
-    const moved=Math.abs(x-startX)>6 || Math.abs(y-startY)>6;
-
-    // まだ持ち上がっていない: 動いたら長押しタイマーをキャンセル(スクロール優先)
-    if(!lifted){
-      if(moved){
-        didMove=true;
-        clearTimeout(pressTimer);
-      }
-      return;
-    }
-
-    // 持ち上がっているがまだドラッグ開始していない: 動き出したらドラッグ開始
-    if(!isDragging){
-      if(moved)startDrag();
-      return;
-    }
-
-    // ドラッグ中
-    ev.preventDefault();
-    const rect=ghost.getBoundingClientRect();
-    ghost.style.left=(x-rect.width/2)+'px';
-    ghost.style.top=(y-rect.height/2)+'px';
-
-    // 指の下のカードを検出して、その位置と入れ替え
-    if(swapCooldown)return;
-    ghost.style.display='none';
-    const target=document.elementFromPoint(x,y);
-    ghost.style.display='';
-
-    if(!target)return;
-    const t=target.closest('.card');
-    if(!t || t===card || t.parentElement!==gridEl)return;
-    if(t===lastSwapTarget)return;
-
-    const fromIdx=parseInt(card.dataset.idx);
-    const toIdx=parseInt(t.dataset.idx);
-    if(isNaN(fromIdx) || isNaN(toIdx))return;
-
-    // FLIP: 再描画前に全カードの位置を記録
-    const draggingId=card.dataset.id;
-    const beforeRects=new Map();
-    gridEl.querySelectorAll('.card').forEach(el=>{
-      const id=el.dataset.id;
-      if(id && id!==draggingId)beforeRects.set(id,el.getBoundingClientRect());
-    });
-
-    // state.cards の順序を入れ替え
-    const movedCard=state.cards.splice(fromIdx,1)[0];
-    state.cards.splice(toIdx,0,movedCard);
-    save();
-
-    lastSwapTarget=t;
-    swapCooldown=true;
-
-    // グリッドを再描画
-    renderGrid(gridEl,state.cards,'mine');
-
-    // FLIP: 再描画後、位置が変わったカードを旧位置に瞬時に戻し、次フレームで本来位置へ滑らせる
-    gridEl.querySelectorAll('.card').forEach(el=>{
-      const id=el.dataset.id;
-      if(!id || id===draggingId)return;
-      const before=beforeRects.get(id);
-      if(!before)return;
-      const after=el.getBoundingClientRect();
-      const dx=before.left-after.left;
-      const dy=before.top-after.top;
-      if(dx===0 && dy===0)return;
-      el.style.transition='none';
-      el.style.transform=`translate(${dx}px,${dy}px)`;
-      requestAnimationFrame(()=>{
-        requestAnimationFrame(()=>{
-          el.style.transition='transform 0.28s cubic-bezier(0.2,0.7,0.3,1)';
-          el.style.transform='';
-          setTimeout(()=>{
-            el.style.transition='';
-            el.style.transform='';
-          },300);
-        });
-      });
-    });
-
-    // 新しい card 要素を見つけてドラッグ中扱いに
-    const newCard=gridEl.querySelector(`.card[data-id="${draggingId}"]`);
-    if(newCard){
-      newCard.classList.add('dragging');
-      card=newCard;
-    }
-
-    setTimeout(()=>{swapCooldown=false;},220);
-    setTimeout(()=>{lastSwapTarget=null;},260);
-  };
-
-  const onEnd=ev=>{
-    clearTimeout(pressTimer);
-    document.removeEventListener('mousemove',onMove);
-    document.removeEventListener('mouseup',onEnd);
-    document.removeEventListener('touchmove',onMove);
-    document.removeEventListener('touchend',onEnd);
-    document.removeEventListener('touchcancel',onEnd);
-
-    if(isDragging){
-      if(ghost){ghost.remove();ghost=null;}
-      gridEl.querySelectorAll('.card.dragging').forEach(c=>c.classList.remove('dragging'));
-      gridEl.querySelectorAll('.card.lifting').forEach(c=>c.classList.remove('lifting'));
-      isDragging=false;
-      lifted=false;
-      return;
-    }
-
-    // 持ち上がったがドラッグしなかった: 影を消す
-    if(lifted){
-      card.classList.remove('lifting');
-      lifted=false;
-      return;
-    }
-
-    if(didMove)return;
-
-    // 普通のタップ: 詳細を開く
-    const idx=parseInt(card.dataset.idx);
-    const c=state.cards[idx];
-    if(c){
-      if(state.mosaicMode){
-        if(card.classList.contains('mosaic')){
-          card.classList.remove('mosaic');
-        }else{
-          openDetail(c,'mine');
-        }
-      }else{
-        openDetail(c,'mine');
-      }
-    }
-  };
-
-  const onStart=ev=>{
-    const [x,y]=xy(ev);
-    startX=x;startY=y;didMove=false;isDragging=false;lifted=false;
-
-    // 長押しで持ち上がる
-    pressTimer=setTimeout(()=>{
-      if(!didMove)lift();
-    },400);
-
-    document.addEventListener('mousemove',onMove,{passive:false});
-    document.addEventListener('mouseup',onEnd);
-    document.addEventListener('touchmove',onMove,{passive:false});
-    document.addEventListener('touchend',onEnd);
-    document.addEventListener('touchcancel',onEnd);
-  };
-
-  card.addEventListener('mousedown',onStart);
-  card.addEventListener('touchstart',onStart,{passive:true});
-}
 
 // ═══ ADD ═══
 function openAddSheet(){
