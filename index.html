@@ -619,6 +619,28 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   white-space:pre-wrap;
   word-break:break-word;
 }
+.ocr-block{
+  margin-top:16px;
+  padding:14px;
+  background:var(--bg);
+  border-radius:10px;
+  border:1px dashed var(--line2);
+}
+.ocr-label{
+  font-size:10px;
+  color:var(--ink3);
+  letter-spacing:0.1em;
+  font-family:var(--font-en);
+  margin-bottom:6px;
+  text-transform:uppercase;
+}
+.ocr-text{
+  font-size:13px;
+  line-height:1.6;
+  color:var(--ink2);
+  white-space:pre-wrap;
+  word-break:break-word;
+}
 #detail-chat-log{
   margin-top:18px;
 }
@@ -1066,6 +1088,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .today-block-icon.review{background:var(--amber);}
 .today-block-icon.tasks{background:var(--sky);}
 .today-block-icon.new{background:var(--g);}
+.today-block-icon.forgotten{background:#9C7BB8;}
 .today-block-count{
   font-family:var(--font-en);
   font-size:13px;
@@ -1344,6 +1367,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <div id="today-review-section"></div>
     <div id="today-tasks-section"></div>
     <div id="today-new-section"></div>
+    <div id="today-forgotten-section"></div>
   </div>
   <div class="bnav" data-bnav="today"></div>
 </div>
@@ -1866,6 +1890,66 @@ function renderToday(){
   }else{
     newSec.innerHTML='';
   }
+
+  // 「久しく見ていない」メモ (14日以上)
+  const forgottenSec=$('today-forgotten-section');
+  const forgotten=getForgottenCards();
+  if(forgotten.length>0){
+    forgottenSec.innerHTML=`
+      <div class="today-block">
+        <div class="today-block-head">
+          <div class="today-block-title">
+            <div class="today-block-icon forgotten">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            </div>
+            久しぶりのメモ
+          </div>
+          <div class="today-block-count">${forgotten.length}</div>
+        </div>
+      </div>
+      <div class="today-newcards" id="today-forgotten-cards"></div>
+    `;
+    const wrap=$('today-forgotten-cards');
+    forgotten.forEach(c=>{
+      const el=document.createElement('div');
+      el.className='today-newcard '+c.type;
+      if(c.type==='photo'||c.type==='photonote'){
+        el.innerHTML=`<img src="${c.image||''}">`;
+      }else if(c.type==='note'){
+        const col=colorById(c.color);
+        const fz=autoFontSize(c.text||'',11,16);
+        const centered=fz>=14;
+        el.innerHTML=`<div class="ctxt" style="background:${col.bg};color:${col.fg};font-size:${fz}px;${centered?'display:flex;align-items:center;justify-content:center;text-align:center;-webkit-line-clamp:initial;':''}">${esc(c.text||'')}</div>`;
+      }else if(c.type==='list'){
+        const items=(c.items||[]).slice(0,4).map(i=>`<div>・${esc(i.t)}</div>`).join('');
+        el.innerHTML=`<div class="ctxt">${c.title?`<b>${esc(c.title)}</b>`:''}${items}</div>`;
+      }
+      el.addEventListener('click',()=>openDetail(c,'mine'));
+      wrap.appendChild(el);
+    });
+  }else{
+    forgottenSec.innerHTML='';
+  }
+}
+
+function getForgottenCards(){
+  const now=Date.now();
+  const DAY=86400000;
+  const startOfToday=new Date();
+  startOfToday.setHours(0,0,0,0);
+  return state.cards.filter(c=>{
+    if(c.type==='list')return false; // タスクは別管理
+    const created=c.created||0;
+    if(created>=startOfToday.getTime())return false; // 今日の保存は除外
+    const lastTouch=c.lastReview||created;
+    // 14日以上見ていない && 過去2回未満の復習
+    return (now-lastTouch)>=14*DAY && (c.reviewCount||0)<3;
+  }).sort((a,b)=>{
+    // 古いものから優先
+    const la=a.lastReview||a.created||0;
+    const lb=b.lastReview||b.created||0;
+    return la-lb;
+  }).slice(0,8);
 }
 
 function getTodayCards(){
@@ -2495,6 +2579,12 @@ function saveCard(){
   if(idx>=0)state.cards[idx]=c;
   else state.cards.unshift(c);
   save();
+
+  // 写真のOCRをバックグラウンドで実行 (新規・OCR未実行の場合)
+  if((c.type==='photo' || c.type==='photonote') && c.image && !c.ocrText && !c.ocrFailed){
+    runOcrInBackground(c.id);
+  }
+
   toast('保存しました');
   state.current=null;
   while(state.navStack.length>1 && state.navStack[state.navStack.length-1]==='screen-upload'){
@@ -2502,6 +2592,49 @@ function saveCard(){
   }
   const prev=state.navStack[state.navStack.length-1]||'screen-home';
   goto(prev,false);
+}
+
+// 写真のOCR (バックグラウンド)
+async function runOcrInBackground(cardId){
+  const cIdx=state.cards.findIndex(x=>x.id===cardId);
+  if(cIdx<0)return;
+  const card=state.cards[cIdx];
+  if(!card.image)return;
+
+  try{
+    // data URL から base64 と mediaType を分離
+    const m=card.image.match(/^data:([^;]+);base64,(.+)$/);
+    if(!m)return;
+    const mediaType=m[1];
+    const data=m[2];
+
+    const res=await fetch(AI_ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        ocrImage:{mediaType,data},
+      }),
+    });
+    if(!res.ok)throw new Error('OCR API error');
+    const out=await res.json();
+    const text=(out.content||'').trim();
+
+    const cIdx2=state.cards.findIndex(x=>x.id===cardId);
+    if(cIdx2<0)return;
+    if(text && text!=='(文字なし)'){
+      state.cards[cIdx2].ocrText=text;
+    }else{
+      state.cards[cIdx2].ocrFailed=true; // 再試行しない
+    }
+    save();
+  }catch(e){
+    // 静かに失敗 (オフライン時など)
+    const cIdx2=state.cards.findIndex(x=>x.id===cardId);
+    if(cIdx2>=0){
+      state.cards[cIdx2].ocrFailed=true;
+      save();
+    }
+  }
 }
 
 function cancelUpload(){
@@ -2554,6 +2687,14 @@ function openDetail(c,origin){
         <span>${esc(i.t)}</span>
       </div>
     `).join('');
+  }
+
+  // 写真の場合、OCRテキストを下に表示
+  if((c.type==='photo'||c.type==='photonote') && c.ocrText){
+    contentHtml+=`<div class="ocr-block">
+      <div class="ocr-label">写真の文字</div>
+      <div class="ocr-text">${esc(c.ocrText)}</div>
+    </div>`;
   }
 
   // 公式コピーボタン (公式棚カード時のみ表示)
@@ -2960,7 +3101,8 @@ function doSearch(){
       if(scope==='photo' && c.type!=='photo' && c.type!=='photonote')return;
       if(scope==='note' && c.type!=='note')return;
       if(scope==='list' && c.type!=='list')return;
-      const hay=(c.text||'')+' '+(c.title||'')+' '+((c.items||[]).map(i=>i.t).join(' '));
+      const aiText=(c.aiLog||[]).map(m=>m.text).join(' ');
+      const hay=(c.text||'')+' '+(c.title||'')+' '+((c.items||[]).map(i=>i.t).join(' '))+' '+(c.ocrText||'')+' '+aiText;
       if(hay.toLowerCase().includes(q))results.push({card:c,origin:'mine'});
     });
   }
@@ -3261,6 +3403,19 @@ setupNavs();
 if(load() && state.user){
   state.navStack=['screen-home'];
   goto('screen-home',false);
+  // 既存写真でOCR未実行のものを順次処理 (バックグラウンド)
+  setTimeout(()=>{
+    const pending=state.cards.filter(c=>(c.type==='photo'||c.type==='photonote') && c.image && !c.ocrText && !c.ocrFailed);
+    let i=0;
+    const runNext=()=>{
+      if(i>=pending.length || i>=5)return; // 一度に5枚まで
+      runOcrInBackground(pending[i].id).finally(()=>{
+        i++;
+        setTimeout(runNext,2000); // 連続呼び出しを避ける
+      });
+    };
+    runNext();
+  },3000);
 }else{
   goto('screen-login',false);
 }
