@@ -7,6 +7,8 @@
 <meta name="theme-color" content="#1D9E75">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SnapIn">
+<link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"SnapIn","short_name":"SnapIn","start_url":"./","display":"standalone","background_color":"%23FAFAF7","theme_color":"%231D9E75","orientation":"portrait","icons":[{"src":"data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22%3E%3Crect width=%22512%22 height=%22512%22 rx=%22112%22 fill=%22%231D9E75%22/%3E%3Ctext x=%22256%22 y=%22360%22 font-family=%22Georgia,serif%22 font-size=%22300%22 font-weight=%22600%22 font-style=%22italic%22 fill=%22white%22 text-anchor=%22middle%22%3ES%3C/text%3E%3C/svg%3E","sizes":"512x512","type":"image/svg+xml"}]}'>
+<link rel="apple-touch-icon" href='data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="%231D9E75"/><text x="256" y="360" font-family="Georgia,serif" font-size="300" font-weight="600" font-style="italic" fill="white" text-anchor="middle">S</text></svg>'>
 <style>
 :root{
   --g:#1D9E75; --gl:#E8F5EF; --gd:#0F6E56;
@@ -108,7 +110,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;
   background:var(--surface);
   border-top:0.5px solid var(--line);
-  padding:7px 0 max(12px,env(safe-area-inset-bottom));
+  padding:7px 0 max(18px,env(safe-area-inset-bottom));
   flex-shrink:0;
   position:relative;
   z-index:10;
@@ -658,11 +660,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .detail-list-item.done .chk{background:var(--g);border-color:var(--g);}
 
-/* 詳細画面の下部メモエリア + AIアクション (ボトムナビと同じ高さ) */
+/* 詳細画面の下部メモエリア + AIアクション (ボトムナビと同じ高さ・位置) */
 .detail-input{
   background:var(--surface);
   border-top:0.5px solid var(--line);
-  padding:7px 10px max(12px,env(safe-area-inset-bottom));
+  padding:7px 10px max(18px,env(safe-area-inset-bottom));
   display:flex;
   align-items:center;
   gap:8px;
@@ -1366,7 +1368,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="scroll">
     <div style="padding:calc(20px + env(safe-area-inset-top)) 0 0;"></div>
     <div id="lib-subscribed"></div>
-    <div class="lib-section">みんなの棚</div>
+    <div class="lib-section">公式ライブラリ</div>
     <div id="lib-available"></div>
   </div>
   <div class="bnav" data-bnav="library"></div>
@@ -1436,7 +1438,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <button class="bhdr-back" data-action="back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
-    <div class="bhdr-title">カード</div>
+    <div class="bhdr-title">メモ</div>
     <button class="bhdr-action" data-action="toggle-menu">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
     </button>
@@ -1645,11 +1647,11 @@ const OFFICIAL_SHELVES=[
 // ═══ NAVIGATION ═══
 function navHtml(active){
   const items=[
-    {id:'home',label:'棚',svg:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'},
+    {id:'home',label:'メモ',svg:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'},
     {id:'today',label:'今日',svg:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'},
     {id:'add',label:'',svg:''},
     {id:'search',label:'探す',svg:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>'},
-    {id:'library',label:'みんな',svg:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'},
+    {id:'library',label:'公式',svg:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'},
   ];
   return items.map(i=>{
     if(i.id==='add'){
@@ -1742,7 +1744,7 @@ function renderToday(){
   const todayCards=getTodayCards();
   const openTasks=getTodayOpenTasks();
   const parts=[];
-  if(due.length>0)parts.push(`見返したいカード ${due.length}`);
+  if(due.length>0)parts.push(`見返したいメモ ${due.length}`);
   if(openTasks.length>0)parts.push(`未完のリスト ${openTasks.length}`);
   if(todayCards.length>0)parts.push(`今日の保存 ${todayCards.length}`);
   $('today-summary').textContent=parts.length?parts.join('　'):'今日は静かな一日です。';
@@ -1767,7 +1769,7 @@ function renderToday(){
   }else{
     rv.innerHTML=`
       <div class="today-review-empty">
-        見返すカードは今ありません。<br>
+        見返すメモは今ありません。<br>
         新しく保存したものが、明日以降ここに現れます。
       </div>
     `;
@@ -2189,21 +2191,59 @@ function startCreate(type){
 function onFilePick(e){
   const file=e.target.files[0];
   if(!file){
-    // キャンセル → state.currentを破棄
     state.current=null;
     state.photoMode=null;
     return;
   }
-  const reader=new FileReader();
-  reader.onload=ev=>{
+  // 画像を圧縮 (長辺1280px、JPEG 0.85品質)
+  compressImage(file).then(compressed=>{
     if(!state.current)state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:new Date().toISOString().slice(0,10),_new:true,text:''};
-    state.current.image=ev.target.result;
+    state.current.image=compressed;
     state.photoMode=null;
     renderUpload();
     goto('screen-upload');
-  };
-  reader.readAsDataURL(file);
+  }).catch(err=>{
+    toast('画像の読み込みに失敗しました');
+    state.current=null;
+    state.photoMode=null;
+  });
   e.target.value='';
+}
+
+function compressImage(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        try{
+          const MAX=1280;
+          let w=img.width, h=img.height;
+          if(w>MAX || h>MAX){
+            if(w>h){h=Math.round(h*MAX/w);w=MAX;}
+            else{w=Math.round(w*MAX/h);h=MAX;}
+          }
+          const canvas=document.createElement('canvas');
+          canvas.width=w; canvas.height=h;
+          const ctx=canvas.getContext('2d');
+          ctx.fillStyle='#fff';
+          ctx.fillRect(0,0,w,h);
+          ctx.drawImage(img,0,0,w,h);
+          // 透過の有無で形式選択
+          const mime=file.type==='image/png' ? 'image/jpeg' : 'image/jpeg';
+          const dataUrl=canvas.toDataURL(mime,0.85);
+          resolve(dataUrl);
+        }catch(e){
+          // 失敗したらそのままBase64
+          resolve(ev.target.result);
+        }
+      };
+      img.onerror=()=>resolve(ev.target.result);
+      img.src=ev.target.result;
+    };
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // クイック追加(ホームの一行入力)
@@ -2502,7 +2542,7 @@ function openDetail(c,origin){
     contentHtml+=`<button class="login-card" style="margin-top:18px;background:var(--gl);" data-action="copy-to-shelf">
       <div class="login-card-title" style="color:var(--gd);">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        自分の棚にコピー
+        自分のメモに保存
       </div>
     </button>`;
   }
@@ -2539,7 +2579,7 @@ function openDetail(c,origin){
 
   // 入力バーの状態リセット
   $('detail-input').value='';
-  $('detail-input').placeholder=isOfficial?'(公式カードはコピー後に編集できます)':'メモを書く…';
+  $('detail-input').placeholder=isOfficial?'(公式メモはコピー後に編集できます)':'メモを書く…';
   $('detail-input').style.height='auto';
   $('detail-ai-toggle').classList.remove('on');
   $('detail-input-send').style.background='var(--g)';
@@ -2736,12 +2776,12 @@ function demoAI(q,ref){
     else if(ref.image)prefix='写真を見ました。';
     else if(ref.type==='list')prefix='リストを見ました。';
   }
-  return prefix+'「'+q+'」についてですね。\n\n(現在はオフラインのデモ応答です。本番環境では Anthropic API に接続して、保存したカードを文脈にした回答を返します。)';
+  return prefix+'「'+q+'」についてですね。\n\n(現在はオフラインのデモ応答です。本番環境では Anthropic API に接続して、保存したメモを文脈にした回答を返します。)';
 }
 
 function editCard(){
   $('detail-menu').classList.remove('on');
-  if(state.current._origin==='official'){toast('公式カードは編集できません');return;}
+  if(state.current._origin==='official'){toast('公式メモは編集できません');return;}
   const c=Object.assign({},state.current);
   delete c._origin;
   c._new=false;
@@ -2752,8 +2792,8 @@ function editCard(){
 
 function deleteCard(){
   $('detail-menu').classList.remove('on');
-  if(state.current._origin==='official'){toast('公式カードは削除できません');return;}
-  if(!confirm('このカードを削除しますか?'))return;
+  if(state.current._origin==='official'){toast('公式メモは削除できません');return;}
+  if(!confirm('このメモを削除しますか?'))return;
   state.cards=state.cards.filter(x=>x.id!==state.current.id);
   save();
   toast('削除しました');
@@ -2764,7 +2804,7 @@ function deleteCard(){
 function openColorPicker(){
   $('detail-menu').classList.remove('on');
   if(!state.current || state.current._origin==='official'){
-    toast('公式カードは色を変えられません');
+    toast('公式メモは色を変えられません');
     return;
   }
   const picker=$('color-picker');
@@ -2807,7 +2847,7 @@ function copyToShelf(){
   c.reviewCount=0;
   state.cards.unshift(c);
   save();
-  toast('自分の棚にコピーしました');
+  toast('自分のメモに保存しました');
 }
 
 // ═══ LIBRARY ═══
@@ -2992,7 +3032,7 @@ let revRevealed=false;
 
 function startReview(){
   revQueue=getDueCards();
-  if(revQueue.length===0){toast('見返すカードはありません');return;}
+  if(revQueue.length===0){toast('見返すメモはありません');return;}
   revIndex=0;
   revRevealed=false;
   goto('screen-review');
