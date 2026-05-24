@@ -82,7 +82,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .bhdr-back{padding:10px;color:var(--ink2);display:flex;align-items:center;}
 .bhdr-back:active{color:var(--g);}
 .bhdr-title{font-size:15px;font-weight:600;flex:1;}
-.bhdr-action{font-size:14px;color:var(--g);font-weight:600;padding:10px 14px;}
+.bhdr-action{
+  font-size:14px;
+  color:var(--g);
+  font-weight:600;
+  padding:10px 14px;
+  border-radius:8px;
+  transition:background .1s;
+}
+.bhdr-action:active{
+  background:var(--gl);
+  transform:scale(0.96);
+}
 
 /* BOTTOM NAV (4タブに削減: 棚 / 公式 / + / 探す) */
 .bnav{
@@ -613,6 +624,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   white-space:pre-wrap;
   word-break:break-word;
 }
+#detail-chat-log{
+  margin-top:18px;
+}
+#detail-chat-log:not(:empty){
+  border-top:0.5px solid var(--line);
+  padding-top:18px;
+}
 .detail-list-item{
   display:flex;
   align-items:center;
@@ -632,15 +650,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .detail-list-item.done .chk{background:var(--g);border-color:var(--g);}
 
-/* 詳細画面の下部メモエリア + AIアクション (重要な新UI) */
+/* 詳細画面の下部メモエリア + AIアクション (ボトムナビと同じ高さ) */
 .detail-input{
   background:var(--surface);
   border-top:0.5px solid var(--line);
-  padding:8px 8px max(8px,env(safe-area-inset-bottom));
+  padding:8px 10px;
   display:flex;
-  align-items:flex-end;
-  gap:6px;
+  align-items:center;
+  gap:8px;
   flex-shrink:0;
+  min-height:62px;
 }
 .detail-input-ai{
   width:38px;height:38px;
@@ -648,12 +667,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;
   align-items:center;
   justify-content:center;
-  color:var(--g);
-  background:var(--gl);
+  color:var(--ink2);
+  background:var(--bg);
   flex-shrink:0;
 }
 .detail-input-ai:active{transform:scale(0.92);}
-.detail-input-ai.sending{background:var(--g);color:white;}
+.detail-input-ai.on{background:var(--g);color:white;}
 .detail-input textarea{
   flex:1;
   background:var(--bg);
@@ -674,10 +693,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   align-items:center;
   justify-content:center;
   flex-shrink:0;
+  flex-shrink:0;
 }
-.detail-input-send:disabled,
 .detail-input-send.disabled{
   background:var(--ink3);
+  opacity:0.5;
 }
 
 /* MENU */
@@ -1003,7 +1023,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
    TODAY (今日)
    ════════════════════════════════════════════ */
 .today-hero{
-  padding:24px 20px 18px;
+  padding:calc(20px + env(safe-area-inset-top)) 20px 18px;
   background:linear-gradient(140deg,#FFF,#F4FAF7);
   border-bottom:0.5px solid var(--line);
 }
@@ -1186,44 +1206,26 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   line-height:1.7;
 }
 
-/* タイマー */
-.today-timer{
-  margin:0 20px 18px;
-  background:var(--surface);
-  border-radius:14px;
-  padding:18px;
-  display:flex;
-  align-items:center;
-  gap:14px;
-  box-shadow:var(--shadow);
+/* COLOR PICKER */
+.color-picker{
+  padding:14px 16px 20px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
 }
-.timer-circle{
-  width:56px;height:56px;
-  border-radius:28px;
-  background:var(--bg);
+.color-swatch{
+  aspect-ratio:1;
+  border-radius:14px;
   display:flex;
   align-items:center;
   justify-content:center;
-  color:var(--ink2);
-  font-family:var(--font-en);
   font-size:13px;
   font-weight:600;
-  flex-shrink:0;
-  position:relative;
+  border:2px solid transparent;
+  transition:transform .1s;
 }
-.timer-circle.running{background:var(--gl);color:var(--gd);}
-.timer-info{flex:1;}
-.timer-title{font-size:14px;font-weight:600;margin-bottom:2px;}
-.timer-sub{font-size:11px;color:var(--ink3);}
-.timer-btn{
-  padding:8px 18px;
-  background:var(--g);
-  color:white;
-  border-radius:18px;
-  font-size:13px;
-  font-weight:600;
-}
-.timer-btn.stop{background:var(--rose);}
+.color-swatch:active{transform:scale(0.94);}
+.color-swatch.selected{border-color:var(--g);}
 
 .toast{
   position:absolute;
@@ -1338,9 +1340,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <!-- TODAY -->
 <div class="screen" id="screen-today">
-  <div class="hdr">
-    <div class="hdr-title">今日</div>
-  </div>
   <div class="scroll">
     <div class="today-hero">
       <div class="today-date" id="today-date">―</div>
@@ -1349,7 +1348,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
 
     <div id="today-review-section"></div>
-    <div id="today-timer-section"></div>
     <div id="today-tasks-section"></div>
     <div id="today-new-section"></div>
   </div>
@@ -1442,6 +1440,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
         編集
       </button>
+      <button class="menu-item" data-action="open-color-picker" id="menu-color-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 22c5.523 0 10-4.477 10-10 0-4.418-2-7-5-7"/></svg>
+        色を変える
+      </button>
       <button class="menu-item danger" data-action="delete-card">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
         削除
@@ -1479,6 +1481,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
     <div class="review-stage" id="rev-stage"></div>
   </div>
+</div>
+
+<!-- COLOR PICKER -->
+<div class="sheet-mask" id="color-mask" data-action="close-color"></div>
+<div class="sheet" id="color-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">色を選ぶ</div>
+  <div class="color-picker" id="color-picker"></div>
 </div>
 
 <!-- ADD SHEET -->
@@ -1563,6 +1573,39 @@ function load(){
     state.subscribed=d.subscribed||[];
     return true;
   }catch(e){return false;}
+}
+
+// メモカードの色パレット (タグの代わりに色で分類)
+const CARD_COLORS=[
+  {id:'default',name:'白',bg:'#FFFDF5',fg:'#1A1A1A'},
+  {id:'yellow', name:'黄',bg:'#FFF6D6',fg:'#5A4818'},
+  {id:'pink',   name:'桃',bg:'#FCE6E8',fg:'#6B2030'},
+  {id:'blue',   name:'青',bg:'#E0EDF8',fg:'#1F3A5C'},
+  {id:'green',  name:'緑',bg:'#E0F1E4',fg:'#1F4E2C'},
+  {id:'purple', name:'紫',bg:'#EBE0F2',fg:'#3D2657'},
+  {id:'gray',   name:'灰',bg:'#ECEDEE',fg:'#3A3F44'},
+];
+function colorById(id){return CARD_COLORS.find(c=>c.id===id)||CARD_COLORS[0];}
+
+// 文字量に応じて文字サイズを自動調整 (Facebook風)
+// グリッド用 (小さいサムネ): 短い=大、長い=小
+function autoFontSize(text,minSize,maxSize){
+  if(!text)return minSize;
+  const len=text.length;
+  if(len<=12)return maxSize;
+  if(len<=25)return Math.round(maxSize-(maxSize-minSize)*0.35);
+  if(len<=60)return Math.round(maxSize-(maxSize-minSize)*0.7);
+  return minSize;
+}
+// 詳細表示用 (大画面)
+function autoFontSizeDetail(text){
+  if(!text)return 16;
+  const len=text.length;
+  if(len<=15)return 38;
+  if(len<=30)return 30;
+  if(len<=60)return 24;
+  if(len<=120)return 20;
+  return 16;
 }
 
 // 公式棚デモデータ
@@ -1672,13 +1715,6 @@ function logoutConfirm(){
 }
 
 // ═══ TODAY ═══
-// タイマー状態 (簡易ポモドーロ風)
-let timerState={
-  running:false,
-  startedAt:null,
-  duration:25*60*1000, // 25分
-  intervalId:null,
-};
 
 function renderToday(){
   const now=new Date();
@@ -1732,9 +1768,6 @@ function renderToday(){
     `;
   }
 
-  // タイマー
-  renderTimer();
-
   // 未完のタスク (リスト型カードの未完項目を集約)
   const tasksSec=$('today-tasks-section');
   if(openTasks.length>0){
@@ -1764,7 +1797,6 @@ function renderToday(){
         </div>
       `;
       row.addEventListener('click',()=>{
-        // 完了にトグル
         const cIdx=state.cards.findIndex(x=>x.id===t.card.id);
         if(cIdx<0)return;
         const itemIdx=state.cards[cIdx].items.findIndex(x=>x===t.item);
@@ -1803,7 +1835,10 @@ function renderToday(){
       if(c.type==='photo'||c.type==='photonote'){
         el.innerHTML=`<img src="${c.image||''}">`;
       }else if(c.type==='note'){
-        el.innerHTML=`<div class="ctxt">${esc(c.text||'')}</div>`;
+        const col=colorById(c.color);
+        const fz=autoFontSize(c.text||'',11,16);
+        const centered=fz>=14;
+        el.innerHTML=`<div class="ctxt" style="background:${col.bg};color:${col.fg};font-size:${fz}px;${centered?'display:flex;align-items:center;justify-content:center;text-align:center;-webkit-line-clamp:initial;':''}">${esc(c.text||'')}</div>`;
       }else if(c.type==='list'){
         const items=(c.items||[]).slice(0,4).map(i=>`<div>・${esc(i.t)}</div>`).join('');
         el.innerHTML=`<div class="ctxt">${c.title?`<b>${esc(c.title)}</b>`:''}${items}</div>`;
@@ -1836,63 +1871,6 @@ function getTodayOpenTasks(){
     }
   }
   return out;
-}
-
-// タイマー
-function renderTimer(){
-  const sec=$('today-timer-section');
-  const remaining=timerState.running ?
-    Math.max(0, timerState.duration - (Date.now()-timerState.startedAt)) :
-    timerState.duration;
-  const mins=Math.floor(remaining/60000);
-  const secs=Math.floor((remaining%60000)/1000);
-  const display=`${mins}:${String(secs).padStart(2,'0')}`;
-
-  sec.innerHTML=`
-    <div class="today-timer">
-      <div class="timer-circle ${timerState.running?'running':''}">${display}</div>
-      <div class="timer-info">
-        <div class="timer-title">${timerState.running?'集中中':'25分タイマー'}</div>
-        <div class="timer-sub">${timerState.running?'終わったら通知します':'勉強・復習・読書に'}</div>
-      </div>
-      <button class="timer-btn ${timerState.running?'stop':''}" id="timer-btn">${timerState.running?'やめる':'はじめる'}</button>
-    </div>
-  `;
-  $('timer-btn').addEventListener('click',toggleTimer);
-
-  // タイマー終了処理
-  if(timerState.running && remaining<=0){
-    stopTimer(true);
-  }
-}
-
-function toggleTimer(){
-  if(timerState.running){
-    stopTimer(false);
-  }else{
-    startTimer();
-  }
-}
-
-function startTimer(){
-  timerState.running=true;
-  timerState.startedAt=Date.now();
-  timerState.intervalId=setInterval(()=>{
-    if(document.getElementById('screen-today').classList.contains('active')){
-      renderTimer();
-    }
-  },1000);
-  renderTimer();
-}
-
-function stopTimer(completed){
-  timerState.running=false;
-  if(timerState.intervalId){clearInterval(timerState.intervalId);timerState.intervalId=null;}
-  if(completed){
-    toast('25分集中できました');
-    if(navigator.vibrate)navigator.vibrate([200,100,200]);
-  }
-  renderTimer();
 }
 
 // ═══ HOME ═══
@@ -1938,7 +1916,11 @@ function renderGrid(el,cards,origin){
       inner=`<img src="${c.image||''}" alt="">`;
       if(c.text)inner+=`<div class="card-source">${esc(c.text.slice(0,30))}</div>`;
     }else if(c.type==='note'){
-      inner=`<div class="ctxt">${esc(c.text||'')}</div>`;
+      const col=colorById(c.color);
+      const fz=autoFontSize(c.text||'',11,17);
+      const centered=fz>=15;
+      const style=`background:${col.bg};color:${col.fg};font-size:${fz}px;${centered?'display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.4;-webkit-line-clamp:initial;':''}`;
+      inner=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
       inner+=`<div class="card-badge"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/></svg></div>`;
     }else if(c.type==='list'){
       const items=(c.items||[]).slice(0,5).map(i=>
@@ -1984,8 +1966,10 @@ function renderFeed(el,cards){
       const txt=c.text?esc(c.text.slice(0,80)):'';
       inner+=`<div class="feed-meta">${txt}　${fmtDate(c.date)}</div>`;
     }else if(c.type==='note'){
-      inner=`<div class="feed-note">${esc(c.text||'')}</div>`;
-      inner+=`<div class="feed-meta">${fmtDate(c.date)}</div>`;
+      const col=colorById(c.color);
+      const fz=autoFontSizeDetail(c.text||'');
+      inner=`<div class="feed-note" style="background:${col.bg};color:${col.fg};font-size:${fz}px;">${esc(c.text||'')}</div>`;
+      inner+=`<div class="feed-meta" style="color:${col.fg};opacity:0.5;">${fmtDate(c.date)}</div>`;
     }else if(c.type==='list'){
       const items=(c.items||[]).map(i=>
         `<div class="li ${i.d?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`
@@ -2303,11 +2287,46 @@ function renderUpload(){
   }else if(c.type==='note'){
     const ta=document.createElement('textarea');
     ta.className='up-text';
+    ta.id='up-note-area';
     ta.placeholder='メモを書く…';
-    ta.style.minHeight='280px';
+    ta.style.minHeight='240px';
+    ta.style.padding='20px';
+    ta.style.borderRadius='12px';
+    ta.style.lineHeight='1.5';
+    const applyStyle=()=>{
+      const col=colorById(c.color);
+      ta.style.background=col.bg;
+      ta.style.color=col.fg;
+      const fz=autoFontSizeDetail(ta.value);
+      ta.style.fontSize=fz+'px';
+      ta.style.textAlign=fz>=24?'center':'left';
+    };
     ta.value=c.text||'';
-    ta.addEventListener('input',e=>{state.current.text=e.target.value;});
+    applyStyle();
+    ta.addEventListener('input',e=>{
+      state.current.text=e.target.value;
+      applyStyle();
+    });
     body.appendChild(ta);
+
+    // 色選択ボタン (横スクロール)
+    const colorRow=document.createElement('div');
+    colorRow.style.cssText='display:flex;gap:8px;overflow-x:auto;padding:14px 0 4px;scrollbar-width:none;';
+    CARD_COLORS.forEach(col=>{
+      const sw=document.createElement('button');
+      sw.style.cssText=`flex-shrink:0;width:38px;height:38px;border-radius:50%;background:${col.bg};color:${col.fg};font-size:11px;font-weight:600;border:2px solid ${(c.color||'default')===col.id?'var(--g)':'transparent'};display:flex;align-items:center;justify-content:center;`;
+      sw.textContent=col.name;
+      sw.addEventListener('click',()=>{
+        state.current.color=col.id;
+        renderUpload();
+        setTimeout(()=>{
+          const t=$('up-note-area');
+          if(t)t.focus();
+        },50);
+      });
+      colorRow.appendChild(sw);
+    });
+    body.appendChild(colorRow);
   }else if(c.type==='list'){
     const titleInp=document.createElement('input');
     titleInp.className='up-text title';
@@ -2450,7 +2469,15 @@ function openDetail(c,origin){
     $('detail-img').innerHTML=`<img src="${c.image}" alt="">`;
   }
   if(c.type==='note' || ((c.type==='photo'||c.type==='photonote') && c.text)){
-    contentHtml=`<div class="detail-text">${esc(c.text||'')}</div>`;
+    if(c.type==='note'){
+      const col=colorById(c.color);
+      const fz=autoFontSizeDetail(c.text||'');
+      const isShort=fz>=24;
+      const style=`background:${col.bg};color:${col.fg};font-size:${fz}px;padding:${isShort?'40px 24px':'24px 20px'};border-radius:12px;line-height:1.5;${isShort?'text-align:center;':''}`;
+      contentHtml=`<div class="detail-text" style="${style}">${esc(c.text||'')}</div>`;
+    }else{
+      contentHtml=`<div class="detail-text">${esc(c.text||'')}</div>`;
+    }
   }else if(c.type==='list'){
     const title=c.title?`<div style="font-size:17px;font-weight:600;margin-bottom:14px;">${esc(c.title)}</div>`:'';
     contentHtml=title+(c.items||[]).map((i,idx)=>`
@@ -2474,6 +2501,17 @@ function openDetail(c,origin){
   $('detail-content').innerHTML=contentHtml;
   $('detail-chat-log').innerHTML='';
 
+  // 過去のAI会話を復元
+  if(c.aiLog && c.aiLog.length>0){
+    const log=$('detail-chat-log');
+    c.aiLog.forEach(m=>{
+      const div=document.createElement('div');
+      div.className='msg '+(m.role==='user'?'u':'a');
+      div.innerHTML=`<div class="bubble">${esc(m.text)}</div>`;
+      log.appendChild(div);
+    });
+  }
+
   // リスト項目クリック (自分の棚のみ)
   if(!isOfficial){
     $('detail-content').querySelectorAll('.detail-list-item').forEach(el=>{
@@ -2492,9 +2530,10 @@ function openDetail(c,origin){
 
   // 入力バーの状態リセット
   $('detail-input').value='';
-  $('detail-input').placeholder=isOfficial?'メモを書く (コピー後に追加できます)':'メモを書く…';
+  $('detail-input').placeholder=isOfficial?'(公式カードはコピー後に編集できます)':'メモを書く…';
   $('detail-input').style.height='auto';
-  $('detail-ai-toggle').classList.remove('sending');
+  $('detail-ai-toggle').classList.remove('on');
+  $('detail-input-send').style.background='var(--g)';
 
   // 公式カードでは入力バー非表示
   $('detail-input-bar').style.display=isOfficial?'none':'';
@@ -2521,20 +2560,31 @@ function recordViewExit(){
 
 function toggleAiMode(){
   state.detailAiMode=!state.detailAiMode;
-  $('detail-ai-toggle').classList.toggle('sending',state.detailAiMode);
-  $('detail-input').placeholder=state.detailAiMode?'AIに質問…':'メモを書く…';
-  $('detail-input').focus();
+  $('detail-ai-toggle').classList.toggle('on',state.detailAiMode);
+  const inp=$('detail-input');
+  inp.placeholder=state.detailAiMode?'AIに質問して送信…':'メモを書く…';
+  // 送信ボタンの色も変える
+  $('detail-input-send').style.background=state.detailAiMode?'var(--sky)':'var(--g)';
+  inp.focus();
+  if(state.detailAiMode){
+    toast('AIモード: 質問を書いて送ると AI に聞きます');
+  }
 }
 
 function detailSend(){
   const inp=$('detail-input');
   const v=inp.value.trim();
   if(!v)return;
-  const c=state.cards.find(x=>x.id===state.current.id);
-  if(!c)return;
+  const cIdx=state.cards.findIndex(x=>x.id===state.current.id);
+  if(cIdx<0)return;
+  const c=state.cards[cIdx];
 
   if(state.detailAiMode){
     // AIに質問
+    if(!c.aiLog)c.aiLog=[];
+    c.aiLog.push({role:'user',text:v,t:Date.now()});
+    save();
+
     const log=$('detail-chat-log');
     const uMsg=document.createElement('div');
     uMsg.className='msg u';
@@ -2543,17 +2593,24 @@ function detailSend(){
     inp.value='';
     inp.style.height='auto';
 
-    // AIの返答(デモ)
+    // AIの返答 (デモ)
     const aMsg=document.createElement('div');
     aMsg.className='msg a';
     aMsg.innerHTML=`<div class="bubble">…考えています</div>`;
     log.appendChild(aMsg);
     $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
     setTimeout(()=>{
-      aMsg.querySelector('.bubble').textContent=demoAI(v,c);
+      const answer=demoAI(v,c);
+      aMsg.querySelector('.bubble').textContent=answer;
+      // 永続化
+      const cIdx2=state.cards.findIndex(x=>x.id===state.current.id);
+      if(cIdx2>=0){
+        if(!state.cards[cIdx2].aiLog)state.cards[cIdx2].aiLog=[];
+        state.cards[cIdx2].aiLog.push({role:'assistant',text:answer,t:Date.now()});
+        save();
+      }
       $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
     },800);
-    // AIモードは送信後も維持する
   }else{
     // メモとしてカードに追記
     const prev=c.text||'';
@@ -2562,15 +2619,19 @@ function detailSend(){
     save();
     inp.value='';
     inp.style.height='auto';
-    // 詳細テキスト部分だけ更新
+    // テキスト部分を更新
     const detailText=$('detail-content').querySelector('.detail-text');
     if(detailText){
       detailText.textContent=c.text;
+      // 自動サイズ再計算
+      if(c.type==='note'){
+        const fz=autoFontSizeDetail(c.text);
+        detailText.style.fontSize=fz+'px';
+        detailText.style.textAlign=fz>=24?'center':'left';
+      }
     }else{
-      // テキストエリアがなかった(写真のみだった)場合は再描画
-      const log=$('detail-chat-log').innerHTML;
+      // 写真のみだった場合、再描画
       openDetail(c,'mine');
-      $('detail-chat-log').innerHTML=log;
     }
     toast('追記しました');
   }
@@ -2605,6 +2666,42 @@ function deleteCard(){
   save();
   toast('削除しました');
   back();
+}
+
+// カラーピッカー
+function openColorPicker(){
+  $('detail-menu').classList.remove('on');
+  if(!state.current || state.current._origin==='official'){
+    toast('公式カードは色を変えられません');
+    return;
+  }
+  const picker=$('color-picker');
+  picker.innerHTML='';
+  const curColor=state.current.color||'default';
+  CARD_COLORS.forEach(c=>{
+    const sw=document.createElement('button');
+    sw.className='color-swatch'+(c.id===curColor?' selected':'');
+    sw.style.background=c.bg;
+    sw.style.color=c.fg;
+    sw.textContent=c.name;
+    sw.addEventListener('click',()=>{
+      const idx=state.cards.findIndex(x=>x.id===state.current.id);
+      if(idx<0)return;
+      state.cards[idx].color=c.id;
+      state.current.color=c.id;
+      save();
+      closeColorPicker();
+      openDetail(state.cards[idx],'mine');
+    });
+    picker.appendChild(sw);
+  });
+  $('color-mask').classList.add('on');
+  $('color-sheet').classList.add('on');
+}
+
+function closeColorPicker(){
+  $('color-mask').classList.remove('on');
+  $('color-sheet').classList.remove('on');
 }
 
 function copyToShelf(){
@@ -2954,6 +3051,8 @@ document.addEventListener('click',e=>{
     case 'edit-card':editCard();break;
     case 'delete-card':deleteCard();break;
     case 'copy-to-shelf':copyToShelf();break;
+    case 'open-color-picker':openColorPicker();break;
+    case 'close-color':closeColorPicker();break;
     case 'toggle-sub':if(state.currentOfficial)toggleSubById(state.currentOfficial.id);break;
     case 'toggle-ai-mode':toggleAiMode();break;
     case 'detail-send':detailSend();break;
