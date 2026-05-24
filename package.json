@@ -1,11 +1,12 @@
 {
-  "name": "snapin-jukencamp",
+  "name": "snapin",
   "version": "1.0.0",
-  "private": true,
+  "description": "SnapIn",
+  "type": "module",
   "dependencies": {
-    "firebase-admin": "^12.0.0"
+    "@anthropic-ai/sdk": "^0.40.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.x"
   }
 }
