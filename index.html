@@ -60,13 +60,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   letter-spacing:-0.01em;
   display:flex;
   align-items:baseline;
-  gap:6px;
+  gap:0;
   color:var(--ink);
 }
 .logo em{
   color:var(--g);
   font-style:normal;
   font-weight:700;
+  margin-right:6px;
 }
 .logo-by{
   font-family:-apple-system,sans-serif;
@@ -268,6 +269,26 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink3);
 }
 .view-tog button.on{background:var(--surface);color:var(--g);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+
+/* ヘッダー内のグリッド/リール切替 */
+.view-tog-hdr{
+  background:transparent;
+  padding:0;
+  gap:0;
+  margin-right:2px;
+}
+.view-tog-hdr button{
+  width:34px;height:30px;
+  border-radius:8px;
+  color:var(--ink2);
+  background:transparent;
+  box-shadow:none;
+}
+.view-tog-hdr button.on{
+  background:var(--gl);
+  color:var(--g);
+  box-shadow:none;
+}
 
 /* 復習ストリップ */
 .review-strip{
@@ -605,6 +626,49 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink2);
   white-space:pre-wrap;
   word-break:break-word;
+}
+.ocr-actions{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px dashed var(--line);
+}
+.ocr-action{
+  flex:1;
+  padding:8px 10px;
+  border-radius:8px;
+  font-size:12px;
+  color:var(--ink2);
+  background:var(--surface);
+  border:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  transition:all .15s;
+}
+.ocr-action:active{
+  background:var(--gl);
+  color:var(--g);
+  transform:scale(0.97);
+}
+.ocr-action.loading{
+  color:var(--ink3);
+  pointer-events:none;
+}
+.ocr-action.loading::after{
+  content:'';
+  width:11px;height:11px;
+  border:1.5px solid var(--ink3);
+  border-top-color:transparent;
+  border-radius:50%;
+  animation:ocr-spin 0.7s linear infinite;
+  margin-left:4px;
+}
+@keyframes ocr-spin{to{transform:rotate(360deg);}}
+.ocr-block.is-running .ocr-text{
+  opacity:0.4;
 }
 #detail-chat-log{
   margin-top:18px;
@@ -1327,6 +1391,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="hdr">
     <div class="logo">Snap<em>In</em><span class="logo-by">by JUKEN CAMP</span></div>
     <div class="hdr-icons">
+      <div class="view-tog view-tog-hdr">
+        <button id="vt-grid" class="on" data-action="view-grid" aria-label="グリッド">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </button>
+        <button id="vt-reel" data-action="view-reel" aria-label="リール">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M12 7v10"/></svg>
+        </button>
+      </div>
       <button data-action="toggle-mosaic" id="mosaic-btn" aria-label="思い出す">
         <svg class="eye-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
         <svg class="eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" stroke-linecap="round"/></svg>
@@ -1353,17 +1425,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       </button>
     </div>
     <div class="home-row">
-      <div class="search-bar" data-action="goto-search">
+      <div class="search-bar" data-action="goto-search" style="flex:1;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <span>探す</span>
-      </div>
-      <div class="view-tog">
-        <button id="vt-grid" class="on" data-action="view-grid" aria-label="グリッド">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        </button>
-        <button id="vt-reel" data-action="view-reel" aria-label="リール">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M12 7v10"/></svg>
-        </button>
       </div>
     </div>
   </div>
@@ -2535,6 +2599,71 @@ function cancelUpload(){
   back();
 }
 
+// OCRをもう一度実行 (同じ写真で読み取りなおす)
+async function ocrRerun(){
+  if(!state.current)return;
+  const c=state.current;
+  if(!c.image)return;
+  const block=$('ocr-block');
+  if(!block)return;
+  const btns=block.querySelectorAll('.ocr-action');
+  btns.forEach(b=>b.classList.add('loading'));
+  block.classList.add('is-running');
+
+  // ocrText を一旦クリアして再実行
+  const cIdx=state.cards.findIndex(x=>x.id===c.id);
+  if(cIdx>=0){
+    delete state.cards[cIdx].ocrText;
+    delete state.cards[cIdx].ocrFailed;
+    save();
+  }
+  await runOcrInBackground(c.id);
+  // 詳細画面を再描画
+  const updated=state.cards.find(x=>x.id===c.id);
+  if(updated){
+    state.current=updated;
+    openDetail(updated,state.current._origin||'mine');
+  }
+}
+
+// 写真を撮り直す (新しい写真に差し替えてOCR再実行)
+function ocrRetake(){
+  if(!state.current)return;
+  const c=state.current;
+  // ファイル選択を呼び出す (iOS標準シート: ライブラリ/撮影/ファイル)
+  const inp=document.createElement('input');
+  inp.type='file';
+  inp.accept='image/*';
+  inp.addEventListener('change',async e=>{
+    const file=e.target.files[0];
+    if(!file)return;
+    try{
+      const newImage=await compressImage(file);
+      const cIdx=state.cards.findIndex(x=>x.id===c.id);
+      if(cIdx<0)return;
+      state.cards[cIdx].image=newImage;
+      delete state.cards[cIdx].ocrText;
+      delete state.cards[cIdx].ocrFailed;
+      save();
+      // 画面を即時更新
+      state.current=state.cards[cIdx];
+      openDetail(state.cards[cIdx],state.current._origin||'mine');
+      toast('読み取り中…');
+      // バックグラウンドでOCR
+      runOcrInBackground(c.id).then(()=>{
+        const u=state.cards.find(x=>x.id===c.id);
+        if(u && state.current && state.current.id===c.id){
+          state.current=u;
+          openDetail(u,state.current._origin||'mine');
+        }
+      });
+    }catch(err){
+      toast('写真の読み込みに失敗しました');
+    }
+  });
+  inp.click();
+}
+
 // ═══ DETAIL ═══
 let detailViewStart=0;
 
@@ -2693,9 +2822,22 @@ function openDetail(c,origin){
 
   // 写真の場合、OCRテキストを下に表示
   if((c.type==='photo'||c.type==='photonote') && c.ocrText){
-    contentHtml+=`<div class="ocr-block">
+    // 公式メモはOCR再実行・撮り直し不可 (オリジナルを壊さないため)
+    const actionsHtml=isOfficial?'':`
+      <div class="ocr-actions">
+        <button class="ocr-action" data-action="ocr-rerun">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"/><path d="M3 21v-5h5"/></svg>
+          もう一度読み取る
+        </button>
+        <button class="ocr-action" data-action="ocr-retake">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          撮り直す
+        </button>
+      </div>`;
+    contentHtml+=`<div class="ocr-block" id="ocr-block">
       <div class="ocr-label">写真の文字</div>
       <div class="ocr-text">${esc(c.ocrText)}</div>
+      ${actionsHtml}
     </div>`;
   }
 
@@ -3343,6 +3485,8 @@ document.addEventListener('click',e=>{
     case 'quick-photo':quickPhoto();break;
     case 'quick-list':quickList();break;
     case 'quick-save':quickSave();break;
+    case 'ocr-rerun':ocrRerun();break;
+    case 'ocr-retake':ocrRetake();break;
   }
 });
 
