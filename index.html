@@ -83,16 +83,24 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .bhdr-back:active{color:var(--g);}
 .bhdr-title{font-size:15px;font-weight:600;flex:1;}
 .bhdr-action{
-  font-size:14px;
-  color:var(--g);
+  font-size:13px;
   font-weight:600;
-  padding:10px 14px;
-  border-radius:8px;
-  transition:background .1s;
+  padding:8px 14px;
+  border-radius:18px;
+  transition:all .1s;
+  color:var(--g);
 }
 .bhdr-action:active{
   background:var(--gl);
-  transform:scale(0.96);
+  transform:scale(0.94);
+}
+.bhdr-action.primary{
+  background:var(--g);
+  color:white;
+}
+.bhdr-action.primary:active{
+  background:var(--gd);
+  transform:scale(0.94);
 }
 
 /* BOTTOM NAV (4タブに削減: 棚 / 公式 / + / 探す) */
@@ -654,12 +662,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .detail-input{
   background:var(--surface);
   border-top:0.5px solid var(--line);
-  padding:8px 10px;
+  padding:7px 10px max(12px,env(safe-area-inset-bottom));
   display:flex;
   align-items:center;
   gap:8px;
   flex-shrink:0;
-  min-height:62px;
 }
 .detail-input-ai{
   width:38px;height:38px;
@@ -1356,12 +1363,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <!-- LIBRARY -->
 <div class="screen" id="screen-library">
-  <div class="hdr">
-    <div class="hdr-title">公式棚</div>
-  </div>
   <div class="scroll">
+    <div style="padding:calc(20px + env(safe-area-inset-top)) 0 0;"></div>
     <div id="lib-subscribed"></div>
-    <div class="lib-section">他の棚</div>
+    <div class="lib-section">みんなの棚</div>
     <div id="lib-available"></div>
   </div>
   <div class="bnav" data-bnav="library"></div>
@@ -1373,7 +1378,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <button class="bhdr-back" data-action="back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
-    <div class="bhdr-title">公式棚</div>
+    <div class="bhdr-title" id="off-bhdr-title">―</div>
   </div>
   <div class="scroll">
     <div class="official-simple-hdr">
@@ -1420,7 +1425,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>
     <div class="bhdr-title" id="up-title">新しい保存</div>
-    <button class="bhdr-action" id="up-save-btn" data-action="save-card">保存</button>
+    <button class="bhdr-action primary" id="up-save-btn" data-action="save-card">保存</button>
   </div>
   <div class="upload-body" id="up-body"></div>
 </div>
@@ -1644,7 +1649,7 @@ function navHtml(active){
     {id:'today',label:'今日',svg:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'},
     {id:'add',label:'',svg:''},
     {id:'search',label:'探す',svg:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>'},
-    {id:'library',label:'公式',svg:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'},
+    {id:'library',label:'みんな',svg:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'},
   ];
   return items.map(i=>{
     if(i.id==='add'){
@@ -1913,6 +1918,8 @@ function renderGrid(el,cards,origin){
 
     let inner='';
     if(c.type==='photo' || c.type==='photonote'){
+      const col=colorById(c.color);
+      card.style.background=col.bg;
       inner=`<img src="${c.image||''}" alt="">`;
       if(c.text)inner+=`<div class="card-source">${esc(c.text.slice(0,30))}</div>`;
     }else if(c.type==='note'){
@@ -2466,6 +2473,8 @@ function openDetail(c,origin){
   let contentHtml='';
   if(c.image){
     $('detail-img').classList.remove('hide');
+    const col=colorById(c.color);
+    $('detail-img').style.background=col.bg;
     $('detail-img').innerHTML=`<img src="${c.image}" alt="">`;
   }
   if(c.type==='note' || ((c.type==='photo'||c.type==='photonote') && c.text)){
@@ -2542,6 +2551,56 @@ function openDetail(c,origin){
   detailViewStart=Date.now();
 
   goto('screen-detail');
+  attachDetailSwipe();
+}
+
+// 詳細画面のスワイプで前後カード移動
+function attachDetailSwipe(){
+  const scr=$('detail-scroll');
+  if(scr._swipeAttached)return;
+  scr._swipeAttached=true;
+
+  let startX=0,startY=0,startT=0,tracking=false;
+
+  scr.addEventListener('touchstart',e=>{
+    if(state.current?._origin==='official')return;
+    // 入力中はスキップ
+    if(document.activeElement && document.activeElement.tagName==='TEXTAREA')return;
+    startX=e.touches[0].clientX;
+    startY=e.touches[0].clientY;
+    startT=Date.now();
+    tracking=true;
+  },{passive:true});
+
+  scr.addEventListener('touchend',e=>{
+    if(!tracking)return;
+    tracking=false;
+    const dx=e.changedTouches[0].clientX-startX;
+    const dy=e.changedTouches[0].clientY-startY;
+    const dt=Date.now()-startT;
+    if(dt>500)return; // 遅いスワイプは無効
+    if(Math.abs(dx)<70)return; // 距離不足
+    if(Math.abs(dy)>Math.abs(dx))return; // 縦方向の方が大きい
+
+    // 接触記録
+    recordViewExit();
+
+    const curIdx=state.cards.findIndex(c=>c.id===state.current.id);
+    if(curIdx<0)return;
+    let nextIdx=null;
+    if(dx<0 && curIdx<state.cards.length-1){
+      nextIdx=curIdx+1; // 左スワイプ → 次
+    }else if(dx>0 && curIdx>0){
+      nextIdx=curIdx-1; // 右スワイプ → 前
+    }
+    if(nextIdx===null){
+      // 端
+      if(navigator.vibrate)navigator.vibrate(20);
+      return;
+    }
+    if(navigator.vibrate)navigator.vibrate(10);
+    openDetail(state.cards[nextIdx],'mine');
+  },{passive:true});
 }
 
 // 詳細画面を離れた時、滞在時間が3秒以上なら静かに stage を進める
@@ -2571,7 +2630,7 @@ function toggleAiMode(){
   }
 }
 
-function detailSend(){
+async function detailSend(){
   const inp=$('detail-input');
   const v=inp.value.trim();
   if(!v)return;
@@ -2593,14 +2652,14 @@ function detailSend(){
     inp.value='';
     inp.style.height='auto';
 
-    // AIの返答 (デモ)
     const aMsg=document.createElement('div');
     aMsg.className='msg a';
-    aMsg.innerHTML=`<div class="bubble">…考えています</div>`;
+    aMsg.innerHTML=`<div class="bubble">…</div>`;
     log.appendChild(aMsg);
     $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
-    setTimeout(()=>{
-      const answer=demoAI(v,c);
+
+    try{
+      const answer=await callAI(v,c);
       aMsg.querySelector('.bubble').textContent=answer;
       // 永続化
       const cIdx2=state.cards.findIndex(x=>x.id===state.current.id);
@@ -2610,7 +2669,9 @@ function detailSend(){
         save();
       }
       $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
-    },800);
+    }catch(e){
+      aMsg.querySelector('.bubble').textContent='エラー: '+e.message;
+    }
   }else{
     // メモとしてカードに追記
     const prev=c.text||'';
@@ -2619,21 +2680,52 @@ function detailSend(){
     save();
     inp.value='';
     inp.style.height='auto';
-    // テキスト部分を更新
     const detailText=$('detail-content').querySelector('.detail-text');
     if(detailText){
       detailText.textContent=c.text;
-      // 自動サイズ再計算
       if(c.type==='note'){
         const fz=autoFontSizeDetail(c.text);
         detailText.style.fontSize=fz+'px';
         detailText.style.textAlign=fz>=24?'center':'left';
       }
     }else{
-      // 写真のみだった場合、再描画
       openDetail(c,'mine');
     }
     toast('追記しました');
+  }
+}
+
+// AI API呼び出し (本番: Vercel等のサーバレス関数を経由、デモ: ローカル応答)
+const AI_ENDPOINT='/api/chat'; // 本番ではここをサーバレス関数のURLに
+
+async function callAI(userMessage,cardContext){
+  // カードのコンテキスト構築
+  let contextStr='';
+  if(cardContext){
+    if(cardContext.text)contextStr+='メモ内容: '+cardContext.text+'\n';
+    if(cardContext.title)contextStr+='タイトル: '+cardContext.title+'\n';
+    if(cardContext.items)contextStr+='リスト項目: '+cardContext.items.map(i=>i.t).join(', ')+'\n';
+    if(cardContext.image)contextStr+='[写真あり]\n';
+  }
+  const systemPrompt='あなたは学習支援のアシスタントです。生徒が保存したカードについて、わかりやすく端的に答えてください。説教はせず、必要な情報を簡潔に伝えます。';
+
+  try{
+    const res=await fetch(AI_ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        system:systemPrompt,
+        messages:[
+          {role:'user',content:(contextStr?'コンテキスト:\n'+contextStr+'\n\n質問: ':'')+userMessage}
+        ],
+      }),
+    });
+    if(!res.ok)throw new Error('API error: '+res.status);
+    const data=await res.json();
+    return data.content || data.text || data.message || demoAI(userMessage,cardContext);
+  }catch(e){
+    // フォールバック (オフライン or 未デプロイ時)
+    return demoAI(userMessage,cardContext);
   }
 }
 
@@ -2644,7 +2736,7 @@ function demoAI(q,ref){
     else if(ref.image)prefix='写真を見ました。';
     else if(ref.type==='list')prefix='リストを見ました。';
   }
-  return prefix+'「'+q+'」についてですね。\n\n(デモ応答です。本番ではAnthropic APIを使い、保存したカードを文脈にした回答を返します。)';
+  return prefix+'「'+q+'」についてですね。\n\n(現在はオフラインのデモ応答です。本番環境では Anthropic API に接続して、保存したカードを文脈にした回答を返します。)';
 }
 
 function editCard(){
@@ -2730,7 +2822,7 @@ function renderLibrary(){
   if(subbed.length>0){
     const h=document.createElement('div');
     h.className='lib-section';
-    h.textContent='登録中';
+    h.textContent='登録ずみ';
     subList.appendChild(h);
     subbed.forEach(s=>subList.appendChild(libItem(s,true)));
   }
@@ -2772,6 +2864,7 @@ function toggleSubById(id){
 
 function openOfficial(s){
   state.currentOfficial=s;
+  $('off-bhdr-title').textContent=s.name;
   $('os-name').textContent=s.name;
   $('os-handle').textContent=s.handle;
   $('os-desc').textContent=s.desc;
