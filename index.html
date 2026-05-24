@@ -476,29 +476,29 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .sheet-options{
   padding:8px 16px 16px;
   display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
 }
 .sheet-opt{
   background:var(--bg);
   border-radius:14px;
-  padding:18px 14px;
+  padding:16px 10px;
   display:flex;
   flex-direction:column;
   align-items:flex-start;
-  gap:8px;
+  gap:6px;
   text-align:left;
 }
 .sheet-opt:active{background:var(--gl);}
 .sheet-opt-icon{
-  width:36px;height:36px;
+  width:34px;height:34px;
   border-radius:10px;
   background:var(--surface);
   display:flex;align-items:center;justify-content:center;
   color:var(--g);
 }
-.sheet-opt-title{font-size:14px;font-weight:600;color:var(--ink);}
-.sheet-opt-desc{font-size:11px;color:var(--ink3);line-height:1.4;}
+.sheet-opt-title{font-size:13px;font-weight:600;color:var(--ink);}
+.sheet-opt-desc{font-size:10px;color:var(--ink3);line-height:1.4;}
 
 /* UPLOAD / EDIT */
 .upload-body{
@@ -1621,8 +1621,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </div>
-      <div class="sheet-opt-title">写真</div>
-      <div class="sheet-opt-desc">問題、ノート、看板</div>
+      <div class="sheet-opt-title">写真・ファイル</div>
+      <div class="sheet-opt-desc">撮る・選ぶ</div>
     </button>
     <button class="sheet-opt" data-action="create-note">
       <div class="sheet-opt-icon">
@@ -1630,13 +1630,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       </div>
       <div class="sheet-opt-title">メモ</div>
       <div class="sheet-opt-desc">テキストだけ</div>
-    </button>
-    <button class="sheet-opt" data-action="create-file">
-      <div class="sheet-opt-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.41 17.41a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg>
-      </div>
-      <div class="sheet-opt-title">ファイル</div>
-      <div class="sheet-opt-desc">保存した画像から</div>
     </button>
     <button class="sheet-opt" data-action="create-list">
       <div class="sheet-opt-icon">
