@@ -9,7 +9,6 @@
 <meta name="apple-mobile-web-app-title" content="SnapIn">
 <link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"SnapIn","short_name":"SnapIn","start_url":"./","display":"standalone","background_color":"%23FAFAF7","theme_color":"%231D9E75","orientation":"portrait","icons":[{"src":"data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22%3E%3Crect width=%22512%22 height=%22512%22 rx=%22112%22 fill=%22%231D9E75%22/%3E%3Ctext x=%22256%22 y=%22360%22 font-family=%22Georgia,serif%22 font-size=%22300%22 font-weight=%22600%22 font-style=%22italic%22 fill=%22white%22 text-anchor=%22middle%22%3ES%3C/text%3E%3C/svg%3E","sizes":"512x512","type":"image/svg+xml"}]}'>
 <link rel="apple-touch-icon" href='data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="%231D9E75"/><text x="256" y="360" font-family="Georgia,serif" font-size="300" font-weight="600" font-style="italic" fill="white" text-anchor="middle">S</text></svg>'>
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
 :root{
   --g:#1D9E75; --gl:#E8F5EF; --gd:#0F6E56;
@@ -59,8 +58,34 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-size:24px;
   font-weight:600;
   letter-spacing:-0.02em;
+  display:flex;
+  align-items:baseline;
+  gap:6px;
 }
-.logo em{color:var(--g);font-style:italic;}
+.logo em{
+  color:var(--g);
+  font-style:italic;
+  position:relative;
+  padding:0 1px;
+}
+.logo em::after{
+  content:"";
+  position:absolute;
+  left:0;right:0;bottom:-2px;
+  height:2px;
+  background:var(--g);
+  border-radius:2px;
+  opacity:0.85;
+}
+.logo-by{
+  font-family:-apple-system,sans-serif;
+  font-size:9px;
+  font-weight:500;
+  color:var(--ink3);
+  letter-spacing:0.05em;
+  text-transform:uppercase;
+  font-style:normal;
+}
 .hdr-icons{display:flex;gap:4px;color:var(--ink2);align-items:center;}
 .hdr-icons button{
   width:38px;height:38px;
@@ -344,30 +369,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   pointer-events:none;
 }
 
-/* SortableJS — 長押しで持ち上がった瞬間 */
-.card.sortable-chosen{
-  box-shadow:0 6px 18px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.12);
-  z-index:2;
-  cursor:grabbing;
-}
-/* SortableJS — forceFallback時、指に追従するクローン要素 */
-.card.sortable-fallback{
-  box-shadow:0 12px 32px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.18);
-  opacity:1 !important;
-  transform:scale(1.05);
-  z-index:9999;
-}
-/* SortableJS — ドラッグ中の実体 */
-.card.sortable-drag{
-  opacity:1 !important;
-}
-/* SortableJS — 元位置のゴースト(透明にする) */
-.card.sortable-ghost{
-  opacity:0;
-}
-/* グリッドのカードはアニメーション可能に */
-.grid .card{transition:transform 0.18s, box-shadow 0.18s;}
-
 /* FEED */
 .feed{scroll-snap-type:y mandatory;background:#000;overflow-y:auto;}
 .feed-item{
@@ -623,10 +624,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 #detail-chat-log{
   margin-top:18px;
+  padding-bottom:8px;
 }
 #detail-chat-log:not(:empty){
   border-top:0.5px solid var(--line);
-  padding-top:18px;
+  padding-top:14px;
 }
 .detail-list-item{
   display:flex;
@@ -738,20 +740,66 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .chat-ref img{width:48px;height:48px;border-radius:8px;object-fit:cover;}
 .chat-ref-text{flex:1;font-size:12px;color:var(--ink2);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
-.msg{margin-bottom:12px;display:flex;}
+.msg{
+  margin-bottom:6px;
+  display:flex;
+  align-items:flex-end;
+  gap:6px;
+}
 .msg.u{justify-content:flex-end;}
 .msg.a{justify-content:flex-start;}
+.msg-time{
+  font-size:10px;
+  color:var(--ink3);
+  flex-shrink:0;
+  padding-bottom:2px;
+  opacity:0.7;
+}
+.msg.u .msg-time{order:0;}
+.msg.a .msg-time{order:1;}
 .bubble{
-  max-width:78%;
-  padding:10px 14px;
-  border-radius:14px;
+  max-width:74%;
+  padding:9px 13px;
+  border-radius:18px;
   font-size:14px;
-  line-height:1.6;
+  line-height:1.55;
   white-space:pre-wrap;
   word-break:break-word;
+  -webkit-user-select:none;
+  user-select:none;
 }
-.msg.u .bubble{background:var(--g);color:white;border-bottom-right-radius:4px;}
-.msg.a .bubble{background:var(--surface);color:var(--ink);border-bottom-left-radius:4px;box-shadow:var(--shadow);}
+.msg.u .bubble{
+  background:#1D9E75;
+  color:white;
+  border-bottom-right-radius:5px;
+}
+.msg.a .bubble{
+  background:var(--surface);
+  color:var(--ink);
+  border-bottom-left-radius:5px;
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
+}
+/* 日付セパレーター(中央に半透明丸タブ) */
+.chat-date-sep{
+  display:flex;
+  justify-content:center;
+  margin:14px 0 10px;
+  position:sticky;
+  top:8px;
+  z-index:5;
+  pointer-events:none;
+}
+.chat-date-sep span{
+  background:rgba(60,60,60,0.55);
+  color:white;
+  font-size:11px;
+  font-weight:500;
+  padding:3px 12px;
+  border-radius:11px;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  letter-spacing:0.02em;
+}
 .chat-input{
   display:flex;
   gap:8px;
@@ -999,9 +1047,36 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-size:52px;
   font-weight:600;
   letter-spacing:-0.03em;
-  margin-bottom:8px;
+  margin-bottom:6px;
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
 }
-.login-logo em{color:var(--g);font-style:italic;}
+.login-logo em{
+  color:var(--g);
+  font-style:italic;
+  position:relative;
+  padding:0 2px;
+}
+.login-logo em::after{
+  content:"";
+  position:absolute;
+  left:0;right:0;bottom:-3px;
+  height:4px;
+  background:var(--g);
+  border-radius:3px;
+  opacity:0.85;
+}
+.login-by{
+  font-family:-apple-system,sans-serif;
+  font-size:11px;
+  font-weight:500;
+  color:var(--ink3);
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+  text-align:center;
+  margin-bottom:24px;
+}
 .login-tag{
   font-size:13px;
   color:var(--ink2);
@@ -1256,6 +1331,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <div class="screen active" id="screen-login">
   <div class="login-wrap">
     <div class="login-logo">Snap<em>In</em></div>
+    <div class="login-by">by Juken Camp</div>
     <div class="login-tag">写真とメモを置いておく場所。</div>
     <button class="login-card" data-action="login-personal">
       <div class="login-card-title">
@@ -1275,7 +1351,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <!-- HOME -->
 <div class="screen" id="screen-home">
   <div class="hdr">
-    <div class="logo">Snap<em>In</em></div>
+    <div class="logo">Snap<em>In</em><span class="logo-by">by Juken Camp</span></div>
     <div class="hdr-icons">
       <button data-action="toggle-mosaic" id="mosaic-btn" aria-label="思い出す">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" stroke-linecap="round"/></svg>
@@ -1548,7 +1624,6 @@ const state={
   mosaicMode:false,
   detailAiMode:false,  // 詳細画面でAI送信モードか
   photoMode:null,      // クイック写真撮影中 'photo' | 'photonote' | null
-  isDragging:false,    // SortableJSでドラッグ中(再描画を止めるため)
 };
 
 function save(){
@@ -1930,8 +2005,6 @@ function getTodayOpenTasks(){
 
 // ═══ HOME ═══
 function renderHome(){
-  // ドラッグ中は再描画しない(SortableJSの動作を壊さないため)
-  if(state.isDragging)return;
   const empty=$('empty-home');
   const grid=$('grid-home');
   const feed=$('feed-home');
@@ -2006,35 +2079,6 @@ function renderGrid(el,cards,origin){
         }
       });
     });
-
-    // SortableJS で長押しドラッグ&ドロップ並べ替え
-    if(el._sortable){el._sortable.destroy();el._sortable=null;}
-    if(window.Sortable){
-      el._sortable=Sortable.create(el,{
-        animation:180,
-        delay:350,
-        delayOnTouchOnly:true,
-        forceFallback:true,
-        fallbackTolerance:3,
-        ghostClass:'sortable-ghost',
-        chosenClass:'sortable-chosen',
-        dragClass:'sortable-drag',
-        onStart:()=>{
-          state.isDragging=true;
-          if(navigator.vibrate)navigator.vibrate(15);
-        },
-        onEnd:evt=>{
-          state.isDragging=false;
-          if(evt.oldIndex===evt.newIndex)return;
-          // state.cards の順序を実際に入れ替える
-          const moved=state.cards.splice(evt.oldIndex,1)[0];
-          state.cards.splice(evt.newIndex,0,moved);
-          save();
-          // インデックスを振り直す
-          el.querySelectorAll('.card').forEach((c,i)=>{c.dataset.idx=i;});
-        },
-      });
-    }
   }else{
     el.querySelectorAll('.card').forEach(card=>{
       card.addEventListener('click',()=>{
@@ -2518,6 +2562,115 @@ function cancelUpload(){
 
 // ═══ DETAIL ═══
 let detailViewStart=0;
+
+// チャットメッセージを統一形式の配列で取得 (旧 aiLog からの自動マイグレーション込み)
+function getChatMessages(c){
+  // 新形式 c.chat[] があればそれを使う
+  if(c.chat && Array.isArray(c.chat))return c.chat;
+  // 旧形式 c.aiLog[] から変換
+  if(c.aiLog && Array.isArray(c.aiLog)){
+    return c.aiLog.map(m=>({
+      role:m.role==='user'?'user':'ai',
+      text:m.text,
+      t:m.t||Date.now(),
+    }));
+  }
+  return [];
+}
+
+// 日付セパレーターのテキスト (今日/昨日/M月D日)
+function chatDateLabel(ts){
+  const d=new Date(ts);
+  const now=new Date();
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const target=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  const diff=Math.round((today-target)/86400000);
+  if(diff===0)return '今日';
+  if(diff===1)return '昨日';
+  if(d.getFullYear()===now.getFullYear())return (d.getMonth()+1)+'月'+d.getDate()+'日';
+  return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';
+}
+// 時刻表示 (HH:mm)
+function chatTimeLabel(ts){
+  const d=new Date(ts);
+  return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+}
+
+function renderChatLog(c){
+  const log=$('detail-chat-log');
+  log.innerHTML='';
+  const msgs=getChatMessages(c);
+  if(msgs.length===0)return;
+
+  let lastDate='';
+  msgs.forEach((m,idx)=>{
+    if(m.deleted)return;
+    const t=m.t||Date.now();
+    const dateLabel=chatDateLabel(t);
+    // 日付が変わったらセパレーター挿入
+    if(dateLabel!==lastDate){
+      const sep=document.createElement('div');
+      sep.className='chat-date-sep';
+      sep.innerHTML=`<span>${dateLabel}</span>`;
+      log.appendChild(sep);
+      lastDate=dateLabel;
+    }
+    const div=document.createElement('div');
+    const isUser=(m.role==='user' || m.role==='memo');
+    div.className='msg '+(isUser?'u':'a');
+    div.dataset.midx=idx;
+    div.innerHTML=`
+      <div class="msg-time">${chatTimeLabel(t)}</div>
+      <div class="bubble">${esc(m.text)}</div>
+    `;
+    log.appendChild(div);
+
+    // ユーザー側(自分が送ったもの)は長押しで取り消し
+    if(isUser)attachBubbleLongPress(div,c.id,idx);
+  });
+}
+
+// バブル長押しで「取り消し」メニューを出す
+function attachBubbleLongPress(msgEl,cardId,msgIdx){
+  let pressTimer=null,startX=0,startY=0,moved=false;
+  const xy=ev=>ev.touches?[ev.touches[0].clientX,ev.touches[0].clientY]:[ev.clientX,ev.clientY];
+  const onStart=ev=>{
+    [startX,startY]=xy(ev);
+    moved=false;
+    pressTimer=setTimeout(()=>{
+      if(moved)return;
+      if(navigator.vibrate)navigator.vibrate(20);
+      showUnsendConfirm(cardId,msgIdx);
+    },550);
+  };
+  const onMove=ev=>{
+    const [x,y]=xy(ev);
+    if(Math.abs(x-startX)>8 || Math.abs(y-startY)>8){moved=true;clearTimeout(pressTimer);}
+  };
+  const onEnd=()=>{clearTimeout(pressTimer);};
+  msgEl.addEventListener('touchstart',onStart,{passive:true});
+  msgEl.addEventListener('touchmove',onMove,{passive:true});
+  msgEl.addEventListener('touchend',onEnd);
+  msgEl.addEventListener('touchcancel',onEnd);
+  msgEl.addEventListener('mousedown',onStart);
+  msgEl.addEventListener('mousemove',onMove);
+  msgEl.addEventListener('mouseup',onEnd);
+}
+
+function showUnsendConfirm(cardId,msgIdx){
+  if(!confirm('このメッセージを取り消しますか?'))return;
+  const cIdx=state.cards.findIndex(x=>x.id===cardId);
+  if(cIdx<0)return;
+  const c=state.cards[cIdx];
+  // 旧aiLog形式を新chat形式に変換
+  if(!c.chat){c.chat=getChatMessages(c);delete c.aiLog;}
+  if(!c.chat[msgIdx])return;
+  c.chat[msgIdx].deleted=true;
+  save();
+  state.current=Object.assign({},c,{_origin:state.current._origin});
+  renderChatLog(c);
+}
+
 function openDetail(c,origin){
   state.current=Object.assign({},c,{_origin:origin});
   state.detailAiMode=false;
@@ -2584,16 +2737,8 @@ function openDetail(c,origin){
   $('detail-content').innerHTML=contentHtml;
   $('detail-chat-log').innerHTML='';
 
-  // 過去のAI会話を復元
-  if(c.aiLog && c.aiLog.length>0){
-    const log=$('detail-chat-log');
-    c.aiLog.forEach(m=>{
-      const div=document.createElement('div');
-      div.className='msg '+(m.role==='user'?'u':'a');
-      div.innerHTML=`<div class="bubble">${esc(m.text)}</div>`;
-      log.appendChild(div);
-    });
-  }
+  // チャット(AI会話 + 追記メモ)を時系列表示
+  renderChatLog(c);
 
   // リスト項目クリック (自分の棚のみ)
   if(!isOfficial){
@@ -2712,60 +2857,60 @@ async function detailSend(){
   if(cIdx<0)return;
   const c=state.cards[cIdx];
 
+  // c.chat 配列を初期化(旧 aiLog があれば取り込んでマイグレーション)
+  if(!c.chat){
+    c.chat=getChatMessages(c);
+    delete c.aiLog;
+  }
+
   if(state.detailAiMode){
     // AIに質問
-    if(!c.aiLog)c.aiLog=[];
-    c.aiLog.push({role:'user',text:v,t:Date.now()});
+    const userMsg={role:'user',text:v,t:Date.now()};
+    c.chat.push(userMsg);
     save();
-
-    const log=$('detail-chat-log');
-    const uMsg=document.createElement('div');
-    uMsg.className='msg u';
-    uMsg.innerHTML=`<div class="bubble">${esc(v)}</div>`;
-    log.appendChild(uMsg);
     inp.value='';
     inp.style.height='auto';
+    renderChatLog(c);
 
-    const aMsg=document.createElement('div');
-    aMsg.className='msg a';
-    aMsg.innerHTML=`<div class="bubble">…</div>`;
-    log.appendChild(aMsg);
+    // 「…」のプレースホルダーを追加
+    const placeholderIdx=c.chat.length;
+    c.chat.push({role:'ai',text:'…',t:Date.now(),pending:true});
+    renderChatLog(c);
     $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
 
     try{
       const answer=await callAI(v,c);
-      aMsg.querySelector('.bubble').textContent=answer;
-      // 永続化
       const cIdx2=state.cards.findIndex(x=>x.id===state.current.id);
       if(cIdx2>=0){
-        if(!state.cards[cIdx2].aiLog)state.cards[cIdx2].aiLog=[];
-        state.cards[cIdx2].aiLog.push({role:'assistant',text:answer,t:Date.now()});
+        const c2=state.cards[cIdx2];
+        if(c2.chat && c2.chat[placeholderIdx]){
+          c2.chat[placeholderIdx]={role:'ai',text:answer,t:Date.now()};
+        }else if(c2.chat){
+          c2.chat.push({role:'ai',text:answer,t:Date.now()});
+        }
         save();
+        renderChatLog(c2);
       }
       $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
     }catch(e){
-      aMsg.querySelector('.bubble').textContent='エラー: '+e.message;
+      const cIdx3=state.cards.findIndex(x=>x.id===state.current.id);
+      if(cIdx3>=0){
+        const c3=state.cards[cIdx3];
+        if(c3.chat && c3.chat[placeholderIdx]){
+          c3.chat[placeholderIdx]={role:'ai',text:'エラー: '+e.message,t:Date.now()};
+        }
+        save();
+        renderChatLog(c3);
+      }
     }
   }else{
-    // メモとしてカードに追記
-    const prev=c.text||'';
-    c.text=prev?prev+'\n'+v:v;
-    state.current.text=c.text;
+    // メモとして追記 (LINEで自分が投稿するイメージ)
+    c.chat.push({role:'memo',text:v,t:Date.now()});
     save();
     inp.value='';
     inp.style.height='auto';
-    const detailText=$('detail-content').querySelector('.detail-text');
-    if(detailText){
-      detailText.textContent=c.text;
-      if(c.type==='note'){
-        const fz=autoFontSizeDetail(c.text);
-        detailText.style.fontSize=fz+'px';
-        detailText.style.textAlign=fz>=24?'center':'left';
-      }
-    }else{
-      openDetail(c,'mine');
-    }
-    toast('追記しました');
+    renderChatLog(c);
+    $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
   }
 }
 
