@@ -264,6 +264,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   gap:2px;
   padding:2px;
 }
+.grid.editing{padding:14px 8px 2px;}
 .card{
   aspect-ratio:1;
   background:var(--surface);
@@ -297,16 +298,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .card .li.done .chk{background:var(--g);border-color:var(--g);}
 .card .li.done{color:var(--ink3);text-decoration:line-through;}
 
-.card-badge{
-  position:absolute;
-  top:4px;right:4px;
-  width:14px;height:14px;
-  background:rgba(255,255,255,.92);
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--ink2);
-  pointer-events:none;
-}
 .card-source{
   position:absolute;
   bottom:0;left:0;right:0;
@@ -316,17 +307,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   padding:14px 6px 4px;
   pointer-events:none;
 }
-.card-stage{
-  position:absolute;
-  bottom:4px;right:4px;
-  display:flex;gap:1.5px;
-  background:rgba(255,255,255,.85);
-  padding:2px 4px;
-  border-radius:6px;
-  pointer-events:none;
-}
-.card-stage .dot{width:3px;height:3px;border-radius:50%;background:var(--ink3);}
-.card-stage .dot.on{background:var(--g);}
 
 /* モザイク */
 .card.mosaic .ctxt,
@@ -362,11 +342,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .grid.editing .card.dragging{animation:none;opacity:0.4;}
 .grid.editing .card.drop-here{outline:2px solid var(--g);outline-offset:-2px;}
+/* 編集モードで overflow:visible にした分、内側の角丸を継承 */
+.grid.editing .card>img,
+.grid.editing .card>.ctxt{
+  border-radius:2px;
+}
 
 /* 編集モードの削除ボタン — 最前面に */
 .card-del{
   position:absolute;
-  top:-7px;left:-7px;
+  top:-9px;left:-9px;
   width:24px;height:24px;
   border-radius:50%;
   background:#1a1a1a;
@@ -660,11 +645,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .detail-list-item.done .chk{background:var(--g);border-color:var(--g);}
 
-/* 詳細画面の下部メモエリア + AIアクション (ボトムナビと同じ高さ・位置) */
+/* 詳細画面の下部メモエリア (ボトムナビの上に配置、サイズ統一) */
 .detail-input{
   background:var(--surface);
   border-top:0.5px solid var(--line);
-  padding:7px 10px max(18px,env(safe-area-inset-bottom));
+  padding:7px 10px;
   display:flex;
   align-items:center;
   gap:8px;
@@ -1474,6 +1459,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
     </button>
   </div>
+  <div class="bnav" data-bnav="home"></div>
 </div>
 
 <!-- REVIEW -->
@@ -1487,6 +1473,29 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="review-counter"><span id="rev-cur">0</span>/<span id="rev-total">0</span></div>
     </div>
     <div class="review-stage" id="rev-stage"></div>
+  </div>
+</div>
+
+<!-- PHOTO SOURCE SHEET -->
+<div class="sheet-mask" id="photo-mask" data-action="close-photo-sheet"></div>
+<div class="sheet" id="photo-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">写真を…</div>
+  <div class="sheet-options">
+    <button class="sheet-opt" data-action="pick-camera">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+      <div class="sheet-opt-title">撮る</div>
+      <div class="sheet-opt-desc">カメラを起動</div>
+    </button>
+    <button class="sheet-opt" data-action="pick-library">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+      </div>
+      <div class="sheet-opt-title">選ぶ</div>
+      <div class="sheet-opt-desc">ライブラリから</div>
+    </button>
   </div>
 </div>
 
@@ -1537,6 +1546,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <div class="toast" id="toast">保存しました</div>
 <input type="file" id="file-input" accept="image/*" style="display:none;">
+<input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none;">
 
 </div><!-- .app -->
 
@@ -1930,19 +1940,12 @@ function renderGrid(el,cards,origin){
       const centered=fz>=15;
       const style=`background:${col.bg};color:${col.fg};font-size:${fz}px;${centered?'display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.4;-webkit-line-clamp:initial;':''}`;
       inner=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
-      inner+=`<div class="card-badge"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/></svg></div>`;
     }else if(c.type==='list'){
       const items=(c.items||[]).slice(0,5).map(i=>
         `<div class="li ${i.d?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`
       ).join('');
       const title=c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;color:var(--gd);">${esc(c.title)}</div>`:'';
       inner=`<div class="ctxt">${title}${items}</div>`;
-      inner+=`<div class="card-badge"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/></svg></div>`;
-    }
-    if(origin==='mine' && c.type!=='list'){
-      const stage=c.stage||0;
-      const dots=[0,1,2,3,4].map(i=>`<div class="dot ${i<stage?'on':''}"></div>`).join('');
-      inner+=`<div class="card-stage">${dots}</div>`;
     }
     if(origin==='mine'){
       inner=`<button class="card-del"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></button>`+inner;
@@ -2168,7 +2171,7 @@ function startCreate(type){
   };
   if(type==='photo' || type==='photonote'){
     state.photoMode=type;
-    $('file-input').click();
+    openPhotoSheet();
   }else if(type==='note'){
     renderUpload();
     goto('screen-upload');
@@ -2186,6 +2189,23 @@ function startCreate(type){
       if(inp)inp.focus();
     },100);
   }
+}
+
+function openPhotoSheet(){
+  $('photo-mask').classList.add('on');
+  $('photo-sheet').classList.add('on');
+}
+function closePhotoSheet(){
+  $('photo-mask').classList.remove('on');
+  $('photo-sheet').classList.remove('on');
+}
+function pickCamera(){
+  closePhotoSheet();
+  $('file-input-camera').click();
+}
+function pickLibrary(){
+  closePhotoSheet();
+  $('file-input').click();
 }
 
 function onFilePick(e){
@@ -2277,7 +2297,6 @@ function quickSave(){
 function quickPhoto(){
   state.current=null;
   state.photoMode='photonote';
-  // クイック入力中のテキストを写真メモに引き継ぐ
   const v=$('quick-input').value.trim();
   state.current={
     id:'c_'+Date.now(),
@@ -2289,7 +2308,7 @@ function quickPhoto(){
   if(!v)state.photoMode='photo';
   $('quick-input').value='';
   onQuickInput();
-  $('file-input').click();
+  openPhotoSheet();
 }
 
 function quickList(){
@@ -2313,7 +2332,7 @@ function renderUpload(){
     change.textContent='写真を変える';
     change.addEventListener('click',()=>{
       state.photoMode=c.type;
-      $('file-input').click();
+      openPhotoSheet();
     });
     wrap.appendChild(change);
     body.appendChild(wrap);
@@ -3186,6 +3205,9 @@ document.addEventListener('click',e=>{
     case 'copy-to-shelf':copyToShelf();break;
     case 'open-color-picker':openColorPicker();break;
     case 'close-color':closeColorPicker();break;
+    case 'close-photo-sheet':closePhotoSheet();break;
+    case 'pick-camera':pickCamera();break;
+    case 'pick-library':pickLibrary();break;
     case 'toggle-sub':if(state.currentOfficial)toggleSubById(state.currentOfficial.id);break;
     case 'toggle-ai-mode':toggleAiMode();break;
     case 'detail-send':detailSend();break;
@@ -3232,6 +3254,7 @@ $('detail-input').addEventListener('keydown',e=>{
 });
 
 $('file-input').addEventListener('change',onFilePick);
+$('file-input-camera').addEventListener('change',onFilePick);
 
 // 起動
 setupNavs();
