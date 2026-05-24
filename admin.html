@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnapIn 管理画面</title>
+<meta name="theme-color" content="#1D9E75">
+<style>
+:root{
+  --g:#1D9E75; --gl:#E8F5EF; --gd:#0F6E56;
+  --bg:#FAFAF7; --surface:#FFFFFF;
+  --ink:#1A1A1A; --ink2:#5C5C5C; --ink3:#9A9A9A;
+  --line:rgba(0,0,0,.08); --line2:rgba(0,0,0,.14);
+  --amber:#E8A33D; --rose:#D6604D;
+  --font-jp:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium",sans-serif;
+  --font-en:"Charter","Iowan Old Style","Georgia",serif;
+  --shadow:0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  min-height:100%;
+  background:var(--bg);
+  font-family:var(--font-jp);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;}
+input,textarea{font-family:inherit;border:none;outline:none;background:none;color:inherit;}
+
+.app{
+  max-width:980px;
+  margin:0 auto;
+  padding:0 20px;
+  min-height:100vh;
+}
+
+/* HEADER */
+.hdr{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:20px 0;
+  border-bottom:1px solid var(--line);
+}
+.logo{
+  font-family:var(--font-en);
+  font-size:26px;
+  font-weight:600;
+  letter-spacing:-0.02em;
+}
+.logo em{color:var(--g);font-style:italic;}
+.logo-suffix{
+  font-family:var(--font-jp);
+  font-size:13px;
+  color:var(--ink3);
+  margin-left:10px;
+  font-style:normal;
+}
+.hdr-right{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.btn{
+  padding:8px 14px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:600;
+  transition:all .12s;
+}
+.btn-primary{background:var(--g);color:white;}
+.btn-primary:hover{background:var(--gd);}
+.btn-secondary{background:var(--bg);color:var(--ink);border:1px solid var(--line2);}
+.btn-secondary:hover{background:var(--surface);}
+.btn-danger{background:#FFE8E5;color:var(--rose);}
+.btn-danger:hover{background:#FFD9D5;}
+.btn-ghost{color:var(--ink2);}
+.btn-ghost:hover{color:var(--g);}
+
+/* LAYOUT */
+.layout{
+  display:grid;
+  grid-template-columns:280px 1fr;
+  gap:24px;
+  padding:24px 0;
+}
+@media(max-width:760px){
+  .layout{grid-template-columns:1fr;}
+}
+
+/* SIDEBAR */
+.sidebar h3{
+  font-size:11px;
+  letter-spacing:0.1em;
+  color:var(--ink3);
+  font-family:var(--font-en);
+  text-transform:uppercase;
+  margin-bottom:10px;
+  font-weight:500;
+}
+.shelf-list{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin-bottom:18px;
+}
+.shelf-btn{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:8px;
+  text-align:left;
+  transition:background .12s;
+  font-size:14px;
+  font-weight:500;
+}
+.shelf-btn:hover{background:var(--gl);}
+.shelf-btn.active{background:var(--gl);color:var(--gd);}
+.shelf-btn-icon{
+  width:32px;height:32px;
+  border-radius:8px;
+  background:var(--surface);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--gd);
+  font-weight:700;
+  font-size:13px;
+  flex-shrink:0;
+  font-family:var(--font-en);
+}
+.shelf-btn-info{flex:1;min-width:0;}
+.shelf-btn-name{font-weight:600;}
+.shelf-btn-handle{
+  font-size:11px;
+  color:var(--ink3);
+  font-family:var(--font-en);
+  margin-top:1px;
+}
+
+.add-shelf-btn{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:8px;
+  color:var(--g);
+  font-size:13px;
+  font-weight:500;
+  border:1px dashed var(--line2);
+  width:100%;
+  text-align:left;
+}
+.add-shelf-btn:hover{border-color:var(--g);background:var(--gl);}
+
+/* MAIN */
+.main{min-width:0;}
+.main-empty{
+  padding:80px 40px;
+  text-align:center;
+  color:var(--ink3);
+  font-size:14px;
+  line-height:1.7;
+}
+.shelf-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:20px;
+  padding-bottom:16px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:20px;
+}
+.shelf-info{flex:1;}
+.shelf-name{
+  font-size:22px;
+  font-weight:700;
+  margin-bottom:4px;
+}
+.shelf-handle{
+  font-size:12px;
+  color:var(--ink3);
+  font-family:var(--font-en);
+  margin-bottom:8px;
+}
+.shelf-desc{
+  font-size:13px;
+  color:var(--ink2);
+  line-height:1.6;
+}
+.shelf-actions{
+  display:flex;
+  gap:8px;
+  flex-shrink:0;
+}
+
+/* CARDS GRID */
+.cards-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(170px, 1fr));
+  gap:10px;
+  margin-top:8px;
+}
+.adm-card{
+  aspect-ratio:1;
+  background:#FFFDF5;
+  border-radius:8px;
+  overflow:hidden;
+  position:relative;
+  cursor:pointer;
+  border:1px solid var(--line);
+  transition:transform .12s, box-shadow .12s;
+  display:flex;
+  flex-direction:column;
+}
+.adm-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.06);}
+.adm-card img{width:100%;height:100%;object-fit:cover;}
+.adm-card .ctxt{
+  padding:10px;
+  font-size:11px;
+  line-height:1.5;
+  flex:1;
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-line-clamp:8;
+  -webkit-box-orient:vertical;
+  word-break:break-word;
+}
+.adm-card.list .ctxt{background:#F4F8F3;}
+.adm-card-del{
+  position:absolute;
+  top:6px;right:6px;
+  width:24px;height:24px;
+  border-radius:50%;
+  background:rgba(0,0,0,.5);
+  color:white;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:2;
+}
+.adm-card:hover .adm-card-del{display:flex;}
+.adm-card-del:hover{background:var(--rose);}
+
+.add-card-cell{
+  aspect-ratio:1;
+  border:2px dashed var(--line2);
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--ink3);
+  cursor:pointer;
+  transition:all .12s;
+}
+.add-card-cell:hover{
+  border-color:var(--g);
+  color:var(--g);
+  background:var(--gl);
+}
+
+/* MODAL */
+.modal-mask{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.5);
+  z-index:100;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.modal-mask.on{display:flex;}
+.modal{
+  background:var(--surface);
+  border-radius:12px;
+  width:100%;
+  max-width:560px;
+  max-height:90vh;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+}
+.modal-head{
+  padding:16px 20px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.modal-title{font-size:16px;font-weight:600;}
+.modal-close{
+  width:28px;height:28px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ink3);
+}
+.modal-close:hover{background:var(--bg);color:var(--ink);}
+.modal-body{padding:20px;}
+.modal-foot{
+  padding:16px 20px;
+  border-top:1px solid var(--line);
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+}
+.form-row{margin-bottom:16px;}
+.form-label{
+  display:block;
+  font-size:12px;
+  color:var(--ink2);
+  margin-bottom:6px;
+  font-weight:600;
+}
+.form-input{
+  width:100%;
+  padding:10px 12px;
+  border:1px solid var(--line2);
+  border-radius:8px;
+  font-size:14px;
+  background:var(--bg);
+}
+.form-input:focus{
+  border-color:var(--g);
+  background:var(--surface);
+}
+.form-textarea{
+  min-height:120px;
+  font-family:inherit;
+  resize:vertical;
+  line-height:1.6;
+}
+
+/* TYPE SELECTOR */
+.type-selector{
+  display:flex;
+  gap:8px;
+  margin-bottom:14px;
+}
+.type-opt{
+  flex:1;
+  padding:10px;
+  text-align:center;
+  border-radius:8px;
+  border:1px solid var(--line2);
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+}
+.type-opt.on{background:var(--gl);border-color:var(--g);color:var(--gd);}
+.type-opt:hover{border-color:var(--g);}
+
+/* LIST ITEMS in modal */
+.modal-list-item{
+  display:flex;
+  gap:8px;
+  padding:6px 0;
+  align-items:center;
+}
+.modal-list-item input[type=text]{
+  flex:1;
+  padding:6px 10px;
+  border:1px solid var(--line2);
+  border-radius:6px;
+  font-size:14px;
+}
+.modal-list-item .del{
+  color:var(--ink3);
+  width:24px;height:24px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50%;
+}
+.modal-list-item .del:hover{color:var(--rose);background:#FFE8E5;}
+
+/* PHOTO PREVIEW */
+.photo-preview{
+  width:100%;
+  aspect-ratio:1;
+  background:var(--bg);
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:14px;
+  overflow:hidden;
+  position:relative;
+  border:1px dashed var(--line2);
+}
+.photo-preview img{width:100%;height:100%;object-fit:cover;}
+.photo-preview-empty{color:var(--ink3);font-size:13px;}
+
+/* TOAST */
+.toast{
+  position:fixed;
+  bottom:30px;
+  left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:rgba(26,26,26,.92);
+  color:white;
+  padding:10px 18px;
+  border-radius:20px;
+  font-size:13px;
+  z-index:200;
+  opacity:0;
+  pointer-events:none;
+  transition:all .25s;
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.hide{display:none !important;}
+
+/* AUTH */
+.auth-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  padding:40px 20px;
+}
+.auth-box{
+  width:100%;
+  max-width:380px;
+  background:var(--surface);
+  border-radius:12px;
+  padding:32px 28px;
+  box-shadow:var(--shadow);
+}
+.auth-title{
+  font-family:var(--font-en);
+  font-size:32px;
+  font-weight:600;
+  margin-bottom:8px;
+}
+.auth-title em{color:var(--g);font-style:italic;}
+.auth-sub{
+  font-size:13px;
+  color:var(--ink2);
+  margin-bottom:24px;
+}
+.auth-form .form-input{margin-bottom:12px;}
+.auth-submit{
+  width:100%;
+  padding:12px;
+  margin-top:8px;
+  background:var(--g);
+  color:white;
+  border-radius:8px;
+  font-size:14px;
+  font-weight:600;
+}
+.auth-submit:hover{background:var(--gd);}
+.auth-note{
+  font-size:11px;
+  color:var(--ink3);
+  margin-top:20px;
+  line-height:1.6;
+  text-align:center;
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="auth-wrap" id="auth-wrap">
+  <div class="auth-box">
+    <div class="auth-title">Snap<em>In</em> <span style="font-size:14px;font-family:var(--font-jp);color:var(--ink3);">管理画面</span></div>
+    <div class="auth-sub">公式アカウントのメモを管理します。</div>
+    <div class="auth-form">
+      <input type="email" class="form-input" id="auth-email" placeholder="メールアドレス" autocomplete="email">
+      <input type="password" class="form-input" id="auth-pass" placeholder="パスワード" autocomplete="current-password">
+      <button class="auth-submit" id="auth-submit">ログイン</button>
+    </div>
+    <div class="auth-note">
+      これはデモ用の簡易認証です。本番では Vercel Edge Middleware や 認証プロバイダ(Clerk, Auth0等)を組み合わせてください。
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app hide" id="app">
+  <div class="hdr">
+    <div>
+      <span class="logo">Snap<em>In</em></span>
+      <span class="logo-suffix">管理画面</span>
+    </div>
+    <div class="hdr-right">
+      <span style="font-size:13px;color:var(--ink2);" id="login-as">―</span>
+      <button class="btn btn-ghost" id="logout-btn">ログアウト</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <h3>管理する棚</h3>
+      <div class="shelf-list" id="shelf-list"></div>
+      <button class="add-shelf-btn" id="add-shelf-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        新しい棚を作る
+      </button>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="main-empty" id="main-empty">
+        左の棚を選んでください。<br>
+        または「新しい棚を作る」から始めましょう。
+      </div>
+      <div id="main-shelf" class="hide">
+        <div class="shelf-head">
+          <div class="shelf-info">
+            <div class="shelf-name" id="shelf-name">―</div>
+            <div class="shelf-handle" id="shelf-handle">―</div>
+            <div class="shelf-desc" id="shelf-desc">―</div>
+          </div>
+          <div class="shelf-actions">
+            <button class="btn btn-secondary" id="edit-shelf-btn">編集</button>
+            <button class="btn btn-danger" id="delete-shelf-btn">削除</button>
+          </div>
+        </div>
+        <div class="cards-grid" id="cards-grid"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- SHELF MODAL -->
+<div class="modal-mask" id="shelf-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="shelf-modal-title">新しい棚を作る</div>
+      <button class="modal-close" data-close="shelf-modal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">棚の名前</label>
+        <input type="text" class="form-input" id="shelf-form-name" placeholder="例: JUKEN CAMP 英語">
+      </div>
+      <div class="form-row">
+        <label class="form-label">ハンドル (英数字、@で始まる)</label>
+        <input type="text" class="form-input" id="shelf-form-handle" placeholder="例: @jukencamp-english">
+      </div>
+      <div class="form-row">
+        <label class="form-label">説明</label>
+        <textarea class="form-input form-textarea" id="shelf-form-desc" placeholder="どんな棚かを書いてください"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="shelf-modal">キャンセル</button>
+      <button class="btn btn-primary" id="shelf-save-btn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- CARD MODAL -->
+<div class="modal-mask" id="card-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="card-modal-title">新しいメモ</div>
+      <button class="modal-close" data-close="card-modal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="type-selector">
+        <div class="type-opt on" data-type="note">メモ</div>
+        <div class="type-opt" data-type="photo">写真</div>
+        <div class="type-opt" data-type="list">リスト</div>
+      </div>
+      <div id="card-form-note" class="form-row">
+        <textarea class="form-input form-textarea" id="card-form-text" placeholder="メモ内容を入力..." style="min-height:180px;"></textarea>
+      </div>
+      <div id="card-form-photo" class="hide">
+        <div class="photo-preview" id="photo-preview">
+          <div class="photo-preview-empty">写真を選んでください</div>
+        </div>
+        <input type="file" id="photo-file" accept="image/*" style="display:none;">
+        <button class="btn btn-secondary" id="photo-pick-btn" style="width:100%;margin-bottom:14px;">写真を選ぶ</button>
+        <textarea class="form-input form-textarea" id="card-form-photo-text" placeholder="写真の説明 (任意)" style="min-height:80px;"></textarea>
+      </div>
+      <div id="card-form-list" class="hide">
+        <input type="text" class="form-input" id="card-form-list-title" placeholder="リストのタイトル" style="margin-bottom:10px;">
+        <div id="list-items-wrap"></div>
+        <button class="btn btn-ghost" id="add-list-item-btn" style="color:var(--g);margin-top:4px;">+ 項目を追加</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="card-modal">キャンセル</button>
+      <button class="btn btn-primary" id="card-save-btn">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">保存しました</div>
+
+<script>
+(function(){
+'use strict';
+
+const STORAGE_KEY='snapin_admin_v1';
+const AUTH_KEY='snapin_admin_auth';
+const $=id=>document.getElementById(id);
+
+// デモ用の認証情報 (本番では絶対に変えること)
+const DEMO_CREDS={
+  email:'directsystemtheory@yahoo.co.jp',
+  password:'jukencamp2026',
+};
+
+const state={
+  shelves:[],
+  currentShelfId:null,
+  editingShelfId:null,
+  editingCardId:null,
+};
+
+function save(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state.shelves));
+}
+function load(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw){
+      // 初期データ
+      state.shelves=[
+        {id:'jc-english',handle:'@jukencamp-english',name:'JUKEN CAMP 英語',desc:'英単語、文法、長文読解の基礎',cards:[
+          {id:'oe1',type:'note',text:'be動詞 + ~ing\n→ 進行形\n「~している」',date:'2026-05-20'},
+          {id:'oe2',type:'note',text:'過去分詞 = -ed (規則)\nbeen, gone, seen (不規則)',date:'2026-05-18'},
+        ]},
+        {id:'jc-math',handle:'@jukencamp-math',name:'JUKEN CAMP 数学',desc:'公式、解法、計算ミス対策',cards:[
+          {id:'om1',type:'note',text:'三平方の定理\na² + b² = c²\n直角三角形のみ',date:'2026-05-19'},
+        ]},
+      ];
+      save();
+      return;
+    }
+    state.shelves=JSON.parse(raw)||[];
+  }catch(e){state.shelves=[];}
+}
+
+// ═══ AUTH ═══
+function checkAuth(){
+  return localStorage.getItem(AUTH_KEY)==='ok';
+}
+function tryLogin(){
+  const email=$('auth-email').value.trim();
+  const pass=$('auth-pass').value;
+  if(email===DEMO_CREDS.email && pass===DEMO_CREDS.password){
+    localStorage.setItem(AUTH_KEY,'ok');
+    $('auth-wrap').classList.add('hide');
+    $('app').classList.remove('hide');
+    $('login-as').textContent=email;
+    init();
+  }else{
+    toast('メールアドレスかパスワードが違います');
+  }
+}
+function logout(){
+  localStorage.removeItem(AUTH_KEY);
+  location.reload();
+}
+
+// ═══ RENDER ═══
+function render(){
+  // サイドバー
+  const list=$('shelf-list');
+  list.innerHTML='';
+  state.shelves.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.className='shelf-btn'+(state.currentShelfId===s.id?' active':'');
+    btn.innerHTML=`
+      <div class="shelf-btn-icon">${esc(s.name.slice(0,1))}</div>
+      <div class="shelf-btn-info">
+        <div class="shelf-btn-name">${esc(s.name)}</div>
+        <div class="shelf-btn-handle">${esc(s.handle)}</div>
+      </div>
+    `;
+    btn.addEventListener('click',()=>selectShelf(s.id));
+    list.appendChild(btn);
+  });
+
+  // メイン
+  const empty=$('main-empty');
+  const main=$('main-shelf');
+  if(!state.currentShelfId){
+    empty.classList.remove('hide');
+    main.classList.add('hide');
+    return;
+  }
+  const s=state.shelves.find(x=>x.id===state.currentShelfId);
+  if(!s){
+    state.currentShelfId=null;
+    render();
+    return;
+  }
+  empty.classList.add('hide');
+  main.classList.remove('hide');
+  $('shelf-name').textContent=s.name;
+  $('shelf-handle').textContent=s.handle;
+  $('shelf-desc').textContent=s.desc||'説明なし';
+
+  // カード
+  const grid=$('cards-grid');
+  grid.innerHTML='';
+  s.cards.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='adm-card '+c.type;
+    let inner='';
+    if(c.type==='photo'||c.type==='photonote'){
+      inner=`<img src="${c.image||''}" alt="">`;
+    }else if(c.type==='note'){
+      inner=`<div class="ctxt">${esc(c.text||'')}</div>`;
+    }else if(c.type==='list'){
+      const items=(c.items||[]).slice(0,5).map(i=>
+        `<div style="font-size:11px;line-height:1.5;margin-bottom:2px;">・${esc(i.t)}</div>`
+      ).join('');
+      const title=c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;color:var(--gd);">${esc(c.title)}</div>`:'';
+      inner=`<div class="ctxt">${title}${items}</div>`;
+    }
+    const del=`<button class="adm-card-del" data-delete="${c.id}">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>`;
+    el.innerHTML=del+inner;
+    el.addEventListener('click',(e)=>{
+      if(e.target.closest('[data-delete]')){
+        if(confirm('このメモを削除しますか?')){
+          s.cards=s.cards.filter(x=>x.id!==c.id);
+          save();
+          render();
+        }
+        return;
+      }
+      openCardModal(c);
+    });
+    grid.appendChild(el);
+  });
+  // 追加セル
+  const add=document.createElement('div');
+  add.className='add-card-cell';
+  add.innerHTML=`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>`;
+  add.addEventListener('click',()=>openCardModal(null));
+  grid.appendChild(add);
+}
+
+function selectShelf(id){
+  state.currentShelfId=id;
+  render();
+}
+
+// ═══ SHELF MODAL ═══
+function openShelfModal(shelf){
+  state.editingShelfId=shelf?shelf.id:null;
+  $('shelf-modal-title').textContent=shelf?'棚を編集':'新しい棚を作る';
+  $('shelf-form-name').value=shelf?shelf.name:'';
+  $('shelf-form-handle').value=shelf?shelf.handle:'@jukencamp-';
+  $('shelf-form-desc').value=shelf?(shelf.desc||''):'';
+  $('shelf-modal').classList.add('on');
+  setTimeout(()=>$('shelf-form-name').focus(),50);
+}
+function saveShelf(){
+  const name=$('shelf-form-name').value.trim();
+  const handle=$('shelf-form-handle').value.trim();
+  const desc=$('shelf-form-desc').value.trim();
+  if(!name || !handle){toast('名前とハンドルは必須です');return;}
+  if(!handle.startsWith('@')){toast('ハンドルは @ で始めてください');return;}
+
+  if(state.editingShelfId){
+    const s=state.shelves.find(x=>x.id===state.editingShelfId);
+    if(s){
+      s.name=name; s.handle=handle; s.desc=desc;
+    }
+  }else{
+    const id=handle.replace(/^@/,'').replace(/[^a-z0-9-]/g,'-');
+    if(state.shelves.find(s=>s.id===id)){toast('そのハンドルは既に存在します');return;}
+    state.shelves.push({id,handle,name,desc,cards:[]});
+    state.currentShelfId=id;
+  }
+  save();
+  $('shelf-modal').classList.remove('on');
+  render();
+  toast('保存しました');
+}
+
+function deleteShelf(){
+  if(!state.currentShelfId)return;
+  const s=state.shelves.find(x=>x.id===state.currentShelfId);
+  if(!s)return;
+  if(!confirm(`「${s.name}」を完全に削除しますか?\n${s.cards.length}件のメモも一緒に削除されます。`))return;
+  state.shelves=state.shelves.filter(x=>x.id!==state.currentShelfId);
+  state.currentShelfId=null;
+  save();
+  render();
+  toast('削除しました');
+}
+
+// ═══ CARD MODAL ═══
+let cardFormType='note';
+let cardFormImage=null;
+let cardFormListItems=[{t:'',d:false}];
+
+function openCardModal(card){
+  state.editingCardId=card?card.id:null;
+  $('card-modal-title').textContent=card?'メモを編集':'新しいメモ';
+  cardFormType=card?card.type==='photonote'?'photo':card.type:'note';
+  cardFormImage=card?card.image:null;
+  cardFormListItems=card&&card.type==='list'?(card.items||[{t:'',d:false}]).map(i=>({...i})):[{t:'',d:false}];
+  $('card-form-text').value=card&&card.type==='note'?(card.text||''):'';
+  $('card-form-photo-text').value=card&&(card.type==='photo'||card.type==='photonote')?(card.text||''):'';
+  $('card-form-list-title').value=card&&card.type==='list'?(card.title||''):'';
+  renderCardModalType();
+  $('card-modal').classList.add('on');
+}
+
+function renderCardModalType(){
+  document.querySelectorAll('.type-opt').forEach(b=>{
+    b.classList.toggle('on',b.dataset.type===cardFormType);
+  });
+  $('card-form-note').classList.toggle('hide',cardFormType!=='note');
+  $('card-form-photo').classList.toggle('hide',cardFormType!=='photo');
+  $('card-form-list').classList.toggle('hide',cardFormType!=='list');
+  // 写真プレビュー
+  const pv=$('photo-preview');
+  if(cardFormImage){
+    pv.innerHTML=`<img src="${cardFormImage}">`;
+  }else{
+    pv.innerHTML=`<div class="photo-preview-empty">写真を選んでください</div>`;
+  }
+  // リスト項目
+  renderListItems();
+}
+
+function renderListItems(){
+  const wrap=$('list-items-wrap');
+  wrap.innerHTML='';
+  cardFormListItems.forEach((item,i)=>{
+    const row=document.createElement('div');
+    row.className='modal-list-item';
+    row.innerHTML=`
+      <input type="text" value="${esc(item.t)}" placeholder="項目">
+      <button class="del">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    `;
+    row.querySelector('input').addEventListener('input',e=>{cardFormListItems[i].t=e.target.value;});
+    row.querySelector('input').addEventListener('keydown',e=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        cardFormListItems.push({t:'',d:false});
+        renderListItems();
+        setTimeout(()=>{
+          const inps=wrap.querySelectorAll('input');
+          if(inps.length)inps[inps.length-1].focus();
+        },50);
+      }
+    });
+    row.querySelector('.del').addEventListener('click',()=>{
+      cardFormListItems.splice(i,1);
+      if(cardFormListItems.length===0)cardFormListItems=[{t:'',d:false}];
+      renderListItems();
+    });
+    wrap.appendChild(row);
+  });
+}
+
+function saveCard(){
+  if(!state.currentShelfId){toast('棚を選んでください');return;}
+  const s=state.shelves.find(x=>x.id===state.currentShelfId);
+  if(!s)return;
+
+  const date=new Date().toISOString().slice(0,10);
+  let newCard=null;
+
+  if(cardFormType==='note'){
+    const text=$('card-form-text').value.trim();
+    if(!text){toast('メモが空です');return;}
+    newCard={id:state.editingCardId||('oc_'+Date.now()),type:'note',text,date};
+  }else if(cardFormType==='photo'){
+    if(!cardFormImage){toast('写真がありません');return;}
+    const text=$('card-form-photo-text').value.trim();
+    newCard={id:state.editingCardId||('oc_'+Date.now()),type:text?'photonote':'photo',text,image:cardFormImage,date};
+  }else if(cardFormType==='list'){
+    const items=cardFormListItems.filter(i=>i.t.trim()!=='').map(i=>({t:i.t.trim(),d:false}));
+    if(items.length===0){toast('項目を入れてください');return;}
+    const title=$('card-form-list-title').value.trim();
+    newCard={id:state.editingCardId||('oc_'+Date.now()),type:'list',title,items,date};
+  }
+
+  if(state.editingCardId){
+    const idx=s.cards.findIndex(c=>c.id===state.editingCardId);
+    if(idx>=0)s.cards[idx]=newCard;
+    else s.cards.unshift(newCard);
+  }else{
+    s.cards.unshift(newCard);
+  }
+  save();
+  $('card-modal').classList.remove('on');
+  render();
+  toast('保存しました');
+}
+
+function compressImage(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        try{
+          const MAX=1280;
+          let w=img.width, h=img.height;
+          if(w>MAX || h>MAX){
+            if(w>h){h=Math.round(h*MAX/w);w=MAX;}
+            else{w=Math.round(w*MAX/h);h=MAX;}
+          }
+          const canvas=document.createElement('canvas');
+          canvas.width=w; canvas.height=h;
+          const ctx=canvas.getContext('2d');
+          ctx.fillStyle='#fff';
+          ctx.fillRect(0,0,w,h);
+          ctx.drawImage(img,0,0,w,h);
+          resolve(canvas.toDataURL('image/jpeg',0.85));
+        }catch(e){resolve(ev.target.result);}
+      };
+      img.onerror=()=>resolve(ev.target.result);
+      img.src=ev.target.result;
+    };
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function esc(s){
+  if(s==null)return '';
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+let toastT=null;
+function toast(msg){
+  const t=$('toast');
+  t.textContent=msg;
+  t.classList.add('on');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove('on'),1800);
+}
+
+// ═══ EVENT BIND ═══
+document.addEventListener('click',e=>{
+  const close=e.target.closest('[data-close]');
+  if(close){
+    document.getElementById(close.dataset.close).classList.remove('on');
+  }
+});
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('.type-opt');
+  if(!t)return;
+  cardFormType=t.dataset.type;
+  renderCardModalType();
+});
+
+$('auth-submit').addEventListener('click',tryLogin);
+$('auth-pass').addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
+$('logout-btn').addEventListener('click',logout);
+
+$('add-shelf-btn').addEventListener('click',()=>openShelfModal(null));
+$('edit-shelf-btn').addEventListener('click',()=>{
+  const s=state.shelves.find(x=>x.id===state.currentShelfId);
+  if(s)openShelfModal(s);
+});
+$('delete-shelf-btn').addEventListener('click',deleteShelf);
+$('shelf-save-btn').addEventListener('click',saveShelf);
+
+$('card-save-btn').addEventListener('click',saveCard);
+$('add-list-item-btn').addEventListener('click',()=>{
+  cardFormListItems.push({t:'',d:false});
+  renderListItems();
+});
+$('photo-pick-btn').addEventListener('click',()=>$('photo-file').click());
+$('photo-file').addEventListener('change',async e=>{
+  const file=e.target.files[0];
+  if(!file)return;
+  cardFormImage=await compressImage(file);
+  renderCardModalType();
+  e.target.value='';
+});
+
+function init(){
+  load();
+  render();
+}
+
+// 起動
+if(checkAuth()){
+  $('auth-wrap').classList.add('hide');
+  $('app').classList.remove('hide');
+  $('login-as').textContent='ログイン中';
+  init();
+}else{
+  setTimeout(()=>$('auth-email').focus(),100);
+}
+
+})();
+</script>
+</body>
+</html>
