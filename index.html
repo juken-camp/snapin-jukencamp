@@ -334,6 +334,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   animation:wiggle 0.45s infinite ease-in-out;
   cursor:grab;
   overflow:visible;
+  transition:transform 0.25s cubic-bezier(0.2,0.7,0.3,1);
 }
 .grid.editing .card:nth-child(odd){animation-delay:-0.2s;}
 @keyframes wiggle{
@@ -2083,6 +2084,8 @@ function renderFeed(el,cards){
 function attachCard(card,gridEl){
   let startX=0,startY=0,didMove=false,isDragging=false;
   let pressTimer=null,ghost=null;
+  let lastSwapTarget=null; // 連続スワップ防止
+  let swapCooldown=false;
 
   const xy=ev=>{
     if(ev.touches&&ev.touches.length)return [ev.touches[0].clientX,ev.touches[0].clientY];
@@ -2126,15 +2129,47 @@ function attachCard(card,gridEl){
     ghost.style.left=(x-rect.width/2)+'px';
     ghost.style.top=(y-rect.height/2)+'px';
 
+    // 指の下のカードを検出して、その位置と入れ替え (Google Keep風)
+    if(swapCooldown)return;
     ghost.style.display='none';
     const target=document.elementFromPoint(x,y);
     ghost.style.display='';
 
-    gridEl.querySelectorAll('.card').forEach(c=>c.classList.remove('drop-here'));
-    if(target){
-      const t=target.closest('.card');
-      if(t && t!==card && t.parentElement===gridEl)t.classList.add('drop-here');
+    if(!target)return;
+    const t=target.closest('.card');
+    if(!t || t===card || t.parentElement!==gridEl)return;
+    if(t===lastSwapTarget)return; // 同じカードで連続スワップ防止
+
+    // ★ リアルタイム入れ替え
+    const fromIdx=parseInt(card.dataset.idx);
+    const toIdx=parseInt(t.dataset.idx);
+    if(isNaN(fromIdx) || isNaN(toIdx))return;
+
+    // state.cards の順序を入れ替え
+    const moved=state.cards.splice(fromIdx,1)[0];
+    state.cards.splice(toIdx,0,moved);
+    save();
+
+    lastSwapTarget=t;
+    swapCooldown=true;
+
+    // グリッドを再描画 (ドラッグ中のカードは引き続きドラッグ状態を維持)
+    const draggingId=card.dataset.id;
+    renderGrid(gridEl,state.cards,'mine');
+    // 新しい card 要素を見つけてドラッグ中扱いに
+    const newCard=gridEl.querySelector(`.card[data-id="${draggingId}"]`);
+    if(newCard){
+      newCard.classList.add('dragging');
+      // attachCardで上書きされたリスナーは新しいカードに付くが、
+      // 現在のドラッグセッションは古い card 変数を使い続ける
+      // → 古いcardの位置情報は無効になるので、card変数を更新
+      card=newCard;
     }
+
+    // クールダウン (短時間連続スワップを防ぐ)
+    setTimeout(()=>{swapCooldown=false;},150);
+    // 別のカードに指が移動したら再びスワップ可能に
+    setTimeout(()=>{lastSwapTarget=null;},200);
   };
 
   const onEnd=ev=>{
@@ -2146,27 +2181,10 @@ function attachCard(card,gridEl){
     document.removeEventListener('touchcancel',onEnd);
 
     if(isDragging){
-      const [x,y]=xy(ev);
-      if(ghost){ghost.style.display='none';}
-      const target=document.elementFromPoint(x,y);
       if(ghost){ghost.remove();ghost=null;}
-      card.classList.remove('dragging');
-      gridEl.querySelectorAll('.card').forEach(c=>c.classList.remove('drop-here'));
-
-      if(target){
-        const t=target.closest('.card');
-        if(t && t!==card && t.parentElement===gridEl){
-          const fromIdx=parseInt(card.dataset.idx);
-          const toIdx=parseInt(t.dataset.idx);
-          if(!isNaN(fromIdx) && !isNaN(toIdx)){
-            const moved=state.cards.splice(fromIdx,1)[0];
-            state.cards.splice(toIdx,0,moved);
-            save();
-            renderHome();
-            return;
-          }
-        }
-      }
+      // 既にリアルタイムで入れ替えが完了しているので、dragging クラスを外すだけ
+      const draggingCards=gridEl.querySelectorAll('.card.dragging');
+      draggingCards.forEach(c=>c.classList.remove('dragging'));
       isDragging=false;
       return;
     }
