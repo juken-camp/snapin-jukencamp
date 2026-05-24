@@ -104,6 +104,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--gd);
   transform:scale(0.94);
 }
+.bhdr-action.saved{
+  background:var(--gd);
+  transform:scale(1.05);
+  font-size:16px;
+  pointer-events:none;
+}
 
 /* BOTTOM NAV (4タブに削減: 棚 / 公式 / + / 探す) */
 .bnav{
@@ -180,6 +186,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   padding:0 6px 0 16px;
   height:42px;
   margin-bottom:10px;
+  transition:background 0.25s;
+}
+.quick-add.saved-flash,
+.quick-add:has(.saved-flash){
+  background:var(--gl);
+}
+.quick-add input.saved-flash::placeholder{
+  color:var(--g);
+  font-weight:600;
 }
 .quick-add input{
   flex:1;
@@ -264,7 +279,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   gap:2px;
   padding:2px;
 }
-.grid.editing{padding:14px 8px 2px;}
+.grid.editing{padding:2px;}
 .card{
   aspect-ratio:1;
   background:var(--surface);
@@ -331,17 +346,21 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 /* 編集モード */
 .grid.editing .card{
-  animation:wiggle 0.45s infinite ease-in-out;
+  animation:wiggle 0.5s infinite ease-in-out;
   cursor:grab;
   overflow:visible;
-  transition:transform 0.25s cubic-bezier(0.2,0.7,0.3,1);
+  box-shadow:0 3px 10px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.12);
+  transition:transform 0.28s cubic-bezier(0.2,0.7,0.3,1);
+  z-index:1;
 }
-.grid.editing .card:nth-child(odd){animation-delay:-0.2s;}
+.grid.editing .card:nth-child(odd){animation-delay:-0.25s;}
+.grid.editing .card:nth-child(3n){animation-delay:-0.12s;}
 @keyframes wiggle{
-  0%,100%{transform:rotate(-1deg) scale(0.98);}
-  50%{transform:rotate(1deg) scale(0.98);}
+  0%,100%{transform:rotate(-0.8deg);}
+  50%{transform:rotate(0.8deg);}
 }
-.grid.editing .card.dragging{animation:none;opacity:0.4;}
+.grid.editing .card.dragging{animation:none;opacity:0.35;box-shadow:none;}
+.grid.editing .card.slide-in{animation:none;}
 .grid.editing .card.drop-here{outline:2px solid var(--g);outline-offset:-2px;}
 /* 編集モードで overflow:visible にした分、内側の角丸を継承 */
 .grid.editing .card>img,
@@ -947,6 +966,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-radius:14px;
   font-size:14px;
   font-weight:600;
+  transition:transform .12s, filter .12s;
+}
+.review-btn:active{
+  transform:scale(0.96);
+  filter:brightness(1.15);
 }
 .review-btn.again{background:#3A2020;color:#FF8B7E;}
 .review-btn.good{background:#1F3A2C;color:#7AE5A8;}
@@ -1501,29 +1525,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
 </div>
 
-<!-- PHOTO SOURCE SHEET -->
-<div class="sheet-mask" id="photo-mask" data-action="close-photo-sheet"></div>
-<div class="sheet" id="photo-sheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-title">写真を…</div>
-  <div class="sheet-options">
-    <button class="sheet-opt" data-action="pick-camera">
-      <div class="sheet-opt-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      </div>
-      <div class="sheet-opt-title">撮る</div>
-      <div class="sheet-opt-desc">カメラを起動</div>
-    </button>
-    <button class="sheet-opt" data-action="pick-library">
-      <div class="sheet-opt-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
-      </div>
-      <div class="sheet-opt-title">選ぶ</div>
-      <div class="sheet-opt-desc">ライブラリから</div>
-    </button>
-  </div>
-</div>
-
 <!-- COLOR PICKER -->
 <div class="sheet-mask" id="color-mask" data-action="close-color"></div>
 <div class="sheet" id="color-sheet">
@@ -1552,13 +1553,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="sheet-opt-title">メモ</div>
       <div class="sheet-opt-desc">テキストだけ</div>
     </button>
-    <button class="sheet-opt" data-action="create-photonote">
-      <div class="sheet-opt-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
-      </div>
-      <div class="sheet-opt-title">写真+メモ</div>
-      <div class="sheet-opt-desc">写真に一言</div>
-    </button>
     <button class="sheet-opt" data-action="create-list">
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -1571,7 +1565,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <div class="toast" id="toast">保存しました</div>
 <input type="file" id="file-input" accept="image/*" style="display:none;">
-<input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none;">
 
 </div><!-- .app -->
 
@@ -2105,10 +2098,10 @@ function attachCard(card,gridEl){
       width:rect.width+'px',
       height:rect.height+'px',
       zIndex:'1000',
-      opacity:'0.9',
+      opacity:'1',
       pointerEvents:'none',
-      boxShadow:'0 8px 24px rgba(0,0,0,.3)',
-      transform:'scale(1.08) rotate(-2deg)',
+      boxShadow:'0 12px 32px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.18)',
+      transform:'scale(1.05)',
       transition:'none',
       animation:'none',
     });
@@ -2145,6 +2138,14 @@ function attachCard(card,gridEl){
     const toIdx=parseInt(t.dataset.idx);
     if(isNaN(fromIdx) || isNaN(toIdx))return;
 
+    // FLIP: 再描画前に全カードの位置を記録
+    const draggingId=card.dataset.id;
+    const beforeRects=new Map();
+    gridEl.querySelectorAll('.card').forEach(el=>{
+      const id=el.dataset.id;
+      if(id && id!==draggingId)beforeRects.set(id,el.getBoundingClientRect());
+    });
+
     // state.cards の順序を入れ替え
     const moved=state.cards.splice(fromIdx,1)[0];
     state.cards.splice(toIdx,0,moved);
@@ -2154,8 +2155,36 @@ function attachCard(card,gridEl){
     swapCooldown=true;
 
     // グリッドを再描画 (ドラッグ中のカードは引き続きドラッグ状態を維持)
-    const draggingId=card.dataset.id;
     renderGrid(gridEl,state.cards,'mine');
+
+    // FLIP: 再描画後、位置が変わったカードを旧位置に瞬時に戻し、次フレームで本来位置へ滑らせる
+    gridEl.querySelectorAll('.card').forEach(el=>{
+      const id=el.dataset.id;
+      if(!id || id===draggingId)return;
+      const before=beforeRects.get(id);
+      if(!before)return;
+      const after=el.getBoundingClientRect();
+      const dx=before.left-after.left;
+      const dy=before.top-after.top;
+      if(dx===0 && dy===0)return;
+      // 旧位置へ瞬時に移動 (animationとtransitionを一旦切る)
+      el.classList.add('slide-in');
+      el.style.transition='none';
+      el.style.transform=`translate(${dx}px,${dy}px)`;
+      // 次フレームで本来位置へ滑らせる
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+          el.style.transition='transform 0.28s cubic-bezier(0.2,0.7,0.3,1)';
+          el.style.transform='';
+          setTimeout(()=>{
+            el.style.transition='';
+            el.style.transform='';
+            el.classList.remove('slide-in');
+          },300);
+        });
+      });
+    });
+
     // 新しい card 要素を見つけてドラッグ中扱いに
     const newCard=gridEl.querySelector(`.card[data-id="${draggingId}"]`);
     if(newCard){
@@ -2166,10 +2195,10 @@ function attachCard(card,gridEl){
       card=newCard;
     }
 
-    // クールダウン (短時間連続スワップを防ぐ)
-    setTimeout(()=>{swapCooldown=false;},150);
+    // クールダウン (FLIPアニメーション完了まで連続スワップを防ぐ)
+    setTimeout(()=>{swapCooldown=false;},220);
     // 別のカードに指が移動したら再びスワップ可能に
-    setTimeout(()=>{lastSwapTarget=null;},200);
+    setTimeout(()=>{lastSwapTarget=null;},260);
   };
 
   const onEnd=ev=>{
@@ -2272,8 +2301,10 @@ function startCreate(type){
     text:'',
   };
   if(type==='photo' || type==='photonote'){
+    // 「写真」を選んだら直接ファイルピッカーを開く
+    // iOS Safari は accept="image/*" で標準シート(ライブラリ/撮影/ファイル)を出す
     state.photoMode=type;
-    openPhotoSheet();
+    $('file-input').click();
   }else if(type==='note'){
     renderUpload();
     goto('screen-upload');
@@ -2291,23 +2322,6 @@ function startCreate(type){
       if(inp)inp.focus();
     },100);
   }
-}
-
-function openPhotoSheet(){
-  $('photo-mask').classList.add('on');
-  $('photo-sheet').classList.add('on');
-}
-function closePhotoSheet(){
-  $('photo-mask').classList.remove('on');
-  $('photo-sheet').classList.remove('on');
-}
-function pickCamera(){
-  closePhotoSheet();
-  $('file-input-camera').click();
-}
-function pickLibrary(){
-  closePhotoSheet();
-  $('file-input').click();
 }
 
 function onFilePick(e){
@@ -2390,10 +2404,23 @@ function quickSave(){
   };
   state.cards.unshift(c);
   save();
-  $('quick-input').value='';
+
+  // クイック入力欄に保存完了フィードバック
+  const inp=$('quick-input');
+  const wrap=inp.closest('.quick-add');
+  const origPlaceholder=inp.placeholder;
+  inp.value='';
+  inp.placeholder='✓ 保存しました';
+  inp.classList.add('saved-flash');
+  if(wrap)wrap.classList.add('saved-flash');
+  if(navigator.vibrate)navigator.vibrate(15);
   onQuickInput();
   renderHome();
-  toast('保存しました');
+  setTimeout(()=>{
+    inp.classList.remove('saved-flash');
+    if(wrap)wrap.classList.remove('saved-flash');
+    inp.placeholder=origPlaceholder;
+  },1200);
 }
 
 function quickPhoto(){
@@ -2410,7 +2437,7 @@ function quickPhoto(){
   if(!v)state.photoMode='photo';
   $('quick-input').value='';
   onQuickInput();
-  openPhotoSheet();
+  $('file-input').click();
 }
 
 function quickList(){
@@ -2434,7 +2461,7 @@ function renderUpload(){
     change.textContent='写真を変える';
     change.addEventListener('click',()=>{
       state.photoMode=c.type;
-      openPhotoSheet();
+      $('file-input').click();
     });
     wrap.appendChild(change);
     body.appendChild(wrap);
@@ -2603,13 +2630,35 @@ function saveCard(){
     runOcrInBackground(c.id);
   }
 
-  toast('保存しました');
-  state.current=null;
-  while(state.navStack.length>1 && state.navStack[state.navStack.length-1]==='screen-upload'){
-    state.navStack.pop();
+  // 保存ボタンを ✓ に変えて「保存された」感を出す
+  const btn=$('up-save-btn');
+  if(btn && !btn.dataset.saving){
+    btn.dataset.saving='1';
+    btn.disabled=true;
+    btn.classList.add('saved');
+    btn.textContent='✓';
+    if(navigator.vibrate)navigator.vibrate(15);
+    setTimeout(()=>{
+      state.current=null;
+      while(state.navStack.length>1 && state.navStack[state.navStack.length-1]==='screen-upload'){
+        state.navStack.pop();
+      }
+      const prev=state.navStack[state.navStack.length-1]||'screen-home';
+      goto(prev,false);
+      // ボタンを元に戻す (次回開いた時のため)
+      btn.textContent='保存';
+      btn.classList.remove('saved');
+      btn.disabled=false;
+      delete btn.dataset.saving;
+    },420);
+  }else{
+    state.current=null;
+    while(state.navStack.length>1 && state.navStack[state.navStack.length-1]==='screen-upload'){
+      state.navStack.pop();
+    }
+    const prev=state.navStack[state.navStack.length-1]||'screen-home';
+    goto(prev,false);
   }
-  const prev=state.navStack[state.navStack.length-1]||'screen-home';
-  goto(prev,false);
 }
 
 // 写真のOCR (バックグラウンド)
@@ -3283,6 +3332,7 @@ function renderReviewCard(){
     `;
     stage.querySelectorAll('[data-grade]').forEach(b=>{
       b.addEventListener('click',()=>{
+        if(navigator.vibrate)navigator.vibrate(12);
         applyReviewGrade(revQueue[revIndex],b.dataset.grade);
         revIndex++;
         revRevealed=false;
@@ -3348,7 +3398,6 @@ document.addEventListener('click',e=>{
     case 'close-add':closeAddSheet();break;
     case 'create-photo':startCreate('photo');break;
     case 'create-note':startCreate('note');break;
-    case 'create-photonote':startCreate('photonote');break;
     case 'create-list':startCreate('list');break;
     case 'save-card':saveCard();break;
     case 'cancel-upload':cancelUpload();break;
@@ -3365,9 +3414,6 @@ document.addEventListener('click',e=>{
     case 'copy-to-shelf':copyToShelf();break;
     case 'open-color-picker':openColorPicker();break;
     case 'close-color':closeColorPicker();break;
-    case 'close-photo-sheet':closePhotoSheet();break;
-    case 'pick-camera':pickCamera();break;
-    case 'pick-library':pickLibrary();break;
     case 'toggle-sub':if(state.currentOfficial)toggleSubById(state.currentOfficial.id);break;
     case 'toggle-ai-mode':toggleAiMode();break;
     case 'detail-send':detailSend();break;
@@ -3414,7 +3460,6 @@ $('detail-input').addEventListener('keydown',e=>{
 });
 
 $('file-input').addEventListener('change',onFilePick);
-$('file-input-camera').addEventListener('change',onFilePick);
 
 // 起動
 setupNavs();
