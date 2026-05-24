@@ -1153,6 +1153,17 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-weight:700;
   letter-spacing:-0.01em;
   margin-bottom:6px;
+  line-height:1.4;
+}
+.today-title.long{
+  font-size:17px;
+  font-weight:600;
+  letter-spacing:0;
+}
+.today-title.xlong{
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:0;
 }
 .today-sub{
   font-size:12px;
@@ -1825,21 +1836,74 @@ function logoutConfirm(){
 
 // ═══ TODAY ═══
 
+// 今日のひとこと (時間帯別、日付固定でランダム)
+const TODAY_MESSAGES={
+  morning:[
+    'おはよう。',
+    'おはよう。今日もぼちぼち。',
+    '朝の頭は、夜の自分より素直。',
+    '昨日のメモ、一回だけ見てみよう。',
+    '思い出すのが、いちばん覚える。',
+    'まずは一つだけ。それで十分。',
+    '今日も続けてるね、それが効いてる。',
+  ],
+  noon:[
+    'こんにちは。',
+    'お昼の5分は、夜の30分。',
+    '思い出そうとする3秒が、読んだ1時間より効く。',
+    '一気にやろうとしない、それでいい。',
+    '頭の中の整理は、書き出すと進む。',
+    '今ちょっと見るだけでも、十分積み重なってる。',
+  ],
+  evening:[
+    'こんばんは。',
+    'よくここまで来た。',
+    '夜は、頭が静かになる時間。',
+    '一日の終わりに、もう一回見ると残る。',
+    '完璧じゃなくていい、続いてればそれで十分。',
+    '寝る前に思い出したことは、よく定着する。',
+  ],
+  night:[
+    '無理しないで。',
+    '今日はもう、ゆっくり休もう。',
+    '眠る前は、ぱっと見るだけでいい。',
+    '寝てる間に、頭が整理してくれる。',
+    '焦らなくていい、明日もある。',
+  ],
+  deep:[
+    'まだ起きてるんだね。',
+    '深い時間。ほどほどに。',
+    '体は寝かせてあげよう。',
+  ],
+};
+function pickTodayMessage(band,now){
+  const pool=TODAY_MESSAGES[band]||TODAY_MESSAGES.noon;
+  // 日付を seed にして、同じ日に何度開いても同じメッセージ
+  const seed=now.getFullYear()*10000+(now.getMonth()+1)*100+now.getDate();
+  return pool[seed%pool.length];
+}
+
 function renderToday(){
   const now=new Date();
   const dateStr=`${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
   const wd=['日','月','火','水','木','金','土'][now.getDay()];
   $('today-date').textContent=`${dateStr} ${wd}`;
 
-  // 挨拶
+  // 時間帯と「今日のひとこと」
   const h=now.getHours();
-  let greet='こんにちは';
-  if(h<5)greet='こんばんは';
-  else if(h<11)greet='おはよう';
-  else if(h<17)greet='こんにちは';
-  else if(h<22)greet='こんばんは';
-  else greet='おやすみなさい';
-  $('today-greeting').textContent=greet;
+  let band='noon';
+  if(h<5)band='deep';
+  else if(h<11)band='morning';
+  else if(h<17)band='noon';
+  else if(h<22)band='evening';
+  else band='night';
+  $('today-greeting').textContent=pickTodayMessage(band,now);
+  // 文字数でサイズ自動調整
+  const msgEl=$('today-greeting');
+  const len=msgEl.textContent.length;
+  msgEl.classList.remove('long','xlong');
+  if(len>=20)msgEl.classList.add('xlong');
+  else if(len>=10)msgEl.classList.add('long');
 
   // サマリー
   const due=getDueCards();
