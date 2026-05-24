@@ -999,7 +999,232 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .login-card:active{background:var(--gl);border-color:var(--g);}
 .login-card-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;}
 
-/* TOAST */
+/* ════════════════════════════════════════════
+   TODAY (今日)
+   ════════════════════════════════════════════ */
+.today-hero{
+  padding:24px 20px 18px;
+  background:linear-gradient(140deg,#FFF,#F4FAF7);
+  border-bottom:0.5px solid var(--line);
+}
+.today-date{
+  font-family:var(--font-en);
+  font-size:11px;
+  color:var(--ink3);
+  letter-spacing:0.15em;
+  margin-bottom:4px;
+}
+.today-title{
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:-0.01em;
+  margin-bottom:6px;
+}
+.today-sub{
+  font-size:12px;
+  color:var(--ink2);
+  line-height:1.6;
+}
+
+.today-block{
+  padding:20px 20px 10px;
+}
+.today-block-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+.today-block-title{
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:0.02em;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.today-block-icon{
+  width:24px;height:24px;
+  border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  color:white;
+}
+.today-block-icon.review{background:var(--amber);}
+.today-block-icon.tasks{background:var(--sky);}
+.today-block-icon.new{background:var(--g);}
+.today-block-count{
+  font-family:var(--font-en);
+  font-size:13px;
+  color:var(--ink3);
+}
+
+/* 復習開始 大ボタン */
+.today-review-card{
+  margin:0 20px 18px;
+  background:linear-gradient(135deg,#FFF4DA,#FFE9B4);
+  border-radius:16px;
+  padding:18px 18px 16px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  cursor:pointer;
+  transition:transform .1s;
+}
+.today-review-card:active{transform:scale(0.98);}
+.today-review-icon{
+  width:52px;height:52px;
+  border-radius:14px;
+  background:white;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--amber);
+  flex-shrink:0;
+  box-shadow:0 2px 6px rgba(0,0,0,.06);
+}
+.today-review-info{flex:1;}
+.today-review-title{
+  font-size:15px;
+  font-weight:700;
+  color:#7A5A1F;
+  margin-bottom:2px;
+}
+.today-review-sub{
+  font-size:12px;
+  color:#A57F2A;
+}
+.today-review-arrow{color:#A57F2A;}
+
+.today-review-empty{
+  margin:0 20px 18px;
+  padding:18px;
+  background:var(--surface);
+  border:1px dashed var(--line2);
+  border-radius:14px;
+  text-align:center;
+  font-size:13px;
+  color:var(--ink3);
+  line-height:1.6;
+}
+
+/* 今日のタスク (リスト型カードの open items を集約) */
+.today-tasks{
+  background:var(--surface);
+  margin:0 14px 18px;
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+}
+.today-task{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  padding:14px 16px;
+  border-bottom:0.5px solid var(--line);
+  cursor:pointer;
+}
+.today-task:last-child{border-bottom:none;}
+.today-task:active{background:var(--bg);}
+.today-task .tchk{
+  width:22px;height:22px;
+  border:1.5px solid var(--ink3);
+  border-radius:6px;
+  flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  color:white;
+  margin-top:1px;
+}
+.today-task.done .tchk{background:var(--g);border-color:var(--g);}
+.today-task.done .ttxt{color:var(--ink3);text-decoration:line-through;}
+.today-task-body{flex:1;min-width:0;}
+.ttxt{font-size:14px;line-height:1.5;}
+.tlist{
+  font-size:10px;
+  color:var(--ink3);
+  font-family:var(--font-en);
+  letter-spacing:0.05em;
+  margin-top:3px;
+}
+
+/* 今日新しく保存したカード (横スクロール) */
+.today-newcards{
+  display:flex;
+  gap:8px;
+  padding:0 20px 18px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.today-newcards::-webkit-scrollbar{display:none;}
+.today-newcard{
+  width:110px;
+  aspect-ratio:1;
+  flex-shrink:0;
+  border-radius:10px;
+  overflow:hidden;
+  background:var(--surface);
+  box-shadow:var(--shadow);
+  position:relative;
+  cursor:pointer;
+}
+.today-newcard img{width:100%;height:100%;object-fit:cover;}
+.today-newcard .ctxt{
+  padding:10px;
+  font-size:11px;
+  line-height:1.5;
+  height:100%;
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-line-clamp:6;
+  -webkit-box-orient:vertical;
+}
+.today-newcard.note .ctxt{background:#FFFDF5;}
+.today-newcard.list .ctxt{background:#F4F8F3;font-size:10px;}
+
+.today-empty-block{
+  padding:20px;
+  text-align:center;
+  color:var(--ink3);
+  font-size:12px;
+  line-height:1.7;
+}
+
+/* タイマー */
+.today-timer{
+  margin:0 20px 18px;
+  background:var(--surface);
+  border-radius:14px;
+  padding:18px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  box-shadow:var(--shadow);
+}
+.timer-circle{
+  width:56px;height:56px;
+  border-radius:28px;
+  background:var(--bg);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--ink2);
+  font-family:var(--font-en);
+  font-size:13px;
+  font-weight:600;
+  flex-shrink:0;
+  position:relative;
+}
+.timer-circle.running{background:var(--gl);color:var(--gd);}
+.timer-info{flex:1;}
+.timer-title{font-size:14px;font-weight:600;margin-bottom:2px;}
+.timer-sub{font-size:11px;color:var(--ink3);}
+.timer-btn{
+  padding:8px 18px;
+  background:var(--g);
+  color:white;
+  border-radius:18px;
+  font-size:13px;
+  font-weight:600;
+}
+.timer-btn.stop{background:var(--rose);}
+
 .toast{
   position:absolute;
   bottom:90px;
@@ -1092,21 +1317,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
 
   <div class="scroll" id="home-scroll">
-    <div class="review-strip hide" id="review-strip" data-action="start-review">
-      <div class="rs-head">
-        <div class="rs-title">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-          見返す
-        </div>
-        <div class="rs-count" id="rs-count">0</div>
-      </div>
-      <div class="rs-body">
-        <div class="rs-preview" id="rs-preview"></div>
-        <div class="rs-cta">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
-        </div>
-      </div>
-    </div>
     <div class="grid" id="grid-home"></div>
     <div class="feed hide" id="feed-home"></div>
     <div class="empty hide" id="empty-home">
@@ -1124,6 +1334,26 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </button>
 
   <div class="bnav" data-bnav="home"></div>
+</div>
+
+<!-- TODAY -->
+<div class="screen" id="screen-today">
+  <div class="hdr">
+    <div class="hdr-title">今日</div>
+  </div>
+  <div class="scroll">
+    <div class="today-hero">
+      <div class="today-date" id="today-date">―</div>
+      <div class="today-title" id="today-greeting">おはよう</div>
+      <div class="today-sub" id="today-summary">―</div>
+    </div>
+
+    <div id="today-review-section"></div>
+    <div id="today-timer-section"></div>
+    <div id="today-tasks-section"></div>
+    <div id="today-new-section"></div>
+  </div>
+  <div class="bnav" data-bnav="today"></div>
 </div>
 
 <!-- LIBRARY -->
@@ -1368,9 +1598,10 @@ const OFFICIAL_SHELVES=[
 function navHtml(active){
   const items=[
     {id:'home',label:'棚',svg:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'},
-    {id:'library',label:'公式',svg:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'},
+    {id:'today',label:'今日',svg:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'},
     {id:'add',label:'',svg:''},
     {id:'search',label:'探す',svg:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>'},
+    {id:'library',label:'公式',svg:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'},
   ];
   return items.map(i=>{
     if(i.id==='add'){
@@ -1402,6 +1633,7 @@ function goto(id,push){
     state.navStack.push(id);
   }
   if(id==='screen-home')renderHome();
+  if(id==='screen-today')renderToday();
   if(id==='screen-library')renderLibrary();
   if(id==='screen-search'){
     setTimeout(()=>$('search-q').focus(),100);
@@ -1439,9 +1671,232 @@ function logoutConfirm(){
   goto('screen-login',false);
 }
 
+// ═══ TODAY ═══
+// タイマー状態 (簡易ポモドーロ風)
+let timerState={
+  running:false,
+  startedAt:null,
+  duration:25*60*1000, // 25分
+  intervalId:null,
+};
+
+function renderToday(){
+  const now=new Date();
+  const dateStr=`${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+  const wd=['日','月','火','水','木','金','土'][now.getDay()];
+  $('today-date').textContent=`${dateStr} ${wd}`;
+
+  // 挨拶
+  const h=now.getHours();
+  let greet='こんにちは';
+  if(h<5)greet='こんばんは';
+  else if(h<11)greet='おはよう';
+  else if(h<17)greet='こんにちは';
+  else if(h<22)greet='こんばんは';
+  else greet='おやすみなさい';
+  $('today-greeting').textContent=greet;
+
+  // サマリー
+  const due=getDueCards();
+  const todayCards=getTodayCards();
+  const openTasks=getTodayOpenTasks();
+  const parts=[];
+  if(due.length>0)parts.push(`見返したいカード ${due.length}`);
+  if(openTasks.length>0)parts.push(`未完のリスト ${openTasks.length}`);
+  if(todayCards.length>0)parts.push(`今日の保存 ${todayCards.length}`);
+  $('today-summary').textContent=parts.length?parts.join('　'):'今日は静かな一日です。';
+
+  // 復習ブロック
+  const rv=$('today-review-section');
+  if(due.length>0){
+    rv.innerHTML=`
+      <div class="today-review-card" data-action="start-review">
+        <div class="today-review-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        </div>
+        <div class="today-review-info">
+          <div class="today-review-title">見返す ${due.length} 枚</div>
+          <div class="today-review-sub">記憶に定着させるタイミングです</div>
+        </div>
+        <div class="today-review-arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+      </div>
+    `;
+  }else{
+    rv.innerHTML=`
+      <div class="today-review-empty">
+        見返すカードは今ありません。<br>
+        新しく保存したものが、明日以降ここに現れます。
+      </div>
+    `;
+  }
+
+  // タイマー
+  renderTimer();
+
+  // 未完のタスク (リスト型カードの未完項目を集約)
+  const tasksSec=$('today-tasks-section');
+  if(openTasks.length>0){
+    tasksSec.innerHTML=`
+      <div class="today-block">
+        <div class="today-block-head">
+          <div class="today-block-title">
+            <div class="today-block-icon tasks">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            やること
+          </div>
+          <div class="today-block-count">${openTasks.length}</div>
+        </div>
+      </div>
+      <div class="today-tasks" id="today-tasks-list"></div>
+    `;
+    const listEl=$('today-tasks-list');
+    openTasks.forEach(t=>{
+      const row=document.createElement('div');
+      row.className='today-task';
+      row.innerHTML=`
+        <div class="tchk"></div>
+        <div class="today-task-body">
+          <div class="ttxt">${esc(t.item.t)}</div>
+          <div class="tlist">${esc(t.card.title||'リスト')}</div>
+        </div>
+      `;
+      row.addEventListener('click',()=>{
+        // 完了にトグル
+        const cIdx=state.cards.findIndex(x=>x.id===t.card.id);
+        if(cIdx<0)return;
+        const itemIdx=state.cards[cIdx].items.findIndex(x=>x===t.item);
+        if(itemIdx<0)return;
+        state.cards[cIdx].items[itemIdx].d=true;
+        save();
+        renderToday();
+      });
+      listEl.appendChild(row);
+    });
+  }else{
+    tasksSec.innerHTML='';
+  }
+
+  // 今日新しく保存したカード
+  const newSec=$('today-new-section');
+  if(todayCards.length>0){
+    newSec.innerHTML=`
+      <div class="today-block">
+        <div class="today-block-head">
+          <div class="today-block-title">
+            <div class="today-block-icon new">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+            今日の保存
+          </div>
+          <div class="today-block-count">${todayCards.length}</div>
+        </div>
+      </div>
+      <div class="today-newcards" id="today-newcards"></div>
+    `;
+    const wrap=$('today-newcards');
+    todayCards.forEach(c=>{
+      const el=document.createElement('div');
+      el.className='today-newcard '+c.type;
+      if(c.type==='photo'||c.type==='photonote'){
+        el.innerHTML=`<img src="${c.image||''}">`;
+      }else if(c.type==='note'){
+        el.innerHTML=`<div class="ctxt">${esc(c.text||'')}</div>`;
+      }else if(c.type==='list'){
+        const items=(c.items||[]).slice(0,4).map(i=>`<div>・${esc(i.t)}</div>`).join('');
+        el.innerHTML=`<div class="ctxt">${c.title?`<b>${esc(c.title)}</b>`:''}${items}</div>`;
+      }
+      el.addEventListener('click',()=>openDetail(c,'mine'));
+      wrap.appendChild(el);
+    });
+  }else{
+    newSec.innerHTML='';
+  }
+}
+
+function getTodayCards(){
+  const startOfToday=new Date();
+  startOfToday.setHours(0,0,0,0);
+  const t=startOfToday.getTime();
+  return state.cards.filter(c=>(c.created||0)>=t);
+}
+
+function getTodayOpenTasks(){
+  // 全リストカードの未完項目を集約 (最大20件)
+  const out=[];
+  for(const c of state.cards){
+    if(c.type!=='list')continue;
+    for(const item of (c.items||[])){
+      if(!item.d && item.t.trim()){
+        out.push({card:c,item});
+        if(out.length>=20)return out;
+      }
+    }
+  }
+  return out;
+}
+
+// タイマー
+function renderTimer(){
+  const sec=$('today-timer-section');
+  const remaining=timerState.running ?
+    Math.max(0, timerState.duration - (Date.now()-timerState.startedAt)) :
+    timerState.duration;
+  const mins=Math.floor(remaining/60000);
+  const secs=Math.floor((remaining%60000)/1000);
+  const display=`${mins}:${String(secs).padStart(2,'0')}`;
+
+  sec.innerHTML=`
+    <div class="today-timer">
+      <div class="timer-circle ${timerState.running?'running':''}">${display}</div>
+      <div class="timer-info">
+        <div class="timer-title">${timerState.running?'集中中':'25分タイマー'}</div>
+        <div class="timer-sub">${timerState.running?'終わったら通知します':'勉強・復習・読書に'}</div>
+      </div>
+      <button class="timer-btn ${timerState.running?'stop':''}" id="timer-btn">${timerState.running?'やめる':'はじめる'}</button>
+    </div>
+  `;
+  $('timer-btn').addEventListener('click',toggleTimer);
+
+  // タイマー終了処理
+  if(timerState.running && remaining<=0){
+    stopTimer(true);
+  }
+}
+
+function toggleTimer(){
+  if(timerState.running){
+    stopTimer(false);
+  }else{
+    startTimer();
+  }
+}
+
+function startTimer(){
+  timerState.running=true;
+  timerState.startedAt=Date.now();
+  timerState.intervalId=setInterval(()=>{
+    if(document.getElementById('screen-today').classList.contains('active')){
+      renderTimer();
+    }
+  },1000);
+  renderTimer();
+}
+
+function stopTimer(completed){
+  timerState.running=false;
+  if(timerState.intervalId){clearInterval(timerState.intervalId);timerState.intervalId=null;}
+  if(completed){
+    toast('25分集中できました');
+    if(navigator.vibrate)navigator.vibrate([200,100,200]);
+  }
+  renderTimer();
+}
+
 // ═══ HOME ═══
 function renderHome(){
-  renderReviewStrip();
   const empty=$('empty-home');
   const grid=$('grid-home');
   const feed=$('feed-home');
@@ -1466,23 +1921,6 @@ function renderHome(){
   $('edit-btn').classList.toggle('on',state.editMode);
   $('mosaic-btn').classList.toggle('on',state.mosaicMode);
   $('edit-done').classList.toggle('on',state.editMode);
-}
-
-function renderReviewStrip(){
-  const due=getDueCards();
-  const strip=$('review-strip');
-  if(due.length===0){strip.classList.add('hide');return;}
-  strip.classList.remove('hide');
-  $('rs-count').textContent=due.length;
-  const preview=$('rs-preview');
-  preview.innerHTML='';
-  due.slice(0,4).forEach(c=>{
-    const el=document.createElement('div');
-    el.className='rs-mini';
-    if(c.image)el.innerHTML=`<img src="${c.image}">`;
-    else el.textContent=(c.text||c.title||'').slice(0,10);
-    preview.appendChild(el);
-  });
 }
 
 // ═══ GRID ═══
@@ -2493,6 +2931,7 @@ document.addEventListener('click',e=>{
     case 'login-official':login('official');break;
     case 'logout-confirm':logoutConfirm();break;
     case 'nav-home':goto('screen-home');break;
+    case 'nav-today':goto('screen-today');break;
     case 'nav-library':goto('screen-library');break;
     case 'nav-search':goto('screen-search');break;
     case 'back':back();break;
