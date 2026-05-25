@@ -38,7 +38,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   box-shadow:0 0 60px rgba(0,0,0,.15);
 }
 
-.screen{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;}
+.screen{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;position:relative;}
 .screen.active{display:flex;}
 
 /* HEADER */
@@ -985,10 +985,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .source-tag svg{flex-shrink:0;}
 
 /* 新着バッジ (ホームヘッダーの公式アイコン) */
+/* アイコン(SVG)を包む小さなラッパー。バッジはこの中で絶対配置するので、アイコンの右上に正確に乗る */
+.bnav-icon-wrap{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height:0;
+}
 .home-new-badge{
   position:absolute;
-  top:2px;
-  right:2px;
+  top:-5px;
+  right:-7px;
   min-width:16px;
   height:16px;
   padding:0 4px;
@@ -1005,6 +1013,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   pointer-events:none;
   box-sizing:border-box;
   letter-spacing:0;
+  line-height:1;
+  border:1.5px solid var(--surface); /* ナビバー背景色のリングでアイコンと自然に切り離す */
+  box-shadow:0 1px 3px rgba(0,0,0,0.08);
 }
 
 /* 公式タブの各ライブラリ名の隣の新着バッジ */
@@ -1028,10 +1039,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   box-sizing:border-box;
 }
 
-/* プルダウン更新インジケーター (細いスピナー、円なし) */
+/* プルダウン更新インジケーター (細いスピナー、円なし)
+   スピナーはスクロール領域の頂部内側に置き、引っ張って開いた隙間の中央に出てくるようにする */
 .ptr-indicator{
   position:absolute;
-  top:-32px;
+  top:0;
   left:50%;
   margin-left:-13px;
   width:26px;
@@ -2584,11 +2596,12 @@ function navHtml(active){
       </button></div>`;
     }
     const on=active===i.id?' on':'';
-    const badgeAttr=i.id==='library'?' id="bnav-library-wrap"':'';
+    const wrapAttr=i.id==='library'?' id="bnav-library-wrap"':'';
+    // バッジはアイコン(SVG)のラッパー内に配置する。こうするとアイコンの右上に正確に乗る。
     const badge=i.id==='library'?'<span class="home-new-badge hide" id="bnav-library-badge"></span>':'';
-    return `<button class="bnav-item${on}" data-action="nav-${i.id}" style="position:relative;"${badgeAttr}>
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${i.svg}</svg>
-      <span>${i.label}</span>${badge}
+    return `<button class="bnav-item${on}" data-action="nav-${i.id}">
+      <span class="bnav-icon-wrap"${wrapAttr}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${i.svg}</svg>${badge}</span>
+      <span>${i.label}</span>
     </button>`;
   }).join('');
 }
@@ -5407,7 +5420,9 @@ $('file-input-any').addEventListener('change',onFilePick);
 (function setupPullToRefresh(){
   const THRESHOLD=70;      // この距離以上引いたら更新
   const MAX_PULL=130;      // 最大変位
+  const SPINNER_H=26;      // スピナーの高さ。隙間の中央に出すために使う
   let startY=0, lastY=0, pulling=false, target=null, indicator=null, refreshing=false;
+  let refreshGuard=null;   // 万一 doRefresh が完了しなかった場合のフェイルセーフ
 
   function makeIndicator(){
     const el=document.createElement('div');
@@ -5423,6 +5438,13 @@ $('file-input-any').addEventListener('change',onFilePick);
     const excess=dy-THRESHOLD;
     // 超過分は対数的に減衰
     return THRESHOLD*0.95 + (MAX_PULL-THRESHOLD*0.95)*(1-Math.exp(-excess/80));
+  }
+
+  // スピナーを「引っ張って開いた隙間の中央」に置くための Y 座標を返す。
+  // 隙間の高さは pull。スピナーの高さは SPINNER_H。
+  // スクロール領域の top を 0 として、(pull - SPINNER_H)/2 が中央。
+  function spinnerY(pull){
+    return Math.max(0, (pull - SPINNER_H) / 2);
   }
 
   function activeScrollEl(){
@@ -5463,7 +5485,18 @@ $('file-input-any').addEventListener('change',onFilePick);
     if(dy>3){
       if(!pulling){
         pulling=true;
-        if(!indicator){indicator=makeIndicator();document.querySelector('.app').appendChild(indicator);}
+        // スピナーはスクロール領域の親(.screen)直下に挿入する。
+        // スクロール領域そのものに transform をかけるので、その内側に置くと
+        // スピナーも一緒に動いてしまうから、外側に置く。
+        const host=target.parentElement;
+        if(!indicator){
+          indicator=makeIndicator();
+        }
+        if(indicator.parentNode!==host){
+          host.appendChild(indicator);
+        }
+        // スクロール領域の上端の位置に合わせる。ヘッダーがある画面でも正しい場所に出る。
+        indicator.style.top=target.offsetTop+'px';
         indicator.style.display='flex';
         // ドラッグ中はトランジションを切る (指追従)
         indicator.classList.remove('snap');
@@ -5474,7 +5507,8 @@ $('file-input-any').addEventListener('change',onFilePick);
     // iOS風のラバーバンド減衰 + 進度で回転 (回転はスピナー側に当てる)
     const pull=rubberBand(dy);
     const ratio=Math.min(1,pull/THRESHOLD);
-    indicator.style.transform=`translate3d(0, ${pull}px, 0)`;
+    // スピナーは引っ張って開いた隙間の中央に。スクロール領域は丸ごと pull 分だけ下げる。
+    indicator.style.transform=`translate3d(0, ${spinnerY(pull)}px, 0)`;
     const sp=indicator.querySelector('.ptr-spinner');
     // スピナーは引きながらフェードイン
     indicator.style.opacity=Math.min(1, dy/30).toFixed(2);
@@ -5487,59 +5521,85 @@ $('file-input-any').addEventListener('change',onFilePick);
   }
 
   function onEnd(){
-    if(!target)return;
+    if(!target){
+      // 念のため: pulling だけ残っていてもクリーンに戻す
+      if(pulling){pulling=false;resetIndicator();}
+      return;
+    }
     if(!pulling){target=null;return;}
-    // translate3d(0, Npx, 0) から N を抽出
-    const tr=indicator.style.transform||'';
+    // translate3d(0, Npx, 0) から N を抽出 (target側の transform を見るほうが確実)
+    const tr=target.style.transform||'';
     const m=tr.match(/translate3d\(0(?:px)?,\s*(-?\d+(?:\.\d+)?)px/);
     const pulled=m?parseFloat(m[1]):0;
     // スナップアニメーションをON
     indicator.classList.add('snap');
     target.classList.add('ptr-snap');
+    pulling=false;
     if(pulled>=THRESHOLD){
       doRefresh();
     }else{
       resetIndicator();
     }
-    pulling=false;
   }
 
   function resetIndicator(){
-    if(indicator){
-      indicator.style.transform='translate3d(0, 0, 0)';
-      indicator.style.opacity='0';
-      indicator.classList.remove('ready');
-      const sp=indicator.querySelector('.ptr-spinner');
+    // 既に出ているスピナーとスクロール領域を頂部に戻す。多重呼び出しに耐える。
+    const ind=indicator; // ローカルに掴んでおく
+    const tgt=target;
+    if(ind){
+      ind.style.transform='translate3d(0, 0, 0)';
+      ind.style.opacity='0';
+      ind.classList.remove('ready');
+      const sp=ind.querySelector('.ptr-spinner');
       if(sp)sp.style.transform='';
-      setTimeout(()=>{ if(indicator)indicator.style.display='none'; }, 300);
+      setTimeout(()=>{
+        // この間に新しい pulling が始まっていたら display は触らない
+        if(!pulling && !refreshing && ind)ind.style.display='none';
+      }, 300);
     }
-    if(target){
-      target.style.transform='';
-      setTimeout(()=>{if(target)target.classList.remove('ptr-snap');target=null;}, 300);
+    if(tgt){
+      tgt.style.transform='';
+      setTimeout(()=>{
+        if(tgt)tgt.classList.remove('ptr-snap');
+        // 新しい引っ張りが始まっていなければ target を null に
+        if(target===tgt && !pulling) target=null;
+      }, 300);
     }
   }
 
   async function doRefresh(){
     refreshing=true;
+    // フェイルセーフ: 何があっても 8秒後には強制リセット (固まり防止)
+    if(refreshGuard)clearTimeout(refreshGuard);
+    refreshGuard=setTimeout(()=>{
+      console.warn('PTR: refresh timeout, forcing reset');
+      refreshing=false;
+      if(indicator)indicator.classList.remove('spinning');
+      resetIndicator();
+    }, 8000);
     // インラインの rotate をクリアして CSS アニメーションに任せる
     const sp=indicator.querySelector('.ptr-spinner');
     if(sp)sp.style.transform='';
     indicator.classList.add('spinning');
     indicator.style.opacity='1';
-    indicator.style.transform=`translate3d(0, ${THRESHOLD}px, 0)`;
+    // スピナーを隙間の中央に固定、スクロール領域を THRESHOLD 押し下げる
+    indicator.style.transform=`translate3d(0, ${spinnerY(THRESHOLD)}px, 0)`;
     if(target)target.style.transform=`translate3d(0, ${THRESHOLD}px, 0)`;
     if(navigator.vibrate)navigator.vibrate(10);
     try{
       await refreshActiveScreen();
     }catch(err){
       console.warn('refresh failed',err);
+    }finally{
+      // try の中の例外があっても必ずここを通る
+      if(refreshGuard){clearTimeout(refreshGuard);refreshGuard=null;}
+      // 少し見せてから戻す
+      setTimeout(()=>{
+        if(indicator)indicator.classList.remove('spinning');
+        resetIndicator();
+        refreshing=false;
+      },350);
     }
-    // 少し見せてから戻す
-    setTimeout(()=>{
-      indicator.classList.remove('spinning');
-      resetIndicator();
-      refreshing=false;
-    },350);
   }
 
   // 画面ごとの「更新」処理
