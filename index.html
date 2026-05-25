@@ -4534,9 +4534,9 @@ function libItem(s,subbed){
   el.addEventListener('click',e=>{
     if(e.target.closest('.lib-action'))return;
     if(locked){
-      // 未認証 or 圏外 → claim画面に誘導
+      // 未認証 → claim画面に誘導 (塾生になれば見える可能性があるので)
+      // 認証済みで圏外 → 何もしない (鍵マークが既に示している)
       if(!isStudent())gotoClaim();
-      else toast('このライブラリは登録できません');
       return;
     }
     openOfficial(s);
