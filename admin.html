@@ -76,12 +76,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .hdr-icons{display:flex;gap:4px;color:var(--ink2);align-items:center;}
 .hdr-icons button{
-  padding:8px 12px;
-  font-size:13px;
-  font-weight:500;
-  border-radius:14px;
+  padding:8px 10px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:transform .12s,color .12s,background .12s;
 }
-.hdr-icons button:active{background:var(--gl);color:var(--g);}
+.hdr-icons button:active{background:var(--gl);color:var(--g);transform:scale(0.92);}
 
 .scroll{
   flex:1;
@@ -776,7 +778,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <div class="hdr">
   <div class="logo">Snap<em>In</em><span class="page-sub">管理画面</span></div>
   <div class="hdr-icons" id="hdr-icons" style="display:none;">
-    <button id="logout-btn">ログアウト</button>
+    <button id="logout-btn" aria-label="ログアウト">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+    </button>
   </div>
 </div>
 
@@ -1075,7 +1079,7 @@ function newShelf(){
   const s={
     id,
     name:'新しい公式ライブラリ',
-    handle:'@new-shelf-'+Math.floor(Math.random()*9999),
+    handle:'@new-library-'+Math.floor(Math.random()*9999),
     desc:'',
     cards:[],
   };
