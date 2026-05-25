@@ -1405,7 +1405,6 @@ function renderStudentsList(){
     row.innerHTML=`
       <div class="student-name">
         ${esc(s.name||'(無名)')}
-        ${s.nameKey?`<small>${esc(s.nameKey)}</small>`:''}
       </div>
       <div class="student-meta">${esc(bdShow)}</div>
       <div class="student-claim-badge ${claimed?'claimed':'unclaimed'}">${claimed?'✓ 登録済':'未登録'}</div>
@@ -1462,13 +1461,9 @@ function renderStudentModalBody(){
   `;
   body.innerHTML=`
     <div class="student-edit-field">
-      <label>名前 (漢字・スペースなし)</label>
+      <label>名前 (スペースなし)</label>
       <input id="stu-name" type="text" value="${esc(s.name||'')}" placeholder="例: 山田太郎">
-    </div>
-    <div class="student-edit-field">
-      <label>読み (ひらがな・スペースなし)</label>
-      <input id="stu-nameKey" type="text" value="${esc(s.nameKey||'')}" placeholder="例: やまだたろう">
-      <div class="field-hint">漢字でもひらがなでも入れるので、両方登録すると確実です。</div>
+      <div class="field-hint">生徒が入力する時と同じ文字で登録してください。</div>
     </div>
     <div class="student-edit-field">
       <label>誕生日 (MMDD)</label>
@@ -1495,7 +1490,6 @@ function renderStudentModalBody(){
   `;
   // イベント
   $('stu-name').addEventListener('input',e=>{state.editingStudent.name=e.target.value;});
-  $('stu-nameKey').addEventListener('input',e=>{state.editingStudent.nameKey=e.target.value;});
   const bdInp=$('stu-bd');
   bdInp.addEventListener('input',e=>{
     e.target.value=e.target.value.replace(/\D/g,'').slice(0,4);
@@ -1526,14 +1520,11 @@ async function saveStudentFromModal(){
   const s=state.editingStudent;
   if(!s)return;
   const name=(s.name||'').trim();
-  const nameKey=(s.nameKey||'').trim();
   const bd=(s.birthday||'').trim();
   if(!name){setStatus('名前を入れてください','error');return;}
   if(!/^\d{4}$/.test(bd)){setStatus('誕生日は4桁の数字','error');return;}
   // 名前+誕生日の重複チェック (自分以外)
-  const dup=state.students.find(x=>x.id!==s.id && x.birthday===bd && (
-    (x.name||'').trim()===name || (nameKey && (x.nameKey||'').trim()===nameKey)
-  ));
+  const dup=state.students.find(x=>x.id!==s.id && x.birthday===bd && (x.name||'').trim()===name);
   if(dup){
     if(!confirm(`同じ名前+誕生日の生徒「${dup.name}」が既にいます。\nこのまま追加すると、生徒が claim する時にどちらか1人しか入れません。\n本当に追加しますか?`))return;
   }
@@ -1541,7 +1532,7 @@ async function saveStudentFromModal(){
   const cleaned={
     id:s.id,
     name:name,
-    nameKey:nameKey,
+    nameKey:'',
     birthday:bd,
     shelfIds:Array.isArray(s.shelfIds)?s.shelfIds:[],
     aiEnabled:true,
@@ -1617,28 +1608,15 @@ function closeBulkModal(){
 }
 
 function parseBulkText(text){
-  // 各行: 名前, 読み, 誕生日 (カンマ or タブ区切り)
-  // 読みは省略可: 名前, 誕生日 でも可
+  // 各行: 名前,誕生日 (カンマで区切り)
   const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
   return lines.map((line,i)=>{
     const parts=line.split(/[,\t]/).map(p=>p.trim()).filter(p=>p);
     if(parts.length<2){
-      return {line:i+1,error:'区切りが少ない: '+line,raw:line};
+      return {line:i+1,error:'カンマで区切ってください: '+line,raw:line};
     }
-    let name,nameKey,bd;
-    if(parts.length===2){
-      // 名前, 誕生日
-      name=parts[0];
-      nameKey='';
-      bd=parts[1];
-    }else{
-      // 名前, 読み, 誕生日
-      name=parts[0];
-      nameKey=parts[1];
-      bd=parts[2];
-    }
-    // 誕生日の数字抽出
-    bd=bd.replace(/\D/g,'');
+    const name=parts[0];
+    let bd=parts[1].replace(/\D/g,'');
     if(bd.length>4)bd=bd.slice(-4);
     bd=bd.padStart(4,'0');
     if(!/^\d{4}$/.test(bd)){
@@ -1647,7 +1625,7 @@ function parseBulkText(text){
     if(!name){
       return {line:i+1,error:'名前が空: '+line,raw:line};
     }
-    return {name,nameKey,birthday:bd,raw:line};
+    return {name,nameKey:'',birthday:bd,raw:line};
   });
 }
 
@@ -1659,20 +1637,20 @@ function renderBulkModalBody(){
   const previewHtml=parsed.length>0?`
     <div class="bulk-add-preview">
       ${ok.length>0?`<b>追加されます (${ok.length}人)</b>`:''}
-      ${ok.map(p=>`<div class="row">・${esc(p.name)}${p.nameKey?' ('+esc(p.nameKey)+')':''} / ${esc(p.birthday.slice(0,2))}/${esc(p.birthday.slice(2))}</div>`).join('')}
+      ${ok.map(p=>`<div class="row">・${esc(p.name)} / ${esc(p.birthday.slice(0,2))}/${esc(p.birthday.slice(2))}</div>`).join('')}
       ${errs.length>0?`<div style="margin-top:8px;"><b class="err">エラー (${errs.length}行)</b></div>`:''}
       ${errs.map(p=>`<div class="row err">${p.line}行目: ${esc(p.error)}</div>`).join('')}
     </div>
   `:'';
   body.innerHTML=`
     <div class="bulk-add-hint">
-      1行に1人ずつ書いてください。<strong>カンマ</strong>か<strong>タブ</strong>で区切ります。<br><br>
-      <b>形式</b>: 名前, 読み, 誕生日<br>
+      1行に1人ずつ書いてください。<br>
+      <b>形式</b>: 名前,誕生日 (カンマで区切る)<br><br>
       <b>例</b>:<br>
-      &nbsp;&nbsp;山田太郎, やまだたろう, 0401<br>
-      &nbsp;&nbsp;佐藤花子, さとうはなこ, 1225<br><br>
-      読みは省略可能です (その場合: 名前, 誕生日)。<br>
-      追加後に公式ライブラリの紐付けは1人ずつ設定してください。
+      &nbsp;&nbsp;山田太郎,0401<br>
+      &nbsp;&nbsp;佐藤花子,1225<br><br>
+      カンマの後にスペースがあってもなくてもどちらでもOKです。<br>
+      公式ライブラリの紐付けは追加後に1人ずつ設定してください。
     </div>
     <div class="bulk-add-area">
       <textarea id="bulk-textarea" placeholder="ここに貼り付け">${esc(state.bulkText)}</textarea>
@@ -1716,7 +1694,7 @@ async function saveBulkStudents(){
     newOnes.push({
       id:'stu_'+Date.now()+'_'+Math.floor(Math.random()*100000),
       name:p.name,
-      nameKey:p.nameKey||'',
+      nameKey:'',
       birthday:p.birthday,
       shelfIds:[],
       aiEnabled:true,
