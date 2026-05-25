@@ -160,6 +160,27 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-size:14px;
 }
 .login-input:focus{border-color:var(--g);background:var(--surface);}
+
+.password-wrap{
+  position:relative;
+}
+.password-wrap .login-input{
+  padding-right:44px;
+}
+.password-toggle{
+  position:absolute;
+  right:6px;
+  top:50%;
+  transform:translateY(-50%);
+  width:36px;
+  height:36px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--ink3);
+  border-radius:50%;
+}
+.password-toggle:active{background:var(--bg);}
 .login-btn{
   height:44px;
   background:var(--g);
@@ -632,12 +653,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       </div>
       <div>
         <label for="login-password">パスワード</label>
-        <input id="login-password" class="login-input" type="password" autocomplete="current-password" placeholder="">
+        <div class="password-wrap">
+          <input id="login-password" class="login-input" type="password" autocomplete="current-password" placeholder="">
+          <button type="button" class="password-toggle" id="password-toggle" aria-label="パスワードを表示">
+            <svg class="eye-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="eye-off hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" stroke-linecap="round"/></svg>
+          </button>
+        </div>
       </div>
       <button class="login-btn" id="login-btn" type="submit">ログイン</button>
       <div class="login-note">
-        認証情報はサーバー側で検証されます。<br>
-        パスワードは Vercel の環境変数 ADMIN_PASSWORD で管理。
+        パスワードは Vercel の環境変数 ADMIN_PASSWORD で管理。<br>
+        保存時にサーバー側で検証されます。
       </div>
     </form>
   </div>
@@ -751,10 +778,18 @@ async function saveShelves(){
   try{
     const res=await fetch('/api/shelves',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({password:state.password,shelves:state.shelves}),
+      headers:{
+        'Content-Type':'application/json',
+        'x-admin-password':state.password,
+      },
+      // サーバー側のフィールド名の差異に備え、複数の名前で送る
+      body:JSON.stringify({
+        password:state.password,
+        adminPassword:state.password,
+        shelves:state.shelves,
+      }),
     });
-    if(res.status===401){
+    if(res.status===401 || res.status===403){
       setStatus('認証エラー: パスワードが違います','error');
       state.password=null;
       showLogin();
@@ -782,34 +817,19 @@ async function tryLogin(){
   }
   const btn=$('login-btn');
   btn.disabled=true;
-  btn.textContent='確認中…';
-  setStatus('認証中…','busy');
-  // サーバー側で password 検証する。確認のため空 POST (shelves はそのまま既存値を送る)
-  // まず最新を取得
-  await fetchShelves();
-  // 認証チェック: 既存の shelves を再 POST (内容は変わらない) してパスワードを検証
-  try{
-    const res=await fetch('/api/shelves',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({password,shelves:state.shelves}),
-    });
-    if(res.status===401){
-      setStatus('パスワードが違います','error');
-      btn.disabled=false;
-      btn.textContent='ログイン';
-      return;
-    }
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    state.password=password;
-    setStatus('ログインしました');
-    setTimeout(()=>setStatus(''),1500);
-    showMain();
-  }catch(err){
-    setStatus('ログイン失敗: '+err.message,'error');
+  btn.textContent='読み込み中…';
+  // 最新の棚を取得 (認証不要)
+  const ok=await fetchShelves();
+  if(!ok){
     btn.disabled=false;
     btn.textContent='ログイン';
+    return;
   }
+  // パスワードはメモリに保持し、保存時にサーバーで検証する
+  state.password=password;
+  setStatus('ログインしました');
+  setTimeout(()=>setStatus(''),1500);
+  showMain();
 }
 
 function logout(){
@@ -1267,6 +1287,16 @@ $('memo-cancel').addEventListener('click',closeMemoModal);
 $('memo-save').addEventListener('click',saveMemoFromModal);
 $('memo-modal').addEventListener('click',e=>{
   if(e.target===$('memo-modal'))closeMemoModal();
+});
+
+// パスワード表示トグル
+$('password-toggle').addEventListener('click',()=>{
+  const inp=$('login-password');
+  const tog=$('password-toggle');
+  const isPwd=inp.type==='password';
+  inp.type=isPwd?'text':'password';
+  tog.querySelector('.eye-on').classList.toggle('hide',isPwd);
+  tog.querySelector('.eye-off').classList.toggle('hide',!isPwd);
 });
 
 // Enterでログイン
