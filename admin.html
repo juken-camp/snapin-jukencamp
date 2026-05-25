@@ -2,16 +2,18 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SnapIn 管理画面</title>
-<meta name="theme-color" content="#1D9E75">
+<meta name="theme-color" content="#FAFAF7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SnapIn 管理">
 <style>
 :root{
   --g:#1D9E75; --gl:#E8F5EF; --gd:#0F6E56;
   --bg:#FAFAF7; --surface:#FFFFFF;
   --ink:#1A1A1A; --ink2:#5C5C5C; --ink3:#9A9A9A;
   --line:rgba(0,0,0,.08); --line2:rgba(0,0,0,.14);
-  --amber:#E8A33D; --rose:#D6604D;
+  --amber:#E8A33D; --rose:#D6604D; --sky:#3F7FB8;
   --font-jp:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium",sans-serif;
   --font-en:"Charter","Iowan Old Style","Georgia",serif;
   --shadow:0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
@@ -19,1028 +21,681 @@
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{
-  min-height:100%;
+  height:100%;
   background:var(--bg);
   font-family:var(--font-jp);
   color:var(--ink);
+  overscroll-behavior:none;
   -webkit-font-smoothing:antialiased;
 }
 button{font-family:inherit;background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;}
 input,textarea{font-family:inherit;border:none;outline:none;background:none;color:inherit;}
 
 .app{
-  max-width:980px;
+  max-width:430px;
   margin:0 auto;
-  padding:0 20px;
-  min-height:100vh;
+  min-height:100dvh;
+  display:flex;
+  flex-direction:column;
+  background:var(--bg);
+  position:relative;
 }
 
-/* HEADER */
+/* ヘッダー: index.html と同じスタイル */
 .hdr{
+  padding:calc(env(safe-area-inset-top) + 4px) 14px 0;
+  height:calc(54px + env(safe-area-inset-top));
   display:flex;
-  align-items:center;
   justify-content:space-between;
-  padding:20px 0;
-  border-bottom:1px solid var(--line);
+  align-items:center;
+  background:var(--bg);
+  flex-shrink:0;
 }
 .logo{
   font-family:-apple-system,"Helvetica Neue",sans-serif;
-  font-size:26px;
+  font-size:22px;
   font-weight:700;
   letter-spacing:-0.01em;
-}
-.logo em{color:var(--g);font-style:normal;font-weight:700;}
-.logo-suffix{
-  font-family:var(--font-jp);
-  font-size:13px;
-  color:var(--ink3);
-  margin-left:10px;
-  font-style:normal;
-}
-.hdr-right{
   display:flex;
+  align-items:baseline;
+  gap:0;
+  color:var(--ink);
+}
+.logo em{
+  color:var(--g);
+  font-style:normal;
+  font-weight:700;
+  margin-right:8px;
+}
+.page-sub{
+  font-family:-apple-system,sans-serif;
+  font-size:11px;
+  font-weight:500;
+  color:var(--ink3);
+  letter-spacing:0.02em;
+}
+.hdr-icons{display:flex;gap:4px;color:var(--ink2);align-items:center;}
+.hdr-icons button{
+  padding:8px 12px;
+  font-size:13px;
+  font-weight:500;
+  border-radius:14px;
+}
+.hdr-icons button:active{background:var(--gl);color:var(--g);}
+
+.scroll{
+  flex:1;
+  padding:0 0 calc(40px + env(safe-area-inset-bottom));
+}
+
+/* ステータス表示 */
+.status{
+  margin:8px 20px 0;
+  padding:8px 12px;
+  border-radius:8px;
+  font-size:12px;
+  background:var(--gl);
+  color:var(--gd);
+  display:none;
   align-items:center;
+  gap:6px;
+}
+.status.show{display:flex;}
+.status .dot{
+  width:6px;height:6px;border-radius:50%;background:var(--g);
+}
+.status.error{background:#FCE8E5;color:#A03A2A;}
+.status.error .dot{background:var(--rose);}
+.status.busy .dot{animation:pulse-dot 1.2s ease-in-out infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+/* ログイン */
+.login-wrap{
+  padding:60px 28px 40px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:18px;
+}
+.login-logo{
+  font-family:-apple-system,sans-serif;
+  font-size:42px;
+  font-weight:700;
+  letter-spacing:-0.02em;
+}
+.login-logo em{color:var(--g);font-style:normal;}
+.login-by{
+  font-size:11px;
+  color:var(--ink3);
+  margin-top:-12px;
+  letter-spacing:0.05em;
+}
+.login-tag{
+  font-size:13px;
+  color:var(--ink2);
+  margin:6px 0 18px;
+}
+.login-form{
+  width:100%;
+  background:var(--surface);
+  border-radius:14px;
+  padding:20px;
+  box-shadow:var(--shadow);
+  display:flex;
+  flex-direction:column;
   gap:12px;
 }
-.btn{
-  padding:8px 14px;
-  border-radius:8px;
-  font-size:13px;
-  font-weight:600;
-  transition:all .12s;
-}
-.btn-primary{background:var(--g);color:white;}
-.btn-primary:hover{background:var(--gd);}
-.btn-secondary{background:var(--bg);color:var(--ink);border:1px solid var(--line2);}
-.btn-secondary:hover{background:var(--surface);}
-.btn-danger{background:#FFE8E5;color:var(--rose);}
-.btn-danger:hover{background:#FFD9D5;}
-.btn-ghost{color:var(--ink2);}
-.btn-ghost:hover{color:var(--g);}
-
-/* sync indicator */
-.sync-status{
+.login-form label{
   font-size:11px;
   color:var(--ink3);
-  display:flex;
-  align-items:center;
-  gap:5px;
-}
-.sync-status.syncing{color:var(--amber);}
-.sync-status.error{color:var(--rose);}
-.sync-status.ok{color:var(--g);}
-.sync-dot{
-  width:6px;height:6px;border-radius:50%;
-  background:currentColor;
-}
-.sync-status.syncing .sync-dot{
-  animation:sync-blink 1s infinite;
-}
-@keyframes sync-blink{50%{opacity:0.3;}}
-
-/* LAYOUT */
-.layout{
-  display:grid;
-  grid-template-columns:280px 1fr;
-  gap:24px;
-  padding:24px 0;
-}
-@media(max-width:760px){
-  .layout{grid-template-columns:1fr;}
-}
-
-/* SIDEBAR */
-.sidebar h3{
-  font-size:11px;
-  letter-spacing:0.1em;
-  color:var(--ink3);
-  font-family:var(--font-en);
-  text-transform:uppercase;
-  margin-bottom:10px;
   font-weight:500;
 }
+.login-input{
+  width:100%;
+  height:42px;
+  padding:0 14px;
+  background:var(--bg);
+  border:0.5px solid var(--line2);
+  border-radius:10px;
+  font-size:14px;
+}
+.login-input:focus{border-color:var(--g);background:var(--surface);}
+.login-btn{
+  height:44px;
+  background:var(--g);
+  color:white;
+  font-size:14px;
+  font-weight:600;
+  border-radius:10px;
+  margin-top:6px;
+}
+.login-btn:active{background:var(--gd);transform:scale(0.98);}
+.login-btn:disabled{opacity:.5;}
+.login-note{
+  font-size:10px;
+  color:var(--ink3);
+  text-align:center;
+  margin-top:8px;
+  line-height:1.5;
+}
+
+/* セクション見出し */
+.section-title{
+  font-size:11px;
+  font-weight:500;
+  color:var(--ink3);
+  letter-spacing:0.05em;
+  padding:18px 20px 8px;
+}
+
+/* 棚一覧 */
 .shelf-list{
   display:flex;
   flex-direction:column;
-  gap:4px;
-  margin-bottom:18px;
 }
-.shelf-btn{
+.shelf-item{
   display:flex;
   align-items:center;
-  gap:10px;
-  padding:10px 12px;
-  border-radius:8px;
-  text-align:left;
-  transition:background .12s;
-  font-size:14px;
-  font-weight:500;
-}
-.shelf-btn:hover{background:var(--gl);}
-.shelf-btn.active{background:var(--gl);color:var(--gd);}
-.shelf-btn-icon{
-  width:32px;height:32px;
-  border-radius:8px;
+  gap:12px;
+  padding:12px 18px;
   background:var(--surface);
-  display:flex;align-items:center;justify-content:center;
-  color:var(--gd);
-  font-weight:700;
-  font-size:13px;
-  flex-shrink:0;
-  font-family:var(--font-en);
+  border-top:0.5px solid var(--line);
+  border-bottom:0.5px solid var(--line);
+  margin-top:-0.5px;
+  cursor:pointer;
 }
-.shelf-btn-info{flex:1;min-width:0;}
-.shelf-btn-name{font-weight:600;}
-.shelf-btn-handle{
+.shelf-item:active{background:var(--bg);}
+.shelf-item.active{background:var(--gl);}
+.shelf-avatar{
+  width:40px;height:40px;
+  border-radius:10px;
+  background:var(--gl);
+  color:var(--gd);
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:700;
+  flex-shrink:0;
+}
+.shelf-info{flex:1;min-width:0;}
+.shelf-name{
+  font-size:14px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.shelf-handle{
+  font-size:11px;color:var(--ink3);
+  font-family:var(--font-en);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.shelf-count{
   font-size:11px;
   color:var(--ink3);
-  font-family:var(--font-en);
-  margin-top:1px;
+  padding:3px 8px;
+  background:var(--bg);
+  border-radius:10px;
+  flex-shrink:0;
 }
 
-.add-shelf-btn{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 12px;
-  border-radius:8px;
+/* 新規作成ボタン */
+.new-shelf-btn{
+  margin:12px 20px 0;
+  padding:14px;
+  background:transparent;
+  border:1.5px dashed var(--line2);
+  border-radius:12px;
   color:var(--g);
   font-size:13px;
   font-weight:500;
-  border:1px dashed var(--line2);
-  width:100%;
-  text-align:left;
-}
-.add-shelf-btn:hover{border-color:var(--g);background:var(--gl);}
-
-/* MAIN */
-.main{min-width:0;}
-.main-empty{
-  padding:80px 40px;
-  text-align:center;
-  color:var(--ink3);
-  font-size:14px;
-  line-height:1.7;
-}
-.shelf-head{
   display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:20px;
-  padding-bottom:16px;
-  border-bottom:1px solid var(--line);
-  margin-bottom:20px;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  width:calc(100% - 40px);
 }
-.shelf-info{flex:1;}
-.shelf-name{
-  font-size:22px;
-  font-weight:700;
-  margin-bottom:4px;
-}
-.shelf-handle{
-  font-size:12px;
-  color:var(--ink3);
-  font-family:var(--font-en);
-  margin-bottom:8px;
-}
-.shelf-desc{
-  font-size:13px;
-  color:var(--ink2);
-  line-height:1.6;
-}
-.shelf-actions{
-  display:flex;
-  gap:8px;
-  flex-shrink:0;
-}
+.new-shelf-btn:active{background:var(--gl);}
 
-/* CARDS GRID */
-.cards-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(170px, 1fr));
+/* 棚の編集パネル */
+.shelf-edit{
+  margin:12px 0 0;
+  background:var(--surface);
+  border-top:0.5px solid var(--line);
+  border-bottom:0.5px solid var(--line);
+}
+.shelf-edit-head{
+  padding:14px 20px;
+  display:flex;
+  align-items:center;
   gap:10px;
-  margin-top:8px;
+  border-bottom:0.5px solid var(--line);
 }
-.adm-card{
-  aspect-ratio:1;
-  background:#FFFDF5;
+.shelf-edit-title{
+  flex:1;
+  font-size:15px;
+  font-weight:600;
+}
+.shelf-edit-act{
+  padding:6px 12px;
+  border-radius:14px;
+  font-size:12px;
+  font-weight:500;
+}
+.shelf-edit-act.edit{color:var(--ink2);border:0.5px solid var(--line2);}
+.shelf-edit-act.delete{color:var(--rose);background:#FCE8E5;}
+.shelf-edit-act:active{transform:scale(0.95);}
+
+.shelf-edit-body{
+  padding:14px 20px;
+}
+.shelf-edit-row{
+  margin-bottom:14px;
+}
+.shelf-edit-row label{
+  display:block;
+  font-size:11px;
+  color:var(--ink3);
+  margin-bottom:6px;
+  font-weight:500;
+}
+.shelf-edit-row input,
+.shelf-edit-row textarea{
+  width:100%;
+  padding:9px 12px;
+  background:var(--bg);
+  border:0.5px solid var(--line2);
   border-radius:8px;
+  font-size:14px;
+  line-height:1.5;
+}
+.shelf-edit-row textarea{
+  min-height:64px;
+  resize:vertical;
+}
+.shelf-edit-row input:focus,
+.shelf-edit-row textarea:focus{
+  border-color:var(--g);
+  background:var(--surface);
+}
+
+/* メモ一覧 */
+.memo-list-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 20px 4px;
+}
+.memo-list-head-title{
+  font-size:13px;font-weight:600;
+}
+.memo-list-head-count{
+  font-size:11px;
+  color:var(--ink3);
+}
+.memo-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1px;
+  background:var(--line);
+  padding:0 0 0;
+}
+.memo-card{
+  aspect-ratio:1;
+  background:var(--surface);
   overflow:hidden;
   position:relative;
   cursor:pointer;
-  border:1px solid var(--line);
-  transition:transform .12s, box-shadow .12s;
-  display:flex;
-  flex-direction:column;
 }
-.adm-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.06);}
-.adm-card img{width:100%;height:100%;object-fit:cover;}
-.adm-card .ctxt{
-  padding:10px;
+.memo-card:active{opacity:.8;}
+.memo-card img{width:100%;height:100%;object-fit:cover;display:block;}
+.memo-card .ctxt{
+  padding:12px;
   font-size:11px;
-  line-height:1.5;
-  flex:1;
+  line-height:1.55;
+  height:100%;
   overflow:hidden;
   display:-webkit-box;
-  -webkit-line-clamp:8;
+  -webkit-line-clamp:7;
   -webkit-box-orient:vertical;
   word-break:break-word;
 }
-.adm-card.list .ctxt{background:#F4F8F3;}
-.adm-card-del{
-  position:absolute;
-  top:6px;right:6px;
-  width:24px;height:24px;
-  border-radius:50%;
-  background:rgba(0,0,0,.5);
-  color:white;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:2;
-}
-.adm-card:hover .adm-card-del{display:flex;}
-.adm-card-del:hover{background:var(--rose);}
-
-.add-card-cell{
-  aspect-ratio:1;
-  border:2px dashed var(--line2);
-  border-radius:8px;
+.memo-card.list .ctxt{font-size:11px;}
+.memo-card-add{
+  background:var(--gl);
   display:flex;
   align-items:center;
   justify-content:center;
-  color:var(--ink3);
-  cursor:pointer;
-  transition:all .12s;
-}
-.add-card-cell:hover{
-  border-color:var(--g);
   color:var(--g);
-  background:var(--gl);
 }
+.memo-card-add svg{width:32px;height:32px;}
 
-/* MODAL */
+/* メモ編集モーダル */
 .modal-mask{
   position:fixed;inset:0;
-  background:rgba(0,0,0,.5);
-  z-index:100;
+  background:rgba(0,0,0,.4);
   display:none;
-  align-items:center;
+  align-items:flex-end;
   justify-content:center;
-  padding:20px;
+  z-index:100;
 }
 .modal-mask.on{display:flex;}
 .modal{
-  background:var(--surface);
-  border-radius:12px;
   width:100%;
-  max-width:560px;
-  max-height:90vh;
-  overflow-y:auto;
+  max-width:430px;
+  background:var(--bg);
+  border-radius:18px 18px 0 0;
+  max-height:92dvh;
   display:flex;
   flex-direction:column;
+  overflow:hidden;
 }
-.modal-head{
-  padding:16px 20px;
-  border-bottom:1px solid var(--line);
+.modal-hdr{
+  padding:14px 16px;
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  gap:10px;
+  background:var(--bg);
+  border-bottom:0.5px solid var(--line);
+  flex-shrink:0;
 }
-.modal-title{font-size:16px;font-weight:600;}
-.modal-close{
-  width:28px;height:28px;
-  border-radius:50%;
+.modal-hdr-back{
+  width:32px;height:32px;
   display:flex;align-items:center;justify-content:center;
-  color:var(--ink3);
+  color:var(--ink2);
 }
-.modal-close:hover{background:var(--bg);color:var(--ink);}
-.modal-body{padding:20px;}
-.modal-foot{
-  padding:16px 20px;
-  border-top:1px solid var(--line);
+.modal-hdr-title{
+  flex:1;
+  font-size:15px;font-weight:600;
+}
+.modal-save{
+  padding:8px 14px;
+  background:var(--g);
+  color:white;
+  font-size:13px;
+  font-weight:600;
+  border-radius:18px;
+  min-width:62px;
+  text-align:center;
+}
+.modal-save:active{background:var(--gd);transform:scale(0.96);}
+.modal-save:disabled{opacity:.5;}
+.modal-save.saved{
+  background:var(--gd);
+  pointer-events:none;
+  display:inline-flex;
+  align-items:center;justify-content:center;
+  animation:save-pulse .35s ease-out;
+}
+@keyframes save-pulse{
+  0%{transform:scale(0.85);}
+  60%{transform:scale(1.12);}
+  100%{transform:scale(1);}
+}
+.modal-body{
+  flex:1;
+  overflow-y:auto;
+  padding:16px;
+}
+
+/* メモタイプ選択 */
+.type-row{
   display:flex;
-  justify-content:flex-end;
   gap:8px;
+  margin-bottom:18px;
 }
-.form-row{margin-bottom:16px;}
-.form-label{
-  display:block;
+.type-chip{
+  flex:1;
+  padding:10px 8px;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:10px;
   font-size:12px;
   color:var(--ink2);
-  margin-bottom:6px;
-  font-weight:600;
+  font-weight:500;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
 }
-.form-input{
-  width:100%;
-  padding:10px 12px;
-  border:1px solid var(--line2);
-  border-radius:8px;
-  font-size:14px;
-  background:var(--bg);
-}
-.form-input:focus{
+.type-chip.on{
+  background:var(--gl);
   border-color:var(--g);
-  background:var(--surface);
+  color:var(--gd);
 }
-.form-textarea{
+.type-chip svg{width:18px;height:18px;}
+
+.memo-edit-area{
+  background:var(--surface);
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:14px;
+}
+.memo-edit-area textarea{
+  width:100%;
   min-height:120px;
-  font-family:inherit;
-  resize:vertical;
+  font-size:15px;
   line-height:1.6;
+  resize:vertical;
+}
+.memo-edit-area input{
+  width:100%;
+  font-size:15px;
+  padding:6px 0;
 }
 
-/* TYPE SELECTOR */
-.type-selector{
+/* 色選択 */
+.color-row{
   display:flex;
   gap:8px;
   margin-bottom:14px;
+  flex-wrap:wrap;
 }
-.type-opt{
-  flex:1;
-  padding:10px;
-  text-align:center;
-  border-radius:8px;
-  border:1px solid var(--line2);
-  font-size:13px;
-  font-weight:500;
+.color-swatch{
+  width:36px;height:36px;
+  border-radius:50%;
+  border:2px solid transparent;
   cursor:pointer;
 }
-.type-opt.on{background:var(--gl);border-color:var(--g);color:var(--gd);}
-.type-opt:hover{border-color:var(--g);}
+.color-swatch.on{border-color:var(--g);}
 
-/* LIST ITEMS in modal */
-.modal-list-item{
+/* リスト編集 */
+.list-edit{
+  background:var(--surface);
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:14px;
+}
+.list-item-row{
   display:flex;
+  align-items:center;
   gap:8px;
   padding:6px 0;
-  align-items:center;
+  border-bottom:0.5px solid var(--line);
 }
-.modal-list-item input[type=text]{
-  flex:1;
-  padding:6px 10px;
-  border:1px solid var(--line2);
-  border-radius:6px;
-  font-size:14px;
-}
-.modal-list-item .del{
+.list-item-row:last-of-type{border-bottom:none;}
+.list-item-row input{flex:1;font-size:14px;padding:6px 0;}
+.list-item-del{
+  padding:4px 8px;
   color:var(--ink3);
-  width:24px;height:24px;
-  display:flex;align-items:center;justify-content:center;
-  border-radius:50%;
+  font-size:11px;
 }
-.modal-list-item .del:hover{color:var(--rose);background:#FFE8E5;}
+.list-item-add{
+  margin-top:8px;
+  color:var(--g);
+  font-size:13px;
+  font-weight:500;
+  padding:6px 0;
+}
 
-/* PHOTO PREVIEW */
-.photo-preview{
-  width:100%;
-  aspect-ratio:1;
-  background:var(--bg);
-  border-radius:10px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+/* 写真アップロード */
+.photo-zone{
+  background:var(--surface);
+  border:1.5px dashed var(--line2);
+  border-radius:12px;
+  padding:30px 20px;
+  text-align:center;
   margin-bottom:14px;
-  overflow:hidden;
-  position:relative;
-  border:1px dashed var(--line2);
+  color:var(--ink2);
+  font-size:13px;
 }
-.photo-preview img{width:100%;height:100%;object-fit:cover;}
-.photo-preview-empty{color:var(--ink3);font-size:13px;}
+.photo-zone.has-image{
+  padding:0;
+  border:none;
+  background:transparent;
+}
+.photo-zone img{
+  width:100%;
+  max-height:300px;
+  object-fit:contain;
+  border-radius:12px;
+  background:var(--surface);
+}
+.photo-zone-buttons{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+.photo-zone-btn{
+  flex:1;
+  padding:9px;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:10px;
+  font-size:12px;
+  color:var(--ink2);
+  font-weight:500;
+}
+.photo-zone-btn:active{background:var(--gl);}
 
-/* TOAST */
+/* 削除ボタン (モーダル内) */
+.modal-del{
+  width:100%;
+  padding:11px;
+  background:transparent;
+  border:0.5px solid var(--line2);
+  border-radius:10px;
+  color:var(--rose);
+  font-size:13px;
+  font-weight:500;
+  margin-top:14px;
+}
+.modal-del:active{background:#FCE8E5;}
+
+/* 待機メッセージ */
+.empty-shelf-state{
+  padding:60px 30px;
+  text-align:center;
+  color:var(--ink3);
+  font-size:13px;
+  line-height:1.7;
+}
+
+/* トースト */
 .toast{
   position:fixed;
   bottom:30px;
   left:50%;
   transform:translateX(-50%) translateY(20px);
-  background:rgba(26,26,26,.92);
+  background:rgba(20,20,20,.92);
   color:white;
   padding:10px 18px;
   border-radius:20px;
   font-size:13px;
-  z-index:200;
   opacity:0;
   pointer-events:none;
   transition:all .25s;
+  z-index:200;
 }
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
 
-/* LOADING */
-.loading-screen{
-  position:fixed;inset:0;
-  background:var(--bg);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:1000;
-  font-size:14px;
-  color:var(--ink2);
-}
-.loading-screen.hide{display:none;}
-
 .hide{display:none !important;}
-
-/* AUTH */
-.auth-wrap{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  min-height:100vh;
-  padding:40px 20px;
-}
-.auth-box{
-  width:100%;
-  max-width:380px;
-  background:var(--surface);
-  border-radius:12px;
-  padding:32px 28px;
-  box-shadow:var(--shadow);
-}
-.auth-title{
-  font-family:-apple-system,sans-serif;
-  font-size:30px;
-  font-weight:700;
-  margin-bottom:8px;
-  letter-spacing:-0.01em;
-}
-.auth-title em{color:var(--g);font-style:normal;font-weight:700;}
-.auth-sub{
-  font-size:13px;
-  color:var(--ink2);
-  margin-bottom:24px;
-}
-.auth-form .form-input{margin-bottom:12px;}
-.auth-submit{
-  width:100%;
-  padding:12px;
-  margin-top:8px;
-  background:var(--g);
-  color:white;
-  border-radius:8px;
-  font-size:14px;
-  font-weight:600;
-}
-.auth-submit:hover{background:var(--gd);}
-.auth-note{
-  font-size:11px;
-  color:var(--ink3);
-  margin-top:20px;
-  line-height:1.6;
-  text-align:center;
-}
 </style>
 </head>
 <body>
+<div class="app">
 
-<!-- AUTH SCREEN -->
-<div class="auth-wrap" id="auth-wrap">
-  <div class="auth-box">
-    <div class="auth-title">Snap<em>In</em> <span style="font-size:14px;font-family:var(--font-jp);color:var(--ink3);">管理画面</span></div>
-    <div class="auth-sub">公式アカウントのメモを管理します。<br>サーバーに保存され、全生徒に届きます。</div>
-    <div class="auth-form">
-      <input type="email" class="form-input" id="auth-email" placeholder="メールアドレス" autocomplete="email">
-      <input type="password" class="form-input" id="auth-pass" placeholder="パスワード" autocomplete="current-password">
-      <button class="auth-submit" id="auth-submit">ログイン</button>
-    </div>
-    <div class="auth-note">
-      認証情報はサーバー側で検証されます。<br>
-      パスワードは Vercel の環境変数 ADMIN_PASSWORD で管理。
-    </div>
+<div class="hdr">
+  <div class="logo">Snap<em>In</em><span class="page-sub">管理画面</span></div>
+  <div class="hdr-icons" id="hdr-icons" style="display:none;">
+    <button id="logout-btn">ログアウト</button>
   </div>
 </div>
 
-<!-- MAIN APP -->
-<div class="app hide" id="app">
-  <div class="hdr">
-    <div>
-      <span class="logo">Snap<em>In</em></span>
-      <span class="logo-suffix">管理画面</span>
-    </div>
-    <div class="hdr-right">
-      <div class="sync-status" id="sync-status">
-        <div class="sync-dot"></div>
-        <span id="sync-text">―</span>
-      </div>
-      <button class="btn btn-ghost" id="logout-btn">ログアウト</button>
-    </div>
-  </div>
+<div id="status" class="status"></div>
 
-  <div class="layout">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <h3>管理する棚</h3>
-      <div class="shelf-list" id="shelf-list"></div>
-      <button class="add-shelf-btn" id="add-shelf-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        新しい棚を作る
-      </button>
-    </aside>
-
-    <!-- MAIN -->
-    <main class="main">
-      <div class="main-empty" id="main-empty">
-        左の棚を選んでください。<br>
-        または「新しい棚を作る」から始めましょう。
+<!-- ログイン画面 -->
+<div id="login-screen" class="scroll">
+  <div class="login-wrap">
+    <div class="login-logo">Snap<em>In</em></div>
+    <div class="login-by">管理画面</div>
+    <div class="login-tag">JUKEN CAMP 公式アカウント</div>
+    <form class="login-form" id="login-form" onsubmit="return false;">
+      <div>
+        <label for="login-email">メールアドレス</label>
+        <input id="login-email" class="login-input" type="email" autocomplete="username" placeholder="example@yahoo.co.jp">
       </div>
-      <div id="main-shelf" class="hide">
-        <div class="shelf-head">
-          <div class="shelf-info">
-            <div class="shelf-name" id="shelf-name">―</div>
-            <div class="shelf-handle" id="shelf-handle">―</div>
-            <div class="shelf-desc" id="shelf-desc">―</div>
-          </div>
-          <div class="shelf-actions">
-            <button class="btn btn-secondary" id="edit-shelf-btn">編集</button>
-            <button class="btn btn-danger" id="delete-shelf-btn">削除</button>
-          </div>
-        </div>
-        <div class="cards-grid" id="cards-grid"></div>
+      <div>
+        <label for="login-password">パスワード</label>
+        <input id="login-password" class="login-input" type="password" autocomplete="current-password" placeholder="">
       </div>
-    </main>
+      <button class="login-btn" id="login-btn" type="submit">ログイン</button>
+      <div class="login-note">
+        認証情報はサーバー側で検証されます。<br>
+        パスワードは Vercel の環境変数 ADMIN_PASSWORD で管理。
+      </div>
+    </form>
   </div>
 </div>
 
-<!-- LOADING SCREEN -->
-<div class="loading-screen hide" id="loading-screen">
-  読み込み中…
+<!-- ログイン後の画面 -->
+<div id="main-screen" class="scroll hide">
+  <div class="section-title">管理する棚</div>
+  <div class="shelf-list" id="shelf-list"></div>
+  <button class="new-shelf-btn" id="new-shelf-btn">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+    新しい棚を作る
+  </button>
+
+  <div id="shelf-edit-panel"></div>
 </div>
 
-<!-- SHELF MODAL -->
-<div class="modal-mask" id="shelf-modal">
+<!-- メモ編集モーダル -->
+<div class="modal-mask" id="memo-modal">
   <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title" id="shelf-modal-title">新しい棚を作る</div>
-      <button class="modal-close" data-close="shelf-modal">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    <div class="modal-hdr">
+      <button class="modal-hdr-back" id="memo-cancel">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
+      <div class="modal-hdr-title" id="memo-modal-title">新しいメモ</div>
+      <button class="modal-save" id="memo-save">保存</button>
     </div>
-    <div class="modal-body">
-      <div class="form-row">
-        <label class="form-label">棚の名前</label>
-        <input type="text" class="form-input" id="shelf-form-name" placeholder="例: JUKEN CAMP 英語">
-      </div>
-      <div class="form-row">
-        <label class="form-label">ハンドル (英数字、@で始まる)</label>
-        <input type="text" class="form-input" id="shelf-form-handle" placeholder="例: @jukencamp-english">
-      </div>
-      <div class="form-row">
-        <label class="form-label">説明</label>
-        <textarea class="form-input form-textarea" id="shelf-form-desc" placeholder="どんな棚かを書いてください"></textarea>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" data-close="shelf-modal">キャンセル</button>
-      <button class="btn btn-primary" id="shelf-save-btn">保存</button>
-    </div>
-  </div>
-</div>
-
-<!-- CARD MODAL -->
-<div class="modal-mask" id="card-modal">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title" id="card-modal-title">新しいメモ</div>
-      <button class="modal-close" data-close="card-modal">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="modal-body">
-      <div class="type-selector">
-        <div class="type-opt on" data-type="note">メモ</div>
-        <div class="type-opt" data-type="photo">写真</div>
-        <div class="type-opt" data-type="list">リスト</div>
-      </div>
-      <div id="card-form-note" class="form-row">
-        <textarea class="form-input form-textarea" id="card-form-text" placeholder="メモ内容を入力..." style="min-height:180px;"></textarea>
-      </div>
-      <div id="card-form-photo" class="hide">
-        <div class="photo-preview" id="photo-preview">
-          <div class="photo-preview-empty">写真を選んでください</div>
-        </div>
-        <input type="file" id="photo-file" accept="image/*" style="display:none;">
-        <button class="btn btn-secondary" id="photo-pick-btn" style="width:100%;margin-bottom:14px;">写真を選ぶ</button>
-        <textarea class="form-input form-textarea" id="card-form-photo-text" placeholder="写真の説明 (任意)" style="min-height:80px;"></textarea>
-      </div>
-      <div id="card-form-list" class="hide">
-        <input type="text" class="form-input" id="card-form-list-title" placeholder="リストのタイトル" style="margin-bottom:10px;">
-        <div id="list-items-wrap"></div>
-        <button class="btn btn-ghost" id="add-list-item-btn" style="color:var(--g);margin-top:4px;">+ 項目を追加</button>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" data-close="card-modal">キャンセル</button>
-      <button class="btn btn-primary" id="card-save-btn">保存</button>
-    </div>
+    <div class="modal-body" id="memo-modal-body"></div>
   </div>
 </div>
 
 <div class="toast" id="toast">保存しました</div>
 
+</div>
+
 <script>
-(function(){
 'use strict';
 
-// ─────────────────────────────────────
-// SnapIn 管理画面 (Upstash Redis 経由)
-// ・ログイン: メール + パスワード (パスワードはサーバー側で検証)
-// ・保存先: /api/shelves (Vercel Serverless + Upstash Redis)
-// ─────────────────────────────────────
-
-const AUTH_KEY='snapin_admin_auth_v2';  // password 保持用
-const ADMIN_EMAIL='directsystemtheory@yahoo.co.jp';
-const SHELVES_ENDPOINT='/api/shelves';
 const $=id=>document.getElementById(id);
 
+const CARD_COLORS=[
+  {id:'default',name:'白',bg:'#FFFDF5',fg:'#1A1A1A'},
+  {id:'yellow', name:'黄',bg:'#FFF6D6',fg:'#5A4818'},
+  {id:'pink',   name:'桃',bg:'#FCE6E8',fg:'#6B2030'},
+  {id:'blue',   name:'青',bg:'#E0EDF8',fg:'#1F3A5C'},
+  {id:'green',  name:'緑',bg:'#E0F1E4',fg:'#1F4E2C'},
+  {id:'purple', name:'紫',bg:'#EBE0F2',fg:'#3D2657'},
+  {id:'gray',   name:'灰',bg:'#ECEDEE',fg:'#3A3F44'},
+];
+const colorById=id=>CARD_COLORS.find(c=>c.id===id)||CARD_COLORS[0];
+
 const state={
-  shelves:[],
-  currentShelfId:null,
-  editingShelfId:null,
-  editingCardId:null,
-  password:null,  // ログイン中のパスワード (POST 認証用)
+  password:null,         // ログイン後、メモリ上のみで保持 (永続しない)
+  shelves:[],            // サーバーから取得した棚一覧
+  selectedId:null,       // 現在開いている棚
+  editingMemo:null,      // モーダルで編集中のメモ
+  saving:false,
 };
-
-// ═══ SYNC STATUS ═══
-function setSync(status,text){
-  const el=$('sync-status');
-  el.classList.remove('syncing','error','ok');
-  el.classList.add(status);
-  $('sync-text').textContent=text;
-}
-
-// ═══ API ═══
-async function fetchShelves(){
-  setSync('syncing','読み込み中…');
-  try{
-    const res=await fetch(SHELVES_ENDPOINT);
-    if(!res.ok)throw new Error('読み込みに失敗 ('+res.status+')');
-    const data=await res.json();
-    state.shelves=Array.isArray(data.shelves)?data.shelves:[];
-    setSync('ok','同期済み');
-    return true;
-  }catch(err){
-    console.error(err);
-    setSync('error','読み込みエラー');
-    toast('サーバーから読み込めませんでした');
-    return false;
-  }
-}
-
-async function saveShelvesToServer(){
-  if(!state.password){
-    toast('再ログインしてください');
-    return false;
-  }
-  setSync('syncing','保存中…');
-  try{
-    const res=await fetch(SHELVES_ENDPOINT,{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'X-Admin-Password':state.password,
-      },
-      body:JSON.stringify({shelves:state.shelves}),
-    });
-    if(res.status===401){
-      setSync('error','認証エラー');
-      toast('パスワードが正しくありません');
-      logout();
-      return false;
-    }
-    if(!res.ok)throw new Error('保存失敗 ('+res.status+')');
-    setSync('ok','保存しました');
-    return true;
-  }catch(err){
-    console.error(err);
-    setSync('error','保存エラー');
-    toast('保存に失敗しました');
-    return false;
-  }
-}
-
-// ═══ AUTH ═══
-function checkAuth(){
-  const pass=sessionStorage.getItem(AUTH_KEY);
-  if(pass){
-    state.password=pass;
-    return true;
-  }
-  return false;
-}
-
-async function tryLogin(){
-  const email=$('auth-email').value.trim();
-  const pass=$('auth-pass').value;
-  if(email!==ADMIN_EMAIL){
-    toast('メールアドレスが違います');
-    return;
-  }
-  // 認証はサーバー側で行う: 空の保存リクエストを投げて 401 でないかチェック
-  // (まずは取得を試して、書き込みは保存時に検証する方式でもOK)
-  state.password=pass;
-  // 取得を試みる
-  const ok=await fetchShelves();
-  if(!ok){
-    // ネットワークエラー
-    return;
-  }
-  // パスワードが正しいかを検証するため、現状を再保存してみる
-  const verifyRes=await fetch(SHELVES_ENDPOINT,{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'X-Admin-Password':pass,
-    },
-    body:JSON.stringify({shelves:state.shelves}),
-  });
-  if(verifyRes.status===401){
-    state.password=null;
-    toast('パスワードが違います');
-    return;
-  }
-  // 成功
-  sessionStorage.setItem(AUTH_KEY,pass);
-  $('auth-wrap').classList.add('hide');
-  $('app').classList.remove('hide');
-  setSync('ok','ログインしました');
-  render();
-}
-
-function logout(){
-  sessionStorage.removeItem(AUTH_KEY);
-  state.password=null;
-  location.reload();
-}
-
-// ═══ RENDER ═══
-function render(){
-  const list=$('shelf-list');
-  list.innerHTML='';
-  state.shelves.forEach(s=>{
-    const btn=document.createElement('button');
-    btn.className='shelf-btn'+(state.currentShelfId===s.id?' active':'');
-    btn.innerHTML=`
-      <div class="shelf-btn-icon">${esc(s.name.slice(0,1))}</div>
-      <div class="shelf-btn-info">
-        <div class="shelf-btn-name">${esc(s.name)}</div>
-        <div class="shelf-btn-handle">${esc(s.handle)}</div>
-      </div>
-    `;
-    btn.addEventListener('click',()=>selectShelf(s.id));
-    list.appendChild(btn);
-  });
-
-  const empty=$('main-empty');
-  const main=$('main-shelf');
-  if(!state.currentShelfId){
-    empty.classList.remove('hide');
-    main.classList.add('hide');
-    return;
-  }
-  const s=state.shelves.find(x=>x.id===state.currentShelfId);
-  if(!s){
-    state.currentShelfId=null;
-    render();
-    return;
-  }
-  empty.classList.add('hide');
-  main.classList.remove('hide');
-  $('shelf-name').textContent=s.name;
-  $('shelf-handle').textContent=s.handle;
-  $('shelf-desc').textContent=s.desc||'説明なし';
-
-  const grid=$('cards-grid');
-  grid.innerHTML='';
-  (s.cards||[]).forEach(c=>{
-    const el=document.createElement('div');
-    el.className='adm-card '+c.type;
-    let inner='';
-    if(c.type==='photo'||c.type==='photonote'){
-      inner=`<img src="${c.image||''}" alt="">`;
-    }else if(c.type==='note'){
-      inner=`<div class="ctxt">${esc(c.text||'')}</div>`;
-    }else if(c.type==='list'){
-      const items=(c.items||[]).slice(0,5).map(i=>
-        `<div style="font-size:11px;line-height:1.5;margin-bottom:2px;">・${esc(i.t)}</div>`
-      ).join('');
-      const title=c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;color:var(--gd);">${esc(c.title)}</div>`:'';
-      inner=`<div class="ctxt">${title}${items}</div>`;
-    }
-    const del=`<button class="adm-card-del" data-delete="${c.id}">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-    </button>`;
-    el.innerHTML=del+inner;
-    el.addEventListener('click',async (e)=>{
-      if(e.target.closest('[data-delete]')){
-        if(confirm('このメモを削除しますか?')){
-          s.cards=s.cards.filter(x=>x.id!==c.id);
-          await saveShelvesToServer();
-          render();
-        }
-        return;
-      }
-      openCardModal(c);
-    });
-    grid.appendChild(el);
-  });
-  const add=document.createElement('div');
-  add.className='add-card-cell';
-  add.innerHTML=`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>`;
-  add.addEventListener('click',()=>openCardModal(null));
-  grid.appendChild(add);
-}
-
-function selectShelf(id){
-  state.currentShelfId=id;
-  render();
-}
-
-// ═══ SHELF MODAL ═══
-function openShelfModal(shelf){
-  state.editingShelfId=shelf?shelf.id:null;
-  $('shelf-modal-title').textContent=shelf?'棚を編集':'新しい棚を作る';
-  $('shelf-form-name').value=shelf?shelf.name:'';
-  $('shelf-form-handle').value=shelf?shelf.handle:'@jukencamp-';
-  $('shelf-form-desc').value=shelf?(shelf.desc||''):'';
-  $('shelf-modal').classList.add('on');
-  setTimeout(()=>$('shelf-form-name').focus(),50);
-}
-
-async function saveShelf(){
-  const name=$('shelf-form-name').value.trim();
-  const handle=$('shelf-form-handle').value.trim();
-  const desc=$('shelf-form-desc').value.trim();
-  if(!name || !handle){toast('名前とハンドルは必須です');return;}
-  if(!handle.startsWith('@')){toast('ハンドルは @ で始めてください');return;}
-
-  if(state.editingShelfId){
-    const s=state.shelves.find(x=>x.id===state.editingShelfId);
-    if(s){
-      s.name=name; s.handle=handle; s.desc=desc;
-    }
-  }else{
-    const id=handle.replace(/^@/,'').replace(/[^a-z0-9-]/g,'-');
-    if(state.shelves.find(s=>s.id===id)){toast('そのハンドルは既に存在します');return;}
-    state.shelves.push({id,handle,name,desc,cards:[]});
-    state.currentShelfId=id;
-  }
-  const ok=await saveShelvesToServer();
-  if(ok){
-    $('shelf-modal').classList.remove('on');
-    render();
-    toast('保存しました');
-  }
-}
-
-async function deleteShelf(){
-  if(!state.currentShelfId)return;
-  const s=state.shelves.find(x=>x.id===state.currentShelfId);
-  if(!s)return;
-  if(!confirm(`「${s.name}」を完全に削除しますか?\n${(s.cards||[]).length}件のメモも一緒に削除されます。`))return;
-  state.shelves=state.shelves.filter(x=>x.id!==state.currentShelfId);
-  state.currentShelfId=null;
-  const ok=await saveShelvesToServer();
-  if(ok){
-    render();
-    toast('削除しました');
-  }
-}
-
-// ═══ CARD MODAL ═══
-let cardFormType='note';
-let cardFormImage=null;
-let cardFormListItems=[{t:'',d:false}];
-
-function openCardModal(card){
-  state.editingCardId=card?card.id:null;
-  $('card-modal-title').textContent=card?'メモを編集':'新しいメモ';
-  cardFormType=card?(card.type==='photonote'?'photo':card.type):'note';
-  cardFormImage=card?card.image:null;
-  cardFormListItems=card&&card.type==='list'?((card.items||[{t:'',d:false}]).map(i=>({...i}))):[{t:'',d:false}];
-  $('card-form-text').value=card&&card.type==='note'?(card.text||''):'';
-  $('card-form-photo-text').value=card&&(card.type==='photo'||card.type==='photonote')?(card.text||''):'';
-  $('card-form-list-title').value=card&&card.type==='list'?(card.title||''):'';
-  renderCardModalType();
-  $('card-modal').classList.add('on');
-}
-
-function renderCardModalType(){
-  document.querySelectorAll('.type-opt').forEach(b=>{
-    b.classList.toggle('on',b.dataset.type===cardFormType);
-  });
-  $('card-form-note').classList.toggle('hide',cardFormType!=='note');
-  $('card-form-photo').classList.toggle('hide',cardFormType!=='photo');
-  $('card-form-list').classList.toggle('hide',cardFormType!=='list');
-  const pv=$('photo-preview');
-  if(cardFormImage){
-    pv.innerHTML=`<img src="${cardFormImage}">`;
-  }else{
-    pv.innerHTML=`<div class="photo-preview-empty">写真を選んでください</div>`;
-  }
-  renderListItems();
-}
-
-function renderListItems(){
-  const wrap=$('list-items-wrap');
-  wrap.innerHTML='';
-  cardFormListItems.forEach((item,i)=>{
-    const row=document.createElement('div');
-    row.className='modal-list-item';
-    row.innerHTML=`
-      <input type="text" value="${esc(item.t)}" placeholder="項目">
-      <button class="del">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-    `;
-    row.querySelector('input').addEventListener('input',e=>{cardFormListItems[i].t=e.target.value;});
-    row.querySelector('input').addEventListener('keydown',e=>{
-      if(e.key==='Enter'){
-        e.preventDefault();
-        cardFormListItems.push({t:'',d:false});
-        renderListItems();
-        setTimeout(()=>{
-          const inps=wrap.querySelectorAll('input');
-          if(inps.length)inps[inps.length-1].focus();
-        },50);
-      }
-    });
-    row.querySelector('.del').addEventListener('click',()=>{
-      cardFormListItems.splice(i,1);
-      if(cardFormListItems.length===0)cardFormListItems=[{t:'',d:false}];
-      renderListItems();
-    });
-    wrap.appendChild(row);
-  });
-}
-
-async function saveCard(){
-  if(!state.currentShelfId){toast('棚を選んでください');return;}
-  const s=state.shelves.find(x=>x.id===state.currentShelfId);
-  if(!s)return;
-  if(!s.cards)s.cards=[];
-
-  const date=new Date().toISOString().slice(0,10);
-  let newCard=null;
-
-  if(cardFormType==='note'){
-    const text=$('card-form-text').value.trim();
-    if(!text){toast('メモが空です');return;}
-    newCard={id:state.editingCardId||('oc_'+Date.now()),type:'note',text,date};
-  }else if(cardFormType==='photo'){
-    if(!cardFormImage){toast('写真がありません');return;}
-    const text=$('card-form-photo-text').value.trim();
-    newCard={id:state.editingCardId||('oc_'+Date.now()),type:text?'photonote':'photo',text,image:cardFormImage,date};
-  }else if(cardFormType==='list'){
-    const items=cardFormListItems.filter(i=>i.t.trim()!=='').map(i=>({t:i.t.trim(),d:false}));
-    if(items.length===0){toast('項目を入れてください');return;}
-    const title=$('card-form-list-title').value.trim();
-    newCard={id:state.editingCardId||('oc_'+Date.now()),type:'list',title,items,date};
-  }
-
-  if(state.editingCardId){
-    const idx=s.cards.findIndex(c=>c.id===state.editingCardId);
-    if(idx>=0)s.cards[idx]=newCard;
-    else s.cards.unshift(newCard);
-  }else{
-    s.cards.unshift(newCard);
-  }
-  const ok=await saveShelvesToServer();
-  if(ok){
-    $('card-modal').classList.remove('on');
-    render();
-    toast('保存しました');
-  }
-}
-
-function compressImage(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      const img=new Image();
-      img.onload=()=>{
-        try{
-          const MAX=1280;
-          let w=img.width, h=img.height;
-          if(w>MAX || h>MAX){
-            if(w>h){h=Math.round(h*MAX/w);w=MAX;}
-            else{w=Math.round(w*MAX/h);h=MAX;}
-          }
-          const canvas=document.createElement('canvas');
-          canvas.width=w; canvas.height=h;
-          const ctx=canvas.getContext('2d');
-          ctx.fillStyle='#fff';
-          ctx.fillRect(0,0,w,h);
-          ctx.drawImage(img,0,0,w,h);
-          resolve(canvas.toDataURL('image/jpeg',0.85));
-        }catch(e){resolve(ev.target.result);}
-      };
-      img.onerror=()=>resolve(ev.target.result);
-      img.src=ev.target.result;
-    };
-    reader.onerror=reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 function esc(s){
   if(s==null)return '';
@@ -1056,62 +711,574 @@ function toast(msg){
   toastT=setTimeout(()=>t.classList.remove('on'),1800);
 }
 
-// ═══ EVENT BIND ═══
-document.addEventListener('click',e=>{
-  const close=e.target.closest('[data-close]');
-  if(close){
-    document.getElementById(close.dataset.close).classList.remove('on');
-  }
-});
+function setStatus(text,kind){
+  const s=$('status');
+  s.textContent='';
+  if(!text){s.classList.remove('show');return;}
+  s.classList.add('show');
+  s.classList.toggle('error',kind==='error');
+  s.classList.toggle('busy',kind==='busy');
+  const dot=document.createElement('div');
+  dot.className='dot';
+  s.appendChild(dot);
+  const sp=document.createElement('span');
+  sp.textContent=text;
+  s.appendChild(sp);
+}
 
-document.addEventListener('click',e=>{
-  const t=e.target.closest('.type-opt');
-  if(!t)return;
-  cardFormType=t.dataset.type;
-  renderCardModalType();
-});
-
-$('auth-submit').addEventListener('click',tryLogin);
-$('auth-pass').addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
-$('logout-btn').addEventListener('click',logout);
-
-$('add-shelf-btn').addEventListener('click',()=>openShelfModal(null));
-$('edit-shelf-btn').addEventListener('click',()=>{
-  const s=state.shelves.find(x=>x.id===state.currentShelfId);
-  if(s)openShelfModal(s);
-});
-$('delete-shelf-btn').addEventListener('click',deleteShelf);
-$('shelf-save-btn').addEventListener('click',saveShelf);
-
-$('card-save-btn').addEventListener('click',saveCard);
-$('add-list-item-btn').addEventListener('click',()=>{
-  cardFormListItems.push({t:'',d:false});
-  renderListItems();
-});
-$('photo-pick-btn').addEventListener('click',()=>$('photo-file').click());
-$('photo-file').addEventListener('change',async e=>{
-  const file=e.target.files[0];
-  if(!file)return;
-  cardFormImage=await compressImage(file);
-  renderCardModalType();
-  e.target.value='';
-});
-
-// 起動
-async function init(){
-  if(checkAuth()){
-    $('auth-wrap').classList.add('hide');
-    $('app').classList.remove('hide');
-    setSync('syncing','読み込み中…');
-    await fetchShelves();
-    render();
-  }else{
-    setTimeout(()=>$('auth-email').focus(),100);
+// ═══ API ═══
+async function fetchShelves(){
+  setStatus('読み込み中…','busy');
+  try{
+    const res=await fetch('/api/shelves');
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    state.shelves=Array.isArray(data.shelves)?data.shelves:[];
+    setStatus('読み込みました');
+    setTimeout(()=>setStatus(''),1500);
+    return true;
+  }catch(err){
+    setStatus('読み込み失敗: '+err.message,'error');
+    return false;
   }
 }
-init();
 
-})();
+async function saveShelves(){
+  if(!state.password){setStatus('再ログインしてください','error');return false;}
+  if(state.saving)return false;
+  state.saving=true;
+  setStatus('保存中…','busy');
+  try{
+    const res=await fetch('/api/shelves',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:state.password,shelves:state.shelves}),
+    });
+    if(res.status===401){
+      setStatus('認証エラー: パスワードが違います','error');
+      state.password=null;
+      showLogin();
+      return false;
+    }
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    setStatus('保存しました');
+    setTimeout(()=>setStatus(''),1500);
+    return true;
+  }catch(err){
+    setStatus('保存失敗: '+err.message,'error');
+    return false;
+  }finally{
+    state.saving=false;
+  }
+}
+
+// ═══ LOGIN ═══
+async function tryLogin(){
+  const email=$('login-email').value.trim();
+  const password=$('login-password').value;
+  if(!email || !password){
+    setStatus('メールとパスワードを入力してください','error');
+    return;
+  }
+  const btn=$('login-btn');
+  btn.disabled=true;
+  btn.textContent='確認中…';
+  setStatus('認証中…','busy');
+  // サーバー側で password 検証する。確認のため空 POST (shelves はそのまま既存値を送る)
+  // まず最新を取得
+  await fetchShelves();
+  // 認証チェック: 既存の shelves を再 POST (内容は変わらない) してパスワードを検証
+  try{
+    const res=await fetch('/api/shelves',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password,shelves:state.shelves}),
+    });
+    if(res.status===401){
+      setStatus('パスワードが違います','error');
+      btn.disabled=false;
+      btn.textContent='ログイン';
+      return;
+    }
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    state.password=password;
+    setStatus('ログインしました');
+    setTimeout(()=>setStatus(''),1500);
+    showMain();
+  }catch(err){
+    setStatus('ログイン失敗: '+err.message,'error');
+    btn.disabled=false;
+    btn.textContent='ログイン';
+  }
+}
+
+function logout(){
+  if(!confirm('ログアウトしますか？'))return;
+  state.password=null;
+  state.selectedId=null;
+  showLogin();
+}
+
+function showLogin(){
+  $('login-screen').classList.remove('hide');
+  $('main-screen').classList.add('hide');
+  $('hdr-icons').style.display='none';
+  $('login-btn').disabled=false;
+  $('login-btn').textContent='ログイン';
+}
+
+function showMain(){
+  $('login-screen').classList.add('hide');
+  $('main-screen').classList.remove('hide');
+  $('hdr-icons').style.display='flex';
+  renderShelfList();
+  if(state.selectedId){
+    renderShelfEdit();
+  }
+}
+
+// ═══ SHELF LIST ═══
+function renderShelfList(){
+  const el=$('shelf-list');
+  el.innerHTML='';
+  if(state.shelves.length===0){
+    el.innerHTML='<div class="empty-shelf-state">まだ棚がありません。<br>下のボタンから作ってみましょう。</div>';
+    return;
+  }
+  state.shelves.forEach(s=>{
+    const row=document.createElement('div');
+    row.className='shelf-item'+(state.selectedId===s.id?' active':'');
+    row.innerHTML=`
+      <div class="shelf-avatar">${esc((s.name||'?').slice(0,1))}</div>
+      <div class="shelf-info">
+        <div class="shelf-name">${esc(s.name||'(無題)')}</div>
+        <div class="shelf-handle">${esc(s.handle||'')}</div>
+      </div>
+      <div class="shelf-count">${(s.cards||[]).length}</div>
+    `;
+    row.addEventListener('click',()=>{
+      state.selectedId=s.id;
+      renderShelfList();
+      renderShelfEdit();
+      // スクロールを編集パネル位置に
+      setTimeout(()=>{
+        const panel=$('shelf-edit-panel');
+        if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
+      },50);
+    });
+    el.appendChild(row);
+  });
+}
+
+function newShelf(){
+  const id='shelf_'+Date.now();
+  const s={
+    id,
+    name:'新しい棚',
+    handle:'@new-shelf-'+Math.floor(Math.random()*9999),
+    desc:'',
+    cards:[],
+  };
+  state.shelves.push(s);
+  state.selectedId=id;
+  renderShelfList();
+  renderShelfEdit();
+  saveShelves();
+}
+
+async function deleteShelf(id){
+  const s=state.shelves.find(x=>x.id===id);
+  if(!s)return;
+  if(!confirm(`「${s.name}」を削除しますか？\nこの棚を登録している生徒の端末からは消えません(各端末のキャッシュとして残ります)。`))return;
+  state.shelves=state.shelves.filter(x=>x.id!==id);
+  if(state.selectedId===id)state.selectedId=null;
+  await saveShelves();
+  renderShelfList();
+  $('shelf-edit-panel').innerHTML='';
+}
+
+// ═══ SHELF EDIT ═══
+function getSelectedShelf(){
+  return state.shelves.find(s=>s.id===state.selectedId);
+}
+
+function renderShelfEdit(){
+  const panel=$('shelf-edit-panel');
+  const s=getSelectedShelf();
+  if(!s){panel.innerHTML='';return;}
+  panel.innerHTML=`
+    <div class="shelf-edit">
+      <div class="shelf-edit-head">
+        <div class="shelf-edit-title">${esc(s.name)}</div>
+        <button class="shelf-edit-act delete" id="shelf-delete-btn">削除</button>
+      </div>
+      <div class="shelf-edit-body">
+        <div class="shelf-edit-row">
+          <label>棚の名前</label>
+          <input id="shelf-name" type="text" value="${esc(s.name||'')}" maxlength="60">
+        </div>
+        <div class="shelf-edit-row">
+          <label>ハンドル (@で始まる識別子)</label>
+          <input id="shelf-handle" type="text" value="${esc(s.handle||'')}" maxlength="60">
+        </div>
+        <div class="shelf-edit-row">
+          <label>説明 (任意)</label>
+          <textarea id="shelf-desc" maxlength="200">${esc(s.desc||'')}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="memo-list-head">
+      <div class="memo-list-head-title">メモ</div>
+      <div class="memo-list-head-count">${(s.cards||[]).length} 件</div>
+    </div>
+    <div class="memo-grid" id="memo-grid"></div>
+  `;
+
+  // 棚情報の自動保存 (フォーカスアウト時)
+  let saveTimer=null;
+  const queueSave=()=>{
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(async ()=>{
+      const cur=getSelectedShelf();
+      if(!cur)return;
+      cur.name=$('shelf-name').value.trim()||'(無題)';
+      cur.handle=$('shelf-handle').value.trim();
+      cur.desc=$('shelf-desc').value.trim();
+      await saveShelves();
+      // ヘッダーの名前と一覧を再描画 (編集中の input は触らない)
+      panel.querySelector('.shelf-edit-title').textContent=cur.name;
+      renderShelfList();
+    },600);
+  };
+  ['shelf-name','shelf-handle','shelf-desc'].forEach(id=>{
+    $(id).addEventListener('blur',queueSave);
+    $(id).addEventListener('input',queueSave);
+  });
+
+  $('shelf-delete-btn').addEventListener('click',()=>deleteShelf(s.id));
+
+  renderMemoGrid();
+}
+
+function renderMemoGrid(){
+  const s=getSelectedShelf();
+  if(!s)return;
+  const grid=$('memo-grid');
+  grid.innerHTML='';
+  (s.cards||[]).forEach((c,idx)=>{
+    const cell=document.createElement('div');
+    cell.className='memo-card '+(c.type||'note');
+    let inner='';
+    if(c.type==='photo' || c.type==='photonote'){
+      inner=`<img src="${esc(c.image||'')}" alt="">`;
+      if(c.text)inner+=`<div class="ctxt" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:white;padding:6px 8px;font-size:10px;-webkit-line-clamp:2;">${esc(c.text)}</div>`;
+    }else if(c.type==='note'){
+      const col=colorById(c.color);
+      inner=`<div class="ctxt" style="background:${col.bg};color:${col.fg};">${esc(c.text||'')}</div>`;
+    }else if(c.type==='list'){
+      const items=(c.items||[]).slice(0,5).map(i=>`<div>・${esc(i.t)}</div>`).join('');
+      inner=`<div class="ctxt">${c.title?`<b>${esc(c.title)}</b><br>`:''}${items}</div>`;
+    }
+    cell.innerHTML=inner;
+    cell.addEventListener('click',()=>openMemoModal(c));
+    grid.appendChild(cell);
+  });
+  // 追加ボタン
+  const addCell=document.createElement('div');
+  addCell.className='memo-card memo-card-add';
+  addCell.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>';
+  addCell.addEventListener('click',()=>openMemoModal(null));
+  grid.appendChild(addCell);
+}
+
+// ═══ MEMO MODAL ═══
+function openMemoModal(card){
+  const isNew=!card;
+  if(isNew){
+    card={
+      id:'c_'+Date.now(),
+      type:'note',
+      text:'',
+      color:'default',
+      items:[{t:''}],
+      created:Date.now(),
+    };
+  }
+  state.editingMemo=Object.assign({},card,{_new:isNew});
+  $('memo-modal-title').textContent=isNew?'新しいメモ':'メモを編集';
+  // 保存ボタンをリセット
+  const btn=$('memo-save');
+  btn.textContent='保存';
+  btn.classList.remove('saved');
+  btn.disabled=false;
+  delete btn.dataset.saving;
+  renderMemoModalBody();
+  $('memo-modal').classList.add('on');
+}
+
+function closeMemoModal(){
+  $('memo-modal').classList.remove('on');
+  state.editingMemo=null;
+}
+
+function renderMemoModalBody(){
+  const m=state.editingMemo;
+  if(!m)return;
+  const body=$('memo-modal-body');
+  // タイプ切替 (新規時のみ)
+  const typeHtml=m._new?`
+    <div class="type-row">
+      <button class="type-chip ${m.type==='note'?'on':''}" data-set-type="note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        メモ
+      </button>
+      <button class="type-chip ${m.type==='photo'||m.type==='photonote'?'on':''}" data-set-type="photo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        写真
+      </button>
+      <button class="type-chip ${m.type==='list'?'on':''}" data-set-type="list">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        リスト
+      </button>
+    </div>
+  `:'';
+
+  let editHtml='';
+  if(m.type==='note'){
+    const col=colorById(m.color);
+    editHtml=`
+      <div class="memo-edit-area" style="background:${col.bg};color:${col.fg};">
+        <textarea id="memo-text" placeholder="メモを書く…">${esc(m.text||'')}</textarea>
+      </div>
+      <div class="color-row">
+        ${CARD_COLORS.map(c=>`<button class="color-swatch ${m.color===c.id?'on':''}" data-set-color="${c.id}" style="background:${c.bg};"></button>`).join('')}
+      </div>
+    `;
+  }else if(m.type==='photo' || m.type==='photonote'){
+    editHtml=`
+      <div class="photo-zone ${m.image?'has-image':''}" id="photo-zone">
+        ${m.image?`<img src="${esc(m.image)}" alt="">`:'写真を選択してください'}
+      </div>
+      <div class="photo-zone-buttons">
+        <label class="photo-zone-btn" style="cursor:pointer;text-align:center;">
+          <input id="photo-file" type="file" accept="image/*" style="display:none;">
+          ${m.image?'写真を変更':'写真を選択'}
+        </label>
+        ${m.image?'<button class="photo-zone-btn" id="photo-clear">クリア</button>':''}
+      </div>
+      <div class="memo-edit-area" style="margin-top:14px;">
+        <textarea id="memo-text" placeholder="一言メモ (任意)">${esc(m.text||'')}</textarea>
+      </div>
+    `;
+  }else if(m.type==='list'){
+    editHtml=`
+      <div class="memo-edit-area">
+        <input id="list-title" type="text" placeholder="リストのタイトル" value="${esc(m.title||'')}">
+      </div>
+      <div class="list-edit" id="list-edit">
+        ${(m.items||[{t:''}]).map((it,i)=>`
+          <div class="list-item-row">
+            <input data-item-idx="${i}" type="text" placeholder="項目" value="${esc(it.t||'')}">
+            <button class="list-item-del" data-del-idx="${i}">×</button>
+          </div>
+        `).join('')}
+        <button class="list-item-add" id="list-item-add">+ 項目を追加</button>
+      </div>
+    `;
+  }
+
+  const delHtml=m._new?'':`<button class="modal-del" id="memo-del">このメモを削除</button>`;
+
+  body.innerHTML=typeHtml+editHtml+delHtml;
+
+  // type切替
+  body.querySelectorAll('[data-set-type]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const t=btn.dataset.setType;
+      state.editingMemo.type=t;
+      if(t==='list' && !state.editingMemo.items)state.editingMemo.items=[{t:''}];
+      renderMemoModalBody();
+    });
+  });
+  // color
+  body.querySelectorAll('[data-set-color]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      state.editingMemo.color=btn.dataset.setColor;
+      renderMemoModalBody();
+      const ta=$('memo-text');
+      if(ta)ta.focus();
+    });
+  });
+  // text
+  const ta=$('memo-text');
+  if(ta){
+    ta.addEventListener('input',e=>{
+      state.editingMemo.text=e.target.value;
+      // 写真メモは text があれば photonote 扱いに
+      if(state.editingMemo.type==='photo' && e.target.value.trim()){
+        state.editingMemo.type='photonote';
+      }
+    });
+  }
+  // list title
+  const lt=$('list-title');
+  if(lt){
+    lt.addEventListener('input',e=>{
+      state.editingMemo.title=e.target.value;
+    });
+  }
+  // list items
+  body.querySelectorAll('[data-item-idx]').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      const idx=parseInt(e.target.dataset.itemIdx);
+      if(!state.editingMemo.items[idx])state.editingMemo.items[idx]={t:''};
+      state.editingMemo.items[idx].t=e.target.value;
+    });
+  });
+  body.querySelectorAll('[data-del-idx]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const idx=parseInt(btn.dataset.delIdx);
+      state.editingMemo.items.splice(idx,1);
+      if(state.editingMemo.items.length===0)state.editingMemo.items=[{t:''}];
+      renderMemoModalBody();
+    });
+  });
+  const addBtn=$('list-item-add');
+  if(addBtn){
+    addBtn.addEventListener('click',()=>{
+      if(!state.editingMemo.items)state.editingMemo.items=[];
+      state.editingMemo.items.push({t:''});
+      renderMemoModalBody();
+      // 末尾にフォーカス
+      setTimeout(()=>{
+        const inputs=body.querySelectorAll('[data-item-idx]');
+        const last=inputs[inputs.length-1];
+        if(last)last.focus();
+      },10);
+    });
+  }
+  // photo
+  const photoFile=$('photo-file');
+  if(photoFile){
+    photoFile.addEventListener('change',async e=>{
+      const f=e.target.files && e.target.files[0];
+      if(!f)return;
+      const dataUrl=await readAsDataURL(f);
+      state.editingMemo.image=dataUrl;
+      renderMemoModalBody();
+    });
+  }
+  const photoClear=$('photo-clear');
+  if(photoClear){
+    photoClear.addEventListener('click',()=>{
+      state.editingMemo.image=null;
+      renderMemoModalBody();
+    });
+  }
+  // delete
+  const delBtn=$('memo-del');
+  if(delBtn){
+    delBtn.addEventListener('click',deleteMemoFromModal);
+  }
+}
+
+function readAsDataURL(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result);
+    r.onerror=()=>reject(new Error('読み込み失敗'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function saveMemoFromModal(){
+  const m=state.editingMemo;
+  if(!m)return;
+  const s=getSelectedShelf();
+  if(!s)return;
+  // 軽くバリデーション: noteなら text 必須、photoなら image 必須
+  if(m.type==='note' && !(m.text||'').trim()){
+    toast('メモ本文を入力してください');
+    return;
+  }
+  if((m.type==='photo'||m.type==='photonote') && !m.image){
+    toast('写真を選択してください');
+    return;
+  }
+  // 保存
+  const memo=Object.assign({},m);
+  delete memo._new;
+  memo.created=memo.created||Date.now();
+  if(!s.cards)s.cards=[];
+  if(m._new){
+    s.cards.unshift(memo);
+  }else{
+    const idx=s.cards.findIndex(x=>x.id===memo.id);
+    if(idx>=0)s.cards[idx]=memo;
+    else s.cards.unshift(memo);
+  }
+
+  // 保存ボタンのフィードバック
+  const btn=$('memo-save');
+  if(btn && !btn.dataset.saving){
+    btn.dataset.saving='1';
+    btn.disabled=true;
+    btn.classList.add('saved');
+    btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+  }
+
+  const ok=await saveShelves();
+  if(!ok){
+    // 失敗: ボタンを戻す
+    btn.innerHTML='保存';
+    btn.classList.remove('saved');
+    btn.disabled=false;
+    delete btn.dataset.saving;
+    return;
+  }
+  setTimeout(()=>{
+    closeMemoModal();
+    renderShelfList();
+    renderMemoGrid();
+  },500);
+}
+
+async function deleteMemoFromModal(){
+  const m=state.editingMemo;
+  if(!m || m._new)return;
+  if(!confirm('このメモを削除しますか？'))return;
+  const s=getSelectedShelf();
+  if(!s)return;
+  s.cards=(s.cards||[]).filter(x=>x.id!==m.id);
+  const ok=await saveShelves();
+  if(!ok)return;
+  closeMemoModal();
+  renderShelfList();
+  renderMemoGrid();
+}
+
+// ═══ EVENTS ═══
+$('login-form').addEventListener('submit',e=>{e.preventDefault();tryLogin();});
+$('login-btn').addEventListener('click',e=>{e.preventDefault();tryLogin();});
+$('logout-btn').addEventListener('click',logout);
+$('new-shelf-btn').addEventListener('click',newShelf);
+$('memo-cancel').addEventListener('click',closeMemoModal);
+$('memo-save').addEventListener('click',saveMemoFromModal);
+$('memo-modal').addEventListener('click',e=>{
+  if(e.target===$('memo-modal'))closeMemoModal();
+});
+
+// Enterでログイン
+['login-email','login-password'].forEach(id=>{
+  $(id).addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();tryLogin();}
+  });
+});
+
+// 起動: まず棚一覧をフェッチ (認証不要の読み取り)
+fetchShelves();
+
 </script>
 </body>
 </html>
