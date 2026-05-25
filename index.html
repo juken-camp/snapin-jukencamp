@@ -61,6 +61,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   align-items:baseline;
   gap:0;
   color:var(--ink);
+  white-space:nowrap;
+  min-width:0;
+  overflow:hidden;
 }
 .logo em{
   color:var(--g);
@@ -70,15 +73,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .logo-by, .page-sub{
   font-family:-apple-system,sans-serif;
-  font-size:11px;
+  font-size:10px;
   font-weight:500;
   color:var(--ink3);
   letter-spacing:0.02em;
   font-style:normal;
+  white-space:nowrap;
 }
-.hdr-icons{display:flex;gap:4px;color:var(--ink2);align-items:center;}
+.hdr-icons{display:flex;gap:0;color:var(--ink2);align-items:center;flex-shrink:0;}
 .hdr-icons button{
-  width:38px;height:38px;
+  width:34px;height:34px;
   display:flex;align-items:center;justify-content:center;
   border-radius:50%;
   transition:all .15s;
@@ -1503,6 +1507,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink2);
   line-height:1.6;
 }
+.today-sub:empty{display:none;}
 
 .today-block{
   padding:20px 20px 10px;
@@ -1783,12 +1788,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button class="quick-add-send hide" id="quick-send" data-action="quick-save" aria-label="保存">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
       </button>
-    </div>
-    <div class="home-row">
-      <div class="search-bar" data-action="goto-search" style="flex:1;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <span>探す</span>
-      </div>
     </div>
   </div>
 
@@ -2321,13 +2320,8 @@ function renderToday(){
   if(len>=20)msgEl.classList.add('xlong');
   else if(len>=10)msgEl.classList.add('long');
 
-  // サマリー
-  const todayCards=getTodayCards();
-  const openTasks=getTodayOpenTasks();
-  const parts=[];
-  if(openTasks.length>0)parts.push(`未完のリスト ${openTasks.length}`);
-  if(todayCards.length>0)parts.push(`今日のメモ ${todayCards.length}`);
-  $('today-summary').textContent=parts.length?parts.join('　'):'今日は静かな一日です。';
+  // サマリー (各セクション見出しに件数があるので、ここでは何も表示しない)
+  $('today-summary').textContent='';
 
   // 復習ブロックは削除済み (機械的判定は感覚を上書きする)
   const rv=$('today-review-section');
