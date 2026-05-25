@@ -364,6 +364,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .card .li .chk{width:9px;height:9px;border:1px solid var(--ink3);border-radius:2px;flex-shrink:0;margin-top:2px;}
 .card .li.done .chk{background:var(--g);border-color:var(--g);}
 .card .li.done{color:var(--ink3);text-decoration:line-through;}
+.card .li .li-num{width:9px;font-size:9px;text-align:left;flex-shrink:0;color:var(--ink2);font-family:var(--font-en);}
 
 .card-source{
   position:absolute;
@@ -514,6 +515,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .feed-list .li.done{color:rgba(255,255,255,.4);text-decoration:line-through;}
 .feed-list .li .chk{width:16px;height:16px;border:1.5px solid rgba(255,255,255,.5);border-radius:3px;flex-shrink:0;}
 .feed-list .li.done .chk{background:var(--g);border-color:var(--g);}
+.feed-list .li .li-num{width:16px;font-size:14px;text-align:center;flex-shrink:0;font-family:var(--font-en);color:rgba(255,255,255,.85);}
 .feed-meta{
   position:absolute;
   bottom:24px;left:18px;right:18px;
@@ -645,17 +647,37 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-bottom:0.5px solid var(--line);
 }
 .cl-handle{color:var(--ink3);padding:4px;touch-action:none;}
-.cl-chk{
+.cl-mark{
+  width:26px;height:26px;
+  flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  transition:background .12s;
+  position:relative;
+}
+.cl-mark:active{background:var(--gl);}
+.cl-mark.check .chk-box{
   width:22px;height:22px;
   border:1.5px solid var(--ink3);
   border-radius:5px;
-  flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  color:white;
+  color:#fff;
+  background:transparent;
+  transition:background .12s,border-color .12s;
 }
-.cl-chk.on{background:var(--g);border-color:var(--g);}
+.cl-mark.check.on .chk-box{
+  background:var(--g);
+  border-color:var(--g);
+}
+.cl-mark.num{
+  font-family:var(--font-en);
+  font-weight:500;
+  font-size:14px;
+  color:var(--ink2);
+}
 .cl-input{flex:1;font-size:15px;padding:4px 0;}
 .cl-input.done{color:var(--ink3);text-decoration:line-through;}
+.cl-row.done{}
 .cl-del{color:var(--ink3);padding:4px;}
 .cl-add{
   display:flex;
@@ -798,6 +820,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:white;
 }
 .detail-list-item.done .chk{background:var(--g);border-color:var(--g);}
+.detail-list-item .dli-num{
+  width:22px;height:22px;
+  flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-en);
+  font-weight:500;
+  font-size:14px;
+  color:var(--ink2);
+}
 
 /* 詳細画面の下部メモエリア (ボトムナビの上に配置、サイズ統一) */
 .detail-input{
@@ -1910,11 +1941,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="claim-wrap">
     <div class="claim-intro">
       フルネームと誕生日を入れてください。<br>
-      <small>例: 和田一真 / 1117 (11月17日)</small>
+      <small>例: 山田太郎 / 0401 (4月1日)</small>
     </div>
     <div class="claim-field">
       <label>名前 (スペースなし)</label>
-      <input id="claim-name" type="text" placeholder="例: 和田一真" autocomplete="off" autocapitalize="off">
+      <input id="claim-name" type="text" placeholder="例: 山田太郎" autocomplete="off" autocapitalize="off">
     </div>
     <div class="claim-field">
       <label>誕生日 4桁 (MMDD)</label>
@@ -2875,10 +2906,13 @@ function renderPastDaySection(daysAgo){
 
 function getTodayOpenTasks(){
   // 全リストカードの未完項目を集約 (最大20件)
+  // ※ 番号項目(mark:'number')は「やること」じゃないので除外
   const out=[];
   for(const c of state.cards){
     if(c.type!=='list')continue;
     for(const item of (c.items||[])){
+      const mark=item.mark||'check';
+      if(mark==='number')continue;
       if(!item.d && item.t.trim()){
         out.push({card:c,item});
         if(out.length>=20)return out;
@@ -3026,11 +3060,21 @@ function renderGrid(el,cards,origin){
       const style=`background:${col.bg};color:${col.fg};font-size:${fz}px;${centered?'display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.4;-webkit-line-clamp:initial;':''}`;
       inner=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
     }else if(c.type==='list'){
-      const items=(c.items||[]).slice(0,5).map(i=>
-        `<div class="li ${i.d?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`
-      ).join('');
+      const itemsArr=(c.items||[]).slice(0,5);
+      const itemsHtml=itemsArr.map((i,idx)=>{
+        const m=i.mark||'check';
+        const done=i.d===true;
+        if(m==='number'){
+          let num=0;
+          for(let k=0;k<=idx;k++){
+            if(((c.items||[])[k].mark||'check')==='number')num++;
+          }
+          return `<div class="li"><div class="li-num">${num}.</div><span>${esc(i.t)}</span></div>`;
+        }
+        return `<div class="li ${done?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`;
+      }).join('');
       const title=c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;color:var(--gd);">${esc(c.title)}</div>`:'';
-      inner=`<div class="ctxt">${title}${items}</div>`;
+      inner=`<div class="ctxt">${title}${itemsHtml}</div>`;
     }
     // ピン留めバッジ
     if(origin==='mine' && c.pinned){
@@ -3255,7 +3299,7 @@ function startCreate(type){
     },100);
   }else if(type==='list'){
     state.current.title='';
-    state.current.items=[{t:'',d:false}];
+    state.current.items=[{t:'',mark:'check',d:false}];
     renderUpload();
     goto('screen-upload');
     setTimeout(()=>{
@@ -3517,7 +3561,11 @@ function renderUpload(){
     addBtn.className='cl-add';
     addBtn.innerHTML=`<div class="plus"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></div>項目を追加`;
     addBtn.addEventListener('click',()=>{
-      state.current.items.push({t:'',d:false});
+      const prev=state.current.items[state.current.items.length-1];
+      const inheritMark=(prev && prev.mark)?prev.mark:'check';
+      const newItem={t:'',mark:inheritMark};
+      if(inheritMark==='check')newItem.d=false;
+      state.current.items.push(newItem);
       renderListItems(itemsWrap);
       setTimeout(()=>{
         const inps=itemsWrap.querySelectorAll('.cl-input');
@@ -3530,9 +3578,12 @@ function renderUpload(){
 
 function renderListItems(wrap){
   wrap.innerHTML='';
-  state.current.items.forEach((it,i)=>{
+  const items=state.current.items;
+  items.forEach((it,i)=>{
     const row=document.createElement('div');
-    row.className='cl-row';
+    const mark=it.mark||'check';
+    const done=it.d===true;
+    row.className='cl-row'+(done && mark==='check'?' done':'');
     row.dataset.i=i;
 
     const handle=document.createElement('div');
@@ -3540,24 +3591,55 @@ function renderListItems(wrap){
     handle.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>`;
     row.appendChild(handle);
 
-    const chk=document.createElement('button');
-    chk.className='cl-chk'+(it.d?' on':'');
-    if(it.d)chk.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4L19 7"/></svg>`;
-    chk.addEventListener('click',()=>{
-      state.current.items[i].d=!state.current.items[i].d;
+    // 記号ボタン (タップで3状態を回す: □ → ☑ → 1. → □)
+    const mk=document.createElement('button');
+    if(mark==='number'){
+      // 番号: リスト内で number 項目の何番目か
+      let num=0;
+      for(let k=0;k<=i;k++){
+        if((items[k].mark||'check')==='number')num++;
+      }
+      mk.className='cl-mark num';
+      mk.textContent=num+'.';
+    }else if(done){
+      mk.className='cl-mark check on';
+      mk.innerHTML=`<span class="chk-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span>`;
+    }else{
+      mk.className='cl-mark check';
+      mk.innerHTML=`<span class="chk-box"></span>`;
+    }
+    mk.addEventListener('click',()=>{
+      const cur=state.current.items[i];
+      const curMark=cur.mark||'check';
+      const curDone=cur.d===true;
+      if(curMark==='check' && !curDone){
+        cur.d=true;
+        cur.mark='check';
+      }else if(curMark==='check' && curDone){
+        cur.mark='number';
+        delete cur.d;
+      }else{
+        cur.mark='check';
+        cur.d=false;
+      }
       renderListItems(wrap);
     });
-    row.appendChild(chk);
+    row.appendChild(mk);
 
     const inp=document.createElement('input');
-    inp.className='cl-input'+(it.d?' done':'');
+    inp.className='cl-input'+(done && mark==='check'?' done':'');
     inp.value=it.t;
     inp.placeholder='項目';
     inp.addEventListener('input',e=>{state.current.items[i].t=e.target.value;});
     inp.addEventListener('keydown',e=>{
       if(e.key==='Enter'){
         e.preventDefault();
-        state.current.items.push({t:'',d:false});
+        // 直前の項目の記号を継承 (リストの見た目を作りやすくする)
+        const prev=state.current.items[state.current.items.length-1];
+        const inheritMark=(prev && prev.mark)?prev.mark:'check';
+        const newItem={t:'',mark:inheritMark};
+        if(inheritMark==='check')newItem.d=false;
+        state.current.items.push(newItem);
         renderListItems(wrap);
         setTimeout(()=>{
           const inps=wrap.querySelectorAll('.cl-input');
@@ -3572,7 +3654,7 @@ function renderListItems(wrap){
     del.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
     del.addEventListener('click',()=>{
       state.current.items.splice(i,1);
-      if(state.current.items.length===0)state.current.items=[{t:'',d:false}];
+      if(state.current.items.length===0)state.current.items=[{t:'',mark:'check',d:false}];
       renderListItems(wrap);
     });
     row.appendChild(del);
@@ -3907,12 +3989,26 @@ function openDetail(c,origin){
     }
   }else if(c.type==='list'){
     const title=c.title?`<div style="font-size:17px;font-weight:600;margin-bottom:14px;">${esc(c.title)}</div>`:'';
-    contentHtml=title+(c.items||[]).map((i,idx)=>`
-      <div class="detail-list-item ${i.d?'done':''}" data-list-idx="${idx}">
-        <div class="chk">${i.d?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4L19 7"/></svg>':''}</div>
+    const items=c.items||[];
+    contentHtml=title+items.map((i,idx)=>{
+      const mark=i.mark||'check';
+      const done=i.d===true;
+      let markHtml;
+      if(mark==='number'){
+        let num=0;
+        for(let k=0;k<=idx;k++){
+          if((items[k].mark||'check')==='number')num++;
+        }
+        markHtml=`<div class="dli-num">${num}.</div>`;
+      }else{
+        markHtml=`<div class="chk${done?' on':''}">${done?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4L19 7"/></svg>':''}</div>`;
+      }
+      return `
+      <div class="detail-list-item ${done && mark==='check'?'done':''}" data-list-idx="${idx}">
+        ${markHtml}
         <span>${esc(i.t)}</span>
       </div>
-    `).join('');
+    `;}).join('');
   }
 
   // 写真の場合、OCRテキストを下に表示
@@ -3962,11 +4058,15 @@ function openDetail(c,origin){
   // チャット(AI会話 + 追記メモ)を時系列表示
   renderChatLog(c);
 
-  // リスト項目クリック (自分の棚のみ)
+  // リスト項目クリック (自分の棚のみ、check モードの項目のみ)
   if(!isOfficial){
     $('detail-content').querySelectorAll('.detail-list-item').forEach(el=>{
       el.addEventListener('click',()=>{
         const idx=parseInt(el.dataset.listIdx);
+        const it=state.current.items[idx];
+        if(!it)return;
+        // 番号項目はチェック動作なし (装飾のみ)
+        if((it.mark||'check')==='number')return;
         state.current.items[idx].d=!state.current.items[idx].d;
         const i=state.cards.findIndex(x=>x.id===state.current.id);
         if(i>=0){
@@ -4587,8 +4687,22 @@ function doSearch(){
         inner=`<div class="ctxt" style="background:${col.bg};color:${col.fg};">${esc(c.text||'')}</div>`;
       }
       else if(c.type==='list'){
-        const items=(c.items||[]).slice(0,4).map(i=>`<div class="li ${i.d?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`).join('');
-        inner=`<div class="ctxt">${c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;">${esc(c.title)}</div>`:''}${items}</div>`;
+        const items=(c.items||[]).slice(0,4);
+        let numCount=0;
+        const itemsHtml=items.map((i,idx)=>{
+          const m=i.mark||'check';
+          const done=i.d===true;
+          if(m==='number'){
+            // 元のリストでの番号を計算
+            let num=0;
+            for(let k=0;k<=idx;k++){
+              if(((c.items||[])[k].mark||'check')==='number')num++;
+            }
+            return `<div class="li"><div class="li-num">${num}.</div><span>${esc(i.t)}</span></div>`;
+          }
+          return `<div class="li ${done?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`;
+        }).join('');
+        inner=`<div class="ctxt">${c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;">${esc(c.title)}</div>`:''}${itemsHtml}</div>`;
       }
       if(r.origin==='official')inner+=`<div class="card-source">${esc(r.shelf.handle)}</div>`;
       card.innerHTML=inner;
