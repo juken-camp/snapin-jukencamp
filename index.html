@@ -1005,8 +1005,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink3);
   z-index:50;
   pointer-events:none;
+  will-change:transform, opacity;
+  opacity:0;
 }
-.ptr-indicator.snap{transition:transform .25s cubic-bezier(.2,.7,.3,1.1);}
+.ptr-indicator.snap{transition:transform .28s cubic-bezier(.16,1,.3,1), opacity .18s ease-out;}
 .ptr-indicator.ready{color:var(--g);}
 /* スピナー本体 */
 .ptr-spinner{
@@ -1015,13 +1017,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-radius:50%;
   border:2px solid currentColor;
   border-top-color:transparent;
-  opacity:.6;
-  transition:opacity .15s, transform .15s;
+  transition:transform .12s ease-out;
 }
-.ptr-indicator.ready .ptr-spinner{opacity:1;transform:scale(1.05);}
-.ptr-indicator.spinning .ptr-spinner{animation:ptr-spin 0.7s linear infinite;opacity:1;}
+.ptr-indicator.ready .ptr-spinner{transform:scale(1.1);}
+.ptr-indicator.spinning .ptr-spinner{animation:ptr-spin 0.7s linear infinite;}
 @keyframes ptr-spin{to{transform:rotate(360deg);}}
-.scroll.ptr-snap{transition:transform .25s cubic-bezier(.2,.7,.3,1.1);}
+.scroll.ptr-snap{
+  will-change:transform;
+  transition:transform .28s cubic-bezier(.16,1,.3,1);
+}
 /* 日付セパレーター(中央に半透明丸タブ) */
 .chat-date-sep{
   display:flex;
@@ -2966,8 +2970,8 @@ function onFilePick(e){
     e.target.value='';
     return;
   }
-  // 画像を圧縮 (長辺1280px、JPEG 0.85品質)
-  compressImage(file).then(compressed=>{
+  // 画像を圧縮 (長辺1280px、JPEG 0.85品質、サイズ超過なら自動で品質下げて再試行)
+  smartCompressImage(file).then(compressed=>{
     if(!state.current)state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:new Date().toISOString().slice(0,10),_new:true,text:''};
     state.current.image=compressed;
     state.photoMode=null;
@@ -2981,40 +2985,69 @@ function onFilePick(e){
   e.target.value='';
 }
 
-function compressImage(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      const img=new Image();
-      img.onload=()=>{
-        try{
-          const MAX=1280;
-          let w=img.width, h=img.height;
-          if(w>MAX || h>MAX){
-            if(w>h){h=Math.round(h*MAX/w);w=MAX;}
-            else{w=Math.round(w*MAX/h);h=MAX;}
-          }
-          const canvas=document.createElement('canvas');
-          canvas.width=w; canvas.height=h;
-          const ctx=canvas.getContext('2d');
-          ctx.fillStyle='#fff';
-          ctx.fillRect(0,0,w,h);
-          ctx.drawImage(img,0,0,w,h);
-          // 透過の有無で形式選択
-          const mime=file.type==='image/png' ? 'image/jpeg' : 'image/jpeg';
-          const dataUrl=canvas.toDataURL(mime,0.85);
-          resolve(dataUrl);
-        }catch(e){
-          // 失敗したらそのままBase64
-          resolve(ev.target.result);
-        }
-      };
-      img.onerror=()=>resolve(ev.target.result);
-      img.src=ev.target.result;
-    };
-    reader.onerror=reject;
+// data URL のおおよそのバイト数
+function dataUrlBytes(dataUrl){
+  const i=dataUrl.indexOf(',');
+  if(i<0)return 0;
+  return Math.floor((dataUrl.length-i-1)*3/4);
+}
+
+// Image を読み込む
+function loadImage(src){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>res(img);
+    img.onerror=()=>rej(new Error('画像読み込み失敗'));
+    img.src=src;
+  });
+}
+
+// 圧縮処理 (長辺・品質を指定して JPEG dataURL を返す)
+function compressOnce(dataUrl,maxSide,quality){
+  return loadImage(dataUrl).then(img=>{
+    let w=img.naturalWidth, h=img.naturalHeight;
+    const long=Math.max(w,h);
+    if(long>maxSide){
+      if(w>h){h=Math.round(h*maxSide/w);w=maxSide;}
+      else{w=Math.round(w*maxSide/h);h=maxSide;}
+    }
+    const canvas=document.createElement('canvas');
+    canvas.width=w; canvas.height=h;
+    const ctx=canvas.getContext('2d');
+    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingQuality='high';
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,w,h);
+    ctx.drawImage(img,0,0,w,h);
+    return canvas.toDataURL('image/jpeg',quality);
+  });
+}
+
+// 賢い圧縮: ターゲット (1.5MB以下) を超えたら品質・寸法を下げて再試行
+async function smartCompressImage(file){
+  const reader=new FileReader();
+  const dataUrl=await new Promise((res,rej)=>{
+    reader.onload=ev=>res(ev.target.result);
+    reader.onerror=()=>rej(new Error('読み込み失敗'));
     reader.readAsDataURL(file);
   });
+  const TARGET_BYTES=1.5*1024*1024;
+  let side=1600, q=0.85;
+  for(let i=0;i<4;i++){
+    try{
+      const out=await compressOnce(dataUrl,side,q);
+      if(dataUrlBytes(out)<=TARGET_BYTES)return out;
+      // 大きすぎる: まず品質を下げる、それでも大きければ寸法も下げる
+      q-=0.15;
+      if(q<0.5){q=0.55;side=Math.floor(side*0.75);}
+    }catch(e){
+      // 圧縮失敗時は元の dataUrl を返す (最終手段)
+      return dataUrl;
+    }
+  }
+  // 最終 fallback: 強めの圧縮
+  try{return await compressOnce(dataUrl,1000,0.55);}
+  catch(e){return dataUrl;}
 }
 
 // クイック追加(ホームの一行入力)
@@ -3721,8 +3754,7 @@ function toggleAiMode(){
   $('detail-ai-toggle').classList.toggle('on',state.detailAiMode);
   const inp=$('detail-input');
   inp.placeholder=state.detailAiMode?'AIに質問して送信…':'メモを書く…';
-  // 送信ボタンの色も変える
-  $('detail-input-send').style.background=state.detailAiMode?'var(--sky)':'var(--g)';
+  // 送信ボタンは常に緑のまま (AIモードのトグル自体で状態は分かる)
   inp.focus();
 }
 
@@ -4508,8 +4540,7 @@ $('file-input-any').addEventListener('change',onFilePick);
 // 各 .scroll コンテナで、頂部から下に引っ張ると更新する
 (function setupPullToRefresh(){
   const THRESHOLD=70;      // この距離以上引いたら更新
-  const MAX_PULL=110;      // 最大変位
-  const DAMP=0.55;         // 引っ張り抵抗 (1.0で1:1、低いほど重い)
+  const MAX_PULL=130;      // 最大変位
   let startY=0, lastY=0, pulling=false, target=null, indicator=null, refreshing=false;
 
   function makeIndicator(){
@@ -4517,6 +4548,15 @@ $('file-input-any').addEventListener('change',onFilePick);
     el.className='ptr-indicator';
     el.innerHTML=`<div class="ptr-spinner"></div>`;
     return el;
+  }
+
+  // iOS風のラバーバンド: 引くほど抵抗が増す
+  // 0〜THRESHOLDまではほぼ1:1、それ以降は急速に抵抗増
+  function rubberBand(dy){
+    if(dy<=THRESHOLD)return dy*0.95;
+    const excess=dy-THRESHOLD;
+    // 超過分は対数的に減衰
+    return THRESHOLD*0.95 + (MAX_PULL-THRESHOLD*0.95)*(1-Math.exp(-excess/80));
   }
 
   function activeScrollEl(){
@@ -4553,8 +4593,8 @@ $('file-input-any').addEventListener('change',onFilePick);
       if(pulling){resetIndicator();pulling=false;}
       return;
     }
-    // 下方向に十分動いたら pulling 開始
-    if(dy>5){
+    // 下方向に少し動いたら pulling 開始 (反応を早く)
+    if(dy>3){
       if(!pulling){
         pulling=true;
         if(!indicator){indicator=makeIndicator();document.querySelector('.app').appendChild(indicator);}
@@ -4565,14 +4605,17 @@ $('file-input-any').addEventListener('change',onFilePick);
       }
     }
     if(!pulling)return;
-    // ダンプして translate + 進度で回転 (回転はスピナー側に当てる)
-    const pull=Math.min(MAX_PULL, dy*DAMP);
+    // iOS風のラバーバンド減衰 + 進度で回転 (回転はスピナー側に当てる)
+    const pull=rubberBand(dy);
     const ratio=Math.min(1,pull/THRESHOLD);
-    indicator.style.transform=`translateY(${pull}px)`;
+    indicator.style.transform=`translate3d(0, ${pull}px, 0)`;
     const sp=indicator.querySelector('.ptr-spinner');
+    // スピナーは引きながらフェードイン
+    indicator.style.opacity=Math.min(1, dy/30).toFixed(2);
     if(sp)sp.style.transform=`rotate(${ratio*270}deg)`;
     indicator.classList.toggle('ready',pull>=THRESHOLD);
-    target.style.transform=`translateY(${pull*0.6}px)`;
+    // スクロール領域はインジケータと同じ動き (一体感を出す)
+    target.style.transform=`translate3d(0, ${pull}px, 0)`;
     // 引っ張り中はネイティブスクロールを抑える
     if(e.cancelable)e.preventDefault();
   }
@@ -4580,8 +4623,10 @@ $('file-input-any').addEventListener('change',onFilePick);
   function onEnd(){
     if(!target)return;
     if(!pulling){target=null;return;}
-    const transform=(indicator.style.transform||'').match(/translateY\((\d+(?:\.\d+)?)px\)/);
-    const pulled=transform?parseFloat(transform[1]):0;
+    // translate3d(0, Npx, 0) から N を抽出
+    const tr=indicator.style.transform||'';
+    const m=tr.match(/translate3d\(0(?:px)?,\s*(-?\d+(?:\.\d+)?)px/);
+    const pulled=m?parseFloat(m[1]):0;
     // スナップアニメーションをON
     indicator.classList.add('snap');
     target.classList.add('ptr-snap');
@@ -4595,16 +4640,16 @@ $('file-input-any').addEventListener('change',onFilePick);
 
   function resetIndicator(){
     if(indicator){
-      indicator.style.transform='translateY(0)';
+      indicator.style.transform='translate3d(0, 0, 0)';
+      indicator.style.opacity='0';
       indicator.classList.remove('ready');
       const sp=indicator.querySelector('.ptr-spinner');
       if(sp)sp.style.transform='';
-      setTimeout(()=>{ if(indicator)indicator.style.display='none'; }, 280);
+      setTimeout(()=>{ if(indicator)indicator.style.display='none'; }, 300);
     }
     if(target){
       target.style.transform='';
-      // 次回ドラッグまで snap を残しておく (戻りアニメ用)
-      setTimeout(()=>{if(target)target.classList.remove('ptr-snap');target=null;}, 280);
+      setTimeout(()=>{if(target)target.classList.remove('ptr-snap');target=null;}, 300);
     }
   }
 
@@ -4614,8 +4659,9 @@ $('file-input-any').addEventListener('change',onFilePick);
     const sp=indicator.querySelector('.ptr-spinner');
     if(sp)sp.style.transform='';
     indicator.classList.add('spinning');
-    indicator.style.transform=`translateY(${THRESHOLD}px)`;
-    if(target)target.style.transform=`translateY(${THRESHOLD*0.6}px)`;
+    indicator.style.opacity='1';
+    indicator.style.transform=`translate3d(0, ${THRESHOLD}px, 0)`;
+    if(target)target.style.transform=`translate3d(0, ${THRESHOLD}px, 0)`;
     if(navigator.vibrate)navigator.vibrate(10);
     try{
       await refreshActiveScreen();
