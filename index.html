@@ -995,22 +995,26 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .home-new-badge{
   position:absolute;
-  top:-5px;
-  right:-7px;
-  min-width:16px;
-  height:16px;
-  padding:0 4px;
+  top:-6px;
+  right:-8px;
+  /* 1桁(1〜9)のときは正方形→border-radiusで真円になる。
+     2桁以上のときは min-width が伸びてpill形状になる。 */
+  min-width:18px;
+  height:18px;
+  padding:0 4px; /* 2桁以上のときに数字が詰まらないよう左右に余白 */
   background:var(--rose);
   color:white;
   font-size:10px;
   font-weight:700;
-  border-radius:8px;
+  border-radius:999px; /* 確実に角丸を最大にして、サイズに関わらず端が丸くなる */
   display:flex;
   align-items:center;
   justify-content:center;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
   font-variant-numeric:tabular-nums;
   pointer-events:none;
+  /* border-box にして、min-width:18px と height:18px が border 込みのサイズになる。
+     こうすると 1桁のときに 18x18 の正方形(=border-radius:999pxで真円)になる。 */
   box-sizing:border-box;
   letter-spacing:0;
   line-height:1;
