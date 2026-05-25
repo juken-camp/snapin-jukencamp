@@ -211,6 +211,246 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   padding:18px 20px 8px;
 }
 
+/* タブ切替 */
+.admin-tabs{
+  display:flex;
+  gap:0;
+  padding:8px 16px 0;
+  border-bottom:0.5px solid var(--line);
+  background:var(--surface);
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+.admin-tab{
+  padding:12px 16px;
+  font-size:14px;
+  font-weight:500;
+  color:var(--ink3);
+  border-bottom:2px solid transparent;
+  margin-bottom:-0.5px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  transition:color .12s,border-color .12s;
+}
+.admin-tab.on{
+  color:var(--g);
+  border-bottom-color:var(--g);
+}
+.admin-tab-count{
+  background:var(--gl);
+  color:var(--gd);
+  font-size:11px;
+  padding:2px 7px;
+  border-radius:10px;
+  min-width:18px;
+  text-align:center;
+  font-weight:600;
+}
+.admin-tab.on .admin-tab-count{background:var(--g);color:#fff;}
+.admin-tab-pane{display:none;}
+.admin-tab-pane.on{display:block;}
+
+/* 塾生一覧 */
+.students-list{
+  display:flex;
+  flex-direction:column;
+}
+.student-item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 18px;
+  background:var(--surface);
+  border-top:0.5px solid var(--line);
+  cursor:pointer;
+  transition:background .12s;
+}
+.student-item:active{background:var(--gl);}
+.student-item:last-child{border-bottom:0.5px solid var(--line);}
+.student-name{
+  flex:1;
+  min-width:0;
+  font-size:15px;
+  color:var(--ink);
+}
+.student-name small{
+  color:var(--ink3);
+  font-size:12px;
+  margin-left:6px;
+}
+.student-meta{
+  font-size:11px;
+  color:var(--ink3);
+  font-family:var(--font-en,inherit);
+}
+.student-claim-badge{
+  font-size:10px;
+  padding:2px 8px;
+  border-radius:10px;
+  font-weight:500;
+}
+.student-claim-badge.claimed{
+  background:var(--gl);
+  color:var(--gd);
+}
+.student-claim-badge.unclaimed{
+  background:#FEF3E0;
+  color:#B8753E;
+}
+.students-empty{
+  text-align:center;
+  color:var(--ink3);
+  font-size:13px;
+  padding:32px 20px;
+}
+.students-actions{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-top:12px;
+}
+.students-hint{
+  font-size:11px;
+  color:var(--ink3);
+  line-height:1.7;
+  padding:18px 20px;
+}
+
+/* 塾生編集モーダルの中身 */
+.student-edit-field{
+  margin-bottom:14px;
+}
+.student-edit-field label{
+  display:block;
+  font-size:12px;
+  color:var(--ink3);
+  margin-bottom:6px;
+  font-weight:500;
+}
+.student-edit-field input{
+  width:100%;
+  padding:12px 14px;
+  font-size:14px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+  color:var(--ink);
+  outline:none;
+}
+.student-edit-field input:focus{border-color:var(--g);}
+.student-edit-field .field-hint{
+  font-size:11px;
+  color:var(--ink3);
+  margin-top:4px;
+}
+.student-shelves-row{
+  background:var(--surface);
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:14px;
+}
+.student-shelves-label{
+  font-size:12px;
+  color:var(--ink3);
+  margin-bottom:10px;
+  font-weight:500;
+}
+.student-shelf-opt{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 0;
+  font-size:14px;
+  color:var(--ink);
+  cursor:pointer;
+}
+.student-shelf-opt + .student-shelf-opt{border-top:0.5px solid var(--line);}
+.student-shelf-opt:active{opacity:.6;}
+.student-shelf-opt .chk{
+  width:22px;height:22px;
+  border-radius:6px;
+  border:1.5px solid var(--line2);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  background:var(--surface);
+  color:#fff;
+}
+.student-shelf-opt.on .chk{background:var(--g);border-color:var(--g);}
+.student-shelf-opt .chk svg{width:14px;height:14px;display:none;}
+.student-shelf-opt.on .chk svg{display:block;}
+.student-shelf-opt-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* 端末登録状況 */
+.claim-status-row{
+  background:var(--surface);
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.claim-status-label{
+  flex:1;
+  font-size:13px;
+  color:var(--ink2);
+}
+.claim-status-label b{color:var(--ink);font-weight:600;}
+.claim-status-btn{
+  padding:8px 14px;
+  font-size:12px;
+  font-weight:500;
+  background:var(--gl);
+  color:var(--gd);
+  border-radius:8px;
+}
+.claim-status-btn.danger{
+  background:#FCE8E5;
+  color:var(--rose,#C43A2C);
+}
+.claim-status-btn:active{opacity:.6;}
+
+/* 一括追加モーダル */
+.bulk-add-area{
+  background:var(--surface);
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:14px;
+}
+.bulk-add-area textarea{
+  width:100%;
+  min-height:200px;
+  font-size:13px;
+  font-family:monospace;
+  line-height:1.7;
+  background:transparent;
+  resize:vertical;
+  color:var(--ink);
+  outline:none;
+}
+.bulk-add-hint{
+  font-size:11px;
+  color:var(--ink3);
+  line-height:1.7;
+  margin-bottom:10px;
+  padding:0 2px;
+}
+.bulk-add-preview{
+  background:var(--gl);
+  border-radius:10px;
+  padding:12px;
+  font-size:12px;
+  color:var(--gd);
+  line-height:1.6;
+  margin-top:10px;
+}
+.bulk-add-preview .row{padding:3px 0;}
+.bulk-add-preview .err{color:var(--rose,#C43A2C);}
+
 /* 公式ライブラリ一覧 */
 .shelf-list{
   display:flex;
@@ -857,14 +1097,43 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <!-- ログイン後の画面 -->
 <div id="main-screen" class="scroll hide">
-  <div class="section-title">管理する公式ライブラリ</div>
-  <div class="shelf-list" id="shelf-list"></div>
-  <button class="new-shelf-btn" id="new-shelf-btn">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-    新しい公式ライブラリを作る
-  </button>
+  <!-- タブ切替 -->
+  <div class="admin-tabs">
+    <button class="admin-tab on" data-admin-tab="shelves">公式ライブラリ</button>
+    <button class="admin-tab" data-admin-tab="students">塾生 <span class="admin-tab-count" id="students-tab-count">0</span></button>
+  </div>
 
-  <div id="shelf-edit-panel"></div>
+  <!-- 公式ライブラリタブ -->
+  <div class="admin-tab-pane on" id="pane-shelves">
+    <div class="section-title">管理する公式ライブラリ</div>
+    <div class="shelf-list" id="shelf-list"></div>
+    <button class="new-shelf-btn" id="new-shelf-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      新しい公式ライブラリを作る
+    </button>
+
+    <div id="shelf-edit-panel"></div>
+  </div>
+
+  <!-- 塾生タブ -->
+  <div class="admin-tab-pane" id="pane-students">
+    <div class="section-title">塾生名簿</div>
+    <div class="students-list" id="students-list"></div>
+    <div class="students-actions">
+      <button class="new-shelf-btn" id="new-student-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        生徒を1人ずつ追加
+      </button>
+      <button class="new-shelf-btn" id="bulk-student-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        まとめて追加
+      </button>
+    </div>
+    <div class="students-hint">
+      生徒は登録した名前と誕生日4桁で SnapIn に入ります。<br>
+      機種変などで入れなくなったら、生徒をタップして「端末登録を解除」してください。
+    </div>
+  </div>
 </div>
 
 <!-- メモ編集モーダル -->
@@ -878,6 +1147,34 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button class="modal-save" id="memo-save">保存</button>
     </div>
     <div class="modal-body" id="memo-modal-body"></div>
+  </div>
+</div>
+
+<!-- 塾生編集モーダル -->
+<div class="modal-mask" id="student-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <button class="modal-hdr-back" id="student-cancel">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="modal-hdr-title" id="student-modal-title">塾生を追加</div>
+      <button class="modal-save" id="student-save">保存</button>
+    </div>
+    <div class="modal-body" id="student-modal-body"></div>
+  </div>
+</div>
+
+<!-- 一括追加モーダル -->
+<div class="modal-mask" id="bulk-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <button class="modal-hdr-back" id="bulk-cancel">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="modal-hdr-title">まとめて追加</div>
+      <button class="modal-save" id="bulk-save">追加</button>
+    </div>
+    <div class="modal-body" id="bulk-modal-body"></div>
   </div>
 </div>
 
@@ -908,6 +1205,11 @@ const state={
   selectedId:null,
   editingMemo:null,
   saving:false,
+  // ─── 塾生名簿関連 ───
+  tab:'shelves',         // 'shelves' | 'students'
+  students:[],           // 塾生名簿
+  editingStudent:null,   // 編集中の塾生
+  bulkText:'',           // 一括追加のテキスト
 };
 
 const ADMIN_AUTH_KEY='snapin_admin_auth';
@@ -1023,6 +1325,440 @@ async function saveShelves(){
   }
 }
 
+// ═══ STUDENTS ═══
+async function fetchStudents(){
+  if(!state.password)return false;
+  try{
+    const res=await fetch('/api/students',{
+      headers:{'x-admin-password':state.password},
+    });
+    if(!res.ok){
+      console.warn('students fetch failed:',res.status);
+      return false;
+    }
+    const data=await res.json();
+    state.students=Array.isArray(data.students)?data.students:[];
+    return true;
+  }catch(err){
+    console.warn('students fetch error:',err);
+    return false;
+  }
+}
+
+async function saveStudents(){
+  if(!state.password){setStatus('再ログインしてください','error');return false;}
+  if(state.saving)return false;
+  state.saving=true;
+  setStatus('保存中…','busy');
+  try{
+    const res=await fetch('/api/students',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-admin-password':state.password,
+      },
+      body:JSON.stringify({students:state.students}),
+    });
+    if(res.status===401 || res.status===403){
+      setStatus('認証エラー','error');
+      state.password=null;
+      clearAuth();
+      showLogin();
+      return false;
+    }
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    setStatus('保存しました');
+    setTimeout(()=>setStatus(''),1500);
+    return true;
+  }catch(err){
+    setStatus('保存失敗: '+err.message,'error');
+    return false;
+  }finally{
+    state.saving=false;
+  }
+}
+
+function updateStudentsTabCount(){
+  const el=$('students-tab-count');
+  if(el)el.textContent=state.students.length;
+}
+
+function renderStudentsList(){
+  const el=$('students-list');
+  if(!el)return;
+  el.innerHTML='';
+  if(state.students.length===0){
+    el.innerHTML='<div class="students-empty">まだ塾生が登録されていません。<br>下のボタンから追加してください。</div>';
+    return;
+  }
+  // 名前順にソート (nameKeyベース、フォールバックで name)
+  const sorted=[...state.students].sort((a,b)=>{
+    const ka=(a.nameKey||a.name||'').toString();
+    const kb=(b.nameKey||b.name||'').toString();
+    return ka.localeCompare(kb,'ja');
+  });
+  sorted.forEach(s=>{
+    const row=document.createElement('div');
+    row.className='student-item';
+    const claimed=!!s.claimedBy;
+    const bdShow=s.birthday?s.birthday.slice(0,2)+'/'+s.birthday.slice(2):'';
+    row.innerHTML=`
+      <div class="student-name">
+        ${esc(s.name||'(無名)')}
+        ${s.nameKey?`<small>${esc(s.nameKey)}</small>`:''}
+      </div>
+      <div class="student-meta">${esc(bdShow)}</div>
+      <div class="student-claim-badge ${claimed?'claimed':'unclaimed'}">${claimed?'✓ 登録済':'未登録'}</div>
+    `;
+    row.addEventListener('click',()=>openStudentModal(s));
+    el.appendChild(row);
+  });
+}
+
+function openStudentModal(student){
+  const isNew=!student;
+  if(isNew){
+    student={
+      id:'stu_'+Date.now()+'_'+Math.floor(Math.random()*1000),
+      name:'',
+      nameKey:'',
+      birthday:'',
+      shelfIds:[],
+      aiEnabled:true, // 全員trueで固定 (UI上ではトグルしない)
+      claimedBy:null,
+      claimedAt:null,
+      revoked:false,
+      createdAt:Date.now(),
+    };
+  }
+  state.editingStudent=Object.assign({},student,{_new:isNew});
+  $('student-modal-title').textContent=isNew?'塾生を追加':'塾生を編集';
+  renderStudentModalBody();
+  $('student-modal').classList.add('on');
+}
+
+function closeStudentModal(){
+  $('student-modal').classList.remove('on');
+  state.editingStudent=null;
+}
+
+function renderStudentModalBody(){
+  const body=$('student-modal-body');
+  const s=state.editingStudent;
+  if(!s)return;
+  const shelves=state.shelves||[];
+  const shelfIds=Array.isArray(s.shelfIds)?s.shelfIds:[];
+  // claim状態
+  const claimed=!!s.claimedBy;
+  const claimDate=s.claimedAt?new Date(s.claimedAt).toLocaleDateString('ja-JP'):'';
+  const claimHtml=s._new?'':`
+    <div class="claim-status-row">
+      <div class="claim-status-label">
+        <b>端末の登録: ${claimed?'済':'未登録'}</b>
+        ${claimed?`<br><small style="color:var(--ink3);">${esc(claimDate)} に登録</small>`:''}
+      </div>
+      ${claimed?'<button class="claim-status-btn danger" id="claim-unclaim-btn">解除</button>':''}
+    </div>
+  `;
+  body.innerHTML=`
+    <div class="student-edit-field">
+      <label>名前 (漢字・スペースなし)</label>
+      <input id="stu-name" type="text" value="${esc(s.name||'')}" placeholder="例: 山田太郎">
+    </div>
+    <div class="student-edit-field">
+      <label>読み (ひらがな・スペースなし)</label>
+      <input id="stu-nameKey" type="text" value="${esc(s.nameKey||'')}" placeholder="例: やまだたろう">
+      <div class="field-hint">漢字でもひらがなでも入れるので、両方登録すると確実です。</div>
+    </div>
+    <div class="student-edit-field">
+      <label>誕生日 (MMDD)</label>
+      <input id="stu-bd" type="tel" inputmode="numeric" maxlength="4" value="${esc(s.birthday||'')}" placeholder="例: 0401">
+      <div class="field-hint">4月1日なら 0401、12月25日なら 1225</div>
+    </div>
+    <div class="student-shelves-row">
+      <div class="student-shelves-label">登録できる公式ライブラリ</div>
+      ${shelves.length===0
+        ? '<div style="font-size:12px;color:var(--ink3);padding:8px 0;">まだ公式ライブラリがありません。先に作ってください。</div>'
+        : shelves.map(sh=>{
+          const on=shelfIds.includes(sh.id);
+          return `
+            <div class="student-shelf-opt ${on?'on':''}" data-stu-shelf="${esc(sh.id)}">
+              <div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+              <div class="student-shelf-opt-name">${esc(sh.name||'(無題)')}</div>
+            </div>
+          `;
+        }).join('')
+      }
+    </div>
+    ${claimHtml}
+    ${s._new?'':'<button class="modal-del" id="stu-del">この塾生を削除</button>'}
+  `;
+  // イベント
+  $('stu-name').addEventListener('input',e=>{state.editingStudent.name=e.target.value;});
+  $('stu-nameKey').addEventListener('input',e=>{state.editingStudent.nameKey=e.target.value;});
+  const bdInp=$('stu-bd');
+  bdInp.addEventListener('input',e=>{
+    e.target.value=e.target.value.replace(/\D/g,'').slice(0,4);
+    state.editingStudent.birthday=e.target.value;
+  });
+  body.querySelectorAll('[data-stu-shelf]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const id=el.dataset.stuShelf;
+      if(!Array.isArray(state.editingStudent.shelfIds))state.editingStudent.shelfIds=[];
+      const arr=state.editingStudent.shelfIds;
+      const i=arr.indexOf(id);
+      if(i>=0)arr.splice(i,1);
+      else arr.push(id);
+      renderStudentModalBody();
+    });
+  });
+  const unclaimBtn=$('claim-unclaim-btn');
+  if(unclaimBtn){
+    unclaimBtn.addEventListener('click',unclaimStudent);
+  }
+  const delBtn=$('stu-del');
+  if(delBtn){
+    delBtn.addEventListener('click',deleteStudentFromModal);
+  }
+}
+
+async function saveStudentFromModal(){
+  const s=state.editingStudent;
+  if(!s)return;
+  const name=(s.name||'').trim();
+  const nameKey=(s.nameKey||'').trim();
+  const bd=(s.birthday||'').trim();
+  if(!name){setStatus('名前を入れてください','error');return;}
+  if(!/^\d{4}$/.test(bd)){setStatus('誕生日は4桁の数字','error');return;}
+  // 名前+誕生日の重複チェック (自分以外)
+  const dup=state.students.find(x=>x.id!==s.id && x.birthday===bd && (
+    (x.name||'').trim()===name || (nameKey && (x.nameKey||'').trim()===nameKey)
+  ));
+  if(dup){
+    if(!confirm(`同じ名前+誕生日の生徒「${dup.name}」が既にいます。\nこのまま追加すると、生徒が claim する時にどちらか1人しか入れません。\n本当に追加しますか?`))return;
+  }
+  // sanitized object
+  const cleaned={
+    id:s.id,
+    name:name,
+    nameKey:nameKey,
+    birthday:bd,
+    shelfIds:Array.isArray(s.shelfIds)?s.shelfIds:[],
+    aiEnabled:true,
+    revoked:false,
+    createdAt:s.createdAt||Date.now(),
+  };
+  // 上書き or 新規追加
+  if(s._new){
+    state.students.unshift(cleaned);
+  }else{
+    const idx=state.students.findIndex(x=>x.id===s.id);
+    if(idx>=0)state.students[idx]=cleaned;
+    else state.students.unshift(cleaned);
+  }
+  const ok=await saveStudents();
+  if(!ok)return;
+  closeStudentModal();
+  // サーバーから取り直して claim 状態などを同期
+  await fetchStudents();
+  renderStudentsList();
+  updateStudentsTabCount();
+}
+
+async function deleteStudentFromModal(){
+  const s=state.editingStudent;
+  if(!s || s._new)return;
+  if(!confirm(`「${s.name}」を名簿から削除しますか?\nこの生徒の端末から SnapIn が使えなくなります。`))return;
+  state.students=state.students.filter(x=>x.id!==s.id);
+  const ok=await saveStudents();
+  if(!ok)return;
+  closeStudentModal();
+  renderStudentsList();
+  updateStudentsTabCount();
+}
+
+async function unclaimStudent(){
+  const s=state.editingStudent;
+  if(!s || s._new)return;
+  if(!confirm(`「${s.name}」の端末登録を解除しますか?\nこの生徒は新しい端末で再度 SnapIn に入れるようになります。`))return;
+  try{
+    const res=await fetch('/api/students?action=unclaim&id='+encodeURIComponent(s.id),{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-admin-password':state.password,
+      },
+      body:JSON.stringify({action:'unclaim',id:s.id}),
+    });
+    if(!res.ok){
+      setStatus('解除失敗','error');
+      return;
+    }
+    setStatus('端末登録を解除しました');
+    setTimeout(()=>setStatus(''),1500);
+    await fetchStudents();
+    renderStudentsList();
+    closeStudentModal();
+  }catch(err){
+    setStatus('解除失敗: '+err.message,'error');
+  }
+}
+
+// ─── 一括追加 ───
+function openBulkModal(){
+  state.bulkText='';
+  renderBulkModalBody();
+  $('bulk-modal').classList.add('on');
+}
+
+function closeBulkModal(){
+  $('bulk-modal').classList.remove('on');
+  state.bulkText='';
+}
+
+function parseBulkText(text){
+  // 各行: 名前, 読み, 誕生日 (カンマ or タブ区切り)
+  // 読みは省略可: 名前, 誕生日 でも可
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+  return lines.map((line,i)=>{
+    const parts=line.split(/[,\t]/).map(p=>p.trim()).filter(p=>p);
+    if(parts.length<2){
+      return {line:i+1,error:'区切りが少ない: '+line,raw:line};
+    }
+    let name,nameKey,bd;
+    if(parts.length===2){
+      // 名前, 誕生日
+      name=parts[0];
+      nameKey='';
+      bd=parts[1];
+    }else{
+      // 名前, 読み, 誕生日
+      name=parts[0];
+      nameKey=parts[1];
+      bd=parts[2];
+    }
+    // 誕生日の数字抽出
+    bd=bd.replace(/\D/g,'');
+    if(bd.length>4)bd=bd.slice(-4);
+    bd=bd.padStart(4,'0');
+    if(!/^\d{4}$/.test(bd)){
+      return {line:i+1,error:'誕生日が不正: '+line,raw:line};
+    }
+    if(!name){
+      return {line:i+1,error:'名前が空: '+line,raw:line};
+    }
+    return {name,nameKey,birthday:bd,raw:line};
+  });
+}
+
+function renderBulkModalBody(){
+  const body=$('bulk-modal-body');
+  const parsed=state.bulkText?parseBulkText(state.bulkText):[];
+  const ok=parsed.filter(p=>!p.error);
+  const errs=parsed.filter(p=>p.error);
+  const previewHtml=parsed.length>0?`
+    <div class="bulk-add-preview">
+      ${ok.length>0?`<b>追加されます (${ok.length}人)</b>`:''}
+      ${ok.map(p=>`<div class="row">・${esc(p.name)}${p.nameKey?' ('+esc(p.nameKey)+')':''} / ${esc(p.birthday.slice(0,2))}/${esc(p.birthday.slice(2))}</div>`).join('')}
+      ${errs.length>0?`<div style="margin-top:8px;"><b class="err">エラー (${errs.length}行)</b></div>`:''}
+      ${errs.map(p=>`<div class="row err">${p.line}行目: ${esc(p.error)}</div>`).join('')}
+    </div>
+  `:'';
+  body.innerHTML=`
+    <div class="bulk-add-hint">
+      1行に1人ずつ書いてください。<strong>カンマ</strong>か<strong>タブ</strong>で区切ります。<br><br>
+      <b>形式</b>: 名前, 読み, 誕生日<br>
+      <b>例</b>:<br>
+      &nbsp;&nbsp;山田太郎, やまだたろう, 0401<br>
+      &nbsp;&nbsp;佐藤花子, さとうはなこ, 1225<br><br>
+      読みは省略可能です (その場合: 名前, 誕生日)。<br>
+      追加後に公式ライブラリの紐付けは1人ずつ設定してください。
+    </div>
+    <div class="bulk-add-area">
+      <textarea id="bulk-textarea" placeholder="ここに貼り付け">${esc(state.bulkText)}</textarea>
+    </div>
+    ${previewHtml}
+  `;
+  const ta=$('bulk-textarea');
+  if(ta){
+    ta.addEventListener('input',e=>{
+      state.bulkText=e.target.value;
+      // 軽量プレビュー更新 (再描画)
+      renderBulkModalBody();
+      // フォーカスを戻す
+      const newTa=$('bulk-textarea');
+      if(newTa){
+        newTa.focus();
+        // カーソル末尾
+        newTa.selectionStart=newTa.selectionEnd=newTa.value.length;
+      }
+    });
+  }
+}
+
+async function saveBulkStudents(){
+  const parsed=parseBulkText(state.bulkText);
+  const ok=parsed.filter(p=>!p.error);
+  if(ok.length===0){
+    setStatus('追加できる行がありません','error');
+    return;
+  }
+  // 既存と被るものは確認
+  const existingKeys=new Set(state.students.map(s=>(s.name||'').trim()+'|'+(s.birthday||'')));
+  const newOnes=[];
+  const skipped=[];
+  for(const p of ok){
+    const k=p.name+'|'+p.birthday;
+    if(existingKeys.has(k)){
+      skipped.push(p);
+      continue;
+    }
+    newOnes.push({
+      id:'stu_'+Date.now()+'_'+Math.floor(Math.random()*100000),
+      name:p.name,
+      nameKey:p.nameKey||'',
+      birthday:p.birthday,
+      shelfIds:[],
+      aiEnabled:true,
+      revoked:false,
+      createdAt:Date.now(),
+    });
+  }
+  if(newOnes.length===0){
+    setStatus('全て既存と重複しています','error');
+    return;
+  }
+  let msg=`${newOnes.length}人を追加します`;
+  if(skipped.length>0)msg+=`\n(${skipped.length}人は既存と重複するためスキップ)`;
+  msg+='。よろしいですか?';
+  if(!confirm(msg))return;
+  state.students=newOnes.concat(state.students);
+  const saved=await saveStudents();
+  if(!saved)return;
+  closeBulkModal();
+  await fetchStudents();
+  renderStudentsList();
+  updateStudentsTabCount();
+}
+
+// ─── タブ切替 ───
+function switchAdminTab(tab){
+  state.tab=tab;
+  document.querySelectorAll('.admin-tab').forEach(el=>{
+    el.classList.toggle('on',el.dataset.adminTab===tab);
+  });
+  document.querySelectorAll('.admin-tab-pane').forEach(el=>{
+    el.classList.toggle('on',el.id==='pane-'+tab);
+  });
+  // 塾生タブを開いた時、毎回最新の状態を取りに行く
+  if(tab==='students' && state.password){
+    fetchStudents().then(()=>{
+      renderStudentsList();
+      updateStudentsTabCount();
+    });
+  }
+}
+
 // ═══ LOGIN ═══
 async function tryLogin(){
   const email=$('login-email').value.trim();
@@ -1075,6 +1811,11 @@ function showMain(){
   if(state.selectedId){
     renderShelfEdit();
   }
+  // 塾生名簿も取得 (非同期、UIブロックしない)
+  fetchStudents().then(()=>{
+    renderStudentsList();
+    updateStudentsTabCount();
+  });
 }
 
 // ═══ SHELF LIST ═══
@@ -1839,6 +2580,23 @@ $('memo-cancel').addEventListener('click',closeMemoModal);
 $('memo-save').addEventListener('click',saveMemoFromModal);
 $('memo-modal').addEventListener('click',e=>{
   if(e.target===$('memo-modal'))closeMemoModal();
+});
+
+// ─── 塾生タブ ───
+document.querySelectorAll('[data-admin-tab]').forEach(el=>{
+  el.addEventListener('click',()=>switchAdminTab(el.dataset.adminTab));
+});
+$('new-student-btn').addEventListener('click',()=>openStudentModal(null));
+$('bulk-student-btn').addEventListener('click',openBulkModal);
+$('student-cancel').addEventListener('click',closeStudentModal);
+$('student-save').addEventListener('click',saveStudentFromModal);
+$('student-modal').addEventListener('click',e=>{
+  if(e.target===$('student-modal'))closeStudentModal();
+});
+$('bulk-cancel').addEventListener('click',closeBulkModal);
+$('bulk-save').addEventListener('click',saveBulkStudents);
+$('bulk-modal').addEventListener('click',e=>{
+  if(e.target===$('bulk-modal'))closeBulkModal();
 });
 
 // パスワード表示トグル
