@@ -43,13 +43,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 /* HEADER */
 .hdr{
-  padding:0 14px;
-  height:54px;
+  padding:calc(env(safe-area-inset-top) + 4px) 14px 0;
+  height:calc(54px + env(safe-area-inset-top));
   display:flex;
   justify-content:space-between;
   align-items:center;
-  background:var(--surface);
-  border-bottom:0.5px solid var(--line);
+  background:var(--bg);
   flex-shrink:0;
 }
 .hdr-title{font-size:17px;font-weight:600;}
@@ -93,13 +92,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 /* 戻るヘッダー */
 .bhdr{
-  padding:0 8px;
-  height:52px;
+  padding:calc(env(safe-area-inset-top) + 4px) 8px 0;
+  height:calc(52px + env(safe-area-inset-top));
   display:flex;
   align-items:center;
   gap:4px;
-  background:var(--surface);
-  border-bottom:0.5px solid var(--line);
+  background:var(--bg);
   flex-shrink:0;
 }
 .bhdr-back{padding:10px;color:var(--ink2);display:flex;align-items:center;}
@@ -129,8 +127,17 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .bhdr-action.saved{
   background:var(--gd);
-  font-size:15px;
+  font-size:18px;
   pointer-events:none;
+  animation:save-pulse .35s ease-out;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+@keyframes save-pulse{
+  0%{transform:scale(0.85);}
+  60%{transform:scale(1.12);}
+  100%{transform:scale(1);}
 }
 
 /* BOTTOM NAV (4タブに削減: 棚 / 公式 / + / 探す) */
@@ -980,27 +987,35 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   vertical-align:middle;
 }
 
-/* プルダウン更新インジケーター */
+/* プルダウン更新インジケーター (細いスピナー、円なし) */
 .ptr-indicator{
   position:absolute;
-  top:-44px;
+  top:-32px;
   left:50%;
-  margin-left:-22px;
-  width:44px;
-  height:44px;
-  border-radius:50%;
-  background:var(--surface);
-  box-shadow:0 2px 8px rgba(0,0,0,.12);
+  margin-left:-13px;
+  width:26px;
+  height:26px;
   display:none;
   align-items:center;
   justify-content:center;
-  color:var(--ink2);
+  color:var(--ink3);
   z-index:50;
   pointer-events:none;
 }
 .ptr-indicator.snap{transition:transform .25s cubic-bezier(.2,.7,.3,1.1);}
 .ptr-indicator.ready{color:var(--g);}
-.ptr-indicator.spinning .ptr-spinner svg{animation:ptr-spin 0.8s linear infinite;}
+/* スピナー本体 */
+.ptr-spinner{
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  border:2px solid currentColor;
+  border-top-color:transparent;
+  opacity:.6;
+  transition:opacity .15s, transform .15s;
+}
+.ptr-indicator.ready .ptr-spinner{opacity:1;transform:scale(1.05);}
+.ptr-indicator.spinning .ptr-spinner{animation:ptr-spin 0.7s linear infinite;opacity:1;}
 @keyframes ptr-spin{to{transform:rotate(360deg);}}
 .scroll.ptr-snap{transition:transform .25s cubic-bezier(.2,.7,.3,1.1);}
 /* 日付セパレーター(中央に半透明丸タブ) */
@@ -1106,6 +1121,81 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   height:1px;
   background:var(--line);
   margin:8px 20px;
+}
+
+/* 公式 / 探す ページのヒーロー (タイトル + サブ) */
+.lib-hero, .search-hero{
+  padding:calc(20px + env(safe-area-inset-top)) 20px 18px;
+}
+.lib-hero-title, .search-hero-title{
+  font-size:24px;
+  font-weight:700;
+  color:var(--ink);
+  letter-spacing:-0.01em;
+}
+.lib-hero-sub, .search-hero-sub{
+  font-size:12px;
+  color:var(--ink3);
+  margin-top:3px;
+}
+
+/* 公式の新着セクション */
+.lib-new-block{
+  padding:0 20px 18px;
+}
+.lib-new-head{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink);
+  margin:0 0 10px;
+}
+.lib-new-head .dot{
+  width:6px;height:6px;border-radius:50%;background:var(--rose);
+  animation:pulse-dot 1.6s ease-in-out infinite;
+}
+@keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:.4;}}
+.lib-new-strip{
+  display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
+  margin:0 -20px;padding:0 20px 4px;
+}
+.lib-new-strip::-webkit-scrollbar{display:none;}
+.lib-new-card{
+  width:130px;
+  flex-shrink:0;
+  background:var(--surface);
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+  cursor:pointer;
+}
+.lib-new-card-thumb{
+  height:90px;
+  background:var(--gl);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  font-size:11px;color:var(--gd);
+  padding:8px;
+  text-align:center;
+  line-height:1.4;
+}
+.lib-new-card-thumb img{width:100%;height:100%;object-fit:cover;}
+.lib-new-card-foot{
+  padding:7px 9px 8px;
+  font-size:10px;
+  color:var(--ink3);
+  font-weight:500;
+  border-top:0.5px solid var(--line);
+  display:flex;align-items:center;gap:5px;
+}
+.lib-new-card-foot .av{
+  width:16px;height:16px;border-radius:4px;
+  background:var(--gl);color:var(--gd);
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;
+  flex-shrink:0;
 }
 
 /* 公式棚詳細 */
@@ -1238,19 +1328,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .review-done h2{font-size:20px;margin-bottom:8px;font-weight:600;}
 
 /* SEARCH */
-.search-hdr{
-  padding:10px 8px;
-  background:var(--surface);
-  border-bottom:0.5px solid var(--line);
-  display:flex;
-  gap:8px;
-  align-items:center;
+.search-input-block{
+  padding:0 20px 10px;
 }
 .search-input-wrap{
-  flex:1;
-  height:38px;
-  background:var(--bg);
-  border-radius:19px;
+  height:40px;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:20px;
   padding:0 14px;
   display:flex;align-items:center;gap:8px;
 }
@@ -1258,23 +1343,81 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .search-scope{
   display:flex;
   gap:6px;
-  padding:10px 14px;
-  background:var(--surface);
-  border-bottom:0.5px solid var(--line);
+  padding:6px 20px 14px;
   overflow-x:auto;
+  scrollbar-width:none;
 }
 .search-scope::-webkit-scrollbar{display:none;}
 .scope-chip{
-  padding:6px 12px;
-  background:var(--bg);
+  padding:6px 14px;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
   border-radius:14px;
   font-size:12px;
   color:var(--ink2);
   white-space:nowrap;
   flex-shrink:0;
+  font-weight:500;
 }
-.scope-chip.on{background:var(--g);color:white;}
+.scope-chip.on{background:var(--g);color:white;border-color:var(--g);}
 .search-empty{padding:40px 30px;text-align:center;color:var(--ink3);font-size:13px;}
+
+/* 探すページの待機状態 (キーワードなし) */
+.search-idle-block{
+  padding:0 20px 18px;
+}
+.search-idle-title{
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink2);
+  margin-bottom:10px;
+  display:flex;align-items:center;gap:6px;
+}
+.color-filter-row{
+  display:flex;gap:8px;flex-wrap:wrap;
+}
+.color-filter-chip{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px 6px 8px;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:14px;
+  font-size:12px;
+  color:var(--ink2);
+  font-weight:500;
+}
+.color-filter-chip .swatch{
+  width:14px;height:14px;border-radius:50%;
+  border:0.5px solid rgba(0,0,0,.1);
+}
+.color-filter-chip.on{
+  border-color:var(--g);
+  background:var(--gl);
+  color:var(--gd);
+}
+.pin-strip{
+  display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
+  margin:0 -20px;padding:0 20px 4px;
+}
+.pin-strip::-webkit-scrollbar{display:none;}
+.pin-card{
+  width:90px;height:90px;
+  flex-shrink:0;
+  border-radius:10px;
+  overflow:hidden;
+  background:var(--surface);
+  box-shadow:var(--shadow);
+  position:relative;
+  cursor:pointer;
+}
+.pin-card img{width:100%;height:100%;object-fit:cover;}
+.pin-card .ctxt{
+  padding:8px;font-size:10px;line-height:1.4;
+  height:100%;display:-webkit-box;
+  -webkit-line-clamp:5;-webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.pin-card .pin-badge{top:4px;left:4px;width:18px;height:18px;}
 
 /* LOGIN */
 .login-wrap{
@@ -1700,7 +1843,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <!-- LIBRARY -->
 <div class="screen" id="screen-library">
   <div class="scroll" id="lib-scroll">
-    <div style="padding:calc(20px + env(safe-area-inset-top)) 0 0;"></div>
+    <div class="lib-hero">
+      <div class="lib-hero-title">公式ライブラリ</div>
+      <div class="lib-hero-sub">JUKEN CAMP からの教材</div>
+    </div>
+    <div id="lib-new-section"></div>
     <div id="lib-list"></div>
   </div>
   <div class="bnav" data-bnav="library"></div>
@@ -1731,24 +1878,28 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <!-- SEARCH -->
 <div class="screen" id="screen-search">
-  <div class="search-hdr">
-    <button class="bhdr-back" data-action="back" style="color:var(--ink2);">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
-    </button>
-    <div class="search-input-wrap">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input id="search-q" placeholder="探す">
+  <div class="scroll" id="search-scroll">
+    <div class="search-hero">
+      <div class="search-hero-title">探す</div>
+      <div class="search-hero-sub">キーワード・色・タイプから</div>
     </div>
+    <div class="search-input-block">
+      <div class="search-input-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="search-q" placeholder="キーワード">
+      </div>
+    </div>
+    <div class="search-scope" id="search-scope-bar">
+      <button class="scope-chip on" data-scope="all">すべて</button>
+      <button class="scope-chip" data-scope="mine">自分</button>
+      <button class="scope-chip" data-scope="official">公式</button>
+      <button class="scope-chip" data-scope="photo">写真</button>
+      <button class="scope-chip" data-scope="note">メモ</button>
+      <button class="scope-chip" data-scope="list">リスト</button>
+    </div>
+    <div id="search-idle"></div>
+    <div id="search-results"></div>
   </div>
-  <div class="search-scope">
-    <button class="scope-chip on" data-scope="all">すべて</button>
-    <button class="scope-chip" data-scope="mine">自分</button>
-    <button class="scope-chip" data-scope="official">公式棚</button>
-    <button class="scope-chip" data-scope="photo">写真</button>
-    <button class="scope-chip" data-scope="note">メモ</button>
-    <button class="scope-chip" data-scope="list">リスト</button>
-  </div>
-  <div class="scroll" id="search-results"></div>
   <div class="bnav" data-bnav="search"></div>
 </div>
 
@@ -1895,6 +2046,7 @@ const state={
   selectedIds:new Set(),
   pastMoreOpen:false,  // 今日タブの「もっと前の保存を見る」展開状態
   shelfLastSeen:{},    // 公式棚ごとに最後に開いた時刻 (新着判定用)
+  searchColor:null,    // 探すページの色フィルター
 };
 
 function save(){
@@ -2072,7 +2224,6 @@ function goto(id,push){
     renderLibrary();
   }
   if(id==='screen-search'){
-    setTimeout(()=>$('search-q').focus(),100);
     doSearch();
   }
 }
@@ -3130,7 +3281,7 @@ function saveCard(){
     btn.dataset.saving='1';
     btn.disabled=true;
     btn.classList.add('saved');
-    btn.textContent='✓';
+    btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
     if(navigator.vibrate)navigator.vibrate(15);
     setTimeout(()=>{
       state.current=null;
@@ -3140,11 +3291,11 @@ function saveCard(){
       const prev=state.navStack[state.navStack.length-1]||'screen-home';
       goto(prev,false);
       // ボタンを元に戻す (次回開いた時のため)
-      btn.textContent='保存';
+      btn.innerHTML='保存';
       btn.classList.remove('saved');
       btn.disabled=false;
       delete btn.dataset.saving;
-    },420);
+    },700);
   }else{
     state.current=null;
     while(state.navStack.length>1 && state.navStack[state.navStack.length-1]==='screen-upload'){
@@ -3791,7 +3942,10 @@ function copyToShelf(){
 function renderLibrary(){
   const subbed=OFFICIAL_SHELVES.filter(s=>state.subscribed.includes(s.id));
   const avail=OFFICIAL_SHELVES.filter(s=>!state.subscribed.includes(s.id));
-  // 登録ずみが上、登録可能が下。間に薄い区切り線
+
+  // 「新着メモ」セクションを描画 (登録ずみ棚で lastSeen 以降に追加された物)
+  renderLibNewSection(subbed);
+
   const list=$('lib-list');
   list.innerHTML='';
   subbed.forEach(s=>list.appendChild(libItem(s,true)));
@@ -3801,6 +3955,62 @@ function renderLibrary(){
     list.appendChild(divider);
   }
   avail.forEach(s=>list.appendChild(libItem(s,false)));
+}
+
+// 登録ずみ棚の中で「新着」(lastSeen 以降に追加) を横スクロールで表示
+function renderLibNewSection(subbed){
+  const sec=$('lib-new-section');
+  if(!sec)return;
+  // 全棚の新着メモを集める {card, shelf}
+  const items=[];
+  for(const s of subbed){
+    const lastSeen=state.shelfLastSeen[s.id]||0;
+    if(lastSeen===0)continue; // 登録直後は表示しない
+    for(const c of (s.cards||[])){
+      const t=c.created||c.t||0;
+      if(t>lastSeen)items.push({card:c,shelf:s,t});
+    }
+  }
+  // 新しい順に並べ、最大10件
+  items.sort((a,b)=>b.t-a.t);
+  const top=items.slice(0,10);
+  if(top.length===0){sec.innerHTML='';return;}
+  const cardsHtml=top.map(({card:c,shelf:s})=>{
+    let thumb='';
+    if(c.type==='photo'||c.type==='photonote'){
+      thumb=`<img src="${c.image||''}" alt="">`;
+    }else if(c.type==='note'){
+      thumb=esc((c.text||'').slice(0,40));
+    }else if(c.type==='list'){
+      thumb=`<b>${esc(c.title||'リスト')}</b><br>${(c.items||[]).slice(0,2).map(i=>'・'+esc(i.t)).join('<br>')}`;
+    }
+    return `
+      <div class="lib-new-card" data-shelf-id="${esc(s.id)}" data-card-id="${esc(c.id)}">
+        <div class="lib-new-card-thumb">${thumb}</div>
+        <div class="lib-new-card-foot">
+          <div class="av">${esc(s.name.slice(0,1))}</div>
+          <span>${esc(s.name)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  sec.innerHTML=`
+    <div class="lib-new-block">
+      <div class="lib-new-head">
+        <span class="dot"></span>
+        <span>新着 ${items.length} 件</span>
+      </div>
+      <div class="lib-new-strip">${cardsHtml}</div>
+    </div>
+  `;
+  // クリックで該当棚を開く
+  sec.querySelectorAll('.lib-new-card').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const sid=el.dataset.shelfId;
+      const s=OFFICIAL_SHELVES.find(x=>x.id===sid);
+      if(s)openOfficial(s);
+    });
+  });
 }
 
 function libItem(s,subbed){
@@ -3877,28 +4087,48 @@ function setScope(s){
   doSearch();
 }
 
+function setColorFilter(colorId){
+  state.searchColor=state.searchColor===colorId?null:colorId;
+  doSearch();
+}
+
 function doSearch(){
   const q=$('search-q').value.trim().toLowerCase();
   const out=$('search-results');
-  if(!q){out.innerHTML='';return;}
+  const idle=$('search-idle');
   const scope=state.searchScope;
-  let results=[];
+  const colorFilter=state.searchColor||null;
 
+  // 空クエリ + 色フィルターなし → 待機画面
+  if(!q && !colorFilter){
+    out.innerHTML='';
+    renderSearchIdle();
+    return;
+  }
+  // 何か検索条件があれば idle を隠す
+  idle.innerHTML='';
+
+  let results=[];
   if(scope==='all'||scope==='mine'||scope==='photo'||scope==='note'||scope==='list'){
     state.cards.forEach(c=>{
       if(scope==='photo' && c.type!=='photo' && c.type!=='photonote')return;
       if(scope==='note' && c.type!=='note')return;
       if(scope==='list' && c.type!=='list')return;
-      const aiText=(c.aiLog||[]).map(m=>m.text).join(' ');
-      const hay=(c.text||'')+' '+(c.title||'')+' '+((c.items||[]).map(i=>i.t).join(' '))+' '+(c.ocrText||'')+' '+aiText;
-      if(hay.toLowerCase().includes(q))results.push({card:c,origin:'mine'});
+      if(colorFilter && (c.color||'default')!==colorFilter)return;
+      if(q){
+        const aiText=(c.aiLog||[]).map(m=>m.text).join(' ');
+        const hay=(c.text||'')+' '+(c.title||'')+' '+((c.items||[]).map(i=>i.t).join(' '))+' '+(c.ocrText||'')+' '+aiText;
+        if(!hay.toLowerCase().includes(q))return;
+      }
+      results.push({card:c,origin:'mine'});
     });
   }
-  if(scope==='all'||scope==='official'){
+  if((scope==='all'||scope==='official') && !colorFilter){
     OFFICIAL_SHELVES.forEach(s=>{
-      if((s.name+' '+s.handle+' '+s.desc).toLowerCase().includes(q))results.push({shelf:s});
+      if(q && (s.name+' '+s.handle+' '+s.desc).toLowerCase().includes(q))results.push({shelf:s});
       if(state.subscribed.includes(s.id)){
         s.cards.forEach(c=>{
+          if(!q){return;} // 色フィルターのみのときは公式メモは色情報がないので除外
           const hay=(c.text||'')+' '+(c.title||'')+' '+((c.items||[]).map(i=>i.t).join(' '));
           if(hay.toLowerCase().includes(q))results.push({card:c,origin:'official',shelf:s});
         });
@@ -3926,7 +4156,10 @@ function doSearch(){
       card.className='card '+c.type;
       let inner='';
       if(c.type==='photo'||c.type==='photonote')inner=`<img src="${c.image||''}">`;
-      else if(c.type==='note')inner=`<div class="ctxt">${esc(c.text||'')}</div>`;
+      else if(c.type==='note'){
+        const col=colorById(c.color);
+        inner=`<div class="ctxt" style="background:${col.bg};color:${col.fg};">${esc(c.text||'')}</div>`;
+      }
       else if(c.type==='list'){
         const items=(c.items||[]).slice(0,4).map(i=>`<div class="li ${i.d?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`).join('');
         inner=`<div class="ctxt">${c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;">${esc(c.title)}</div>`:''}${items}</div>`;
@@ -3940,6 +4173,65 @@ function doSearch(){
       grid.appendChild(card);
     });
   }
+}
+
+// 何も検索していないときの待機表示 (色フィルター + ピン留めメモ)
+function renderSearchIdle(){
+  const idle=$('search-idle');
+  if(!idle)return;
+  const colors=CARD_COLORS;
+  const pinned=state.cards.filter(c=>c.pinned);
+
+  let html='';
+
+  // 色フィルター
+  html+=`<div class="search-idle-block">
+    <div class="search-idle-title">色で絞り込む</div>
+    <div class="color-filter-row">
+      ${colors.map(c=>`
+        <button class="color-filter-chip ${state.searchColor===c.id?'on':''}" data-color-filter="${c.id}">
+          <span class="swatch" style="background:${c.bg};"></span>
+          <span>${esc(c.name)}</span>
+        </button>
+      `).join('')}
+    </div>
+  </div>`;
+
+  // ピン留めメモ (あれば)
+  if(pinned.length>0){
+    const pinHtml=pinned.slice(0,12).map(c=>{
+      let inner='';
+      if(c.type==='photo'||c.type==='photonote'){
+        inner=`<img src="${c.image||''}" alt="">`;
+      }else if(c.type==='note'){
+        const col=colorById(c.color);
+        inner=`<div class="ctxt" style="background:${col.bg};color:${col.fg};">${esc(c.text||'')}</div>`;
+      }else if(c.type==='list'){
+        inner=`<div class="ctxt"><b>${esc(c.title||'リスト')}</b></div>`;
+      }
+      return `<div class="pin-card" data-card-id="${esc(c.id)}">${inner}</div>`;
+    }).join('');
+    html+=`<div class="search-idle-block">
+      <div class="search-idle-title">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg>
+        ピン留めしたメモ
+      </div>
+      <div class="pin-strip">${pinHtml}</div>
+    </div>`;
+  }
+
+  idle.innerHTML=html;
+
+  // クリックハンドラ
+  idle.querySelectorAll('.color-filter-chip').forEach(el=>{
+    el.addEventListener('click',()=>setColorFilter(el.dataset.colorFilter));
+  });
+  idle.querySelectorAll('.pin-card').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const c=state.cards.find(x=>x.id===el.dataset.cardId);
+      if(c)openDetail(c,'mine');
+    });
+  });
 }
 
 // ═══ SPACED REPETITION ═══
@@ -4221,7 +4513,7 @@ $('file-input-any').addEventListener('change',onFilePick);
   function makeIndicator(){
     const el=document.createElement('div');
     el.className='ptr-indicator';
-    el.innerHTML=`<div class="ptr-spinner"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></div>`;
+    el.innerHTML=`<div class="ptr-spinner"></div>`;
     return el;
   }
 
@@ -4271,9 +4563,12 @@ $('file-input-any').addEventListener('change',onFilePick);
       }
     }
     if(!pulling)return;
-    // ダンプして translate
+    // ダンプして translate + 進度で回転 (回転はスピナー側に当てる)
     const pull=Math.min(MAX_PULL, dy*DAMP);
+    const ratio=Math.min(1,pull/THRESHOLD);
     indicator.style.transform=`translateY(${pull}px)`;
+    const sp=indicator.querySelector('.ptr-spinner');
+    if(sp)sp.style.transform=`rotate(${ratio*270}deg)`;
     indicator.classList.toggle('ready',pull>=THRESHOLD);
     target.style.transform=`translateY(${pull*0.6}px)`;
     // 引っ張り中はネイティブスクロールを抑える
@@ -4283,7 +4578,7 @@ $('file-input-any').addEventListener('change',onFilePick);
   function onEnd(){
     if(!target)return;
     if(!pulling){target=null;return;}
-    const transform=indicator.style.transform.match(/translateY\((\d+(?:\.\d+)?)px\)/);
+    const transform=(indicator.style.transform||'').match(/translateY\((\d+(?:\.\d+)?)px\)/);
     const pulled=transform?parseFloat(transform[1]):0;
     // スナップアニメーションをON
     indicator.classList.add('snap');
@@ -4300,6 +4595,8 @@ $('file-input-any').addEventListener('change',onFilePick);
     if(indicator){
       indicator.style.transform='translateY(0)';
       indicator.classList.remove('ready');
+      const sp=indicator.querySelector('.ptr-spinner');
+      if(sp)sp.style.transform='';
       setTimeout(()=>{ if(indicator)indicator.style.display='none'; }, 280);
     }
     if(target){
@@ -4311,6 +4608,9 @@ $('file-input-any').addEventListener('change',onFilePick);
 
   async function doRefresh(){
     refreshing=true;
+    // インラインの rotate をクリアして CSS アニメーションに任せる
+    const sp=indicator.querySelector('.ptr-spinner');
+    if(sp)sp.style.transform='';
     indicator.classList.add('spinning');
     indicator.style.transform=`translateY(${THRESHOLD}px)`;
     if(target)target.style.transform=`translateY(${THRESHOLD*0.6}px)`;
