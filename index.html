@@ -504,18 +504,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .feed-list{
   padding:40px 28px;
-  color:white;
+  color:var(--feed-list-fg,#1A1A1A);
   width:100%;
   height:100%;
-  background:linear-gradient(135deg,#2a2a1f,#1a1a14);
+  background:#FFFDF5;
   display:flex;flex-direction:column;justify-content:center;
 }
-.feed-list h3{font-size:16px;margin-bottom:18px;color:#E8A33D;font-weight:500;}
-.feed-list .li{font-size:17px;padding:10px 0;border-bottom:0.5px solid rgba(255,255,255,.1);display:flex;gap:12px;align-items:center;}
-.feed-list .li.done{color:rgba(255,255,255,.4);text-decoration:line-through;}
-.feed-list .li .chk{width:16px;height:16px;border:1.5px solid rgba(255,255,255,.5);border-radius:3px;flex-shrink:0;}
-.feed-list .li.done .chk{background:var(--g);border-color:var(--g);}
-.feed-list .li .li-num{width:16px;font-size:14px;text-align:center;flex-shrink:0;font-family:var(--font-en);color:rgba(255,255,255,.85);}
+.feed-list h3{font-size:16px;margin-bottom:18px;color:inherit;opacity:0.7;font-weight:500;}
+.feed-list .li{font-size:17px;padding:10px 0;border-bottom:0.5px solid rgba(0,0,0,.1);display:flex;gap:12px;align-items:center;}
+.feed-list .li.done{opacity:0.4;text-decoration:line-through;}
+.feed-list .li .chk{width:16px;height:16px;border:1.5px solid currentColor;opacity:0.5;border-radius:3px;flex-shrink:0;}
+.feed-list .li.done .chk{background:var(--g);border-color:var(--g);opacity:1;}
+.feed-list .li .li-num{width:16px;font-size:14px;text-align:center;flex-shrink:0;font-family:var(--font-en);opacity:0.85;}
 .feed-meta{
   position:absolute;
   bottom:24px;left:18px;right:18px;
@@ -1454,6 +1454,110 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--gl);
   color:var(--gd);
 }
+/* タグ行 (詳細画面) */
+.detail-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  padding:10px 20px 4px;
+}
+.detail-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 10px;
+  background:var(--gl);
+  border:0.5px solid var(--g);
+  border-radius:12px;
+  font-size:12px;
+  color:var(--gd);
+  font-weight:500;
+  white-space:nowrap;
+}
+.detail-tag-del{
+  display:flex;align-items:center;justify-content:center;
+  width:14px;height:14px;
+  border-radius:50%;
+  background:rgba(15,110,86,.15);
+  color:var(--gd);
+  font-size:10px;
+  line-height:1;
+  cursor:pointer;
+  flex-shrink:0;
+}
+.detail-tag-del:active{background:var(--g);color:white;}
+/* タグ入力行 (詳細画面) */
+.detail-tag-input-row{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 20px 10px;
+}
+.detail-tag-input-wrap{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  flex:1;
+  background:var(--bg);
+  border-radius:16px;
+  padding:5px 10px;
+  border:0.5px solid var(--line2);
+}
+.detail-tag-input-wrap span{
+  font-size:13px;
+  color:var(--ink3);
+  font-weight:600;
+}
+.detail-tag-input{
+  flex:1;
+  font-size:13px;
+  color:var(--ink);
+  background:transparent;
+  border:none;
+  outline:none;
+  font-family:inherit;
+}
+.detail-tag-input::placeholder{color:var(--ink3);}
+.detail-tag-add-btn{
+  width:30px;height:30px;
+  border-radius:50%;
+  background:var(--g);
+  color:white;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  border:none;cursor:pointer;
+}
+.detail-tag-add-btn:active{background:var(--gd);}
+/* タグフィルター行 (探す画面) */
+.tag-filter-row-wrap{
+  display:flex;
+  gap:6px;
+  padding:0 20px 14px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.tag-filter-row-wrap::-webkit-scrollbar{display:none;}
+.tag-filter-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  padding:5px 12px;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:13px;
+  font-size:12px;
+  color:var(--ink2);
+  font-weight:500;
+  flex-shrink:0;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.tag-filter-chip .tag-hash{color:var(--g);font-weight:700;}
+.tag-filter-chip.on{
+  background:var(--gl);
+  border-color:var(--g);
+  color:var(--gd);
+}
 .pin-strip{
   display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
   margin:0 -20px;padding:0 20px 4px;
@@ -2108,6 +2212,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button class="scope-chip" data-scope="list">リスト</button>
     </div>
     <div class="color-filter-row-wrap" id="color-filter-row"></div>
+    <div class="tag-filter-row-wrap" id="tag-filter-row"></div>
     <div id="search-idle"></div>
     <div id="search-results"></div>
   </div>
@@ -2159,6 +2264,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <div class="detail-img hide" id="detail-img"></div>
     <div class="detail-body">
       <div class="detail-meta" id="detail-meta"></div>
+      <div class="detail-tags" id="detail-tags"></div>
+      <div class="detail-tag-input-row" id="detail-tag-input-row">
+        <div class="detail-tag-input-wrap">
+          <span>#</span>
+          <input class="detail-tag-input" id="detail-tag-input" placeholder="タグを追加…" maxlength="20">
+        </div>
+        <button class="detail-tag-add-btn" id="detail-tag-add-btn" aria-label="タグ追加">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
       <div id="detail-content"></div>
       <div id="detail-chat-log"></div>
     </div>
@@ -2258,6 +2373,7 @@ const state={
   pastMoreOpen:false,  // 今日タブの「もっと前の保存を見る」展開状態
   shelfLastSeen:{},    // 公式棚ごとに最後に開いた時刻 (新着判定用)
   searchColor:null,    // 探すページの色フィルター
+  searchTag:null,      // 探すページのタグフィルター
   // ─── JUKEN CAMP 塾生認証 ───
   auth:null,           // { token, role, studentId, name, group, shelfIds, aiEnabled } または null
   deviceId:null,       // この端末のID (claim時に使う、localStorage永続)
@@ -2567,6 +2683,7 @@ function goto(id,push){
   if(id==='screen-search'){
     // タブを開いた時は色フィルターをクリアして idle を再描画
     state.searchColor=null;
+    state.searchTag=null;
     doSearch();
   }
 }
@@ -3345,11 +3462,13 @@ function renderFeed(el,cards){
       inner=`<div class="feed-note" style="background:${col.bg};color:${col.fg};font-size:${fz}px;">${esc(c.text||'')}</div>`;
       inner+=`<div class="feed-meta" style="color:${col.fg};opacity:0.5;">${fmtDate(c.date)}</div>`;
     }else if(c.type==='list'){
+      const col=colorById(c.color);
       const items=(c.items||[]).map(i=>
         `<div class="li ${i.d?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`
       ).join('');
-      inner=`<div class="feed-list"><h3>${esc(c.title||'リスト')}</h3>${items}</div>`;
-      inner+=`<div class="feed-meta">${fmtDate(c.date)}</div>`;
+      inner=`<div class="feed-list" style="background:${col.bg};color:${col.fg};--feed-list-fg:${col.fg};">` +
+            `<h3 style="color:${col.fg};opacity:0.7;">${esc(c.title||'リスト')}</h3>${items}</div>`;
+      inner+=`<div class="feed-meta" style="color:${col.fg};opacity:0.5;">${fmtDate(c.date)}</div>`;
     }
     if(c.pinned){
       inner+=`<div class="pin-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
@@ -4209,6 +4328,9 @@ function openDetail(c,origin){
   // 公式カードでは入力バー非表示
   $('detail-input-bar').style.display=isOfficial?'none':'';
 
+  // タグ描画
+  renderDetailTags(c);
+
   // 接触記録 (滞在時間)
   detailViewStart=Date.now();
 
@@ -4756,12 +4878,13 @@ function doSearch(){
   const idle=$('search-idle');
   const scope=state.searchScope;
   const colorFilter=state.searchColor||null;
+  const tagFilter=state.searchTag||null;
 
-  // 色フィルターバーは常に描画
+  // 色フィルターバーは常に描画 (タグバーも内部で呼ばれる)
   renderColorFilterBar();
 
-  // 空クエリ + 色フィルターなし → 待機画面
-  if(!q && !colorFilter){
+  // 空クエリ + 色フィルターなし + タグフィルターなし → 待機画面
+  if(!q && !colorFilter && !tagFilter){
     out.innerHTML='';
     renderSearchIdle();
     return;
@@ -4776,9 +4899,10 @@ function doSearch(){
       if(scope==='note' && c.type!=='note')return;
       if(scope==='list' && c.type!=='list')return;
       if(colorFilter && (c.color||'default')!==colorFilter)return;
+      if(tagFilter && !(c.tags||[]).includes(tagFilter))return;
       if(q){
         const aiText=(c.aiLog||[]).map(m=>m.text).join(' ');
-        const hay=(c.text||'')+' '+(c.title||'')+' '+((c.items||[]).map(i=>i.t).join(' '))+' '+(c.ocrText||'')+' '+aiText;
+        const hay=(c.text||'')+' '+(c.title||'')+' '+((c.items||[]).map(i=>i.t).join(' '))+' '+(c.ocrText||'')+' '+aiText+' '+((c.tags||[]).map(t=>'#'+t).join(' '));
         if(!hay.toLowerCase().includes(q))return;
       }
       results.push({card:c,origin:'mine'});
@@ -4851,6 +4975,92 @@ function doSearch(){
   }
 }
 
+
+// ═══ TAG ═══
+
+// カード全体からタグ一覧を収集
+function getAllTags(){
+  const set=new Set();
+  state.cards.forEach(c=>(c.tags||[]).forEach(t=>set.add(t)));
+  return Array.from(set).sort();
+}
+
+// 詳細画面のタグエリアを描画
+function renderDetailTags(c){
+  const area=$('detail-tags');
+  const row=$('detail-tag-input-row');
+  const isOfficial=state.current && state.current._origin==='official';
+  if(!area)return;
+  const tags=c.tags||[];
+  area.innerHTML=tags.map((t,i)=>
+    `<span class="detail-tag" data-tag-idx="${i}">#${esc(t)}`+
+    (isOfficial?'':` <span class="detail-tag-del" data-tag-idx="${i}">✕</span>`)+
+    `</span>`
+  ).join('');
+  // 公式メモはタグ追加不可
+  if(row)row.style.display=isOfficial?'none':'';
+  // 削除ボタン
+  area.querySelectorAll('.detail-tag-del').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const idx=parseInt(btn.dataset.tagIdx);
+      removeTag(idx);
+    });
+  });
+}
+
+function addTag(tagName){
+  tagName=tagName.replace(/^#+/,'').trim().replace(/\s+/g,'');
+  if(!tagName)return;
+  const cIdx=state.cards.findIndex(x=>x.id===state.current.id);
+  if(cIdx<0)return;
+  if(!state.cards[cIdx].tags)state.cards[cIdx].tags=[];
+  if(state.cards[cIdx].tags.includes(tagName)){toast('すでに追加されています');return;}
+  state.cards[cIdx].tags.push(tagName);
+  state.current.tags=state.cards[cIdx].tags;
+  save();
+  renderDetailTags(state.cards[cIdx]);
+  renderTagFilterBar();
+  toast('#'+tagName+' を追加しました');
+}
+
+function removeTag(idx){
+  const cIdx=state.cards.findIndex(x=>x.id===state.current.id);
+  if(cIdx<0)return;
+  if(!state.cards[cIdx].tags)return;
+  const removed=state.cards[cIdx].tags[idx];
+  state.cards[cIdx].tags.splice(idx,1);
+  state.current.tags=state.cards[cIdx].tags;
+  save();
+  renderDetailTags(state.cards[cIdx]);
+  renderTagFilterBar();
+  if(state.searchTag===removed){state.searchTag=null;doSearch();}
+}
+
+// タグフィルターバー (探す画面)
+function renderTagFilterBar(){
+  const bar=$('tag-filter-row');
+  if(!bar)return;
+  const tags=getAllTags();
+  if(tags.length===0){bar.innerHTML='';return;}
+  bar.innerHTML=tags.map(t=>
+    `<button class="tag-filter-chip ${state.searchTag===t?'on':''}" data-tag="${esc(t)}"><span class="tag-hash">#</span>${esc(t)}</button>`
+  ).join('');
+  bar.querySelectorAll('.tag-filter-chip').forEach(el=>{
+    el.addEventListener('click',()=>{
+      state.searchTag=state.searchTag===el.dataset.tag?null:el.dataset.tag;
+      renderTagFilterBar();
+      doSearch();
+    });
+  });
+}
+
+function setTagFilter(tag){
+  state.searchTag=state.searchTag===tag?null:tag;
+  renderTagFilterBar();
+  doSearch();
+}
+
 // 色フィルターバー (常に表示)
 function renderColorFilterBar(){
   const bar=$('color-filter-row');
@@ -4866,6 +5076,7 @@ function renderColorFilterBar(){
   bar.querySelectorAll('.color-filter-chip').forEach(el=>{
     el.addEventListener('click',()=>setColorFilter(el.dataset.colorFilter));
   });
+  renderTagFilterBar();
 }
 
 // 何も検索していないときの待機表示 (ピン留めメモのみ。色チップは永続バーに移動)
@@ -5170,6 +5381,24 @@ $('detail-input').addEventListener('keydown',e=>{
     detailSend();
   }
 });
+
+
+// タグ入力ハンドラ
+(function setupTagInput(){
+  const inp=document.getElementById('detail-tag-input');
+  const btn=document.getElementById('detail-tag-add-btn');
+  if(!inp||!btn)return;
+  function doAdd(){
+    const v=inp.value.trim();
+    if(!v)return;
+    addTag(v);
+    inp.value='';
+  }
+  btn.addEventListener('click',doAdd);
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();doAdd();}
+  });
+})();
 
 $('file-input').addEventListener('change',onFilePick);
 $('file-input-any').addEventListener('change',onFilePick);
