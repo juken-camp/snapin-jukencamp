@@ -1722,33 +1722,24 @@ function autoFontSizeDetail(text){
 }
 
 // 公式棚デモデータ
-const OFFICIAL_SHELVES=[
-  {
-    id:'jc-english', handle:'@jukencamp-english', name:'JUKEN CAMP 英語',
-    desc:'英単語、文法、長文読解の基礎',
-    cards:[
-      {id:'oe1',type:'note',text:'be動詞 + ~ing\n→ 進行形\n「~している」',date:'2026-05-20'},
-      {id:'oe2',type:'note',text:'過去分詞 = -ed (規則)\nbeen, gone, seen (不規則)',date:'2026-05-18'},
-      {id:'oe3',type:'note',text:'関係代名詞 who\n人を説明する。\nThe boy who plays soccer.',date:'2026-05-15'},
-    ]
-  },
-  {
-    id:'jc-math', handle:'@jukencamp-math', name:'JUKEN CAMP 数学',
-    desc:'公式、解法、計算ミス対策',
-    cards:[
-      {id:'om1',type:'note',text:'三平方の定理\na² + b² = c²\n直角三角形のみ',date:'2026-05-19'},
-      {id:'om2',type:'note',text:'解の公式\nx = (-b ± √(b²-4ac)) / 2a',date:'2026-05-17'},
-    ]
-  },
-  {
-    id:'jc-minatogawa3', handle:'@jukencamp-minatogawa3', name:'港川中3 専用棚',
-    desc:'港川中3年向け',
-    cards:[
-      {id:'op1',type:'list',title:'5月の提出物',items:[{t:'数学ワーク p.30-40',d:false},{t:'英語スピーチ原稿',d:true},{t:'理科レポート',d:false}],date:'2026-05-22'},
-      {id:'op2',type:'note',text:'定期テスト範囲\n国語: 漢字 p.45-60\n数学: 二次関数\n英語: Unit 3-4',date:'2026-05-22'},
-    ]
-  },
-];
+// 公式棚データ。起動時に /api/shelves から取得する。
+// (Vercel Redis に保存されているデータをロード)
+let OFFICIAL_SHELVES=[];
+
+async function loadOfficialShelves(){
+  try{
+    const res=await fetch('/api/shelves');
+    if(!res.ok)return;
+    const data=await res.json();
+    OFFICIAL_SHELVES=Array.isArray(data.shelves)?data.shelves:[];
+    // 表示中の画面があれば再描画
+    if(document.getElementById('screen-library')?.classList.contains('active')){
+      renderLibrary();
+    }
+  }catch(err){
+    console.warn('公式棚の取得に失敗:',err);
+  }
+}
 
 // ═══ NAVIGATION ═══
 function navHtml(active){
@@ -1790,7 +1781,10 @@ function goto(id,push){
   }
   if(id==='screen-home')renderHome();
   if(id==='screen-today')renderToday();
-  if(id==='screen-library')renderLibrary();
+  if(id==='screen-library'){
+    loadOfficialShelves();  // 開くたびに最新を取得
+    renderLibrary();
+  }
   if(id==='screen-search'){
     setTimeout(()=>$('search-q').focus(),100);
     doSearch();
@@ -3588,6 +3582,7 @@ $('file-input-any').addEventListener('change',onFilePick);
 
 // 起動
 setupNavs();
+loadOfficialShelves(); // 公式棚をサーバーから取得 (非同期、UIブロックしない)
 if(load() && state.user){
   state.navStack=['screen-home'];
   goto('screen-home',false);
