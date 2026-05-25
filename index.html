@@ -4528,17 +4528,27 @@ function renderLibrary(){
     `;
   }
 
-  const subbed=OFFICIAL_SHELVES.filter(s=>state.subscribed.includes(s.id));
-  const avail=OFFICIAL_SHELVES.filter(s=>!state.subscribed.includes(s.id));
+  const distributed=OFFICIAL_SHELVES.filter(s=>canSeeShelfId(s.id));
+  const subscribable=OFFICIAL_SHELVES.filter(s=>!canSeeShelfId(s.id));
+  const subbed=subscribable.filter(s=>state.subscribed.includes(s.id));
+  const avail=subscribable.filter(s=>!state.subscribed.includes(s.id));
 
-  // 「新着メモ」セクションを描画 (登録ずみ棚で lastSeen 以降に追加された物)
-  // ※ 認証済みの時だけ新着セクションを上書き表示
+  // 「新着メモ」セクションを描画 (配布型 + 登録ずみ購読型)
   if(isStudent()){
-    renderLibNewSection(subbed);
+    const seenShelves=[...distributed,...subbed];
+    renderLibNewSection(seenShelves);
   }
 
   const list=$('lib-list');
   list.innerHTML='';
+  // 配布型を先に表示（登録ボタンなし）
+  distributed.forEach(s=>list.appendChild(libItem(s,true)));
+  // 購読型（登録ずみ → 未登録の順）
+  if(distributed.length>0 && (subbed.length>0||avail.length>0)){
+    const divider=document.createElement('div');
+    divider.className='lib-divider';
+    list.appendChild(divider);
+  }
   subbed.forEach(s=>list.appendChild(libItem(s,true)));
   if(subbed.length>0 && avail.length>0){
     const divider=document.createElement('div');
@@ -4548,15 +4558,15 @@ function renderLibrary(){
   avail.forEach(s=>list.appendChild(libItem(s,false)));
 }
 
-// 登録ずみ棚の中で「新着」(lastSeen 以降に追加) を横スクロールで表示
-function renderLibNewSection(subbed){
+// 配布型 + 登録ずみ購読型の棚で「新着」(lastSeen 以降に追加) を横スクロールで表示
+function renderLibNewSection(seenShelves){
   const sec=$('lib-new-section');
   if(!sec)return;
   // 全棚の新着メモを集める {card, shelf}
   const items=[];
-  for(const s of subbed){
+  for(const s of seenShelves){
     const lastSeen=state.shelfLastSeen[s.id]||0;
-    if(lastSeen===0)continue; // 登録直後は表示しない
+    if(lastSeen===0)continue;
     for(const c of (s.cards||[])){
       const t=c.created||c.t||0;
       if(t>lastSeen)items.push({card:c,shelf:s,t});
@@ -4616,12 +4626,17 @@ function libItem(s,subbed){
   const avatar=s.icon
     ? `<div class="lib-avatar has-icon"><img src="${esc(s.icon)}" alt=""></div>`
     : `<div class="lib-avatar">${esc((s.name||'?').slice(0,1))}</div>`;
+  // 配布型（管理画面からアクセス権が付与されている）かどうか
+  const isDistributed=!locked; // canSeeShelfId=true === 配布型
   let actionHtml;
   if(locked){
     actionHtml=`<span class="lib-locked-icon">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       塾生限定
     </span>`;
+  }else if(isDistributed){
+    // 配布型は登録ボタン不要
+    actionHtml='';
   }else{
     actionHtml=`<button class="lib-action ${subbed?'subbed':''}">${subbed?'登録ずみ':'登録'}</button>`;
   }
@@ -4691,16 +4706,23 @@ function openOfficial(s){
   updateOfficialSubBtn();
   renderGrid($('off-grid'),s.cards,'official');
   goto('screen-official');
-  // 登録ずみの棚を開いたら「見た」とマーク (新着バッジを消す)
-  if(state.subscribed.includes(s.id)){
+  // 配布型、または登録ずみの棚を開いたら「見た」とマーク (新着バッジを消す)
+  if(canSeeShelfId(s.id) || state.subscribed.includes(s.id)){
     markShelfSeen(s.id);
   }
 }
 
 function updateOfficialSubBtn(){
   if(!state.currentOfficial)return;
-  const subbed=state.subscribed.includes(state.currentOfficial.id);
   const btn=$('os-sub');
+  // 配布型（管理画面でアクセス権が付与されている）は登録ボタン不要
+  const isDistributed=canSeeShelfId(state.currentOfficial.id);
+  if(isDistributed){
+    btn.style.display='none';
+    return;
+  }
+  btn.style.display='';
+  const subbed=state.subscribed.includes(state.currentOfficial.id);
   btn.textContent=subbed?'登録ずみ':'登録';
   btn.classList.toggle('on',subbed);
 }
