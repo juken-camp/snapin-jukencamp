@@ -2323,6 +2323,10 @@ function renderToday(){
   // サマリー (各セクション見出しに件数があるので、ここでは何も表示しない)
   $('today-summary').textContent='';
 
+  // 以下のセクションで使うデータを取得
+  const todayCards=getTodayCards();
+  const openTasks=getTodayOpenTasks();
+
   // 復習ブロックは削除済み (機械的判定は感覚を上書きする)
   const rv=$('today-review-section');
   if(rv)rv.innerHTML='';
@@ -3248,7 +3252,7 @@ function saveCard(){
     btn.dataset.saving='1';
     btn.disabled=true;
     btn.classList.add('saved');
-    btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+    btn.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
     if(navigator.vibrate)navigator.vibrate(15);
     setTimeout(()=>{
       state.current=null;
@@ -3262,7 +3266,7 @@ function saveCard(){
       btn.classList.remove('saved');
       btn.disabled=false;
       delete btn.dataset.saving;
-    },700);
+    },900);
   }else{
     state.current=null;
     while(state.navStack.length>1 && state.navStack[state.navStack.length-1]==='screen-upload'){
