@@ -4,11 +4,11 @@
 // 全生徒の index.html から見える状態にする。
 //
 // ─────────────────────────────────────────
-// セットアップ:
-//   1. Vercel ダッシュボードで Upstash Redis (Marketplace) を作成済み
-//      → KV_REST_API_URL, KV_REST_API_TOKEN が自動で環境変数に追加されている
-//   2. ADMIN_PASSWORD を環境変数に追加済み
-//   3. package.json で @upstash/redis を依存に追加
+// キー設計:
+//   snapin:shelf-ids        → ライブラリIDの配列（軽量）
+//   snapin:shelf:{id}       → 各ライブラリのデータ（画像込み、個別保存）
+//
+// これにより、1ライブラリずつ保存するため413エラーを回避できる。
 // ─────────────────────────────────────────
 
 import { Redis } from '@upstash/redis';
@@ -18,14 +18,18 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN,
 });
 
-// 全棚を1つの大きな配列として 'snapin:shelves' というキーに保存する。
-// 棚は10〜30個程度しかない想定なので、これで十分シンプル&高速。
-const KEY = 'snapin:shelves';
+const IDS_KEY = 'snapin:shelf-ids';
+const shelfKey = (id) => `snapin:shelf:${id}`;
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Password');
+}
+
+function checkAuth(req) {
+  const pass = req.headers['x-admin-password'];
+  return process.env.ADMIN_PASSWORD && pass === process.env.ADMIN_PASSWORD;
 }
 
 export default async function handler(req, res) {
@@ -36,11 +40,36 @@ export default async function handler(req, res) {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // GET: 全公開棚を返す (認証不要、誰でも読める)
+  // GET: 全公開棚を返す (認証不要)
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   if (req.method === 'GET') {
     try {
-      const shelves = (await redis.get(KEY)) || [];
+      // IDリストを取得
+      let ids = (await redis.get(IDS_KEY)) || [];
+
+      // 旧データ（snapin:shelves）との後方互換: IDリストが空なら旧キーから移行
+      if (ids.length === 0) {
+        const legacy = (await redis.get('snapin:shelves')) || [];
+        if (legacy.length > 0) {
+          // 旧データを新形式に移行
+          ids = legacy.map(s => s.id).filter(Boolean);
+          await redis.set(IDS_KEY, ids);
+          for (const shelf of legacy) {
+            if (shelf.id) await redis.set(shelfKey(shelf.id), shelf);
+          }
+          // 移行完了後、旧キーは削除しない（安全のため残す）
+          return res.status(200).json({ shelves: legacy });
+        }
+      }
+
+      if (ids.length === 0) {
+        return res.status(200).json({ shelves: [] });
+      }
+
+      // 各ライブラリを並列取得
+      const results = await Promise.all(ids.map(id => redis.get(shelfKey(id))));
+      const shelves = results.filter(Boolean);
+
       return res.status(200).json({ shelves });
     } catch (err) {
       console.error('shelves GET error:', err);
@@ -49,26 +78,76 @@ export default async function handler(req, res) {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // POST: 棚を保存 (管理者専用)
-  // ヘッダー X-Admin-Password が必要
-  // body: { shelves: [...] }  全棚をまるごと保存
+  // POST: 1つのライブラリを保存 (管理者専用)
+  // body: { shelf: {...} }  1ライブラリのみ
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   if (req.method === 'POST') {
-    const pass = req.headers['x-admin-password'];
-    if (!process.env.ADMIN_PASSWORD || pass !== process.env.ADMIN_PASSWORD) {
+    if (!checkAuth(req)) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-      const { shelves } = body || {};
-      if (!Array.isArray(shelves)) {
-        return res.status(400).json({ error: 'shelves must be array' });
+
+      // 旧クライアントとの後方互換: shelves配列で来た場合は全件保存
+      if (Array.isArray(body.shelves)) {
+        const shelves = body.shelves;
+        const ids = shelves.map(s => s.id).filter(Boolean);
+        await redis.set(IDS_KEY, ids);
+        await Promise.all(shelves.map(s => s.id ? redis.set(shelfKey(s.id), s) : null));
+        return res.status(200).json({ ok: true, count: shelves.length });
       }
-      await redis.set(KEY, shelves);
-      return res.status(200).json({ ok: true, count: shelves.length });
+
+      // 新方式: 1ライブラリずつ保存
+      const { shelf } = body || {};
+      if (!shelf || !shelf.id) {
+        return res.status(400).json({ error: 'shelf with id is required' });
+      }
+
+      // IDリストに追加（なければ）
+      let ids = (await redis.get(IDS_KEY)) || [];
+      if (!ids.includes(shelf.id)) {
+        ids.push(shelf.id);
+        await redis.set(IDS_KEY, ids);
+      }
+
+      // ライブラリデータを保存
+      await redis.set(shelfKey(shelf.id), shelf);
+
+      return res.status(200).json({ ok: true });
     } catch (err) {
       console.error('shelves POST error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // DELETE: 1つのライブラリを削除 (管理者専用)
+  // body: { shelfId: 'xxx' }
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if (req.method === 'DELETE') {
+    if (!checkAuth(req)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      const { shelfId } = body || {};
+      if (!shelfId) {
+        return res.status(400).json({ error: 'shelfId is required' });
+      }
+
+      // IDリストから削除
+      let ids = (await redis.get(IDS_KEY)) || [];
+      ids = ids.filter(id => id !== shelfId);
+      await redis.set(IDS_KEY, ids);
+
+      // ライブラリデータを削除
+      await redis.del(shelfKey(shelfId));
+
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('shelves DELETE error:', err);
       return res.status(500).json({ error: err.message });
     }
   }
