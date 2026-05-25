@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SnapIn</title>
-<meta name="theme-color" content="#1D9E75">
+<meta name="theme-color" content="#FAFAF7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SnapIn">
 <link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"SnapIn","short_name":"SnapIn","start_url":"./","display":"standalone","background_color":"%23FAFAF7","theme_color":"%231D9E75","orientation":"portrait","icons":[{"src":"data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22%3E%3Crect width=%22512%22 height=%22512%22 rx=%22112%22 fill=%22%231D9E75%22/%3E%3Ctext x=%22256%22 y=%22360%22 font-family=%22Georgia,serif%22 font-size=%22300%22 font-weight=%22600%22 font-style=%22italic%22 fill=%22white%22 text-anchor=%22middle%22%3ES%3C/text%3E%3C/svg%3E","sizes":"512x512","type":"image/svg+xml"}]}'>
@@ -22,7 +22,7 @@
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{height:100%;background:#000;font-family:var(--font-jp);color:var(--ink);overscroll-behavior:none;-webkit-font-smoothing:antialiased;}
+html,body{height:100%;background:var(--bg);font-family:var(--font-jp);color:var(--ink);overscroll-behavior:none;-webkit-font-smoothing:antialiased;}
 button{font-family:inherit;background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;}
 input,textarea{font-family:inherit;border:none;outline:none;background:none;color:inherit;}
 
@@ -110,7 +110,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-weight:600;
   padding:8px 14px;
   border-radius:18px;
-  transition:all .1s;
+  transition:background .1s, color .1s, transform .1s;
   color:var(--g);
 }
 .bhdr-action:active{
@@ -120,6 +120,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .bhdr-action.primary{
   background:var(--g);
   color:white;
+  min-width:62px;
+  text-align:center;
 }
 .bhdr-action.primary:active{
   background:var(--gd);
@@ -127,8 +129,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .bhdr-action.saved{
   background:var(--gd);
-  transform:scale(1.05);
-  font-size:16px;
+  font-size:15px;
   pointer-events:none;
 }
 
@@ -363,6 +364,80 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   pointer-events:none;
 }
 
+/* ピン留めバッジ */
+.pin-badge{
+  position:absolute;
+  top:6px;left:6px;
+  width:22px;height:22px;
+  background:rgba(0,0,0,.55);
+  color:#fff;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+  z-index:2;
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+}
+.feed-item .pin-badge{top:14px;left:14px;width:28px;height:28px;}
+
+/* グリッドの選択モード (長押しで起動、複数選択して削除) */
+.card.selectable{cursor:pointer;}
+.card.selected{outline:3px solid var(--g);outline-offset:-3px;}
+.card .sel-mark{
+  position:absolute;
+  top:6px;right:6px;
+  width:22px;height:22px;
+  border-radius:50%;
+  background:rgba(255,255,255,.85);
+  border:1.5px solid rgba(0,0,0,.25);
+  display:none;
+  align-items:center;justify-content:center;
+  z-index:3;
+}
+.grid.selecting .card .sel-mark{display:flex;}
+.card.selected .sel-mark{
+  background:var(--g);
+  border-color:var(--g);
+  color:#fff;
+}
+
+/* 選択モードの上部バー */
+.select-bar{
+  position:absolute;
+  top:0;left:0;right:0;
+  height:54px;
+  background:var(--surface);
+  display:flex;
+  align-items:center;
+  padding:0 14px;
+  gap:12px;
+  border-bottom:0.5px solid var(--line);
+  z-index:10;
+  animation:slideDown .15s ease-out;
+}
+@keyframes slideDown{from{transform:translateY(-100%);}to{transform:translateY(0);}}
+.select-bar-cancel{
+  background:none;border:none;
+  color:var(--ink2);
+  font-size:14px;
+  padding:6px 4px;
+}
+.select-bar-count{
+  flex:1;
+  font-size:14px;
+  font-weight:600;
+}
+.select-bar-delete{
+  background:var(--rose);
+  color:white;
+  font-size:13px;
+  font-weight:600;
+  padding:8px 14px;
+  border-radius:18px;
+  border:none;
+}
+.select-bar-delete:disabled{opacity:.35;}
+
 /* モザイク (思い出すモード): うっすらヒントが見える程度 */
 .card.mosaic .ctxt,
 .card.mosaic img{filter:blur(5px) saturate(0.9);}
@@ -373,6 +448,22 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   pointer-events:none;
   z-index:1;
 }
+
+/* リール(フィード)モードのモザイク */
+.feed.mosaic .feed-item img,
+.feed.mosaic .feed-note,
+.feed.mosaic .feed-list{filter:blur(8px) saturate(0.9);}
+.feed.mosaic .feed-item::before{
+  content:"";
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(29,158,117,.12),rgba(15,110,86,.15));
+  pointer-events:none;
+  z-index:1;
+}
+.feed.mosaic .feed-item.tapped img,
+.feed.mosaic .feed-item.tapped .feed-note,
+.feed.mosaic .feed-item.tapped .feed-list{filter:none;}
+.feed.mosaic .feed-item.tapped::before{display:none;}
 
 /* FEED */
 .feed{scroll-snap-type:y mandatory;background:#000;overflow-y:auto;}
@@ -827,6 +918,91 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-bottom-left-radius:5px;
   box-shadow:0 1px 2px rgba(0,0,0,.06);
 }
+.bubble-link{
+  color:inherit;
+  text-decoration:underline;
+  text-underline-offset:2px;
+  word-break:break-all;
+}
+.msg.u .bubble-link{color:#E8F5EF;}
+.detail-text .bubble-link{color:var(--g);text-decoration:underline;}
+
+/* 出典タグ (公式コピー元) */
+.source-tag{
+  margin-top:20px;
+  padding:10px 14px;
+  background:var(--gl);
+  color:var(--gd);
+  border-radius:10px;
+  font-size:12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border-left:3px solid var(--g);
+}
+.source-tag svg{flex-shrink:0;}
+
+/* 新着バッジ (ホームヘッダーの公式アイコン) */
+.home-new-badge{
+  position:absolute;
+  top:-2px;
+  right:-4px;
+  min-width:16px;
+  height:16px;
+  padding:0 4px;
+  background:var(--rose);
+  color:white;
+  font-size:10px;
+  font-weight:700;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  pointer-events:none;
+}
+
+/* 公式タブの各ライブラリ名の隣の新着バッジ */
+.lib-new-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  background:var(--rose);
+  color:white;
+  font-size:11px;
+  font-weight:700;
+  border-radius:9px;
+  margin-left:8px;
+  line-height:1;
+  vertical-align:middle;
+}
+
+/* プルダウン更新インジケーター */
+.ptr-indicator{
+  position:absolute;
+  top:-44px;
+  left:50%;
+  margin-left:-22px;
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  background:var(--surface);
+  box-shadow:0 2px 8px rgba(0,0,0,.12);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  color:var(--ink2);
+  z-index:50;
+  pointer-events:none;
+}
+.ptr-indicator.snap{transition:transform .25s cubic-bezier(.2,.7,.3,1.1);}
+.ptr-indicator.ready{color:var(--g);}
+.ptr-indicator.spinning .ptr-spinner svg{animation:ptr-spin 0.8s linear infinite;}
+@keyframes ptr-spin{to{transform:rotate(360deg);}}
+.scroll.ptr-snap{transition:transform .25s cubic-bezier(.2,.7,.3,1.1);}
 /* 日付セパレーター(中央に半透明丸タブ) */
 .chat-date-sep{
   display:flex;
@@ -912,11 +1088,25 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-size:12px;
   font-weight:600;
   border-radius:14px;
-  color:var(--g);
+  color:white;
   border:1px solid var(--g);
-  background:var(--surface);
+  background:var(--g);
+  flex-shrink:0;
 }
-.lib-action.subbed{background:var(--g);color:white;}
+.lib-action:active{transform:scale(0.95);}
+.lib-action.subbed{
+  background:transparent;
+  color:var(--ink3);
+  border-color:var(--line2);
+  font-weight:500;
+}
+
+/* 登録ずみ / 登録可能 の薄い区切り */
+.lib-divider{
+  height:1px;
+  background:var(--line);
+  margin:8px 20px;
+}
 
 /* 公式棚詳細 */
 .official-simple-hdr{
@@ -933,10 +1123,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   padding:6px 14px;
   font-size:12px;font-weight:600;
   border-radius:14px;
-  color:var(--g);
+  color:white;
+  background:var(--g);
   border:1px solid var(--g);
 }
-.os-sub.on{background:var(--g);color:white;}
+.os-sub.on{
+  background:transparent;
+  color:var(--ink3);
+  border-color:var(--line2);
+  font-weight:500;
+}
 
 /* REVIEW */
 .review-bg{
@@ -1197,6 +1393,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .today-block-icon.review{background:var(--amber);}
 .today-block-icon.tasks{background:var(--sky);}
 .today-block-icon.new{background:var(--g);}
+.today-block-icon.past{background:#7A8B9C;}
 .today-block-icon.forgotten{background:#9C7BB8;}
 .today-block-count{
   font-family:var(--font-en);
@@ -1299,6 +1496,23 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   scrollbar-width:none;
 }
 .today-newcards::-webkit-scrollbar{display:none;}
+.today-more-btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  margin:4px 20px 22px;
+  padding:11px 14px;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:10px;
+  color:var(--ink2);
+  font-size:13px;
+  font-weight:500;
+  width:calc(100% - 40px);
+  transition:background .12s, transform .08s;
+}
+.today-more-btn:active{background:var(--gl);transform:scale(0.98);}
 .today-newcard{
   width:110px;
   aspect-ratio:1;
@@ -1381,7 +1595,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="login-wrap">
     <div class="login-logo">Snap<em>In</em></div>
     <div class="login-by">by JUKEN CAMP</div>
-    <div class="login-tag">写真とメモを置いておく場所。</div>
+    <div class="login-tag">点数アップを逃さないメモ＆ライブラリ</div>
     <button class="login-card" data-action="login-personal">
       <div class="login-card-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
@@ -1402,6 +1616,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="hdr">
     <div class="logo">Snap<em>In</em><span class="logo-by">by JUKEN CAMP</span></div>
     <div class="hdr-icons">
+      <button data-action="goto-library-from-home" id="home-new-btn" aria-label="公式の新着" style="position:relative;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="home-new-badge hide" id="home-new-badge">0</span>
+      </button>
       <div class="view-tog view-tog-hdr">
         <button id="vt-grid" class="on" data-action="view-grid" aria-label="グリッド">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -1460,7 +1678,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <!-- TODAY -->
 <div class="screen" id="screen-today">
-  <div class="scroll">
+  <div class="scroll" id="today-scroll">
     <div class="today-hero">
       <div class="today-date" id="today-date">―</div>
       <div class="today-title" id="today-greeting">おはよう</div>
@@ -1470,6 +1688,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <div id="today-review-section"></div>
     <div id="today-tasks-section"></div>
     <div id="today-new-section"></div>
+    <div id="today-past1-section"></div>
+    <div id="today-past2-section"></div>
+    <div id="today-past3-section"></div>
+    <div id="today-past-more-section"></div>
     <div id="today-forgotten-section"></div>
   </div>
   <div class="bnav" data-bnav="today"></div>
@@ -1477,11 +1699,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <!-- LIBRARY -->
 <div class="screen" id="screen-library">
-  <div class="scroll">
+  <div class="scroll" id="lib-scroll">
     <div style="padding:calc(20px + env(safe-area-inset-top)) 0 0;"></div>
-    <div id="lib-subscribed"></div>
-    <div class="lib-section">公式ライブラリ</div>
-    <div id="lib-available"></div>
+    <div id="lib-list"></div>
   </div>
   <div class="bnav" data-bnav="library"></div>
 </div>
@@ -1494,7 +1714,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </button>
     <div class="bhdr-title" id="off-bhdr-title">―</div>
   </div>
-  <div class="scroll">
+  <div class="scroll" id="off-scroll">
     <div class="official-simple-hdr">
       <div class="os-name" id="os-name">―</div>
       <div class="os-handle" id="os-handle">―</div>
@@ -1558,6 +1778,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button class="menu-item" data-action="edit-card">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
         編集
+      </button>
+      <button class="menu-item" data-action="toggle-pin" id="menu-pin-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+        <span id="menu-pin-label">ピン留め</span>
       </button>
       <button class="menu-item" data-action="open-color-picker" id="menu-color-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 22c5.523 0 10-4.477 10-10 0-4.418-2-7-5-7"/></svg>
@@ -1667,6 +1891,10 @@ const state={
   mosaicMode:false,
   detailAiMode:false,  // 詳細画面でAI送信モードか
   photoMode:null,      // クイック写真撮影中 'photo' | 'photonote' | null
+  selectMode:false,    // グリッドの複数選択モード
+  selectedIds:new Set(),
+  pastMoreOpen:false,  // 今日タブの「もっと前の保存を見る」展開状態
+  shelfLastSeen:{},    // 公式棚ごとに最後に開いた時刻 (新着判定用)
 };
 
 function save(){
@@ -1674,6 +1902,7 @@ function save(){
     user:state.user,
     cards:state.cards,
     subscribed:state.subscribed,
+    shelfLastSeen:state.shelfLastSeen,
   }));
 }
 function load(){
@@ -1684,6 +1913,7 @@ function load(){
     state.user=d.user||null;
     state.cards=d.cards||[];
     state.subscribed=d.subscribed||[];
+    state.shelfLastSeen=d.shelfLastSeen||{};
     return true;
   }catch(e){return false;}
 }
@@ -1736,8 +1966,58 @@ async function loadOfficialShelves(){
     if(document.getElementById('screen-library')?.classList.contains('active')){
       renderLibrary();
     }
+    // ホームのヘッダーバッジも更新
+    updateHomeNewBadge();
   }catch(err){
     console.warn('公式棚の取得に失敗:',err);
+  }
+}
+
+// その棚に「新着メモが何件あるか」を返す
+function newCountForShelf(s){
+  if(!s||!Array.isArray(s.cards))return 0;
+  // 未購読の棚は通知しない (登録した瞬間からの差分を見る)
+  if(!state.subscribed.includes(s.id))return 0;
+  const lastSeen=state.shelfLastSeen[s.id]||0;
+  // lastSeen が 0 (= まだ一度も開いていない) のときは全件を新着扱いしない方が
+  // 「登録した瞬間に全部新着になる」混乱を避けられる
+  if(lastSeen===0)return 0;
+  let n=0;
+  for(const c of s.cards){
+    const t=c.created||c.t||0;
+    if(t>lastSeen)n++;
+  }
+  return n;
+}
+
+// 全登録ライブラリの新着合計 (ホーム上部に表示)
+function totalNewCount(){
+  let n=0;
+  for(const id of state.subscribed){
+    const s=OFFICIAL_SHELVES.find(x=>x.id===id);
+    if(s)n+=newCountForShelf(s);
+  }
+  return n;
+}
+
+// 棚を開いた / 登録した時に「最後に見た時刻」を更新
+function markShelfSeen(shelfId){
+  if(!shelfId)return;
+  state.shelfLastSeen[shelfId]=Date.now();
+  save();
+  updateHomeNewBadge();
+}
+
+// ホーム上部の新着バッジを更新
+function updateHomeNewBadge(){
+  const el=$('home-new-badge');
+  if(!el)return;
+  const n=totalNewCount();
+  if(n>0){
+    el.textContent=n>99?'99+':String(n);
+    el.classList.remove('hide');
+  }else{
+    el.classList.add('hide');
   }
 }
 
@@ -1772,6 +2052,12 @@ function setupNavs(){
 
 function goto(id,push){
   if(push===undefined)push=true;
+  // ホーム以外に移ったら選択モードを解除
+  if(id!=='screen-home' && state.selectMode){
+    state.selectMode=false;
+    state.selectedIds=new Set();
+    hideSelectBar();
+  }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const sc=$(id);
   if(!sc)return;
@@ -1779,7 +2065,7 @@ function goto(id,push){
   if(push && state.navStack[state.navStack.length-1]!==id){
     state.navStack.push(id);
   }
-  if(id==='screen-home')renderHome();
+  if(id==='screen-home'){renderHome();updateHomeNewBadge();}
   if(id==='screen-today')renderToday();
   if(id==='screen-library'){
     loadOfficialShelves();  // 開くたびに最新を取得
@@ -1920,12 +2206,7 @@ function renderToday(){
       </div>
     `;
   }else{
-    rv.innerHTML=`
-      <div class="today-review-empty">
-        見返すメモは今ありません。<br>
-        新しく保存したものが、明日以降ここに現れます。
-      </div>
-    `;
+    rv.innerHTML='';
   }
 
   // 未完のタスク (リスト型カードの未完項目を集約)
@@ -1979,7 +2260,7 @@ function renderToday(){
         <div class="today-block-head">
           <div class="today-block-title">
             <div class="today-block-icon new">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
             </div>
             今日の保存
           </div>
@@ -2009,6 +2290,13 @@ function renderToday(){
   }else{
     newSec.innerHTML='';
   }
+
+  // 昨日 / 2日前 / 3日前 の保存
+  renderPastDaySection(1);
+  renderPastDaySection(2);
+  renderPastDaySection(3);
+  // 4日前以降は「もっと見る」で展開
+  renderPastMoreSection();
 
   // 「久しく見ていない」メモ (14日以上)
   const forgottenSec=$('today-forgotten-section');
@@ -2078,6 +2366,58 @@ function getTodayCards(){
   return state.cards.filter(c=>(c.created||0)>=t);
 }
 
+// daysAgo=1 → 昨日, 2 → 2日前 ...
+function getCardsForDayOffset(daysAgo){
+  const start=new Date();
+  start.setHours(0,0,0,0);
+  const end=start.getTime() - (daysAgo-1)*86400000;
+  const begin=start.getTime() - daysAgo*86400000;
+  return state.cards.filter(c=>{
+    const cr=c.created||0;
+    return cr>=begin && cr<end;
+  });
+}
+
+function renderPastDaySection(daysAgo){
+  const sec=$('today-past'+daysAgo+'-section');
+  if(!sec)return;
+  const cards=getCardsForDayOffset(daysAgo);
+  if(cards.length===0){sec.innerHTML='';return;}
+  const label=daysAgo===1?'昨日の保存':(daysAgo+'日前の保存');
+  sec.innerHTML=`
+    <div class="today-block">
+      <div class="today-block-head">
+        <div class="today-block-title">
+          <div class="today-block-icon past">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </div>
+          ${label}
+        </div>
+        <div class="today-block-count">${cards.length}</div>
+      </div>
+    </div>
+    <div class="today-newcards" id="today-past${daysAgo}-cards"></div>
+  `;
+  const wrap=$('today-past'+daysAgo+'-cards');
+  cards.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='today-newcard '+c.type;
+    if(c.type==='photo'||c.type==='photonote'){
+      el.innerHTML=`<img src="${c.image||''}">`;
+    }else if(c.type==='note'){
+      const col=colorById(c.color);
+      const fz=autoFontSize(c.text||'',11,16);
+      const centered=fz>=14;
+      el.innerHTML=`<div class="ctxt" style="background:${col.bg};color:${col.fg};font-size:${fz}px;${centered?'display:flex;align-items:center;justify-content:center;text-align:center;-webkit-line-clamp:initial;':''}">${esc(c.text||'')}</div>`;
+    }else if(c.type==='list'){
+      const items=(c.items||[]).slice(0,4).map(i=>`<div>・${esc(i.t)}</div>`).join('');
+      el.innerHTML=`<div class="ctxt">${c.title?`<b>${esc(c.title)}</b>`:''}${items}</div>`;
+    }
+    el.addEventListener('click',()=>openDetail(c,'mine'));
+    wrap.appendChild(el);
+  });
+}
+
 function getTodayOpenTasks(){
   // 全リストカードの未完項目を集約 (最大20件)
   const out=[];
@@ -2093,7 +2433,89 @@ function getTodayOpenTasks(){
   return out;
 }
 
+// 4日前以降の保存をまとめる (デフォルトは折りたたみ、ボタンで展開)
+function renderPastMoreSection(){
+  const sec=$('today-past-more-section');
+  if(!sec)return;
+  // 4日前以降、過去90日まで遡って収集 (日付ごとにグループ化)
+  const groups=[];
+  for(let d=4; d<=90; d++){
+    const cards=getCardsForDayOffset(d);
+    if(cards.length>0)groups.push({d,cards});
+  }
+  if(groups.length===0){sec.innerHTML='';return;}
+  const total=groups.reduce((s,g)=>s+g.cards.length,0);
+  const expanded=state.pastMoreOpen;
+  if(!expanded){
+    sec.innerHTML=`
+      <button class="today-more-btn" data-action="toggle-past-more">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        もっと前の保存を見る (${total})
+      </button>
+    `;
+    return;
+  }
+  // 展開状態: 各日付グループを順に表示
+  let html='';
+  for(const g of groups){
+    const label=g.d+'日前の保存';
+    const cardsHtml=g.cards.map(c=>{
+      let body='';
+      if(c.type==='photo'||c.type==='photonote'){
+        body=`<img src="${c.image||''}">`;
+      }else if(c.type==='note'){
+        const col=colorById(c.color);
+        const fz=autoFontSize(c.text||'',11,16);
+        const centered=fz>=14;
+        body=`<div class="ctxt" style="background:${col.bg};color:${col.fg};font-size:${fz}px;${centered?'display:flex;align-items:center;justify-content:center;text-align:center;-webkit-line-clamp:initial;':''}">${esc(c.text||'')}</div>`;
+      }else if(c.type==='list'){
+        const items=(c.items||[]).slice(0,4).map(i=>`<div>・${esc(i.t)}</div>`).join('');
+        body=`<div class="ctxt">${c.title?`<b>${esc(c.title)}</b>`:''}${items}</div>`;
+      }
+      return `<div class="today-newcard ${c.type}" data-card-id="${esc(c.id)}">${body}</div>`;
+    }).join('');
+    html+=`
+      <div class="today-block">
+        <div class="today-block-head">
+          <div class="today-block-title">
+            <div class="today-block-icon past">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            </div>
+            ${label}
+          </div>
+          <div class="today-block-count">${g.cards.length}</div>
+        </div>
+      </div>
+      <div class="today-newcards">${cardsHtml}</div>
+    `;
+  }
+  html+=`
+    <button class="today-more-btn" data-action="toggle-past-more">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+      閉じる
+    </button>
+  `;
+  sec.innerHTML=html;
+  // 各カードにクリックハンドラを付ける
+  sec.querySelectorAll('.today-newcard').forEach(el=>{
+    const id=el.dataset.cardId;
+    if(!id)return;
+    el.addEventListener('click',()=>{
+      const card=state.cards.find(x=>x.id===id);
+      if(card)openDetail(card,'mine');
+    });
+  });
+}
+
 // ═══ HOME ═══
+function sortPinnedFirst(cards){
+  // 元の順序を保ちつつ、ピン留めを先頭に
+  return [...cards].sort((a,b)=>{
+    const pa=a.pinned?1:0, pb=b.pinned?1:0;
+    return pb-pa;
+  });
+}
+
 function renderHome(){
   const empty=$('empty-home');
   const grid=$('grid-home');
@@ -2105,14 +2527,15 @@ function renderHome(){
     feed.classList.add('hide');
   }else{
     empty.classList.add('hide');
+    const sorted=sortPinnedFirst(state.cards);
     if(state.view==='grid'){
       grid.classList.remove('hide');
       feed.classList.add('hide');
-      renderGrid(grid,state.cards,'mine');
+      renderGrid(grid,sorted,'mine');
     }else{
       feed.classList.remove('hide');
       grid.classList.add('hide');
-      renderFeed(feed,state.cards);
+      renderFeed(feed,sorted);
     }
   }
   $('mosaic-btn').classList.toggle('on',state.mosaicMode);
@@ -2121,10 +2544,16 @@ function renderHome(){
 // ═══ GRID ═══
 function renderGrid(el,cards,origin){
   el.innerHTML='';
+  // ホーム以外の呼び出し (公式棚など) では選択モードは使わない
+  const isHome=(el.id==='grid-home' && origin==='mine');
   cards.forEach((c,idx)=>{
     const card=document.createElement('div');
     card.className='card '+c.type;
     if(state.mosaicMode && origin==='mine')card.classList.add('mosaic');
+    if(isHome && state.selectMode){
+      card.classList.add('selectable');
+      if(state.selectedIds.has(c.id))card.classList.add('selected');
+    }
     card.dataset.idx=idx;
     card.dataset.id=c.id;
     card.dataset.origin=origin;
@@ -2148,16 +2577,39 @@ function renderGrid(el,cards,origin){
       const title=c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;color:var(--gd);">${esc(c.title)}</div>`:'';
       inner=`<div class="ctxt">${title}${items}</div>`;
     }
+    // ピン留めバッジ
+    if(origin==='mine' && c.pinned){
+      inner+=`<div class="pin-badge"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
+    }
+    // 選択マーク (常に DOM に置いて CSS で表示制御)
+    if(isHome){
+      inner+=`<div class="sel-mark"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4L19 7"/></svg></div>`;
+    }
     card.innerHTML=inner;
     el.appendChild(card);
   });
 
+  // 選択モードのときはグリッドにマーカークラスを付ける
+  if(isHome){
+    el.classList.toggle('selecting',!!state.selectMode);
+  }
+
   if(origin==='mine'){
-    // タップで詳細画面を開く
     el.querySelectorAll('.card').forEach(card=>{
+      const c=state.cards.find(x=>x.id===card.dataset.id);
+      if(!c)return;
+
+      // 長押しで選択モードに入る (ホームのみ)
+      if(isHome){
+        attachGridLongPress(card,c);
+      }
+
       card.addEventListener('click',()=>{
-        const c=state.cards[parseInt(card.dataset.idx)];
-        if(!c)return;
+        // 選択モード中はタップでトグル
+        if(isHome && state.selectMode){
+          toggleSelect(c.id);
+          return;
+        }
         if(state.mosaicMode){
           if(card.classList.contains('mosaic')){
             card.classList.remove('mosaic');
@@ -2179,9 +2631,100 @@ function renderGrid(el,cards,origin){
   }
 }
 
+// 長押しで選択モード入り (グリッドのみ)
+function attachGridLongPress(cardEl,c){
+  let pressTimer=null,startX=0,startY=0,moved=false;
+  const xy=ev=>ev.touches?[ev.touches[0].clientX,ev.touches[0].clientY]:[ev.clientX,ev.clientY];
+  const onStart=ev=>{
+    if(state.selectMode)return; // 既に選択モードなら長押し不要
+    [startX,startY]=xy(ev);
+    moved=false;
+    pressTimer=setTimeout(()=>{
+      if(moved)return;
+      if(navigator.vibrate)navigator.vibrate(20);
+      enterSelectMode(c.id);
+    },500);
+  };
+  const onMove=ev=>{
+    const [x,y]=xy(ev);
+    if(Math.abs(x-startX)>8 || Math.abs(y-startY)>8){
+      moved=true;
+      clearTimeout(pressTimer);
+    }
+  };
+  const onEnd=()=>{ clearTimeout(pressTimer); };
+  cardEl.addEventListener('touchstart',onStart,{passive:true});
+  cardEl.addEventListener('touchmove',onMove,{passive:true});
+  cardEl.addEventListener('touchend',onEnd);
+  cardEl.addEventListener('touchcancel',onEnd);
+  cardEl.addEventListener('mousedown',onStart);
+  cardEl.addEventListener('mousemove',onMove);
+  cardEl.addEventListener('mouseup',onEnd);
+  cardEl.addEventListener('mouseleave',onEnd);
+}
+
+function enterSelectMode(firstId){
+  state.selectMode=true;
+  state.selectedIds=new Set([firstId]);
+  showSelectBar();
+  renderHome();
+}
+function exitSelectMode(){
+  state.selectMode=false;
+  state.selectedIds=new Set();
+  hideSelectBar();
+  renderHome();
+}
+function toggleSelect(id){
+  if(state.selectedIds.has(id))state.selectedIds.delete(id);
+  else state.selectedIds.add(id);
+  if(state.selectedIds.size===0){
+    exitSelectMode();
+    return;
+  }
+  // バーの件数を更新 + カードの見た目を更新
+  updateSelectBarCount();
+  const card=$('grid-home').querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+  if(card)card.classList.toggle('selected',state.selectedIds.has(id));
+}
+function showSelectBar(){
+  let bar=$('select-bar');
+  if(!bar){
+    bar=document.createElement('div');
+    bar.id='select-bar';
+    bar.className='select-bar';
+    bar.innerHTML=`
+      <button class="select-bar-cancel" data-action="exit-select">キャンセル</button>
+      <div class="select-bar-count" id="select-bar-count">1件選択中</div>
+      <button class="select-bar-delete" data-action="delete-selected">削除</button>
+    `;
+    document.querySelector('.app').appendChild(bar);
+  }
+  bar.style.display='flex';
+  updateSelectBarCount();
+}
+function hideSelectBar(){
+  const bar=$('select-bar');
+  if(bar)bar.style.display='none';
+}
+function updateSelectBarCount(){
+  const el=$('select-bar-count');
+  if(el)el.textContent=state.selectedIds.size+'件選択中';
+}
+function deleteSelected(){
+  const n=state.selectedIds.size;
+  if(n===0)return;
+  if(!confirm(`${n}件のメモを削除しますか?`)){return;}
+  state.cards=state.cards.filter(c=>!state.selectedIds.has(c.id));
+  save();
+  toast(`${n}件削除しました`);
+  exitSelectMode();
+}
+
 // ═══ FEED ═══
 function renderFeed(el,cards){
   el.innerHTML='';
+  el.classList.toggle('mosaic',!!state.mosaicMode);
   cards.forEach(c=>{
     const item=document.createElement('div');
     item.className='feed-item';
@@ -2202,8 +2745,18 @@ function renderFeed(el,cards){
       inner=`<div class="feed-list"><h3>${esc(c.title||'リスト')}</h3>${items}</div>`;
       inner+=`<div class="feed-meta">${fmtDate(c.date)}</div>`;
     }
+    if(c.pinned){
+      inner+=`<div class="pin-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
+    }
     item.innerHTML=inner;
-    item.addEventListener('click',()=>openDetail(c,'mine'));
+    // モザイクモード時: 1タップで blur 解除、2タップ目で詳細
+    item.addEventListener('click',()=>{
+      if(state.mosaicMode && !item.classList.contains('tapped')){
+        item.classList.add('tapped');
+        return;
+      }
+      openDetail(c,'mine');
+    });
     el.appendChild(item);
   });
 }
@@ -2410,7 +2963,7 @@ function renderUpload(){
     // 写真+メモ なら textarea
     const ta=document.createElement('textarea');
     ta.className='up-text';
-    ta.placeholder='一言メモ (任意)';
+    ta.placeholder='メモをする';
     ta.value=c.text||'';
     ta.addEventListener('input',e=>{
       state.current.text=e.target.value;
@@ -2776,7 +3329,7 @@ function renderChatLog(c){
     div.dataset.midx=idx;
     div.innerHTML=`
       <div class="msg-time">${chatTimeLabel(t)}</div>
-      <div class="bubble">${esc(m.text)}</div>
+      <div class="bubble">${linkify(m.text)}</div>
     `;
     log.appendChild(div);
 
@@ -2857,9 +3410,9 @@ function openDetail(c,origin){
       const fz=autoFontSizeDetail(c.text||'');
       const isShort=fz>=24;
       const style=`background:${col.bg};color:${col.fg};font-size:${fz}px;padding:${isShort?'40px 24px':'24px 20px'};border-radius:12px;line-height:1.5;${isShort?'text-align:center;':''}`;
-      contentHtml=`<div class="detail-text" style="${style}">${esc(c.text||'')}</div>`;
+      contentHtml=`<div class="detail-text" style="${style}">${linkify(c.text||'')}</div>`;
     }else{
-      contentHtml=`<div class="detail-text">${esc(c.text||'')}</div>`;
+      contentHtml=`<div class="detail-text">${linkify(c.text||'')}</div>`;
     }
   }else if(c.type==='list'){
     const title=c.title?`<div style="font-size:17px;font-weight:600;margin-bottom:14px;">${esc(c.title)}</div>`:'';
@@ -2902,6 +3455,16 @@ function openDetail(c,origin){
     </button>`;
   }
 
+  // 出典タグ (公式メモからコピーしたものに表示。編集不可で消えない)
+  if(!isOfficial && c.sourceShelf){
+    contentHtml+=`
+      <div class="source-tag">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>${esc(c.sourceShelf.handle)} の公式ライブラリより</span>
+      </div>
+    `;
+  }
+
   $('detail-content').innerHTML=contentHtml;
   $('detail-chat-log').innerHTML='';
 
@@ -2930,6 +3493,14 @@ function openDetail(c,origin){
   $('detail-input').style.height='auto';
   $('detail-ai-toggle').classList.remove('on');
   $('detail-input-send').style.background='var(--g)';
+
+  // ピン留めメニューの表示・ラベル更新
+  const pinBtn=$('menu-pin-btn');
+  const pinLabel=$('menu-pin-label');
+  if(pinBtn){
+    pinBtn.style.display=isOfficial?'none':'';
+    if(pinLabel)pinLabel.textContent=c.pinned?'ピン留めを外す':'ピン留め';
+  }
 
   // 公式カードでは入力バー非表示
   $('detail-input-bar').style.display=isOfficial?'none':'';
@@ -3012,9 +3583,6 @@ function toggleAiMode(){
   // 送信ボタンの色も変える
   $('detail-input-send').style.background=state.detailAiMode?'var(--sky)':'var(--g)';
   inp.focus();
-  if(state.detailAiMode){
-    toast('AIモード: 質問を書いて送ると AI に聞きます');
-  }
 }
 
 async function detailSend(){
@@ -3147,6 +3715,20 @@ function deleteCard(){
   back();
 }
 
+function togglePin(){
+  $('detail-menu').classList.remove('on');
+  if(!state.current)return;
+  if(state.current._origin==='official'){toast('公式メモはピン留めできません');return;}
+  const idx=state.cards.findIndex(x=>x.id===state.current.id);
+  if(idx<0)return;
+  const willPin=!state.cards[idx].pinned;
+  state.cards[idx].pinned=willPin;
+  state.current.pinned=willPin;
+  save();
+  toast(willPin?'ピン留めしました':'ピン留めを外しました');
+  // 詳細を開いたまま、ホームに戻ったときに並び替えが反映される
+}
+
 // カラーピッカー
 function openColorPicker(){
   $('detail-menu').classList.remove('on');
@@ -3192,6 +3774,14 @@ function copyToShelf(){
   c.stage=0;
   c.lastReview=null;
   c.reviewCount=0;
+  // 出典タグ (公式メモのコピー元を残す)
+  if(state.currentOfficial){
+    c.sourceShelf={
+      id:state.currentOfficial.id,
+      handle:state.currentOfficial.handle,
+      name:state.currentOfficial.name||state.currentOfficial.handle,
+    };
+  }
   state.cards.unshift(c);
   save();
   toast('自分のメモに保存しました');
@@ -3201,32 +3791,30 @@ function copyToShelf(){
 function renderLibrary(){
   const subbed=OFFICIAL_SHELVES.filter(s=>state.subscribed.includes(s.id));
   const avail=OFFICIAL_SHELVES.filter(s=>!state.subscribed.includes(s.id));
-
-  const subList=$('lib-subscribed');
-  const availList=$('lib-available');
-
-  subList.innerHTML='';
-  if(subbed.length>0){
-    const h=document.createElement('div');
-    h.className='lib-section';
-    h.textContent='登録ずみ';
-    subList.appendChild(h);
-    subbed.forEach(s=>subList.appendChild(libItem(s,true)));
+  // 登録ずみが上、登録可能が下。間に薄い区切り線
+  const list=$('lib-list');
+  list.innerHTML='';
+  subbed.forEach(s=>list.appendChild(libItem(s,true)));
+  if(subbed.length>0 && avail.length>0){
+    const divider=document.createElement('div');
+    divider.className='lib-divider';
+    list.appendChild(divider);
   }
-  availList.innerHTML='';
-  avail.forEach(s=>availList.appendChild(libItem(s,false)));
+  avail.forEach(s=>list.appendChild(libItem(s,false)));
 }
 
 function libItem(s,subbed){
   const el=document.createElement('div');
   el.className='lib-item';
+  const newN=subbed?newCountForShelf(s):0;
+  const badge=newN>0?`<span class="lib-new-badge">${newN>99?'99+':newN}</span>`:'';
   el.innerHTML=`
     <div class="lib-avatar">${esc(s.name.slice(0,1))}</div>
     <div class="lib-info">
-      <div class="lib-name">${esc(s.name)}</div>
+      <div class="lib-name">${esc(s.name)}${badge}</div>
       <div class="lib-handle">${esc(s.handle)}</div>
     </div>
-    <button class="lib-action ${subbed?'subbed':''}">${subbed?'登録中':'登録'}</button>
+    <button class="lib-action ${subbed?'subbed':''}">${subbed?'登録ずみ':'登録'}</button>
   `;
   el.addEventListener('click',e=>{
     if(e.target.closest('.lib-action'))return;
@@ -3241,10 +3829,18 @@ function libItem(s,subbed){
 
 function toggleSubById(id){
   const i=state.subscribed.indexOf(id);
-  if(i>=0)state.subscribed.splice(i,1);
-  else state.subscribed.push(id);
+  if(i>=0){
+    state.subscribed.splice(i,1);
+    // 解除時はその棚の lastSeen も消す (次に再登録した時に新着扱いされないため)
+    delete state.shelfLastSeen[id];
+  }else{
+    state.subscribed.push(id);
+    // 登録した瞬間を「見た」とする → 既存メモは新着扱いせず、以降の追加だけがバッジに反映される
+    state.shelfLastSeen[id]=Date.now();
+  }
   save();
   renderLibrary();
+  updateHomeNewBadge();
   if(state.currentOfficial && state.currentOfficial.id===id)updateOfficialSubBtn();
   toast(i>=0?'解除しました':'登録しました');
 }
@@ -3259,13 +3855,18 @@ function openOfficial(s){
   updateOfficialSubBtn();
   renderGrid($('off-grid'),s.cards,'official');
   goto('screen-official');
+  // 登録ずみの棚を開いたら「見た」とマーク (新着バッジを消す)
+  if(state.subscribed.includes(s.id)){
+    markShelfSeen(s.id);
+    // 戻ったときに件数表示も更新するため、Libraryも再描画予約
+  }
 }
 
 function updateOfficialSubBtn(){
   if(!state.currentOfficial)return;
   const subbed=state.subscribed.includes(state.currentOfficial.id);
   const btn=$('os-sub');
-  btn.textContent=subbed?'登録中':'登録';
+  btn.textContent=subbed?'登録ずみ':'登録';
   btn.classList.toggle('on',subbed);
 }
 
@@ -3467,6 +4068,30 @@ function esc(s){
   if(s==null)return '';
   return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// URLを安全にリンク化: 1) URLとテキストに分割 2) テキスト部分のみescape 3) URLは<a>に
+function linkify(s){
+  if(s==null)return '';
+  const str=String(s);
+  // http(s)://... または www. で始まるもの
+  const re=/(https?:\/\/[^\s<>"]+|www\.[^\s<>"]+)/g;
+  let out='', last=0, m;
+  while((m=re.exec(str))!==null){
+    out+=esc(str.slice(last,m.index));
+    let url=m[0];
+    // 末尾の句読点を除外 (日本語の「。、」や英語の.,;)
+    let trail='';
+    while(/[.,;:!?。、)）」』]$/.test(url)){
+      trail=url.slice(-1)+trail;
+      url=url.slice(0,-1);
+    }
+    const href=url.startsWith('www.')?'https://'+url:url;
+    out+=`<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" class="bubble-link">${esc(url)}</a>`+esc(trail);
+    last=m.index+m[0].length;
+  }
+  out+=esc(str.slice(last));
+  // 改行も保持
+  return out;
+}
 function fmtDate(d){return d?d.replace(/-/g,'.'):'';}
 let toastT=null;
 function toast(msg){
@@ -3527,6 +4152,7 @@ document.addEventListener('click',e=>{
     case 'toggle-menu':$('detail-menu').classList.toggle('on');e.stopPropagation();break;
     case 'edit-card':editCard();break;
     case 'delete-card':deleteCard();break;
+    case 'toggle-pin':togglePin();break;
     case 'copy-to-shelf':copyToShelf();break;
     case 'open-color-picker':openColorPicker();break;
     case 'close-color':closeColorPicker();break;
@@ -3538,6 +4164,10 @@ document.addEventListener('click',e=>{
     case 'quick-save':quickSave();break;
     case 'ocr-rerun':ocrRerun();break;
     case 'ocr-retake':ocrRetake();break;
+    case 'exit-select':exitSelectMode();break;
+    case 'delete-selected':deleteSelected();break;
+    case 'toggle-past-more':state.pastMoreOpen=!state.pastMoreOpen;renderToday();break;
+    case 'goto-library-from-home':goto('screen-library');break;
   }
 });
 
@@ -3579,6 +4209,156 @@ $('detail-input').addEventListener('keydown',e=>{
 
 $('file-input').addEventListener('change',onFilePick);
 $('file-input-any').addEventListener('change',onFilePick);
+
+// ═══ PULL TO REFRESH ═══
+// 各 .scroll コンテナで、頂部から下に引っ張ると更新する
+(function setupPullToRefresh(){
+  const THRESHOLD=70;      // この距離以上引いたら更新
+  const MAX_PULL=110;      // 最大変位
+  const DAMP=0.55;         // 引っ張り抵抗 (1.0で1:1、低いほど重い)
+  let startY=0, lastY=0, pulling=false, target=null, indicator=null, refreshing=false;
+
+  function makeIndicator(){
+    const el=document.createElement('div');
+    el.className='ptr-indicator';
+    el.innerHTML=`<div class="ptr-spinner"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></div>`;
+    return el;
+  }
+
+  function activeScrollEl(){
+    const screen=document.querySelector('.screen.active');
+    if(!screen)return null;
+    return screen.querySelector('.scroll');
+  }
+
+  function onStart(e){
+    if(refreshing)return;
+    // 選択モード中・モーダル中・追加シート中はPTRしない
+    if(state.selectMode)return;
+    if($('add-sheet') && $('add-sheet').classList.contains('on'))return;
+    if($('color-sheet') && $('color-sheet').classList.contains('on'))return;
+    const sc=activeScrollEl();
+    if(!sc)return;
+    // 詳細画面 / アップロード画面では更新の必要がないのでスキップ
+    const screen=document.querySelector('.screen.active');
+    if(screen && (screen.id==='screen-detail' || screen.id==='screen-upload' || screen.id==='screen-login' || screen.id==='screen-review'))return;
+    if(sc.scrollTop>0)return; // 頂部でないと開始しない
+    target=sc;
+    startY=e.touches[0].clientY;
+    lastY=startY;
+    pulling=false;
+  }
+
+  function onMove(e){
+    if(!target||refreshing)return;
+    const y=e.touches[0].clientY;
+    const dy=y-startY;
+    lastY=y;
+    if(dy<=0){
+      // 上方向は無視 (普通のスクロール)
+      if(pulling){resetIndicator();pulling=false;}
+      return;
+    }
+    // 下方向に十分動いたら pulling 開始
+    if(dy>5){
+      if(!pulling){
+        pulling=true;
+        if(!indicator){indicator=makeIndicator();document.querySelector('.app').appendChild(indicator);}
+        indicator.style.display='flex';
+        // ドラッグ中はトランジションを切る (指追従)
+        indicator.classList.remove('snap');
+        target.classList.remove('ptr-snap');
+      }
+    }
+    if(!pulling)return;
+    // ダンプして translate
+    const pull=Math.min(MAX_PULL, dy*DAMP);
+    indicator.style.transform=`translateY(${pull}px)`;
+    indicator.classList.toggle('ready',pull>=THRESHOLD);
+    target.style.transform=`translateY(${pull*0.6}px)`;
+    // 引っ張り中はネイティブスクロールを抑える
+    if(e.cancelable)e.preventDefault();
+  }
+
+  function onEnd(){
+    if(!target)return;
+    if(!pulling){target=null;return;}
+    const transform=indicator.style.transform.match(/translateY\((\d+(?:\.\d+)?)px\)/);
+    const pulled=transform?parseFloat(transform[1]):0;
+    // スナップアニメーションをON
+    indicator.classList.add('snap');
+    target.classList.add('ptr-snap');
+    if(pulled>=THRESHOLD){
+      doRefresh();
+    }else{
+      resetIndicator();
+    }
+    pulling=false;
+  }
+
+  function resetIndicator(){
+    if(indicator){
+      indicator.style.transform='translateY(0)';
+      indicator.classList.remove('ready');
+      setTimeout(()=>{ if(indicator)indicator.style.display='none'; }, 280);
+    }
+    if(target){
+      target.style.transform='';
+      // 次回ドラッグまで snap を残しておく (戻りアニメ用)
+      setTimeout(()=>{if(target)target.classList.remove('ptr-snap');target=null;}, 280);
+    }
+  }
+
+  async function doRefresh(){
+    refreshing=true;
+    indicator.classList.add('spinning');
+    indicator.style.transform=`translateY(${THRESHOLD}px)`;
+    if(target)target.style.transform=`translateY(${THRESHOLD*0.6}px)`;
+    if(navigator.vibrate)navigator.vibrate(10);
+    try{
+      await refreshActiveScreen();
+    }catch(err){
+      console.warn('refresh failed',err);
+    }
+    // 少し見せてから戻す
+    setTimeout(()=>{
+      indicator.classList.remove('spinning');
+      resetIndicator();
+      refreshing=false;
+    },350);
+  }
+
+  // 画面ごとの「更新」処理
+  async function refreshActiveScreen(){
+    const screen=document.querySelector('.screen.active');
+    if(!screen)return;
+    const id=screen.id;
+    if(id==='screen-home'){
+      await loadOfficialShelves();
+      renderHome();
+      updateHomeNewBadge();
+    }else if(id==='screen-today'){
+      renderToday();
+    }else if(id==='screen-library'){
+      await loadOfficialShelves();
+      renderLibrary();
+    }else if(id==='screen-official'){
+      await loadOfficialShelves();
+      // 同じIDの最新棚で再描画
+      if(state.currentOfficial){
+        const fresh=OFFICIAL_SHELVES.find(x=>x.id===state.currentOfficial.id);
+        if(fresh)openOfficial(fresh);
+      }
+    }else if(id==='screen-search'){
+      doSearch();
+    }
+  }
+
+  document.addEventListener('touchstart',onStart,{passive:true});
+  document.addEventListener('touchmove',onMove,{passive:false});
+  document.addEventListener('touchend',onEnd);
+  document.addEventListener('touchcancel',onEnd);
+})();
 
 // 起動
 setupNavs();
