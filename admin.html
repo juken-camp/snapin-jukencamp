@@ -569,6 +569,84 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .color-swatch.on{border-color:var(--g);}
 
+/* クロスポスト: 共有する公式ライブラリ */
+.share-row{
+  background:var(--surface);
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:14px;
+}
+.share-row-label{
+  font-size:12px;
+  color:var(--ink3);
+  margin-bottom:10px;
+  font-weight:500;
+}
+.share-opt{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 0;
+  font-size:14px;
+  color:var(--ink);
+  cursor:pointer;
+}
+.share-opt + .share-opt{border-top:0.5px solid var(--line);}
+.share-opt.master{color:var(--ink3);cursor:default;}
+.share-opt:active:not(.master){opacity:.6;}
+.share-check{
+  width:22px;height:22px;
+  border-radius:6px;
+  border:1.5px solid var(--line2);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  background:var(--surface);
+  color:#fff;
+  transition:background .12s ease,border-color .12s ease;
+}
+.share-opt.on .share-check{background:var(--g);border-color:var(--g);}
+.share-opt.master .share-check{background:var(--ink3);border-color:var(--ink3);}
+.share-check svg{width:14px;height:14px;display:none;}
+.share-opt.on .share-check svg,
+.share-opt.master .share-check svg{display:block;}
+.share-mini-avatar{
+  width:26px;height:26px;
+  border-radius:50%;
+  background:var(--gl);
+  color:var(--gd);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;
+  overflow:hidden;flex-shrink:0;
+}
+.share-mini-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+.share-opt-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.share-opt-tag{font-size:11px;color:var(--ink3);}
+
+/* 共有バッジ (メモグリッド) */
+.memo-share-badge{
+  position:absolute;
+  top:6px;left:6px;
+  background:rgba(0,0,0,.55);
+  color:#fff;
+  font-size:10px;
+  font-weight:600;
+  padding:2px 6px;
+  border-radius:8px;
+  display:flex;align-items:center;gap:3px;
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+  z-index:2;
+}
+.memo-share-badge svg{width:9px;height:9px;}
+.memo-card.is-ref{opacity:.7;}
+.memo-card.is-ref::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  border:1.5px dashed var(--line2);
+  pointer-events:none;
+}
+
 /* リスト編集 */
 .list-edit{
   background:var(--surface);
@@ -1012,6 +1090,14 @@ async function deleteShelf(id){
   const s=state.shelves.find(x=>x.id===id);
   if(!s)return;
   if(!confirm(`「${s.name}」を削除しますか？\nこの公式ライブラリを登録している生徒の端末からは消えません(各端末のキャッシュとして残ります)。`))return;
+  // このライブラリにあった実体メモのIDを集める
+  const masterIds=new Set((s.cards||[]).filter(c=>!c._ref).map(c=>c.id));
+  // 他のライブラリにある「このライブラリを元にした参照」を一掃
+  state.shelves.forEach(other=>{
+    if(other.id===id)return;
+    if(!Array.isArray(other.cards))return;
+    other.cards=other.cards.filter(c=>!(c._ref && (c._originShelf===id || masterIds.has(c.id))));
+  });
   state.shelves=state.shelves.filter(x=>x.id!==id);
   if(state.selectedId===id)state.selectedId=null;
   await saveShelves();
@@ -1138,21 +1224,56 @@ function renderMemoGrid(){
   if(!s)return;
   const grid=$('memo-grid');
   grid.innerHTML='';
-  (s.cards||[]).forEach((c,idx)=>{
-    const cell=document.createElement('div');
-    cell.className='memo-card '+(c.type||'note');
-    let inner='';
-    if(c.type==='photo' || c.type==='photonote'){
-      inner=`<img src="${esc(c.image||'')}" alt="">`;
-      if(c.text)inner+=`<div class="ctxt" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:white;padding:6px 8px;font-size:10px;-webkit-line-clamp:2;">${esc(c.text)}</div>`;
-    }else if(c.type==='note'){
-      const col=colorById(c.color);
-      inner=`<div class="ctxt" style="background:${col.bg};color:${col.fg};">${esc(c.text||'')}</div>`;
-    }else if(c.type==='list'){
-      const items=(c.items||[]).slice(0,5).map(i=>`<div>・${esc(i.t)}</div>`).join('');
-      inner=`<div class="ctxt">${c.title?`<b>${esc(c.title)}</b><br>`:''}${items}</div>`;
+  // 全ライブラリの実体カードをIDで索引(参照の解決用)
+  const byId=new Map();
+  for(const sh of state.shelves){
+    for(const cc of (sh.cards||[])){
+      if(!cc._ref)byId.set(cc.id,{card:cc,shelf:sh});
     }
-    cell.innerHTML=inner;
+  }
+  (s.cards||[]).forEach((c,idx)=>{
+    let displayCard=c;
+    let isRef=false;
+    let originShelf=null;
+    if(c._ref){
+      const origin=byId.get(c.id);
+      if(!origin)return; // 解決できない参照はスキップ
+      displayCard=origin.card;
+      originShelf=origin.shelf;
+      isRef=true;
+    }
+    const cell=document.createElement('div');
+    cell.className='memo-card '+(displayCard.type||'note')+(isRef?' is-ref':'');
+    let inner='';
+    if(displayCard.type==='photo' || displayCard.type==='photonote'){
+      inner=`<img src="${esc(displayCard.image||'')}" alt="">`;
+      if(displayCard.text)inner+=`<div class="ctxt" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:white;padding:6px 8px;font-size:10px;-webkit-line-clamp:2;">${esc(displayCard.text)}</div>`;
+    }else if(displayCard.type==='note'){
+      const col=colorById(displayCard.color);
+      inner=`<div class="ctxt" style="background:${col.bg};color:${col.fg};">${esc(displayCard.text||'')}</div>`;
+    }else if(displayCard.type==='list'){
+      const items=(displayCard.items||[]).slice(0,5).map(i=>`<div>・${esc(i.t)}</div>`).join('');
+      inner=`<div class="ctxt">${displayCard.title?`<b>${esc(displayCard.title)}</b><br>`:''}${items}</div>`;
+    }
+    // 共有バッジ
+    let badge='';
+    if(isRef){
+      // 参照 = 他から共有されたメモ
+      badge=`<div class="memo-share-badge" title="${esc(originShelf.name||'')} から共有">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+        共有
+      </div>`;
+    }else if(Array.isArray(displayCard.sharedWith) && displayCard.sharedWith.length>0){
+      // マスター = 他に共有しているメモ
+      const validCount=displayCard.sharedWith.filter(id=>state.shelves.some(x=>x.id===id)).length;
+      if(validCount>0){
+        badge=`<div class="memo-share-badge" title="${validCount}個のライブラリにも共有中">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+          ${validCount}
+        </div>`;
+      }
+    }
+    cell.innerHTML=badge+inner;
     cell.addEventListener('click',()=>openMemoModal(c));
     grid.appendChild(cell);
   });
@@ -1176,6 +1297,21 @@ function openMemoModal(card){
       items:[{t:''}],
       created:Date.now(),
     };
+  }else if(card._ref){
+    // 参照を開かれたらマスターのライブラリに切り替えて実体を編集
+    const origin=state.shelves.find(x=>x.id===card._originShelf);
+    const real=origin && (origin.cards||[]).find(x=>x.id===card.id && !x._ref);
+    if(origin && real){
+      state.selectedId=origin.id;
+      renderShelfList();
+      const panel=$('shelf-edit-panel');
+      if(panel)renderShelfEdit();
+      toast(`「${origin.name||''}」のメモを編集します`);
+      card=real;
+    }else{
+      toast('元のメモが見つかりません');
+      return;
+    }
   }
   state.editingMemo=Object.assign({},card,{_new:isNew});
   $('memo-modal-title').textContent=isNew?'新しいメモ':'メモを編集';
@@ -1271,7 +1407,38 @@ function renderMemoModalBody(){
 
   const delHtml=m._new?'':`<button class="modal-del" id="memo-del">このメモを削除</button>`;
 
-  body.innerHTML=typeHtml+editHtml+delHtml;
+  // 共有する公式ライブラリ (クロスポスト)
+  const s=getSelectedShelf();
+  const masterId=s?s.id:null;
+  const otherShelves=state.shelves.filter(x=>x.id!==masterId);
+  if(!Array.isArray(m.sharedWith))m.sharedWith=[];
+  const sharedWith=m.sharedWith;
+  let shareHtml='';
+  if(masterId && otherShelves.length>0){
+    shareHtml=`
+      <div class="share-row">
+        <div class="share-row-label">共有する公式ライブラリ</div>
+        <div class="share-opt master">
+          <div class="share-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+          ${s.icon?`<div class="share-mini-avatar"><img src="${esc(s.icon)}" alt=""></div>`:`<div class="share-mini-avatar">${esc((s.name||'?').slice(0,1))}</div>`}
+          <div class="share-opt-name">${esc(s.name||'(無題)')}</div>
+          <div class="share-opt-tag">投稿元</div>
+        </div>
+        ${otherShelves.map(o=>{
+          const on=sharedWith.includes(o.id);
+          return `
+            <div class="share-opt ${on?'on':''}" data-share-toggle="${esc(o.id)}">
+              <div class="share-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+              ${o.icon?`<div class="share-mini-avatar"><img src="${esc(o.icon)}" alt=""></div>`:`<div class="share-mini-avatar">${esc((o.name||'?').slice(0,1))}</div>`}
+              <div class="share-opt-name">${esc(o.name||'(無題)')}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  body.innerHTML=typeHtml+editHtml+shareHtml+delHtml;
 
   // type切替
   body.querySelectorAll('[data-set-type]').forEach(btn=>{
@@ -1367,6 +1534,18 @@ function renderMemoModalBody(){
       renderMemoModalBody();
     });
   }
+  // 共有トグル (クロスポスト)
+  body.querySelectorAll('[data-share-toggle]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const id=el.dataset.shareToggle;
+      if(!Array.isArray(state.editingMemo.sharedWith))state.editingMemo.sharedWith=[];
+      const arr=state.editingMemo.sharedWith;
+      const i=arr.indexOf(id);
+      if(i>=0)arr.splice(i,1);
+      else arr.push(id);
+      renderMemoModalBody();
+    });
+  });
   // delete
   const delBtn=$('memo-del');
   if(delBtn){
@@ -1476,6 +1655,10 @@ async function saveMemoFromModal(){
   const memo=Object.assign({},m);
   delete memo._new;
   memo.created=memo.created||Date.now();
+  // sharedWith は配列を保証 + 存在しない or 自分自身のIDは掃除
+  if(!Array.isArray(memo.sharedWith))memo.sharedWith=[];
+  memo.sharedWith=memo.sharedWith.filter(id=>id!==s.id && state.shelves.some(x=>x.id===id));
+
   if(!s.cards)s.cards=[];
   if(m._new){
     s.cards.unshift(memo);
@@ -1484,6 +1667,24 @@ async function saveMemoFromModal(){
     if(idx>=0)s.cards[idx]=memo;
     else s.cards.unshift(memo);
   }
+
+  // 他のライブラリ: この memo.id の既存参照を全部消してから、sharedWith に含まれる所だけ参照を追加
+  state.shelves.forEach(other=>{
+    if(other.id===s.id)return;
+    if(!Array.isArray(other.cards))other.cards=[];
+    // 既存の参照(同じID)があれば、created を引き継いで残せる
+    const existingRef=other.cards.find(c=>c.id===memo.id && c._ref);
+    other.cards=other.cards.filter(c=>c.id!==memo.id);
+    if(memo.sharedWith.includes(other.id)){
+      other.cards.unshift({
+        id:memo.id,
+        _ref:true,
+        _originShelf:s.id,
+        // 既存の参照があればその時刻を残す(新着の重複発火を防ぐ)
+        created:existingRef?existingRef.created:Date.now(),
+      });
+    }
+  });
 
   // 保存ボタンのフィードバック
   const btn=$('memo-save');
@@ -1513,10 +1714,22 @@ async function saveMemoFromModal(){
 async function deleteMemoFromModal(){
   const m=state.editingMemo;
   if(!m || m._new)return;
-  if(!confirm('このメモを削除しますか？'))return;
+  // 共有先がある場合は警告を強める
+  const sw=Array.isArray(m.sharedWith)?m.sharedWith.filter(id=>state.shelves.some(x=>x.id===id)):[];
+  const msg=sw.length>0
+    ? `このメモを削除しますか？\n他の${sw.length}個の公式ライブラリにも共有中です。すべての共有先からも消えます。`
+    : 'このメモを削除しますか？';
+  if(!confirm(msg))return;
   const s=getSelectedShelf();
   if(!s)return;
+  // マスターから削除
   s.cards=(s.cards||[]).filter(x=>x.id!==m.id);
+  // 他のライブラリにある参照も全部消す
+  state.shelves.forEach(other=>{
+    if(other.id===s.id)return;
+    if(!Array.isArray(other.cards))return;
+    other.cards=other.cards.filter(c=>c.id!==m.id);
+  });
   const ok=await saveShelves();
   if(!ok)return;
   closeMemoModal();
