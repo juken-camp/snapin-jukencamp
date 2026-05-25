@@ -1543,6 +1543,26 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border:none;cursor:pointer;
 }
 .detail-tag-add-btn:active{background:var(--gd);}
+
+/* 投稿画面のタグエディタ
+   詳細画面用の .detail-tags / .detail-tag-input-row を流用しつつ、
+   upload-body の内側 padding と二重にならないよう調整する */
+.up-tags-wrap{
+  margin-top:16px;
+  padding-top:14px;
+  border-top:0.5px solid var(--line);
+}
+.up-tags-wrap .detail-tags.up-tags-area{
+  padding:0;
+  margin-bottom:8px;
+}
+.up-tags-wrap .detail-tags.up-tags-area.empty{
+  display:none;
+}
+.up-tags-wrap .detail-tag-input-row.up-tag-input-row{
+  padding:0;
+}
+
 /* タグフィルター行 (探す画面) */
 .tag-filter-row-wrap{
   display:flex;
@@ -3816,6 +3836,81 @@ function renderUpload(){
     });
     body.appendChild(addBtn);
   }
+
+  // ─── タグ入力エリア (投稿時に付けられる) ───
+  // どのタイプのメモにも共通で表示。詳細画面のタグUIと同じ見た目を流用しつつ、
+  // 投稿画面ではまだ保存前なので state.current.tags を直接操作する。
+  appendUploadTagEditor(body);
+}
+
+// 投稿画面用のタグエディタ。詳細画面の .detail-tags / .detail-tag-input-row と同じスタイル。
+function appendUploadTagEditor(body){
+  const c=state.current;
+  if(!c)return;
+  if(!Array.isArray(c.tags))c.tags=[];
+
+  const wrap=document.createElement('div');
+  wrap.className='up-tags-wrap';
+
+  // 既存タグの一覧 (チップ表示)
+  const tagsArea=document.createElement('div');
+  tagsArea.className='detail-tags up-tags-area';
+  // 入力行
+  const inputRow=document.createElement('div');
+  inputRow.className='detail-tag-input-row up-tag-input-row';
+  inputRow.innerHTML=`
+    <div class="detail-tag-input-wrap">
+      <span>#</span>
+      <input class="detail-tag-input" id="up-tag-input" placeholder="タグを追加…" maxlength="20">
+    </div>
+    <button class="detail-tag-add-btn" id="up-tag-add-btn" aria-label="タグ追加">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  `;
+
+  wrap.appendChild(tagsArea);
+  wrap.appendChild(inputRow);
+  body.appendChild(wrap);
+
+  const renderChips=()=>{
+    const tags=state.current.tags||[];
+    if(tags.length===0){
+      tagsArea.innerHTML='';
+      tagsArea.classList.add('empty');
+      return;
+    }
+    tagsArea.classList.remove('empty');
+    tagsArea.innerHTML=tags.map((t,i)=>
+      `<span class="detail-tag" data-tag-idx="${i}">#${esc(t)} <span class="detail-tag-del" data-tag-idx="${i}">✕</span></span>`
+    ).join('');
+    tagsArea.querySelectorAll('.detail-tag-del').forEach(btn=>{
+      btn.addEventListener('click',e=>{
+        e.stopPropagation();
+        const idx=parseInt(btn.dataset.tagIdx,10);
+        state.current.tags.splice(idx,1);
+        renderChips();
+      });
+    });
+  };
+  renderChips();
+
+  const input=document.getElementById('up-tag-input');
+  const addBtn=document.getElementById('up-tag-add-btn');
+  const commit=()=>{
+    const v=input.value.replace(/^#+/,'').trim().replace(/\s+/g,'');
+    if(!v)return;
+    if((state.current.tags||[]).includes(v)){toast('すでに追加されています');input.value='';return;}
+    state.current.tags.push(v);
+    input.value='';
+    renderChips();
+  };
+  addBtn.addEventListener('click',commit);
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){
+      e.preventDefault();
+      commit();
+    }
+  });
 }
 
 function renderListItems(wrap){
@@ -3914,6 +4009,13 @@ function saveCard(){
     c.items=(c.items||[]).filter(i=>i.t.trim()!=='');
     if(c.items.length===0){toast('項目を入れてください');return;}
   }
+  // タグ配列の正規化: 空配列なら削除、ある場合は重複/空白除去
+  if(Array.isArray(c.tags)){
+    c.tags=c.tags.map(t=>String(t).replace(/^#+/,'').trim().replace(/\s+/g,'')).filter(Boolean);
+    // 重複排除 (先勝ち)
+    c.tags=[...new Set(c.tags)];
+    if(c.tags.length===0)delete c.tags;
+  }
   if(c._new){
     c.created=Date.now();
     c.stage=0;
@@ -3929,32 +4031,34 @@ function saveCard(){
 
   // (OCR は AI 会話時にだけ実行する設計。投稿しただけでは API を呼ばない。)
 
-  // 保存ボタンを ✓ に変えて「保存された」感を出す
+  // 保存ボタンを ✓ に変えて「保存された」感を出す (admin の memo-save と同じ仕様)
+  // 多重タップ対策: saving フラグで2回目以降のタップを無視する。
+  // 失敗時の保険として、ボタン状態は finally でリセットされる。
   const btn=$('up-save-btn');
-  if(btn && !btn.dataset.saving){
-    btn.dataset.saving='1';
-    btn.disabled=true;
-    btn.classList.add('saved');
-    btn.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
-    if(navigator.vibrate)navigator.vibrate(15);
-    setTimeout(()=>{
-      state.current=null;
-      // screen-upload と screen-detail をスタックから除去してホームへ
-      while(state.navStack.length>1 &&
-        (state.navStack[state.navStack.length-1]==='screen-upload' ||
-         state.navStack[state.navStack.length-1]==='screen-detail')){
-        state.navStack.pop();
-      }
-      const prev=state.navStack[state.navStack.length-1]||'screen-home';
-      goto(prev,false);
-      // ボタンを元に戻す (次回開いた時のため)
-      btn.innerHTML='保存';
-      btn.classList.remove('saved');
-      btn.disabled=false;
-      delete btn.dataset.saving;
-    },900);
-  }else{
+  if(!btn){
+    // ボタンが見つからない異常系: そのまま遷移
     state.current=null;
+    finishAndLeave();
+    return;
+  }
+  if(btn.dataset.saving==='1')return; // 連打防止
+  btn.dataset.saving='1';
+  btn.disabled=true;
+  btn.classList.add('saved');
+  btn.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+  if(navigator.vibrate)navigator.vibrate(15);
+  // チェックマークを十分目視できる時間を確保してから遷移
+  setTimeout(()=>{
+    state.current=null;
+    finishAndLeave();
+    // ボタンを元に戻す (次回開いた時のため)
+    btn.innerHTML='保存';
+    btn.classList.remove('saved');
+    btn.disabled=false;
+    delete btn.dataset.saving;
+  },1100);
+
+  function finishAndLeave(){
     // screen-upload と screen-detail をスタックから除去してホームへ
     while(state.navStack.length>1 &&
       (state.navStack[state.navStack.length-1]==='screen-upload' ||
