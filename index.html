@@ -2405,11 +2405,10 @@ async function loadOfficialShelves(){
 // その棚に「新着メモが何件あるか」を返す
 function newCountForShelf(s){
   if(!s||!Array.isArray(s.cards))return 0;
-  // 未購読の棚は通知しない (登録した瞬間からの差分を見る)
-  if(!state.subscribed.includes(s.id))return 0;
+  // 配布型（canSeeShelfId）または購読済みの棚だけカウント
+  const isDistributed=canSeeShelfId(s.id);
+  if(!isDistributed && !state.subscribed.includes(s.id))return 0;
   const lastSeen=state.shelfLastSeen[s.id]||0;
-  // lastSeen が 0 (= まだ一度も開いていない) のときは全件を新着扱いしない方が
-  // 「登録した瞬間に全部新着になる」混乱を避けられる
   if(lastSeen===0)return 0;
   let n=0;
   for(const c of s.cards){
@@ -2419,10 +2418,16 @@ function newCountForShelf(s){
   return n;
 }
 
-// 全登録ライブラリの新着合計 (ホーム上部に表示)
+// 配布型 + 登録済み購読型ライブラリの新着合計 (ホーム上部に表示)
 function totalNewCount(){
   let n=0;
+  // 配布型（canSeeShelfId）
+  for(const s of OFFICIAL_SHELVES){
+    if(canSeeShelfId(s.id))n+=newCountForShelf(s);
+  }
+  // 購読型（subscribed、ただし配布型と重複しないよう除外）
   for(const id of state.subscribed){
+    if(canSeeShelfId(id))continue; // 配布型は上でカウント済み
     const s=OFFICIAL_SHELVES.find(x=>x.id===id);
     if(s)n+=newCountForShelf(s);
   }
@@ -4782,9 +4787,10 @@ function doSearch(){
   if((scope==='all'||scope==='official') && !colorFilter){
     OFFICIAL_SHELVES.forEach(s=>{
       if(q && (s.name+' '+s.handle+' '+s.desc).toLowerCase().includes(q))results.push({shelf:s});
-      if(state.subscribed.includes(s.id)){
+      // 配布型（canSeeShelfId）または購読済みのカードを検索対象にする
+      if(canSeeShelfId(s.id) || state.subscribed.includes(s.id)){
         s.cards.forEach(c=>{
-          if(!q){return;} // 色フィルターのみのときは公式メモは色情報がないので除外
+          if(!q){return;}
           const hay=(c.text||'')+' '+(c.title||'')+' '+((c.items||[]).map(i=>i.t).join(' '));
           if(hay.toLowerCase().includes(q))results.push({card:c,origin:'official',shelf:s});
         });
