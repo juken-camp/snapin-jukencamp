@@ -149,7 +149,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;
   background:var(--surface);
   border-top:0.5px solid var(--line);
-  padding:7px 0 max(18px,env(safe-area-inset-bottom));
+  padding:7px 12px max(18px,env(safe-area-inset-bottom));
   flex-shrink:0;
   position:relative;
   z-index:10;
@@ -987,8 +987,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 /* 新着バッジ (ホームヘッダーの公式アイコン) */
 .home-new-badge{
   position:absolute;
-  top:-2px;
-  right:-4px;
+  top:2px;
+  right:2px;
   min-width:16px;
   height:16px;
   padding:0 4px;
@@ -1000,12 +1000,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;
   align-items:center;
   justify-content:center;
-  line-height:16px;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
   font-variant-numeric:tabular-nums;
-  text-align:center;
   pointer-events:none;
   box-sizing:border-box;
+  letter-spacing:0;
 }
 
 /* 公式タブの各ライブラリ名の隣の新着バッジ */
@@ -1803,7 +1802,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .today-block-head{
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-start;
+  gap:6px;
   margin-bottom:10px;
 }
 .today-block-title{
@@ -2088,10 +2088,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button data-action="toggle-mosaic" id="mosaic-btn" aria-label="思い出す">
         <svg class="eye-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
         <svg class="eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" stroke-linecap="round"/></svg>
-      </button>
-      <button data-action="goto-library-from-home" id="home-new-btn" aria-label="公式の新着" style="position:relative;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        <span class="home-new-badge hide" id="home-new-badge">0</span>
       </button>
       <button data-action="logout-confirm" aria-label="ログアウト">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
@@ -2558,17 +2554,18 @@ function markShelfSeen(shelfId){
   updateHomeNewBadge();
 }
 
-// ホーム上部の新着バッジを更新
+// ナビバー「公式」の新着バッジを更新
 function updateHomeNewBadge(){
-  const el=$('home-new-badge');
-  if(!el)return;
   const n=totalNewCount();
-  if(n>0){
-    el.textContent=n>99?'99+':String(n);
-    el.classList.remove('hide');
-  }else{
-    el.classList.add('hide');
-  }
+  // ナビバーは複数画面に存在するので querySelectorAll で全部更新
+  document.querySelectorAll('#bnav-library-badge').forEach(el=>{
+    if(n>0){
+      el.textContent=n>99?'99+':String(n);
+      el.classList.remove('hide');
+    }else{
+      el.classList.add('hide');
+    }
+  });
 }
 
 // ═══ NAVIGATION ═══
@@ -2587,9 +2584,11 @@ function navHtml(active){
       </button></div>`;
     }
     const on=active===i.id?' on':'';
-    return `<button class="bnav-item${on}" data-action="nav-${i.id}">
+    const badgeAttr=i.id==='library'?' id="bnav-library-wrap"':'';
+    const badge=i.id==='library'?'<span class="home-new-badge hide" id="bnav-library-badge"></span>':'';
+    return `<button class="bnav-item${on}" data-action="nav-${i.id}" style="position:relative;"${badgeAttr}>
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${i.svg}</svg>
-      <span>${i.label}</span>
+      <span>${i.label}</span>${badge}
     </button>`;
   }).join('');
 }
