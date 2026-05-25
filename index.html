@@ -66,14 +66,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--g);
   font-style:normal;
   font-weight:700;
-  margin-right:6px;
+  margin-right:8px;
 }
-.logo-by{
+.logo-by, .page-sub{
   font-family:-apple-system,sans-serif;
-  font-size:9px;
+  font-size:11px;
   font-weight:500;
   color:var(--ink3);
-  letter-spacing:0.05em;
+  letter-spacing:0.02em;
   font-style:normal;
 }
 .hdr-icons{display:flex;gap:4px;color:var(--ink2);align-items:center;}
@@ -1083,7 +1083,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--surface);
   border-bottom:0.5px solid var(--line);
 }
+.lib-item:first-child{border-top:0.5px solid var(--line);}
 .lib-item:active{background:var(--bg);}
+#lib-list{margin-top:8px;}
 .lib-avatar{
   width:40px;height:40px;
   border-radius:10px;
@@ -1123,25 +1125,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   margin:8px 20px;
 }
 
-/* 公式 / 探す ページのヒーロー (タイトル + サブ) */
-.lib-hero, .search-hero{
-  padding:calc(20px + env(safe-area-inset-top)) 20px 18px;
-}
-.lib-hero-title, .search-hero-title{
-  font-size:24px;
-  font-weight:700;
-  color:var(--ink);
-  letter-spacing:-0.01em;
-}
-.lib-hero-sub, .search-hero-sub{
-  font-size:12px;
-  color:var(--ink3);
-  margin-top:3px;
-}
-
 /* 公式の新着セクション */
 .lib-new-block{
-  padding:0 20px 18px;
+  padding:14px 20px 18px;
 }
 .lib-new-head{
   display:flex;
@@ -1329,7 +1315,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 /* SEARCH */
 .search-input-block{
-  padding:0 20px 10px;
+  padding:14px 20px 10px;
 }
 .search-input-wrap{
   height:40px;
@@ -1362,6 +1348,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .scope-chip.on{background:var(--g);color:white;border-color:var(--g);}
 .search-empty{padding:40px 30px;text-align:center;color:var(--ink3);font-size:13px;}
 
+/* 永続的な色フィルターバー (スコープ chips の下) */
+.color-filter-row-wrap{
+  display:flex;
+  gap:6px;
+  padding:0 20px 14px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.color-filter-row-wrap::-webkit-scrollbar{display:none;}
+
 /* 探すページの待機状態 (キーワードなし) */
 .search-idle-block{
   padding:0 20px 18px;
@@ -1373,9 +1369,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   margin-bottom:10px;
   display:flex;align-items:center;gap:6px;
 }
-.color-filter-row{
-  display:flex;gap:8px;flex-wrap:wrap;
-}
 .color-filter-chip{
   display:flex;align-items:center;gap:6px;
   padding:6px 12px 6px 8px;
@@ -1385,6 +1378,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-size:12px;
   color:var(--ink2);
   font-weight:500;
+  flex-shrink:0;
+  white-space:nowrap;
 }
 .color-filter-chip .swatch{
   width:14px;height:14px;border-radius:50%;
@@ -1476,9 +1471,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
    TODAY (今日)
    ════════════════════════════════════════════ */
 .today-hero{
-  padding:calc(20px + env(safe-area-inset-top)) 20px 18px;
-  background:linear-gradient(140deg,#FFF,#F4FAF7);
-  border-bottom:0.5px solid var(--line);
+  padding:20px 20px 18px;
+  background:transparent;
 }
 .today-date{
   font-family:var(--font-en);
@@ -1742,13 +1736,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <button class="login-card" data-action="login-personal">
       <div class="login-card-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-        個人としてはじめる
-      </div>
-    </button>
-    <button class="login-card" data-action="login-official">
-      <div class="login-card-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-6 9 6v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
-        公式アカウントで入る
+        SnapInをはじめる
       </div>
     </button>
   </div>
@@ -1821,6 +1809,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <!-- TODAY -->
 <div class="screen" id="screen-today">
+  <div class="hdr">
+    <div class="logo">Snap<em>In</em><span class="page-sub">今日のメモ</span></div>
+  </div>
   <div class="scroll" id="today-scroll">
     <div class="today-hero">
       <div class="today-date" id="today-date">―</div>
@@ -1842,11 +1833,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <!-- LIBRARY -->
 <div class="screen" id="screen-library">
+  <div class="hdr">
+    <div class="logo">Snap<em>In</em><span class="page-sub">公式ライブラリ</span></div>
+  </div>
   <div class="scroll" id="lib-scroll">
-    <div class="lib-hero">
-      <div class="lib-hero-title">公式ライブラリ</div>
-      <div class="lib-hero-sub">JUKEN CAMP からの教材</div>
-    </div>
     <div id="lib-new-section"></div>
     <div id="lib-list"></div>
   </div>
@@ -1878,11 +1868,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <!-- SEARCH -->
 <div class="screen" id="screen-search">
+  <div class="hdr">
+    <div class="logo">Snap<em>In</em><span class="page-sub">メモを探す</span></div>
+  </div>
   <div class="scroll" id="search-scroll">
-    <div class="search-hero">
-      <div class="search-hero-title">探す</div>
-      <div class="search-hero-sub">キーワード・色・タイプから</div>
-    </div>
     <div class="search-input-block">
       <div class="search-input-wrap">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -1897,6 +1886,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button class="scope-chip" data-scope="note">メモ</button>
       <button class="scope-chip" data-scope="list">リスト</button>
     </div>
+    <div class="color-filter-row-wrap" id="color-filter-row"></div>
     <div id="search-idle"></div>
     <div id="search-results"></div>
   </div>
@@ -2224,6 +2214,8 @@ function goto(id,push){
     renderLibrary();
   }
   if(id==='screen-search'){
+    // タブを開いた時は色フィルターをクリアして idle を再描画
+    state.searchColor=null;
     doSearch();
   }
 }
@@ -2330,35 +2322,16 @@ function renderToday(){
   else if(len>=10)msgEl.classList.add('long');
 
   // サマリー
-  const due=getDueCards();
   const todayCards=getTodayCards();
   const openTasks=getTodayOpenTasks();
   const parts=[];
-  if(due.length>0)parts.push(`見返したいメモ ${due.length}`);
   if(openTasks.length>0)parts.push(`未完のリスト ${openTasks.length}`);
-  if(todayCards.length>0)parts.push(`今日の保存 ${todayCards.length}`);
+  if(todayCards.length>0)parts.push(`今日のメモ ${todayCards.length}`);
   $('today-summary').textContent=parts.length?parts.join('　'):'今日は静かな一日です。';
 
-  // 復習ブロック
+  // 復習ブロックは削除済み (機械的判定は感覚を上書きする)
   const rv=$('today-review-section');
-  if(due.length>0){
-    rv.innerHTML=`
-      <div class="today-review-card" data-action="start-review">
-        <div class="today-review-icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-        </div>
-        <div class="today-review-info">
-          <div class="today-review-title">見返す ${due.length} 枚</div>
-          <div class="today-review-sub">記憶に定着させるタイミングです</div>
-        </div>
-        <div class="today-review-arrow">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
-        </div>
-      </div>
-    `;
-  }else{
-    rv.innerHTML='';
-  }
+  if(rv)rv.innerHTML='';
 
   // 未完のタスク (リスト型カードの未完項目を集約)
   const tasksSec=$('today-tasks-section');
@@ -2413,7 +2386,7 @@ function renderToday(){
             <div class="today-block-icon new">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
             </div>
-            今日の保存
+            今日のメモ
           </div>
           <div class="today-block-count">${todayCards.length}</div>
         </div>
@@ -2534,7 +2507,7 @@ function renderPastDaySection(daysAgo){
   if(!sec)return;
   const cards=getCardsForDayOffset(daysAgo);
   if(cards.length===0){sec.innerHTML='';return;}
-  const label=daysAgo===1?'昨日の保存':(daysAgo+'日前の保存');
+  const label=daysAgo===1?'昨日のメモ':(daysAgo+'日前のメモ');
   sec.innerHTML=`
     <div class="today-block">
       <div class="today-block-head">
@@ -2601,7 +2574,7 @@ function renderPastMoreSection(){
     sec.innerHTML=`
       <button class="today-more-btn" data-action="toggle-past-more">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        もっと前の保存を見る (${total})
+        もっと前のメモを見る (${total})
       </button>
     `;
     return;
@@ -2609,7 +2582,7 @@ function renderPastMoreSection(){
   // 展開状態: 各日付グループを順に表示
   let html='';
   for(const g of groups){
-    const label=g.d+'日前の保存';
+    const label=g.d+'日前のメモ';
     const cardsHtml=g.cards.map(c=>{
       let body='';
       if(c.type==='photo'||c.type==='photonote'){
@@ -4099,6 +4072,9 @@ function doSearch(){
   const scope=state.searchScope;
   const colorFilter=state.searchColor||null;
 
+  // 色フィルターバーは常に描画
+  renderColorFilterBar();
+
   // 空クエリ + 色フィルターなし → 待機画面
   if(!q && !colorFilter){
     out.innerHTML='';
@@ -4175,29 +4151,29 @@ function doSearch(){
   }
 }
 
-// 何も検索していないときの待機表示 (色フィルター + ピン留めメモ)
+// 色フィルターバー (常に表示)
+function renderColorFilterBar(){
+  const bar=$('color-filter-row');
+  if(!bar)return;
+  const colors=CARD_COLORS;
+  const html=colors.map(c=>`
+    <button class="color-filter-chip ${state.searchColor===c.id?'on':''}" data-color-filter="${c.id}">
+      <span class="swatch" style="background:${c.bg};"></span>
+      <span>${esc(c.name)}</span>
+    </button>
+  `).join('');
+  bar.innerHTML=html;
+  bar.querySelectorAll('.color-filter-chip').forEach(el=>{
+    el.addEventListener('click',()=>setColorFilter(el.dataset.colorFilter));
+  });
+}
+
+// 何も検索していないときの待機表示 (ピン留めメモのみ。色チップは永続バーに移動)
 function renderSearchIdle(){
   const idle=$('search-idle');
   if(!idle)return;
-  const colors=CARD_COLORS;
   const pinned=state.cards.filter(c=>c.pinned);
-
   let html='';
-
-  // 色フィルター
-  html+=`<div class="search-idle-block">
-    <div class="search-idle-title">色で絞り込む</div>
-    <div class="color-filter-row">
-      ${colors.map(c=>`
-        <button class="color-filter-chip ${state.searchColor===c.id?'on':''}" data-color-filter="${c.id}">
-          <span class="swatch" style="background:${c.bg};"></span>
-          <span>${esc(c.name)}</span>
-        </button>
-      `).join('')}
-    </div>
-  </div>`;
-
-  // ピン留めメモ (あれば)
   if(pinned.length>0){
     const pinHtml=pinned.slice(0,12).map(c=>{
       let inner='';
@@ -4219,13 +4195,7 @@ function renderSearchIdle(){
       <div class="pin-strip">${pinHtml}</div>
     </div>`;
   }
-
   idle.innerHTML=html;
-
-  // クリックハンドラ
-  idle.querySelectorAll('.color-filter-chip').forEach(el=>{
-    el.addEventListener('click',()=>setColorFilter(el.dataset.colorFilter));
-  });
   idle.querySelectorAll('.pin-card').forEach(el=>{
     el.addEventListener('click',()=>{
       const c=state.cards.find(x=>x.id===el.dataset.cardId);
