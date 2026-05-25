@@ -1091,16 +1091,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .lib-item:active{background:var(--bg);}
 #lib-list{margin-top:8px;}
 .lib-avatar{
-  width:40px;height:40px;
-  border-radius:10px;
+  width:44px;height:44px;
+  border-radius:50%;
   background:var(--gl);
   display:flex;align-items:center;justify-content:center;
   color:var(--gd);
   font-weight:700;
-  font-size:14px;
+  font-size:15px;
   flex-shrink:0;
   font-family:var(--font-en);
+  overflow:hidden;
 }
+.lib-avatar.has-icon{background:transparent;}
+.lib-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
 .lib-info{flex:1;min-width:0;}
 .lib-name{font-size:14px;font-weight:600;}
 .lib-handle{font-size:11px;color:var(--ink3);font-family:var(--font-en);}
@@ -1181,12 +1184,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;align-items:center;gap:5px;
 }
 .lib-new-card-foot .av{
-  width:16px;height:16px;border-radius:4px;
+  width:18px;height:18px;border-radius:50%;
   background:var(--gl);color:var(--gd);
   display:flex;align-items:center;justify-content:center;
   font-size:9px;font-weight:700;
   flex-shrink:0;
+  overflow:hidden;
 }
+.lib-new-card-foot .av.has-icon{background:transparent;}
+.lib-new-card-foot .av img{width:100%;height:100%;object-fit:cover;display:block;}
 
 /* 公式棚詳細 */
 .official-simple-hdr{
@@ -1196,6 +1202,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .os-name{font-size:18px;font-weight:600;margin-bottom:3px;}
 .os-handle{font-size:11px;color:var(--ink3);font-family:var(--font-en);margin-bottom:8px;}
+.os-avatar{
+  width:64px;height:64px;
+  border-radius:50%;
+  background:var(--gl);
+  color:var(--gd);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;font-weight:700;
+  margin-bottom:12px;
+  overflow:hidden;
+}
+.os-avatar.has-icon{background:transparent;}
+.os-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
 .os-desc{font-size:12px;color:var(--ink2);line-height:1.6;margin-bottom:12px;}
 .os-meta{display:flex;gap:14px;font-size:10px;color:var(--ink3);font-family:var(--font-en);align-items:center;}
 .os-sub{
@@ -1852,6 +1870,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
   <div class="scroll" id="off-scroll">
     <div class="official-simple-hdr">
+      <div class="os-avatar" id="os-avatar"></div>
       <div class="os-name" id="os-name">―</div>
       <div class="os-handle" id="os-handle">―</div>
       <div class="os-desc" id="os-desc">―</div>
@@ -3959,7 +3978,10 @@ function renderLibNewSection(subbed){
       <div class="lib-new-card" data-shelf-id="${esc(s.id)}" data-card-id="${esc(c.id)}">
         <div class="lib-new-card-thumb">${thumb}</div>
         <div class="lib-new-card-foot">
-          <div class="av">${esc(s.name.slice(0,1))}</div>
+          ${s.icon
+            ? `<div class="av has-icon"><img src="${esc(s.icon)}" alt=""></div>`
+            : `<div class="av">${esc((s.name||'?').slice(0,1))}</div>`
+          }
           <span>${esc(s.name)}</span>
         </div>
       </div>
@@ -3989,8 +4011,11 @@ function libItem(s,subbed){
   el.className='lib-item';
   const newN=subbed?newCountForShelf(s):0;
   const badge=newN>0?`<span class="lib-new-badge">${newN>99?'99+':newN}</span>`:'';
+  const avatar=s.icon
+    ? `<div class="lib-avatar has-icon"><img src="${esc(s.icon)}" alt=""></div>`
+    : `<div class="lib-avatar">${esc((s.name||'?').slice(0,1))}</div>`;
   el.innerHTML=`
-    <div class="lib-avatar">${esc(s.name.slice(0,1))}</div>
+    ${avatar}
     <div class="lib-info">
       <div class="lib-name">${esc(s.name)}${badge}</div>
       <div class="lib-handle">${esc(s.handle)}</div>
@@ -4033,13 +4058,22 @@ function openOfficial(s){
   $('os-handle').textContent=s.handle;
   $('os-desc').textContent=s.desc;
   $('os-count').textContent=s.cards.length;
+  const av=$('os-avatar');
+  if(av){
+    if(s.icon){
+      av.classList.add('has-icon');
+      av.innerHTML=`<img src="${esc(s.icon)}" alt="">`;
+    }else{
+      av.classList.remove('has-icon');
+      av.textContent=(s.name||'?').slice(0,1);
+    }
+  }
   updateOfficialSubBtn();
   renderGrid($('off-grid'),s.cards,'official');
   goto('screen-official');
   // 登録ずみの棚を開いたら「見た」とマーク (新着バッジを消す)
   if(state.subscribed.includes(s.id)){
     markShelfSeen(s.id);
-    // 戻ったときに件数表示も更新するため、Libraryも再描画予約
   }
 }
 
@@ -4262,7 +4296,7 @@ function renderReviewCard(){
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
         </div>
         <h2>おつかれさま</h2>
-        <button class="review-reveal" style="margin-top:24px;" id="rev-close-btn">棚に戻る</button>
+        <button class="review-reveal" style="margin-top:24px;" id="rev-close-btn">メモに戻る</button>
       </div>
     `;
     $('rev-progress').style.width='100%';
