@@ -811,6 +811,86 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .color-swatch.on{border-color:var(--g);}
 
+/* タグ入力・表示 (admin) */
+.tag-row{
+  margin-bottom:14px;
+}
+.tag-row-label{
+  font-size:11px;
+  color:var(--ink3);
+  font-weight:500;
+  margin-bottom:8px;
+}
+.tag-chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:8px;
+  min-height:0;
+}
+.admin-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 10px;
+  background:var(--gl);
+  border:0.5px solid var(--g);
+  border-radius:12px;
+  font-size:12px;
+  color:var(--gd);
+  font-weight:500;
+}
+.admin-tag-del{
+  cursor:pointer;
+  font-size:11px;
+  width:14px;height:14px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50%;
+  background:rgba(15,110,86,.15);
+}
+.admin-tag-del:hover{background:var(--g);color:white;}
+.tag-input-row{
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+.tag-input-wrap{
+  flex:1;
+  display:flex;
+  align-items:center;
+  gap:4px;
+  background:var(--bg);
+  border:0.5px solid var(--line2);
+  border-radius:16px;
+  padding:5px 12px;
+}
+.tag-hash{
+  font-size:13px;
+  color:var(--ink3);
+  font-weight:600;
+}
+.tag-text-input{
+  flex:1;
+  font-size:13px;
+  color:var(--ink);
+  background:transparent;
+  border:none;
+  outline:none;
+  font-family:inherit;
+}
+.tag-text-input::placeholder{color:var(--ink3);}
+.tag-add-btn{
+  width:30px;height:30px;
+  border-radius:50%;
+  background:var(--g);
+  color:white;
+  display:flex;align-items:center;justify-content:center;
+  border:none;cursor:pointer;
+  flex-shrink:0;
+}
+.tag-add-btn:active{background:var(--gd);}
+
+
 /* クロスポスト: 共有する公式ライブラリ */
 .share-row{
   background:var(--surface);
@@ -1287,9 +1367,12 @@ async function fetchShelves(){
   }
 }
 
-async function saveShelves(){
+// 1つのライブラリを個別に保存 (413対策)
+async function saveShelf(id){
   if(!state.password){setStatus('再ログインしてください','error');return false;}
   if(state.saving)return false;
+  const shelf=state.shelves.find(x=>x.id===id);
+  if(!shelf){setStatus('ライブラリが見つかりません','error');return false;}
   state.saving=true;
   setStatus('保存中…','busy');
   try{
@@ -1299,12 +1382,7 @@ async function saveShelves(){
         'Content-Type':'application/json',
         'x-admin-password':state.password,
       },
-      // サーバー側のフィールド名の差異に備え、複数の名前で送る
-      body:JSON.stringify({
-        password:state.password,
-        adminPassword:state.password,
-        shelves:state.shelves,
-      }),
+      body:JSON.stringify({shelf}),
     });
     if(res.status===401 || res.status===403){
       setStatus('認証エラー: パスワードが違います','error');
@@ -1323,6 +1401,18 @@ async function saveShelves(){
   }finally{
     state.saving=false;
   }
+}
+
+// 後方互換用: 全shelves一括保存（deleteShelf等から使う）
+async function saveShelves(){
+  if(!state.password){setStatus('再ログインしてください','error');return false;}
+  // 変更のあったライブラリを全て個別保存
+  let allOk=true;
+  for(const shelf of state.shelves){
+    const ok=await saveShelf(shelf.id);
+    if(!ok){allOk=false;break;}
+  }
+  return allOk;
 }
 
 // ═══ STUDENTS ═══
@@ -1845,7 +1935,7 @@ function newShelf(){
   state.selectedId=id;
   renderShelfList();
   renderShelfEdit();
-  saveShelves();
+  saveShelf(id);
 }
 
 async function deleteShelf(id){
@@ -1862,7 +1952,16 @@ async function deleteShelf(id){
   });
   state.shelves=state.shelves.filter(x=>x.id!==id);
   if(state.selectedId===id)state.selectedId=null;
-  await saveShelves();
+  // DELETEでライブラリデータをサーバーから削除
+  try{
+    await fetch('/api/shelves',{
+      method:'DELETE',
+      headers:{'Content-Type':'application/json','x-admin-password':state.password},
+      body:JSON.stringify({shelfId:id}),
+    });
+  }catch(e){setStatus('削除失敗: '+e.message,'error');}
+  // 参照(_ref)が更新された他ライブラリを保存
+  for(const shelf of state.shelves){await saveShelf(shelf.id);}
   renderShelfList();
   $('shelf-edit-panel').innerHTML='';
 }
@@ -1931,7 +2030,7 @@ function renderShelfEdit(){
       cur.name=$('shelf-name').value.trim()||'(無題)';
       cur.handle=$('shelf-handle').value.trim();
       cur.desc=$('shelf-desc').value.trim();
-      await saveShelves();
+      await saveShelf(cur.id);
       // ヘッダーの名前と一覧を再描画 (編集中の input は触らない)
       panel.querySelector('.shelf-edit-title').textContent=cur.name;
       renderShelfList();
@@ -1956,7 +2055,7 @@ function renderShelfEdit(){
         const cur=getSelectedShelf();
         if(!cur)return;
         cur.icon=compressed;
-        await saveShelves();
+        await saveShelf(cur.id);
         // 編集パネルを再描画 (アイコン表示を更新)
         renderShelfEdit();
         renderShelfList();
@@ -1972,7 +2071,7 @@ function renderShelfEdit(){
       const cur=getSelectedShelf();
       if(!cur)return;
       cur.icon=null;
-      await saveShelves();
+      await saveShelf(cur.id);
       renderShelfEdit();
       renderShelfList();
     });
@@ -2192,6 +2291,27 @@ function renderMemoModalBody(){
 
   const delHtml=m._new?'':`<button class="modal-del" id="memo-del">このメモを削除</button>`;
 
+  // タグ
+  const tags=Array.isArray(m.tags)?m.tags:[];
+  const tagChipsHtml=tags.map((t,i)=>
+    `<span class="admin-tag">#${esc(t)}<span class="admin-tag-del" data-tag-del="${i}">✕</span></span>`
+  ).join('');
+  const tagHtml=`
+    <div class="tag-row">
+      <div class="tag-row-label">タグ</div>
+      <div class="tag-chips" id="tag-chips">${tagChipsHtml}</div>
+      <div class="tag-input-row">
+        <div class="tag-input-wrap">
+          <span class="tag-hash">#</span>
+          <input class="tag-text-input" id="tag-text-input" placeholder="タグを追加…" maxlength="20">
+        </div>
+        <button class="tag-add-btn" id="tag-add-btn" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+    </div>
+  `;
+
   // 共有する公式ライブラリ (クロスポスト)
   const s=getSelectedShelf();
   const masterId=s?s.id:null;
@@ -2223,7 +2343,7 @@ function renderMemoModalBody(){
     `;
   }
 
-  body.innerHTML=typeHtml+editHtml+shareHtml+delHtml;
+  body.innerHTML=typeHtml+editHtml+tagHtml+shareHtml+delHtml;
 
   // type切替
   body.querySelectorAll('[data-set-type]').forEach(btn=>{
@@ -2363,6 +2483,32 @@ function renderMemoModalBody(){
   if(delBtn){
     delBtn.addEventListener('click',deleteMemoFromModal);
   }
+
+  // タグ追加・削除
+  function doAddTag(){
+    const inp=$('tag-text-input');
+    if(!inp)return;
+    const v=inp.value.replace(/^#+/,'').trim().replace(/\s+/g,'');
+    if(!v)return;
+    if(!Array.isArray(state.editingMemo.tags))state.editingMemo.tags=[];
+    if(state.editingMemo.tags.includes(v)){toast('すでに追加されています');inp.value='';return;}
+    state.editingMemo.tags.push(v);
+    inp.value='';
+    renderMemoModalBody();
+  }
+  const tagAddBtn=$('tag-add-btn');
+  if(tagAddBtn)tagAddBtn.addEventListener('click',doAddTag);
+  const tagInp=$('tag-text-input');
+  if(tagInp)tagInp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();doAddTag();}});
+  body.querySelectorAll('.admin-tag-del').forEach(el=>{
+    el.addEventListener('click',e=>{
+      e.stopPropagation();
+      const idx=parseInt(el.dataset.tagDel);
+      if(!Array.isArray(state.editingMemo.tags))return;
+      state.editingMemo.tags.splice(idx,1);
+      renderMemoModalBody();
+    });
+  });
 }
 
 function readAsDataURL(file){
@@ -2507,13 +2653,10 @@ async function saveMemoFromModal(){
     btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
   }
 
-  const ok=await saveShelves();
+  const ok=await saveShelf(s.id);
   if(!ok){
     // 失敗: ボタンを戻す
-    btn.innerHTML='保存';
-    btn.classList.remove('saved');
-    btn.disabled=false;
-    delete btn.dataset.saving;
+    if(btn){btn.innerHTML='保存';btn.classList.remove('saved');btn.disabled=false;delete btn.dataset.saving;}
     return;
   }
   setTimeout(()=>{
@@ -2542,7 +2685,10 @@ async function deleteMemoFromModal(){
     if(!Array.isArray(other.cards))return;
     other.cards=other.cards.filter(c=>c.id!==m.id);
   });
-  const ok=await saveShelves();
+  // マスター棚と参照を持つ他の棚を保存
+  const affectedIds=new Set([s.id,...state.shelves.filter(x=>x.id!==s.id).map(x=>x.id)]);
+  let ok=true;
+  for(const sid of affectedIds){const r=await saveShelf(sid);if(!r)ok=false;}
   if(!ok)return;
   closeMemoModal();
   renderShelfList();
