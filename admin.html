@@ -44,12 +44,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-bottom:1px solid var(--line);
 }
 .logo{
-  font-family:var(--font-en);
+  font-family:-apple-system,"Helvetica Neue",sans-serif;
   font-size:26px;
-  font-weight:600;
-  letter-spacing:-0.02em;
+  font-weight:700;
+  letter-spacing:-0.01em;
 }
-.logo em{color:var(--g);font-style:italic;}
+.logo em{color:var(--g);font-style:normal;font-weight:700;}
 .logo-suffix{
   font-family:var(--font-jp);
   font-size:13px;
@@ -77,6 +77,26 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .btn-danger:hover{background:#FFD9D5;}
 .btn-ghost{color:var(--ink2);}
 .btn-ghost:hover{color:var(--g);}
+
+/* sync indicator */
+.sync-status{
+  font-size:11px;
+  color:var(--ink3);
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.sync-status.syncing{color:var(--amber);}
+.sync-status.error{color:var(--rose);}
+.sync-status.ok{color:var(--g);}
+.sync-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:currentColor;
+}
+.sync-status.syncing .sync-dot{
+  animation:sync-blink 1s infinite;
+}
+@keyframes sync-blink{50%{opacity:0.3;}}
 
 /* LAYOUT */
 .layout{
@@ -406,6 +426,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
 
+/* LOADING */
+.loading-screen{
+  position:fixed;inset:0;
+  background:var(--bg);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+  font-size:14px;
+  color:var(--ink2);
+}
+.loading-screen.hide{display:none;}
+
 .hide{display:none !important;}
 
 /* AUTH */
@@ -425,12 +458,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   box-shadow:var(--shadow);
 }
 .auth-title{
-  font-family:var(--font-en);
-  font-size:32px;
-  font-weight:600;
+  font-family:-apple-system,sans-serif;
+  font-size:30px;
+  font-weight:700;
   margin-bottom:8px;
+  letter-spacing:-0.01em;
 }
-.auth-title em{color:var(--g);font-style:italic;}
+.auth-title em{color:var(--g);font-style:normal;font-weight:700;}
 .auth-sub{
   font-size:13px;
   color:var(--ink2);
@@ -463,14 +497,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <div class="auth-wrap" id="auth-wrap">
   <div class="auth-box">
     <div class="auth-title">Snap<em>In</em> <span style="font-size:14px;font-family:var(--font-jp);color:var(--ink3);">管理画面</span></div>
-    <div class="auth-sub">公式アカウントのメモを管理します。</div>
+    <div class="auth-sub">公式アカウントのメモを管理します。<br>サーバーに保存され、全生徒に届きます。</div>
     <div class="auth-form">
       <input type="email" class="form-input" id="auth-email" placeholder="メールアドレス" autocomplete="email">
       <input type="password" class="form-input" id="auth-pass" placeholder="パスワード" autocomplete="current-password">
       <button class="auth-submit" id="auth-submit">ログイン</button>
     </div>
     <div class="auth-note">
-      これはデモ用の簡易認証です。本番では Vercel Edge Middleware や 認証プロバイダ(Clerk, Auth0等)を組み合わせてください。
+      認証情報はサーバー側で検証されます。<br>
+      パスワードは Vercel の環境変数 ADMIN_PASSWORD で管理。
     </div>
   </div>
 </div>
@@ -483,7 +518,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <span class="logo-suffix">管理画面</span>
     </div>
     <div class="hdr-right">
-      <span style="font-size:13px;color:var(--ink2);" id="login-as">―</span>
+      <div class="sync-status" id="sync-status">
+        <div class="sync-dot"></div>
+        <span id="sync-text">―</span>
+      </div>
       <button class="btn btn-ghost" id="logout-btn">ログアウト</button>
     </div>
   </div>
@@ -521,6 +559,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       </div>
     </main>
   </div>
+</div>
+
+<!-- LOADING SCREEN -->
+<div class="loading-screen hide" id="loading-screen">
+  読み込み中…
 </div>
 
 <!-- SHELF MODAL -->
@@ -598,72 +641,139 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 (function(){
 'use strict';
 
-const STORAGE_KEY='snapin_admin_v1';
-const AUTH_KEY='snapin_admin_auth';
-const $=id=>document.getElementById(id);
+// ─────────────────────────────────────
+// SnapIn 管理画面 (Upstash Redis 経由)
+// ・ログイン: メール + パスワード (パスワードはサーバー側で検証)
+// ・保存先: /api/shelves (Vercel Serverless + Upstash Redis)
+// ─────────────────────────────────────
 
-// デモ用の認証情報 (本番では絶対に変えること)
-const DEMO_CREDS={
-  email:'directsystemtheory@yahoo.co.jp',
-  password:'jukencamp2026',
-};
+const AUTH_KEY='snapin_admin_auth_v2';  // password 保持用
+const ADMIN_EMAIL='directsystemtheory@yahoo.co.jp';
+const SHELVES_ENDPOINT='/api/shelves';
+const $=id=>document.getElementById(id);
 
 const state={
   shelves:[],
   currentShelfId:null,
   editingShelfId:null,
   editingCardId:null,
+  password:null,  // ログイン中のパスワード (POST 認証用)
 };
 
-function save(){
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(state.shelves));
+// ═══ SYNC STATUS ═══
+function setSync(status,text){
+  const el=$('sync-status');
+  el.classList.remove('syncing','error','ok');
+  el.classList.add(status);
+  $('sync-text').textContent=text;
 }
-function load(){
+
+// ═══ API ═══
+async function fetchShelves(){
+  setSync('syncing','読み込み中…');
   try{
-    const raw=localStorage.getItem(STORAGE_KEY);
-    if(!raw){
-      // 初期データ
-      state.shelves=[
-        {id:'jc-english',handle:'@jukencamp-english',name:'JUKEN CAMP 英語',desc:'英単語、文法、長文読解の基礎',cards:[
-          {id:'oe1',type:'note',text:'be動詞 + ~ing\n→ 進行形\n「~している」',date:'2026-05-20'},
-          {id:'oe2',type:'note',text:'過去分詞 = -ed (規則)\nbeen, gone, seen (不規則)',date:'2026-05-18'},
-        ]},
-        {id:'jc-math',handle:'@jukencamp-math',name:'JUKEN CAMP 数学',desc:'公式、解法、計算ミス対策',cards:[
-          {id:'om1',type:'note',text:'三平方の定理\na² + b² = c²\n直角三角形のみ',date:'2026-05-19'},
-        ]},
-      ];
-      save();
-      return;
+    const res=await fetch(SHELVES_ENDPOINT);
+    if(!res.ok)throw new Error('読み込みに失敗 ('+res.status+')');
+    const data=await res.json();
+    state.shelves=Array.isArray(data.shelves)?data.shelves:[];
+    setSync('ok','同期済み');
+    return true;
+  }catch(err){
+    console.error(err);
+    setSync('error','読み込みエラー');
+    toast('サーバーから読み込めませんでした');
+    return false;
+  }
+}
+
+async function saveShelvesToServer(){
+  if(!state.password){
+    toast('再ログインしてください');
+    return false;
+  }
+  setSync('syncing','保存中…');
+  try{
+    const res=await fetch(SHELVES_ENDPOINT,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'X-Admin-Password':state.password,
+      },
+      body:JSON.stringify({shelves:state.shelves}),
+    });
+    if(res.status===401){
+      setSync('error','認証エラー');
+      toast('パスワードが正しくありません');
+      logout();
+      return false;
     }
-    state.shelves=JSON.parse(raw)||[];
-  }catch(e){state.shelves=[];}
+    if(!res.ok)throw new Error('保存失敗 ('+res.status+')');
+    setSync('ok','保存しました');
+    return true;
+  }catch(err){
+    console.error(err);
+    setSync('error','保存エラー');
+    toast('保存に失敗しました');
+    return false;
+  }
 }
 
 // ═══ AUTH ═══
 function checkAuth(){
-  return localStorage.getItem(AUTH_KEY)==='ok';
+  const pass=sessionStorage.getItem(AUTH_KEY);
+  if(pass){
+    state.password=pass;
+    return true;
+  }
+  return false;
 }
-function tryLogin(){
+
+async function tryLogin(){
   const email=$('auth-email').value.trim();
   const pass=$('auth-pass').value;
-  if(email===DEMO_CREDS.email && pass===DEMO_CREDS.password){
-    localStorage.setItem(AUTH_KEY,'ok');
-    $('auth-wrap').classList.add('hide');
-    $('app').classList.remove('hide');
-    $('login-as').textContent=email;
-    init();
-  }else{
-    toast('メールアドレスかパスワードが違います');
+  if(email!==ADMIN_EMAIL){
+    toast('メールアドレスが違います');
+    return;
   }
+  // 認証はサーバー側で行う: 空の保存リクエストを投げて 401 でないかチェック
+  // (まずは取得を試して、書き込みは保存時に検証する方式でもOK)
+  state.password=pass;
+  // 取得を試みる
+  const ok=await fetchShelves();
+  if(!ok){
+    // ネットワークエラー
+    return;
+  }
+  // パスワードが正しいかを検証するため、現状を再保存してみる
+  const verifyRes=await fetch(SHELVES_ENDPOINT,{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'X-Admin-Password':pass,
+    },
+    body:JSON.stringify({shelves:state.shelves}),
+  });
+  if(verifyRes.status===401){
+    state.password=null;
+    toast('パスワードが違います');
+    return;
+  }
+  // 成功
+  sessionStorage.setItem(AUTH_KEY,pass);
+  $('auth-wrap').classList.add('hide');
+  $('app').classList.remove('hide');
+  setSync('ok','ログインしました');
+  render();
 }
+
 function logout(){
-  localStorage.removeItem(AUTH_KEY);
+  sessionStorage.removeItem(AUTH_KEY);
+  state.password=null;
   location.reload();
 }
 
 // ═══ RENDER ═══
 function render(){
-  // サイドバー
   const list=$('shelf-list');
   list.innerHTML='';
   state.shelves.forEach(s=>{
@@ -680,7 +790,6 @@ function render(){
     list.appendChild(btn);
   });
 
-  // メイン
   const empty=$('main-empty');
   const main=$('main-shelf');
   if(!state.currentShelfId){
@@ -700,10 +809,9 @@ function render(){
   $('shelf-handle').textContent=s.handle;
   $('shelf-desc').textContent=s.desc||'説明なし';
 
-  // カード
   const grid=$('cards-grid');
   grid.innerHTML='';
-  s.cards.forEach(c=>{
+  (s.cards||[]).forEach(c=>{
     const el=document.createElement('div');
     el.className='adm-card '+c.type;
     let inner='';
@@ -722,11 +830,11 @@ function render(){
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>`;
     el.innerHTML=del+inner;
-    el.addEventListener('click',(e)=>{
+    el.addEventListener('click',async (e)=>{
       if(e.target.closest('[data-delete]')){
         if(confirm('このメモを削除しますか?')){
           s.cards=s.cards.filter(x=>x.id!==c.id);
-          save();
+          await saveShelvesToServer();
           render();
         }
         return;
@@ -735,7 +843,6 @@ function render(){
     });
     grid.appendChild(el);
   });
-  // 追加セル
   const add=document.createElement('div');
   add.className='add-card-cell';
   add.innerHTML=`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>`;
@@ -758,7 +865,8 @@ function openShelfModal(shelf){
   $('shelf-modal').classList.add('on');
   setTimeout(()=>$('shelf-form-name').focus(),50);
 }
-function saveShelf(){
+
+async function saveShelf(){
   const name=$('shelf-form-name').value.trim();
   const handle=$('shelf-form-handle').value.trim();
   const desc=$('shelf-form-desc').value.trim();
@@ -776,22 +884,26 @@ function saveShelf(){
     state.shelves.push({id,handle,name,desc,cards:[]});
     state.currentShelfId=id;
   }
-  save();
-  $('shelf-modal').classList.remove('on');
-  render();
-  toast('保存しました');
+  const ok=await saveShelvesToServer();
+  if(ok){
+    $('shelf-modal').classList.remove('on');
+    render();
+    toast('保存しました');
+  }
 }
 
-function deleteShelf(){
+async function deleteShelf(){
   if(!state.currentShelfId)return;
   const s=state.shelves.find(x=>x.id===state.currentShelfId);
   if(!s)return;
-  if(!confirm(`「${s.name}」を完全に削除しますか?\n${s.cards.length}件のメモも一緒に削除されます。`))return;
+  if(!confirm(`「${s.name}」を完全に削除しますか?\n${(s.cards||[]).length}件のメモも一緒に削除されます。`))return;
   state.shelves=state.shelves.filter(x=>x.id!==state.currentShelfId);
   state.currentShelfId=null;
-  save();
-  render();
-  toast('削除しました');
+  const ok=await saveShelvesToServer();
+  if(ok){
+    render();
+    toast('削除しました');
+  }
 }
 
 // ═══ CARD MODAL ═══
@@ -802,9 +914,9 @@ let cardFormListItems=[{t:'',d:false}];
 function openCardModal(card){
   state.editingCardId=card?card.id:null;
   $('card-modal-title').textContent=card?'メモを編集':'新しいメモ';
-  cardFormType=card?card.type==='photonote'?'photo':card.type:'note';
+  cardFormType=card?(card.type==='photonote'?'photo':card.type):'note';
   cardFormImage=card?card.image:null;
-  cardFormListItems=card&&card.type==='list'?(card.items||[{t:'',d:false}]).map(i=>({...i})):[{t:'',d:false}];
+  cardFormListItems=card&&card.type==='list'?((card.items||[{t:'',d:false}]).map(i=>({...i}))):[{t:'',d:false}];
   $('card-form-text').value=card&&card.type==='note'?(card.text||''):'';
   $('card-form-photo-text').value=card&&(card.type==='photo'||card.type==='photonote')?(card.text||''):'';
   $('card-form-list-title').value=card&&card.type==='list'?(card.title||''):'';
@@ -819,14 +931,12 @@ function renderCardModalType(){
   $('card-form-note').classList.toggle('hide',cardFormType!=='note');
   $('card-form-photo').classList.toggle('hide',cardFormType!=='photo');
   $('card-form-list').classList.toggle('hide',cardFormType!=='list');
-  // 写真プレビュー
   const pv=$('photo-preview');
   if(cardFormImage){
     pv.innerHTML=`<img src="${cardFormImage}">`;
   }else{
     pv.innerHTML=`<div class="photo-preview-empty">写真を選んでください</div>`;
   }
-  // リスト項目
   renderListItems();
 }
 
@@ -863,10 +973,11 @@ function renderListItems(){
   });
 }
 
-function saveCard(){
+async function saveCard(){
   if(!state.currentShelfId){toast('棚を選んでください');return;}
   const s=state.shelves.find(x=>x.id===state.currentShelfId);
   if(!s)return;
+  if(!s.cards)s.cards=[];
 
   const date=new Date().toISOString().slice(0,10);
   let newCard=null;
@@ -893,10 +1004,12 @@ function saveCard(){
   }else{
     s.cards.unshift(newCard);
   }
-  save();
-  $('card-modal').classList.remove('on');
-  render();
-  toast('保存しました');
+  const ok=await saveShelvesToServer();
+  if(ok){
+    $('card-modal').classList.remove('on');
+    render();
+    toast('保存しました');
+  }
 }
 
 function compressImage(file){
@@ -984,20 +1097,19 @@ $('photo-file').addEventListener('change',async e=>{
   e.target.value='';
 });
 
-function init(){
-  load();
-  render();
-}
-
 // 起動
-if(checkAuth()){
-  $('auth-wrap').classList.add('hide');
-  $('app').classList.remove('hide');
-  $('login-as').textContent='ログイン中';
-  init();
-}else{
-  setTimeout(()=>$('auth-email').focus(),100);
+async function init(){
+  if(checkAuth()){
+    $('auth-wrap').classList.add('hide');
+    $('app').classList.remove('hide');
+    setSync('syncing','読み込み中…');
+    await fetchShelves();
+    render();
+  }else{
+    setTimeout(()=>$('auth-email').focus(),100);
+  }
 }
+init();
 
 })();
 </script>
