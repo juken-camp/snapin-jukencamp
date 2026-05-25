@@ -209,7 +209,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   padding:18px 20px 8px;
 }
 
-/* 棚一覧 */
+/* 公式ライブラリ一覧 */
 .shelf-list{
   display:flex;
   flex-direction:column;
@@ -235,7 +235,61 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;align-items:center;justify-content:center;
   font-size:17px;font-weight:700;
   flex-shrink:0;
+  overflow:hidden;
 }
+.shelf-avatar.has-icon{background:transparent;}
+.shelf-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* アイコン編集 (公式ライブラリ用) */
+.icon-edit-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.icon-edit-zone{
+  width:72px;height:72px;
+  border-radius:50%;
+  background:var(--gl);
+  color:var(--gd);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:28px;
+  font-weight:700;
+  flex-shrink:0;
+  overflow:hidden;
+  cursor:pointer;
+  border:0.5px solid var(--line);
+  transition:opacity .12s;
+}
+.icon-edit-zone:active{opacity:.7;}
+.icon-edit-zone.has-icon{background:transparent;}
+.icon-edit-zone img{width:100%;height:100%;object-fit:cover;display:block;}
+.icon-edit-fallback{
+  width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+}
+.icon-edit-info{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.icon-edit-help{
+  font-size:12px;
+  color:var(--ink2);
+}
+.icon-clear-btn{
+  align-self:flex-start;
+  padding:5px 12px;
+  background:transparent;
+  border:0.5px solid var(--line2);
+  border-radius:14px;
+  color:var(--ink3);
+  font-size:11px;
+  font-weight:500;
+}
+.icon-clear-btn:active{background:var(--bg);}
 .shelf-info{flex:1;min-width:0;}
 .shelf-name{
   font-size:14px;font-weight:600;
@@ -273,7 +327,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .new-shelf-btn:active{background:var(--gl);}
 
-/* 棚の編集パネル */
+/* 公式ライブラリの編集パネル */
 .shelf-edit{
   margin:12px 0 0;
   background:var(--surface);
@@ -682,11 +736,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 <!-- ログイン後の画面 -->
 <div id="main-screen" class="scroll hide">
-  <div class="section-title">管理する棚</div>
+  <div class="section-title">管理する公式ライブラリ</div>
   <div class="shelf-list" id="shelf-list"></div>
   <button class="new-shelf-btn" id="new-shelf-btn">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-    新しい棚を作る
+    新しい公式ライブラリを作る
   </button>
 
   <div id="shelf-edit-panel"></div>
@@ -859,7 +913,7 @@ async function tryLogin(){
   const btn=$('login-btn');
   btn.disabled=true;
   btn.textContent='読み込み中…';
-  // 最新の棚を取得 (認証不要)
+  // 最新の公式ライブラリを取得 (認証不要)
   const ok=await fetchShelves();
   if(!ok){
     btn.disabled=false;
@@ -907,14 +961,17 @@ function renderShelfList(){
   const el=$('shelf-list');
   el.innerHTML='';
   if(state.shelves.length===0){
-    el.innerHTML='<div class="empty-shelf-state">まだ棚がありません。<br>下のボタンから作ってみましょう。</div>';
+    el.innerHTML='<div class="empty-shelf-state">まだ公式ライブラリがありません。<br>下のボタンから作ってみましょう。</div>';
     return;
   }
   state.shelves.forEach(s=>{
     const row=document.createElement('div');
     row.className='shelf-item'+(state.selectedId===s.id?' active':'');
+    const avatar=s.icon
+      ? `<div class="shelf-avatar has-icon"><img src="${esc(s.icon)}" alt=""></div>`
+      : `<div class="shelf-avatar">${esc((s.name||'?').slice(0,1))}</div>`;
     row.innerHTML=`
-      <div class="shelf-avatar">${esc((s.name||'?').slice(0,1))}</div>
+      ${avatar}
       <div class="shelf-info">
         <div class="shelf-name">${esc(s.name||'(無題)')}</div>
         <div class="shelf-handle">${esc(s.handle||'')}</div>
@@ -939,7 +996,7 @@ function newShelf(){
   const id='shelf_'+Date.now();
   const s={
     id,
-    name:'新しい棚',
+    name:'新しい公式ライブラリ',
     handle:'@new-shelf-'+Math.floor(Math.random()*9999),
     desc:'',
     cards:[],
@@ -954,7 +1011,7 @@ function newShelf(){
 async function deleteShelf(id){
   const s=state.shelves.find(x=>x.id===id);
   if(!s)return;
-  if(!confirm(`「${s.name}」を削除しますか？\nこの棚を登録している生徒の端末からは消えません(各端末のキャッシュとして残ります)。`))return;
+  if(!confirm(`「${s.name}」を削除しますか？\nこの公式ライブラリを登録している生徒の端末からは消えません(各端末のキャッシュとして残ります)。`))return;
   state.shelves=state.shelves.filter(x=>x.id!==id);
   if(state.selectedId===id)state.selectedId=null;
   await saveShelves();
@@ -979,7 +1036,23 @@ function renderShelfEdit(){
       </div>
       <div class="shelf-edit-body">
         <div class="shelf-edit-row">
-          <label>棚の名前</label>
+          <label>アイコン</label>
+          <div class="icon-edit-row">
+            <label class="icon-edit-zone ${s.icon?'has-icon':''}" id="icon-zone">
+              <input id="icon-file" type="file" accept="image/*" style="display:none;">
+              ${s.icon
+                ? `<img src="${esc(s.icon)}" alt="">`
+                : `<div class="icon-edit-fallback">${esc((s.name||'?').slice(0,1))}</div>`
+              }
+            </label>
+            <div class="icon-edit-info">
+              <div class="icon-edit-help">${s.icon?'タップして変更':'タップして写真を選ぶ'}</div>
+              ${s.icon?'<button class="icon-clear-btn" id="icon-clear-btn">クリア</button>':''}
+            </div>
+          </div>
+        </div>
+        <div class="shelf-edit-row">
+          <label>公式ライブラリの名前</label>
           <input id="shelf-name" type="text" value="${esc(s.name||'')}" maxlength="60">
         </div>
         <div class="shelf-edit-row">
@@ -1000,7 +1073,7 @@ function renderShelfEdit(){
     <div class="memo-grid" id="memo-grid"></div>
   `;
 
-  // 棚情報の自動保存 (フォーカスアウト時)
+  // 公式ライブラリ情報の自動保存 (フォーカスアウト時)
   let saveTimer=null;
   const queueSave=()=>{
     clearTimeout(saveTimer);
@@ -1022,6 +1095,40 @@ function renderShelfEdit(){
   });
 
   $('shelf-delete-btn').addEventListener('click',()=>deleteShelf(s.id));
+
+  // アイコン (公式ライブラリ用) のアップロード
+  const iconFile=$('icon-file');
+  if(iconFile){
+    iconFile.addEventListener('change',async e=>{
+      const f=e.target.files && e.target.files[0];
+      if(!f)return;
+      setStatus('アイコンを準備中…','busy');
+      try{
+        const compressed=await smartCompress(f,{maxSize:400,square:true,maxBytes:200*1024});
+        const cur=getSelectedShelf();
+        if(!cur)return;
+        cur.icon=compressed;
+        await saveShelves();
+        // 編集パネルを再描画 (アイコン表示を更新)
+        renderShelfEdit();
+        renderShelfList();
+      }catch(err){
+        setStatus('アイコンの処理に失敗: '+err.message,'error');
+      }
+    });
+  }
+  const iconClear=$('icon-clear-btn');
+  if(iconClear){
+    iconClear.addEventListener('click',async (ev)=>{
+      ev.preventDefault();
+      const cur=getSelectedShelf();
+      if(!cur)return;
+      cur.icon=null;
+      await saveShelves();
+      renderShelfEdit();
+      renderShelfList();
+    });
+  }
 
   renderMemoGrid();
 }
@@ -1235,9 +1342,15 @@ function renderMemoModalBody(){
   // photo
   const handlePhotoSelect=async (file)=>{
     if(!file)return;
-    const dataUrl=await readAsDataURL(file);
-    state.editingMemo.image=dataUrl;
-    renderMemoModalBody();
+    setStatus('画像を準備中…','busy');
+    try{
+      const compressed=await smartCompress(file,{maxSize:1600,maxBytes:1.5*1024*1024});
+      state.editingMemo.image=compressed;
+      setStatus('');
+      renderMemoModalBody();
+    }catch(err){
+      setStatus('画像の処理に失敗: '+err.message,'error');
+    }
   };
   const photoFile=$('photo-file');
   if(photoFile){
@@ -1268,6 +1381,81 @@ function readAsDataURL(file){
     r.onerror=()=>reject(new Error('読み込み失敗'));
     r.readAsDataURL(file);
   });
+}
+
+// 画像を読み込んで Image オブジェクトを返す
+function loadImage(dataUrl){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=()=>reject(new Error('画像の読み込み失敗'));
+    img.src=dataUrl;
+  });
+}
+
+/**
+ * 画像を圧縮してJPEG dataURLを返す
+ * @param {File|string} input  File または dataURL
+ * @param {number} maxSize     長辺の最大ピクセル数
+ * @param {number} quality     JPEG品質 (0-1)
+ * @param {boolean} square     正方形クロップするか (アイコン用)
+ */
+async function compressImage(input,maxSize=1600,quality=0.85,square=false){
+  const dataUrl=typeof input==='string'?input:await readAsDataURL(input);
+  const img=await loadImage(dataUrl);
+  let sw=img.naturalWidth, sh=img.naturalHeight;
+  let sx=0, sy=0;
+  // 正方形クロップ (中央)
+  if(square){
+    const side=Math.min(sw,sh);
+    sx=Math.floor((sw-side)/2);
+    sy=Math.floor((sh-side)/2);
+    sw=side;
+    sh=side;
+  }
+  // 縮小サイズ計算
+  let dw=sw, dh=sh;
+  const long=Math.max(sw,sh);
+  if(long>maxSize){
+    const scale=maxSize/long;
+    dw=Math.round(sw*scale);
+    dh=Math.round(sh*scale);
+  }
+  const canvas=document.createElement('canvas');
+  canvas.width=dw;
+  canvas.height=dh;
+  const ctx=canvas.getContext('2d');
+  ctx.imageSmoothingEnabled=true;
+  ctx.imageSmoothingQuality='high';
+  ctx.drawImage(img,sx,sy,sw,sh,0,0,dw,dh);
+  return canvas.toDataURL('image/jpeg',quality);
+}
+
+// dataURL のサイズ (約バイト数) を返す
+function dataUrlBytes(dataUrl){
+  // base64 部分の長さ × 3/4 がおおよそのバイト数
+  const i=dataUrl.indexOf(',');
+  if(i<0)return 0;
+  return Math.floor((dataUrl.length-i-1)*3/4);
+}
+
+// 賢い圧縮: サイズが大きすぎたら品質を落として再エンコード
+async function smartCompress(input,opts={}){
+  const maxSize=opts.maxSize||1600;
+  const square=!!opts.square;
+  const maxBytes=opts.maxBytes||(1.5*1024*1024); // 1.5MB目標
+  let q=0.85;
+  let size=maxSize;
+  for(let i=0;i<4;i++){
+    const out=await compressImage(input,size,q,square);
+    const bytes=dataUrlBytes(out);
+    if(bytes<=maxBytes)return out;
+    // まだ大きい: 次は品質を下げる
+    q-=0.15;
+    if(q<0.5){q=0.5;size=Math.floor(size*0.75);}
+  }
+  // 最終 fallback
+  return await compressImage(input,Math.floor(maxSize*0.6),0.6,square);
 }
 
 async function saveMemoFromModal(){
@@ -1364,14 +1552,14 @@ $('password-toggle').addEventListener('click',()=>{
   });
 });
 
-// 起動: 前回のログインを復元、棚一覧をフェッチ
+// 起動: 前回のログインを復元、公式ライブラリ一覧をフェッチ
 (async function init(){
   const hasAuth=loadAuth();
   if(hasAuth){
     // メールを入力欄に復元 (UIで見えるように)
     if(state.email)$('login-email').value=state.email;
     if(state.password)$('login-password').value=state.password;
-    // 棚をフェッチしてメイン画面へ
+    // 公式ライブラリをフェッチしてメイン画面へ
     await fetchShelves();
     showMain();
   }else{
