@@ -3799,7 +3799,10 @@ function saveCard(){
     if(navigator.vibrate)navigator.vibrate(15);
     setTimeout(()=>{
       state.current=null;
-      while(state.navStack.length>1 && state.navStack[state.navStack.length-1]==='screen-upload'){
+      // screen-upload と screen-detail をスタックから除去してホームへ
+      while(state.navStack.length>1 &&
+        (state.navStack[state.navStack.length-1]==='screen-upload' ||
+         state.navStack[state.navStack.length-1]==='screen-detail')){
         state.navStack.pop();
       }
       const prev=state.navStack[state.navStack.length-1]||'screen-home';
@@ -3812,7 +3815,10 @@ function saveCard(){
     },900);
   }else{
     state.current=null;
-    while(state.navStack.length>1 && state.navStack[state.navStack.length-1]==='screen-upload'){
+    // screen-upload と screen-detail をスタックから除去してホームへ
+    while(state.navStack.length>1 &&
+      (state.navStack[state.navStack.length-1]==='screen-upload' ||
+       state.navStack[state.navStack.length-1]==='screen-detail')){
       state.navStack.pop();
     }
     const prev=state.navStack[state.navStack.length-1]||'screen-home';
