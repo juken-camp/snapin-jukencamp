@@ -357,6 +357,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:-webkit-box;
   -webkit-box-orient:vertical;
   word-break:break-word;
+  /* 編集画面の改行を一覧表示でも反映させる。
+     -webkit-line-clamp は pre-wrap で発生した改行も「行」として正しく数えるので両立する。 */
+  white-space:pre-wrap;
   background:var(--surface);
   /* font-size / line-height / -webkit-line-clamp は noteCardStyle がインラインで指定する
      (CSS で指定するとインラインが上書きされず、表示が崩れることがあるため) */
@@ -1953,6 +1956,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   height:100%;display:-webkit-box;
   -webkit-line-clamp:5;-webkit-box-orient:vertical;
   overflow:hidden;
+  white-space:pre-wrap;
+  word-break:break-word;
 }
 .pin-card .pin-badge{top:4px;right:4px;}
 
@@ -2347,6 +2352,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:-webkit-box;
   -webkit-box-orient:vertical;
   word-break:break-word;
+  white-space:pre-wrap;
   background:var(--surface);
 }
 .today-newcard.note .ctxt{background:#FFFDF5;}
