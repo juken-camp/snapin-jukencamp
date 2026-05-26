@@ -3253,19 +3253,65 @@ function listCardInner(c){
 //   fz=8  lh=1.3  → 安全 91字 / 9行
 //   fz=7  lh=1.25 → 安全 116字 / 10行
 // 第2引数の card で揃え設定 (alignH/alignV) を反映。
+//
+// 改行を含むメモ(箇条書きなど)は単なる文字数ではサイズが決められない:
+// 論理改行が多いと、文字数の見積もりよりも実際の表示行数が増えてカードからはみ出す。
+// → 文字数ベースで初期サイズを選んだあと、論理改行と各行の折り返しを合算した
+//   「推定総行数」が clamp に収まるかを確認し、収まらなければサイズを1段下げる。
+//   こうすることで編集画面と同じ全文が常にグリッドにも収まる。
+const NOTE_CARD_SIZES=[
+  {fz:17, lh:1.5,  clamp:3},   // 元 clamp:null は短文中央寄せ用。総行数判定では3行扱い。
+  {fz:15, lh:1.45, clamp:4},
+  {fz:13, lh:1.4,  clamp:5},
+  {fz:11, lh:1.4,  clamp:6},
+  {fz:10, lh:1.35, clamp:7},
+  {fz:9,  lh:1.3,  clamp:8},
+  {fz:8,  lh:1.3,  clamp:9},
+  {fz:7,  lh:1.25, clamp:10},
+];
+// 文字数だけで決める初期インデックス (既存の閾値をそのまま流用)
+function noteCardInitialSizeIndex(tlen){
+  if(tlen<=12)return 0;
+  if(tlen<=21)return 1;
+  if(tlen<=31)return 2;
+  if(tlen<=44)return 3;
+  if(tlen<=57)return 4;
+  if(tlen<=72)return 5;
+  if(tlen<=91)return 6;
+  return 7;
+}
+// 与えられたフォントサイズで、各論理行が何行に折り返されるかを推定し合計する。
+// グリッドのセル幅は画面幅 ÷ 3 = だいたい 130〜140px。padding:10px×2 を引くと
+// テキスト領域は約 110〜120px。小さめの端末 (iPhone SE 等) や安全側を取って 100px と置く。
+// 日本語1文字 ≒ fz px と概算し、さらに 0.9 倍の安全マージンをかける。
+function estimateNoteLineCount(text,fz){
+  const usableWidth=100;
+  const charsPerLine=Math.max(1, Math.floor((usableWidth*0.9)/fz));
+  const lines=String(text||'').split('\n');
+  let total=0;
+  for(const line of lines){
+    if(line.length===0){ total+=1; continue; } // 空行も1行ぶん場所を取る
+    total += Math.ceil(line.length / charsPerLine);
+  }
+  return total;
+}
+
 function noteCardStyle(card,col){
   const text=card.text||'';
   const tlen=text.length;
   const align=resolveAlign(card);
-  let fz,lh,clamp;
-  if(tlen<=12){fz=17;lh=1.5;clamp=null;}
-  else if(tlen<=21){fz=15;lh=1.45;clamp=4;}
-  else if(tlen<=31){fz=13;lh=1.4;clamp=5;}
-  else if(tlen<=44){fz=11;lh=1.4;clamp=6;}
-  else if(tlen<=57){fz=10;lh=1.35;clamp=7;}
-  else if(tlen<=72){fz=9;lh=1.3;clamp=8;}
-  else if(tlen<=91){fz=8;lh=1.3;clamp=9;}
-  else {fz=7;lh=1.25;clamp=10;}
+  // 文字数で一旦サイズを決めて、改行込みの実表示行数が clamp を超えないように
+  // 必要に応じてサイズを1段ずつ下げる (最小は配列の最後)。
+  let idx=noteCardInitialSizeIndex(tlen);
+  while(idx<NOTE_CARD_SIZES.length-1){
+    const s=NOTE_CARD_SIZES[idx];
+    if(estimateNoteLineCount(text,s.fz)<=s.clamp)break;
+    idx++;
+  }
+  const {fz,lh}=NOTE_CARD_SIZES[idx];
+  // clamp:null 相当 (短文中央寄せ) は -webkit-line-clamp を付けない挙動を維持するため、
+  // 文字数 <=12 かつ改行少なめのときだけ clamp を外す。それ以外は配列の値を使う。
+  const clamp=(tlen<=12 && estimateNoteLineCount(text,fz)<=3) ? null : NOTE_CARD_SIZES[idx].clamp;
   let style=`background:${col.bg};color:${col.fg};font-size:${fz}px;line-height:${lh};`;
   // 揃え:
   //   alignV=center または alignH=center を使うとき → flex レイアウト
