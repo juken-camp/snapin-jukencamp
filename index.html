@@ -1820,6 +1820,49 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .detail-tag-add-btn:active{background:var(--gd);}
 
+/* タグサジェスト (入力欄の下に既存タグを横スクロールチップで表示)
+   入力が空なら全タグから頻度順、入力中なら部分一致で絞り込む。
+   タップで即追加。 */
+.tag-suggest{
+  display:flex;
+  gap:6px;
+  padding:0 20px 8px;
+  overflow-x:auto;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.tag-suggest::-webkit-scrollbar{display:none;}
+.tag-suggest.hide{display:none;}
+.tag-suggest-chip{
+  display:inline-flex;
+  align-items:center;
+  flex-shrink:0;
+  padding:5px 11px;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:14px;
+  font-size:12px;
+  color:var(--ink2);
+  font-weight:500;
+  white-space:nowrap;
+  cursor:pointer;
+  transition:transform .08s, background .12s;
+}
+.tag-suggest-chip:active{
+  transform:scale(0.96);
+  background:var(--gl);
+  color:var(--gd);
+  border-color:var(--g);
+}
+.tag-suggest-empty{
+  font-size:11px;
+  color:var(--ink3);
+  padding:2px 4px;
+  white-space:nowrap;
+}
+/* 投稿画面ではパディングが上下文脈と二重にならないように */
+.up-tags-wrap .tag-suggest{padding:0;margin-top:8px;}
+
 /* 投稿画面のタグエディタ
    詳細画面用の .detail-tags / .detail-tag-input-row を流用しつつ、
    upload-body の内側 padding と二重にならないよう調整する */
@@ -2715,6 +2758,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         </button>
       </div>
+      <div class="tag-suggest hide" id="detail-tag-suggest"></div>
       <div id="detail-content"></div>
       <div id="detail-chat-log"></div>
     </div>
@@ -4905,50 +4949,66 @@ function appendUploadTagEditor(body){
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
     </button>
   `;
+  // 過去タグからのサジェスト行 (入力欄の直下)
+  const suggestRow=document.createElement('div');
+  suggestRow.className='tag-suggest hide';
+  suggestRow.id='up-tag-suggest';
 
   wrap.appendChild(tagsArea);
   wrap.appendChild(inputRow);
+  wrap.appendChild(suggestRow);
   body.appendChild(wrap);
 
+  let suggestApi=null;
   const renderChips=()=>{
     const tags=state.current.tags||[];
     if(tags.length===0){
       tagsArea.innerHTML='';
       tagsArea.classList.add('empty');
-      return;
-    }
-    tagsArea.classList.remove('empty');
-    tagsArea.innerHTML=tags.map((t,i)=>
-      `<span class="detail-tag" data-tag-idx="${i}">#${esc(t)} <span class="detail-tag-del" data-tag-idx="${i}">✕</span></span>`
-    ).join('');
-    tagsArea.querySelectorAll('.detail-tag-del').forEach(btn=>{
-      btn.addEventListener('click',e=>{
-        e.stopPropagation();
-        const idx=parseInt(btn.dataset.tagIdx,10);
-        state.current.tags.splice(idx,1);
-        renderChips();
+    }else{
+      tagsArea.classList.remove('empty');
+      tagsArea.innerHTML=tags.map((t,i)=>
+        `<span class="detail-tag" data-tag-idx="${i}">#${esc(t)} <span class="detail-tag-del" data-tag-idx="${i}">✕</span></span>`
+      ).join('');
+      tagsArea.querySelectorAll('.detail-tag-del').forEach(btn=>{
+        btn.addEventListener('click',e=>{
+          e.stopPropagation();
+          const idx=parseInt(btn.dataset.tagIdx,10);
+          state.current.tags.splice(idx,1);
+          renderChips();
+          if(suggestApi)suggestApi.refresh();
+        });
       });
-    });
+    }
   };
   renderChips();
 
   const input=document.getElementById('up-tag-input');
   const addBtn=document.getElementById('up-tag-add-btn');
-  const commit=()=>{
-    const v=input.value.replace(/^#+/,'').trim().replace(/\s+/g,'');
+  const commit=(rawTag)=>{
+    // rawTag が渡されていればそれを使う (サジェストから)、なければ input の値を使う
+    const source=(rawTag!==undefined)?rawTag:input.value;
+    const v=String(source).replace(/^#+/,'').trim().replace(/\s+/g,'');
     if(!v)return;
-    if((state.current.tags||[]).includes(v)){toast('すでに追加されています');input.value='';return;}
+    if((state.current.tags||[]).some(t=>t.toLowerCase()===v.toLowerCase())){
+      toast('すでに追加されています');
+      input.value='';
+      return;
+    }
     state.current.tags.push(v);
     input.value='';
     renderChips();
+    if(suggestApi)suggestApi.refresh();
   };
-  addBtn.addEventListener('click',commit);
+  addBtn.addEventListener('click',()=>commit());
   input.addEventListener('keydown',e=>{
     if(e.key==='Enter'){
       e.preventDefault();
       commit();
     }
   });
+  // サジェストを配線
+  suggestApi=setupTagSuggest(suggestRow,input,()=>state.current.tags||[],commit);
 }
 
 function renderListItems(wrap){
@@ -6067,7 +6127,7 @@ function renderArchiveScreen(){
       <div class="bin-empty-icon">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
       </div>
-      リストから外したメモはまだありません。<br>暗記練習などで一旦視界から外したいメモは<br>詳細メニューから「リストから外す」を選んでください。
+      リストから外したメモはまだありません。<br>一旦リストから外したいメモは<br>詳細メニューから「リストから外す」を選んでください。
     </div>`;
     return;
   }
@@ -6839,6 +6899,85 @@ function getAllTags(){
   return Array.from(set).sort();
 }
 
+// タグ一覧を「よく使う順」で返す。同数なら 50音/アルファベット順。
+// サジェスト UI で「最初に何を出すか」用。
+function getTagsByFrequency(){
+  const count=new Map();
+  getActiveCards().forEach(c=>{
+    (c.tags||[]).forEach(t=>{
+      count.set(t,(count.get(t)||0)+1);
+    });
+  });
+  return Array.from(count.entries())
+    .sort((a,b)=>(b[1]-a[1]) || a[0].localeCompare(b[0],'ja'))
+    .map(([t])=>t);
+}
+
+// タグ入力欄の下にサジェストを表示する共通ユーティリティ。
+// 入力が空 → 頻度順 全タグ、入力中 → 部分一致で絞り込み (前方一致を優先)。
+// すでに追加済みのタグは候補から外す。
+// タップで commit(tagName) を呼ぶ。
+// suggestEl: チップを並べるコンテナ <div class="tag-suggest">
+// input: <input>
+// getCurrentTags: () => string[] (この投稿/メモに既に付いているタグ)
+// commit: (tagName) => void (タグ追加処理。input.value のクリアは呼び出し側で)
+function setupTagSuggest(suggestEl,input,getCurrentTags,commit){
+  if(!suggestEl||!input)return;
+  const MAX=12;
+  const norm=s=>String(s||'').replace(/^#+/,'').trim().replace(/\s+/g,'').toLowerCase();
+  const refresh=()=>{
+    const all=getTagsByFrequency();
+    const already=new Set((getCurrentTags()||[]).map(t=>t.toLowerCase()));
+    const q=norm(input.value);
+    let candidates=all.filter(t=>!already.has(t.toLowerCase()));
+    if(q){
+      // 前方一致と部分一致を分けて、前方一致を先に
+      const starts=[],contains=[];
+      candidates.forEach(t=>{
+        const lt=t.toLowerCase();
+        if(lt===q)return; // 完全一致は出しても無意味
+        if(lt.startsWith(q))starts.push(t);
+        else if(lt.includes(q))contains.push(t);
+      });
+      candidates=[...starts,...contains];
+    }
+    candidates=candidates.slice(0,MAX);
+    if(candidates.length===0){
+      suggestEl.classList.add('hide');
+      suggestEl.innerHTML='';
+      return;
+    }
+    suggestEl.classList.remove('hide');
+    suggestEl.innerHTML=candidates.map(t=>
+      `<span class="tag-suggest-chip" data-tag="${esc(t)}">#${esc(t)}</span>`
+    ).join('');
+  };
+  // タップで追加 (mousedown を使うと、input の blur より前に発火するので
+  //  blur で hide してもチップタップが効く)
+  suggestEl.addEventListener('mousedown',e=>{
+    const chip=e.target.closest('.tag-suggest-chip');
+    if(!chip)return;
+    e.preventDefault(); // input の blur を防ぐ
+    commit(chip.dataset.tag);
+    input.value='';
+    refresh();
+  });
+  // タッチ端末用 (mousedown が同じ動きで来るが、touchstart で確実に拾う)
+  suggestEl.addEventListener('touchstart',e=>{
+    const chip=e.target.closest('.tag-suggest-chip');
+    if(!chip)return;
+    e.preventDefault();
+    commit(chip.dataset.tag);
+    input.value='';
+    refresh();
+  },{passive:false});
+  input.addEventListener('input',refresh);
+  input.addEventListener('focus',refresh);
+  // 初期描画
+  refresh();
+  return {refresh};
+}
+
 // 詳細画面のタグエリアを描画
 function renderDetailTags(c){
   const area=$('detail-tags');
@@ -6869,7 +7008,8 @@ function addTag(tagName){
   const cIdx=state.cards.findIndex(x=>x.id===state.current.id);
   if(cIdx<0)return;
   if(!state.cards[cIdx].tags)state.cards[cIdx].tags=[];
-  if(state.cards[cIdx].tags.includes(tagName)){toast('すでに追加されています');return;}
+  const lc=tagName.toLowerCase();
+  if(state.cards[cIdx].tags.some(t=>t.toLowerCase()===lc)){toast('すでに追加されています');return;}
   state.cards[cIdx].tags.push(tagName);
   state.current.tags=state.cards[cIdx].tags;
   save();
@@ -7339,17 +7479,31 @@ $('detail-input').addEventListener('keydown',e=>{
 (function setupTagInput(){
   const inp=document.getElementById('detail-tag-input');
   const btn=document.getElementById('detail-tag-add-btn');
+  const suggestEl=document.getElementById('detail-tag-suggest');
   if(!inp||!btn)return;
-  function doAdd(){
-    const v=inp.value.trim();
+  let suggestApi=null;
+  function doAdd(rawTag){
+    const source=(rawTag!==undefined)?rawTag:inp.value;
+    const v=String(source).trim();
     if(!v)return;
     addTag(v);
     inp.value='';
+    if(suggestApi)suggestApi.refresh();
   }
-  btn.addEventListener('click',doAdd);
+  btn.addEventListener('click',()=>doAdd());
   inp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){e.preventDefault();doAdd();}
   });
+  // 詳細画面が開かれている間だけサジェストが意味を持つので、
+  // フォーカス時に一度配線して使い回す。
+  if(suggestEl){
+    suggestApi=setupTagSuggest(
+      suggestEl,
+      inp,
+      ()=>(state.current&&state.current.tags)||[],
+      tag=>doAdd(tag)
+    );
+  }
 })();
 
 $('file-input').addEventListener('change',onFilePick);
