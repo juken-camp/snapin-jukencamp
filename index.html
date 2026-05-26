@@ -2972,11 +2972,23 @@ function newCountForShelf(s){
   const isDistributed=canSeeShelfId(s.id);
   if(!isDistributed && !state.subscribed.includes(s.id))return 0;
   const lastSeen=state.shelfLastSeen[s.id]||0;
-  if(lastSeen===0)return 0;
+  // ★ lastSeen が未設定の場合の扱い:
+  //   - 配布型: 「まだ開いていない棚」だが、ユーザーから見れば今初めて見る棚。
+  //     ここで「過去7日以内に追加されたカード」だけを新着扱いする。
+  //     (新規ユーザーが既存メモの大量バッジに困らされず、かつ最近の投稿には気づけるバランス)
+  //   - 購読型: lastSeen は登録時にセットされるはずなので、ここに来るのは異常系。新着0で安全側。
+  let threshold;
+  if(lastSeen>0){
+    threshold=lastSeen;
+  }else if(isDistributed){
+    threshold=Date.now()-7*24*60*60*1000; // 7日前
+  }else{
+    return 0;
+  }
   let n=0;
   for(const c of s.cards){
     const t=c.created||c.t||0;
-    if(t>lastSeen)n++;
+    if(t>threshold)n++;
   }
   return n;
 }
@@ -5813,10 +5825,18 @@ function renderLibNewSection(seenShelves){
   const items=[];
   for(const s of seenShelves){
     const lastSeen=state.shelfLastSeen[s.id]||0;
-    if(lastSeen===0)continue;
+    // lastSeen 未設定の配布型棚は、過去7日以内のカードを新着扱い (newCountForShelf と同じロジック)
+    let threshold;
+    if(lastSeen>0){
+      threshold=lastSeen;
+    }else if(canSeeShelfId(s.id)){
+      threshold=Date.now()-7*24*60*60*1000;
+    }else{
+      continue;
+    }
     for(const c of (s.cards||[])){
       const t=c.created||c.t||0;
-      if(t>lastSeen)items.push({card:c,shelf:s,t});
+      if(t>threshold)items.push({card:c,shelf:s,t});
     }
   }
   // 新しい順に並べ、最大10件
