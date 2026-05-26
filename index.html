@@ -1067,6 +1067,32 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-bottom-left-radius:5px;
   box-shadow:0 1px 2px rgba(0,0,0,.06);
 }
+/* AI返信のマルチバブル: 1つのAI返信を意味のある単位で複数バブルに分けて表示する。
+   1バブル時は従来構造のまま、2バブル以上のときだけ .multi が付き、
+   バブルを縦に積んで時刻は末尾バブルの右下に1個だけ出す。 */
+.msg-bubbles{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  max-width:74%;
+  min-width:0;
+}
+.msg-bubbles .bubble{
+  max-width:100%; /* 親(.msg-bubbles)で幅を制御するのでバブル自体は親いっぱい */
+}
+/* 連続バブルの形を LINE 風に: 最初のバブルは下角を直角寄り、最後だけ尻尾(下左角を小さく)。
+   間のバブルは両下角とも小さめにする。1個だけのときは元の .bubble の定義がそのまま効く。 */
+.msg.a .msg-bubbles .bubble:not(:last-child){border-bottom-left-radius:14px;border-bottom-right-radius:14px;}
+.msg.a .msg-bubbles .bubble:not(:first-child){border-top-left-radius:14px;}
+.msg.a .msg-bubbles .bubble:last-child{border-bottom-left-radius:5px;}
+/* 新着バブルがふわっと出るアニメーション (時間差表示時のみ .anim を付ける) */
+.bubble.anim{
+  animation:bubble-in 0.25s ease-out;
+}
+@keyframes bubble-in{
+  from{opacity:0;transform:translateY(6px);}
+  to{opacity:1;transform:translateY(0);}
+}
 .bubble-link{
   color:inherit;
   text-decoration:underline;
@@ -5614,6 +5640,66 @@ function chatTimeLabel(ts){
   return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
 }
 
+// ───────── AI返答のマルチバブル分割 ─────────
+// LINE風チャットは1バブルが縦長になると読みづらいので、AI返答を意味のある単位で
+// 複数のバブルに分けて表示する。データは1つの text フィールドのまま保存し、
+// 表示時にここで分割するので、過去メッセージにも自動で適用される。
+//
+// 方針:
+//   1. まず空行 (\n\n+) で大段落分割。AIが意図的に区切った場所を尊重する。
+//   2. 長すぎる段落 (>200字) はさらに「。」「？」「！」のあとの単一改行で分割。
+//   3. 短すぎる隣接バブル (どちらも50字未満) は結合する。吹き出しの細切れを防ぐ。
+//   4. 結果が1つだけならそのまま返す (現状と同じ見た目)。
+// 宿題の長い解説でも、自然な区切りで読める単位になるはず。
+function splitAiReplyToBubbles(text){
+  if(!text)return [''];
+  const s=String(text).trim();
+  if(!s)return [''];
+
+  // Step 1: 空行で大段落に分割
+  let parts=s.split(/\n{2,}/).map(x=>x.trim()).filter(x=>x.length>0);
+
+  // Step 2: 長すぎる段落は文末記号での単一改行を境にさらに分割
+  // (例: 解説のあとの計算過程が改行で連なっているケース)
+  const SOFT_MAX=200;
+  const refined=[];
+  for(const p of parts){
+    if(p.length<=SOFT_MAX){ refined.push(p); continue; }
+    // 「。」「？」「！」直後の改行を分割点に
+    const subs=p.split(/(?<=[。？！\?\!])\n/).map(x=>x.trim()).filter(x=>x.length>0);
+    if(subs.length<=1){
+      // 文末改行で分けられなかったら、そのまま入れる (式の連なりなどはそのままが自然)
+      refined.push(p);
+    }else{
+      // 分割後も短すぎないように、隣接で SOFT_MAX を超えない範囲でまとめ直す
+      let buf='';
+      for(const x of subs){
+        if(buf.length===0){ buf=x; }
+        else if(buf.length+x.length+1<=SOFT_MAX){ buf=buf+'\n'+x; }
+        else{ refined.push(buf); buf=x; }
+      }
+      if(buf)refined.push(buf);
+    }
+  }
+
+  // Step 3: ごく短いバブル同士だけ結合する (両方 25字未満のとき)。
+  // AIが意図して空行で分けた段落は基本そのまま尊重し、「はい」「そうです」のような
+  // 極端に短い吹き出しが連続するときだけ統合する。
+  const MIN_MERGE=25;
+  const merged=[];
+  for(const p of refined){
+    if(merged.length>0){
+      const last=merged[merged.length-1];
+      if(last.length<MIN_MERGE && p.length<MIN_MERGE){
+        merged[merged.length-1]=last+'\n\n'+p;
+        continue;
+      }
+    }
+    merged.push(p);
+  }
+  return merged.length>0?merged:[s];
+}
+
 function renderChatLog(c){
   const log=$('detail-chat-log');
   log.innerHTML='';
@@ -5639,13 +5725,35 @@ function renderChatLog(c){
     div.dataset.midx=idx;
     // pending (AI待ち) のメッセージは、ただの「…」ではなく動くドットで表示する。
     // 反応している実感がないと不安になるため。
-    const bubbleHtml=m.pending
-      ? `<div class="bubble"><div class="typing-dots" aria-label="返信を考えています"><span></span><span></span><span></span></div></div>`
-      : `<div class="bubble">${linkify(cleanAIText(m.text,m.role))}</div>`;
-    div.innerHTML=`
-      <div class="msg-time">${chatTimeLabel(t)}</div>
-      ${bubbleHtml}
-    `;
+    if(m.pending){
+      div.innerHTML=`
+        <div class="msg-time">${chatTimeLabel(t)}</div>
+        <div class="bubble"><div class="typing-dots" aria-label="返信を考えています"><span></span><span></span><span></span></div></div>
+      `;
+    }else if(isUser){
+      // ユーザー側はそのまま1バブル
+      div.innerHTML=`
+        <div class="msg-time">${chatTimeLabel(t)}</div>
+        <div class="bubble">${linkify(cleanAIText(m.text,m.role))}</div>
+      `;
+    }else{
+      // AI側: 長文なら複数バブルに分割。1バブルなら従来構造を維持。
+      const cleaned=cleanAIText(m.text,m.role);
+      const bubbles=splitAiReplyToBubbles(cleaned);
+      if(bubbles.length<=1){
+        div.innerHTML=`
+          <div class="msg-time">${chatTimeLabel(t)}</div>
+          <div class="bubble">${linkify(cleaned)}</div>
+        `;
+      }else{
+        div.classList.add('multi');
+        const bubblesHtml=bubbles.map(b=>`<div class="bubble">${linkify(b)}</div>`).join('');
+        div.innerHTML=`
+          <div class="msg-bubbles">${bubblesHtml}</div>
+          <div class="msg-time">${chatTimeLabel(t)}</div>
+        `;
+      }
+    }
     log.appendChild(div);
 
     // ユーザー側(自分が送ったもの)は長押しで取り消し
@@ -5973,7 +6081,9 @@ async function detailSend(){
           c2.chat.push({role:'ai',text:answer,t:Date.now()});
         }
         save();
-        renderChatLog(c2);
+        // 受け取った直後だけ「時間差マルチバブル」アニメーション。
+        // 完了後、または別画面に遷移したら最終的に renderChatLog で整合させる。
+        await animateNewAiReply(c2,placeholderIdx);
       }
       $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
     }catch(e){
@@ -5997,6 +6107,78 @@ async function detailSend(){
     $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
   }
 }
+
+// 新着のAI返答だけ、バブルを1つずつ時間差で出す。
+// データはすでに c.chat[placeholderIdx] に1つの text として保存されているので、
+// ここでは表示だけを段階的に行い、最後に renderChatLog で確定状態に揃える。
+//
+// 設計:
+//   - バブル間の待ち時間は短め (LINEで連投される感覚に近く、待たせない)
+//   - 直前バブルの文字数で待ち時間を緩めに変える: 長いバブルの直後は少しだけ長く
+//   - バブルとバブルの間にはタイピングドットを差し込んで「次が来る」予告にする
+//   - 既存メッセージ(履歴)の再描画には適用しない (即時表示)
+//   - ユーザーが画面を離れたら途中で打ち切って一気に確定
+async function animateNewAiReply(card,placeholderIdx){
+  const scroller=$('detail-scroll');
+  const log=$('detail-chat-log');
+  if(!log)return;
+  const msg=card.chat && card.chat[placeholderIdx];
+  if(!msg){renderChatLog(card);return;}
+  const cleaned=cleanAIText(msg.text,msg.role);
+  const bubbles=splitAiReplyToBubbles(cleaned);
+
+  // バブルが1個しかないなら従来通り即時表示で十分
+  if(bubbles.length<=1){renderChatLog(card);return;}
+
+  // まず履歴全体を一旦描画 (pending を含む完全な状態)
+  // → pending行を「最初のバブルだけ入った multi 状態」に置き換える
+  renderChatLog(card);
+  // 詳細画面から離れていた場合は何もしない (DOM が違う可能性)
+  if(!document.body.contains(log))return;
+  // 該当 msg DOM を探す
+  const msgEl=log.querySelector(`.msg[data-midx="${placeholderIdx}"]`);
+  if(!msgEl){return;}
+
+  // msgEl の中身を「マルチ初期状態」に置き換える: 最初のバブルだけ + ドット
+  msgEl.classList.add('multi');
+  const firstBubble=`<div class="bubble anim">${linkify(bubbles[0])}</div>`;
+  msgEl.innerHTML=`
+    <div class="msg-bubbles">${firstBubble}</div>
+    <div class="msg-time"><div class="typing-dots" aria-label="続きを書いています"><span></span><span></span><span></span></div></div>
+  `;
+  scroller.scrollTop=scroller.scrollHeight;
+
+  const bubblesEl=msgEl.querySelector('.msg-bubbles');
+  const timeEl=msgEl.querySelector('.msg-time');
+
+  // 表示中に画面が離れたら中断 (DOMから切り離されるか、card.id が変わる)
+  const stillVisible=()=>document.body.contains(msgEl) && state.current && state.current.id===card.id;
+
+  for(let i=1;i<bubbles.length;i++){
+    // 前バブルの長さに応じた読了 + ドットの間隔
+    const prevLen=bubbles[i-1].length;
+    const wait=prevLen<60?500:prevLen<150?800:1100;
+    await sleep(wait);
+    if(!stillVisible()){renderChatLog(card);return;}
+    // 次のバブルを追加
+    const next=document.createElement('div');
+    next.className='bubble anim';
+    next.innerHTML=linkify(bubbles[i]);
+    bubblesEl.appendChild(next);
+    scroller.scrollTop=scroller.scrollHeight;
+  }
+
+  // 全部出し終わったら、ドット部分を時刻表示に置き換える
+  if(stillVisible() && timeEl){
+    timeEl.innerHTML=chatTimeLabel(msg.t||Date.now());
+  }
+  // 念のため最後に再描画して確定状態に揃える (next openDetail などとも整合)
+  // ただし anim クラスが再アニメーションすると煩いので、最後の renderChatLog は省略してOK。
+  // (次に詳細画面を開いたときに renderChatLog が呼ばれるので、そこで自然に揃う)
+}
+
+// 単純なスリープ
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 // AI API呼び出し (本番: Vercel等のサーバレス関数を経由、デモ: ローカル応答)
 const AI_ENDPOINT='/api/chat'; // 本番ではここをサーバレス関数のURLに
