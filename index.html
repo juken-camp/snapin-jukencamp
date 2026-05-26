@@ -2105,11 +2105,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   margin-top:3px;
 }
 
-/* 今日新しく保存したカード (横スクロール) */
+/* 今日新しく保存したカード (横スクロール)。
+   gap と padding を .grid と揃えて、メモグリッドと同じ密度で並ぶようにする。 */
 .today-newcards{
   display:flex;
-  gap:8px;
-  padding:0 20px 18px;
+  gap:2px;
+  padding:0 2px 18px;
   overflow-x:auto;
   scrollbar-width:none;
 }
@@ -2132,13 +2133,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .today-more-btn:active{background:var(--gl);transform:scale(0.98);}
 .today-newcard{
-  width:110px;
+  /* メモグリッドの .card と同じセルサイズで表示 (両画面でメモのビジュアルを完全一致させる)。
+     画面幅 430px、3列、gap 2px、padding 2px の .grid と同じ計算: (430-4-2*2)/3 ≈ 140.7px → 140px。
+     画面が狭い端末でも見た目が崩れないように、最大幅 calc((100vw - 12px) / 3) で天井を切る。 */
+  width:min(140px, calc((100vw - 12px) / 3));
   aspect-ratio:1;
   flex-shrink:0;
-  border-radius:10px;
+  border-radius:2px;
   overflow:hidden;
   background:var(--surface);
-  box-shadow:var(--shadow);
   position:relative;
   cursor:pointer;
 }
