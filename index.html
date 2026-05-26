@@ -1603,7 +1603,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   margin-bottom:10px;
   display:flex;align-items:center;gap:6px;
 }
-/* 探すページ下部の控えめな入口: アーカイブ / ゴミ箱 */
+/* 探すページ下部の控えめな入口: リストから外したメモ / 捨てたメモ */
 .search-extras{
   padding:6px 0 24px;
   margin-top:8px;
@@ -1635,11 +1635,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   text-align:right;
 }
 .search-extra-chev{color:var(--ink3);flex-shrink:0;}
-.search-extras-note{
-  padding:8px 20px 0;
-  font-size:11px;
-  color:var(--ink3);
-}
 
 /* アーカイブ画面 / ゴミ箱画面共通 */
 .bin-empty{
@@ -6938,38 +6933,16 @@ function renderColorFilterBar(){
   renderTagFilterBar();
 }
 
-// 何も検索していないときの待機表示 (ピン留めメモのみ。色チップは永続バーに移動)
+// 何も検索していないときの待機表示
+// (ピン留めはホームで目立つので重複表示しない。リストから外したメモ・捨てたメモへの入口だけ置く)
 function renderSearchIdle(){
   const idle=$('search-idle');
   if(!idle)return;
-  const pinned=getActiveCards().filter(c=>c.pinned);
-  let html='';
-  if(pinned.length>0){
-    const pinHtml=pinned.slice(0,12).map(c=>{
-      let inner='';
-      if(c.type==='photo'||c.type==='photonote'){
-        inner=`<img src="${c.image||''}" alt="">`;
-      }else if(c.type==='note'){
-        const col=colorById(c.color);
-        inner=`<div class="ctxt" style="background:${col.bg};color:${col.fg};">${esc(c.text||'')}</div>`;
-      }else if(c.type==='list'){
-        inner=`<div class="ctxt"><b>${esc(c.title||'リスト')}</b></div>`;
-      }
-      return `<div class="pin-card" data-card-id="${esc(c.id)}">${inner}</div>`;
-    }).join('');
-    html+=`<div class="search-idle-block">
-      <div class="search-idle-title">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg>
-        ピン留めしたメモ
-      </div>
-      <div class="pin-strip">${pinHtml}</div>
-    </div>`;
-  }
 
   // 控えめな入口: リストから外したメモ と 捨てたメモ (件数表示付き)
   const archivedCount=state.cards.filter(isArchivedCard).length;
   const trashedCount=state.cards.filter(isTrashedCard).length;
-  html+=`<div class="search-extras">
+  const html=`<div class="search-extras">
     <button class="search-extra-row" data-action="open-archive">
       <span class="search-extra-icon">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
@@ -6986,16 +6959,9 @@ function renderSearchIdle(){
       <span class="search-extra-count">${trashedCount?trashedCount:''}</span>
       <svg class="search-extra-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
-    <div class="search-extras-note">捨てたメモは7日間ここに残ります</div>
   </div>`;
 
   idle.innerHTML=html;
-  idle.querySelectorAll('.pin-card').forEach(el=>{
-    el.addEventListener('click',()=>{
-      const c=state.cards.find(x=>x.id===el.dataset.cardId);
-      if(c)openDetail(c,'mine');
-    });
-  });
 }
 
 // ═══ SPACED REPETITION ═══
