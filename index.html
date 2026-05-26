@@ -2244,6 +2244,67 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .save-ok.on .save-ok-circle{transform:scale(1);}
 
+/* 設定シート (ボトムシート風): バックアップ/復元のメニュー */
+.settings-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.32);
+  z-index:400;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s ease;
+}
+.settings-backdrop.on{opacity:1;pointer-events:auto;}
+.settings-sheet{
+  position:absolute;
+  left:0;right:0;bottom:0;
+  background:var(--surface);
+  border-radius:18px 18px 0 0;
+  padding:8px 16px calc(20px + env(safe-area-inset-bottom)) 16px;
+  z-index:410;
+  transform:translateY(110%);
+  transition:transform .26s cubic-bezier(.32,.72,.34,1);
+  box-shadow:0 -8px 28px rgba(0,0,0,.12);
+}
+.settings-sheet.on{transform:translateY(0);}
+.settings-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:var(--line2);
+  margin:6px auto 14px;
+}
+.settings-title{
+  font-size:13px;color:var(--ink3);
+  padding:0 4px 8px;
+  letter-spacing:.04em;
+}
+.settings-item{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  width:100%;
+  padding:14px 4px;
+  text-align:left;
+  border-bottom:1px solid var(--line);
+}
+.settings-item:last-of-type{border-bottom:none;}
+.settings-item:active{background:var(--bg);}
+.settings-item-icon{
+  width:36px;height:36px;
+  border-radius:10px;
+  background:var(--gl);
+  color:var(--g);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.settings-item-text{flex:1;min-width:0;}
+.settings-item-title{font-size:15px;color:var(--ink);font-weight:500;}
+.settings-item-sub{font-size:12px;color:var(--ink3);margin-top:2px;}
+.settings-note{
+  font-size:11.5px;color:var(--ink3);
+  padding:14px 4px 4px;
+  line-height:1.5;
+}
+
 .hide{display:none !important;}
 </style>
 </head>
@@ -2318,6 +2379,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button data-action="toggle-mosaic" id="mosaic-btn" aria-label="思い出す">
         <svg class="eye-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
         <svg class="eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" stroke-linecap="round"/></svg>
+      </button>
+      <button data-action="open-settings" aria-label="設定">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/></svg>
       </button>
       <button data-action="logout-confirm" aria-label="ログアウト">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
@@ -2576,6 +2640,33 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 </div>
 <input type="file" id="file-input" accept="image/*" style="display:none;">
 <input type="file" id="file-input-any" accept=".png,.jpg,.jpeg,.gif,.webp,.heic,.heif" style="display:none;">
+<input type="file" id="restore-input" accept="application/json,.json" style="display:none;">
+
+<!-- 設定シート (バックアップ/復元) -->
+<div class="settings-backdrop" id="settings-backdrop" data-action="close-settings"></div>
+<div class="settings-sheet" id="settings-sheet" aria-hidden="true">
+  <div class="settings-handle"></div>
+  <div class="settings-title">設定</div>
+  <button class="settings-item" data-action="export-backup">
+    <div class="settings-item-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </div>
+    <div class="settings-item-text">
+      <div class="settings-item-title">バックアップを書き出す</div>
+      <div class="settings-item-sub" id="settings-export-sub">個人メモを JSON ファイルで保存</div>
+    </div>
+  </button>
+  <button class="settings-item" data-action="import-backup">
+    <div class="settings-item-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <div class="settings-item-text">
+      <div class="settings-item-title">バックアップから復元</div>
+      <div class="settings-item-sub">書き出した JSON ファイルを読み込む</div>
+    </div>
+  </button>
+  <div class="settings-note">バックアップは公式ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
+</div>
 
 </div><!-- .app -->
 
@@ -2891,8 +2982,18 @@ function listCardInner(c){
   return `<div class="ctxt">${title}${itemsHtml}</div>`;
 }
 // グリッドのテキストメモ用: 文字数に応じてフォントサイズ・行高・行数制限を決める。
-// グリッドセルは 142×142px 前後、内部 padding 10pxで 122×122px。
-// 長文でも全体が見えることを優先し、極小サイズでも下限まで縮める。
+// グリッドセルは ~140×140px、内部 padding 10pxで実テキスト領域は ~100×100px。
+// この領域に必ず収まるよう、各フォントサイズの「収容文字数」を実測ベースで設計:
+//   1行あたり収まる全角文字数 ≒ 100 / fz, 行数 ≒ 100 / (fz*lh)
+//   実際は記号・改行・約物のぶれがあるので 5% の安全マージンを取って閾値を決める:
+//     fz=17 lh=1.5  → 約21字まで / 3行
+//     fz=15 lh=1.45 → 約29字まで / 4行
+//     fz=13 lh=1.4  → 約40字まで / 5行
+//     fz=11 lh=1.4  → 約56字まで / 6行
+//     fz=10 lh=1.35 → 約70字まで / 7行
+//     fz=9  lh=1.35 → 約86字まで / 8行
+//     fz=8  lh=1.3  → 約114字まで / 9行
+//     fz=7  lh=1.25 → 約155字まで / 11行
 // 第2引数の card で揃え設定 (alignH/alignV) を反映。
 function noteCardStyle(card,col){
   const text=card.text||'';
@@ -2900,12 +3001,13 @@ function noteCardStyle(card,col){
   const align=resolveAlign(card);
   let fz,lh,clamp;
   if(tlen<=12){fz=17;lh=1.5;clamp=null;}
-  else if(tlen<=25){fz=15;lh=1.45;clamp=null;}
-  else if(tlen<=50){fz=13;lh=1.4;clamp=10;}
-  else if(tlen<=85){fz=11;lh=1.4;clamp=14;}
-  else if(tlen<=130){fz=9;lh=1.35;clamp=18;}
-  else if(tlen<=200){fz=8;lh=1.3;clamp=22;}
-  else {fz=7;lh=1.25;clamp=27;}
+  else if(tlen<=21){fz=15;lh=1.45;clamp=4;}
+  else if(tlen<=40){fz=13;lh=1.4;clamp=5;}
+  else if(tlen<=56){fz=11;lh=1.4;clamp=6;}
+  else if(tlen<=70){fz=10;lh=1.35;clamp=7;}
+  else if(tlen<=86){fz=9;lh=1.35;clamp=8;}
+  else if(tlen<=114){fz=8;lh=1.3;clamp=9;}
+  else {fz=7;lh=1.25;clamp=11;}
   let style=`background:${col.bg};color:${col.fg};font-size:${fz}px;line-height:${lh};`;
   // 揃え:
   //   alignV=center または alignH=center を使うとき → flex レイアウト
@@ -3132,6 +3234,8 @@ async function refreshMe(force){
 
 function goto(id,push){
   if(push===undefined)push=true;
+  // 設定シートが開いていたら閉じる (画面遷移時に取り残されない)
+  if($('settings-sheet')?.classList.contains('on'))closeSettings();
   // ホーム以外に移ったら選択モードを解除
   if(id!=='screen-home' && state.selectMode){
     state.selectMode=false;
@@ -3290,6 +3394,230 @@ function logoutConfirm(){
   save();
   state.navStack=['screen-login'];
   goto('screen-login',false);
+}
+
+// ═══ 設定シート (バックアップ/復元) ═══
+// 個人メモは PWA を削除したり機種変したりすると消えてしまう。
+// サーバー同期は塾生プラン側で別途検討するとして、まずクライアントだけで完結する
+// JSON エクスポート/インポート方式を用意する。
+// 公式棚 (subscribed/distributed) の中身そのものはサーバー由来なので含めない。
+// 復元はマージ既定 (ID 重複は既存優先) ＋ オプションで全置換も選べる。
+
+function openSettings(){
+  const sub=$('settings-export-sub');
+  if(sub){
+    const personalCount=state.cards.filter(c=>!c.fromShelf).length;
+    const photoCount=state.cards.filter(c=>(c.type==='photo'||c.type==='photonote') && !c.fromShelf).length;
+    sub.textContent=`個人メモ ${personalCount} 件${photoCount?` (うち写真 ${photoCount} 件)`:''}`;
+  }
+  $('settings-backdrop').classList.add('on');
+  $('settings-sheet').classList.add('on');
+  $('settings-sheet').setAttribute('aria-hidden','false');
+}
+function closeSettings(){
+  $('settings-backdrop').classList.remove('on');
+  $('settings-sheet').classList.remove('on');
+  $('settings-sheet').setAttribute('aria-hidden','true');
+}
+
+// ── エクスポート ──
+// 個人メモのみを対象とする (fromShelf を持つカード = 公式棚からコピーしたもの は除外)。
+// 画像は state.cards.image (dataURL) が hydrateCardImages で既に展開済みなので、
+// そのまま JSON に乗せれば良い。
+async function exportBackup(){
+  try{
+    // 念のため、現在 state.cards に画像 dataURL が乗っていない可能性に備えて再 hydrate
+    await hydrateCardImages();
+
+    const personalCards=state.cards.filter(c=>c && !c.fromShelf);
+    const payload={
+      app:'SnapIn',
+      version:1,
+      exportedAt:new Date().toISOString(),
+      cardCount:personalCards.length,
+      cards:personalCards,
+      libraryOrder:state.libraryOrder||{},
+      shelfLastSeen:state.shelfLastSeen||{},
+      subscribed:Array.isArray(state.subscribed)?state.subscribed:[],
+    };
+    const json=JSON.stringify(payload);
+    const blob=new Blob([json],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+
+    const today=new Date();
+    const ymd=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`snapin-backup-${ymd}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // iOS Safari でも安全に開放できるよう少し待つ
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+    closeSettings();
+    showSaveOk();
+    const mb=(blob.size/1024/1024).toFixed(1);
+    toast(`バックアップを書き出しました (${personalCards.length}件 / ${mb}MB)`);
+  }catch(e){
+    console.error('export failed:',e);
+    alert('バックアップの書き出しに失敗しました。\n\n'+(e.message||e));
+  }
+}
+
+// ── インポート ──
+function importBackup(){
+  // ファイル選択ダイアログを開く (実際の処理は change イベントで)
+  const inp=$('restore-input');
+  inp.value=''; // 同じファイルを2回選んでも change が発火するようにリセット
+  inp.click();
+}
+
+async function handleRestoreFile(e){
+  const file=e.target.files && e.target.files[0];
+  if(!file)return;
+  try{
+    const text=await file.text();
+    let payload;
+    try{payload=JSON.parse(text);}
+    catch(parseErr){
+      alert('このファイルは SnapIn のバックアップとして読み込めませんでした。\n(JSON として解釈できません)');
+      return;
+    }
+    if(!payload || payload.app!=='SnapIn' || !Array.isArray(payload.cards)){
+      alert('このファイルは SnapIn のバックアップではないようです。');
+      return;
+    }
+
+    const incoming=payload.cards.filter(c=>c && c.id);
+    if(incoming.length===0){
+      alert('バックアップにメモが含まれていませんでした。');
+      return;
+    }
+
+    // 現在の個人メモ件数
+    const existingPersonal=state.cards.filter(c=>c && !c.fromShelf);
+
+    // 確認ダイアログ: マージか全置換か
+    const exportedAt=payload.exportedAt?new Date(payload.exportedAt).toLocaleString('ja-JP'):'(日時不明)';
+    let mode='merge';
+    if(existingPersonal.length>0){
+      // 既存メモあり: マージ(OK) か キャンセル
+      const ok=confirm(
+        'バックアップから復元します。\n\n'+
+        `書き出し日時: ${exportedAt}\n`+
+        `バックアップ内のメモ: ${incoming.length}件\n`+
+        `現在の個人メモ: ${existingPersonal.length}件\n\n`+
+        '【追加して復元】します。同じIDのメモは現在の内容を優先します。\n'+
+        '(端末の現在のメモは消えません)'
+      );
+      if(!ok)return;
+      // 追加で「全部このバックアップで置き換える?」を聞く (任意の上書きモード)
+      const replaceAll=confirm(
+        '※特別な操作: 現在の個人メモをすべて削除して、\n'+
+        'バックアップの内容だけにしますか?\n\n'+
+        '[OK]    → 全置換 (現在のメモは消えます)\n'+
+        '[キャンセル] → 追加で復元 (推奨)'
+      );
+      mode=replaceAll?'replace':'merge';
+    }else{
+      // 既存メモなし: 確認だけ
+      const ok=confirm(
+        'バックアップから復元します。\n\n'+
+        `書き出し日時: ${exportedAt}\n`+
+        `メモ: ${incoming.length}件\n\n`+
+        '復元してよろしいですか?'
+      );
+      if(!ok)return;
+    }
+
+    closeSettings();
+    toast('復元中...');
+
+    // 公式棚由来カードは消したくないので、復元先のベースに残す
+    const shelfCards=state.cards.filter(c=>c && c.fromShelf);
+
+    let baseCards;
+    if(mode==='replace'){
+      // 個人メモは全部破棄して、バックアップのカードで置き換え
+      baseCards=[...shelfCards];
+    }else{
+      // マージ: 既存個人メモはそのまま残し、IDが被らないものだけ追加
+      baseCards=[...state.cards];
+    }
+    const existingIds=new Set(baseCards.map(c=>c && c.id).filter(Boolean));
+
+    let added=0;
+    let skipped=0;
+    const imagesToWrite=[]; // [ [id, dataUrl], ... ]
+    for(const c of incoming){
+      if(!c.id){skipped++;continue;}
+      if(existingIds.has(c.id)){skipped++;continue;}
+      // 画像があれば IndexedDB に書き戻す
+      if(c.image && typeof c.image==='string' && c.image.startsWith('data:')){
+        imagesToWrite.push([c.id,c.image]);
+      }
+      // __hasImg フラグはここで消す (state.cards 上では image を実体で持つので不要)
+      const clone={...c};
+      delete clone.__hasImg;
+      baseCards.push(clone);
+      existingIds.add(c.id);
+      added++;
+    }
+
+    // 並び順/閲覧記録/購読は、復元元の情報がある場合のみマージ的に上書き
+    if(payload.libraryOrder && typeof payload.libraryOrder==='object'){
+      state.libraryOrder={...state.libraryOrder,...payload.libraryOrder};
+    }
+    if(payload.shelfLastSeen && typeof payload.shelfLastSeen==='object'){
+      // shelfLastSeen は新しい方を採用
+      const merged={...state.shelfLastSeen};
+      for(const [k,v] of Object.entries(payload.shelfLastSeen)){
+        if(typeof v==='number' && (!merged[k] || v>merged[k]))merged[k]=v;
+      }
+      state.shelfLastSeen=merged;
+    }
+    if(Array.isArray(payload.subscribed)){
+      // subscribed は union (重複排除)
+      const set=new Set(state.subscribed||[]);
+      payload.subscribed.forEach(id=>set.add(id));
+      state.subscribed=[...set];
+    }
+
+    state.cards=baseCards;
+
+    // 画像を IndexedDB に書く (件数が多いと時間がかかるので順次)
+    let imgFailed=0;
+    for(const [id,dataUrl] of imagesToWrite){
+      try{await imgDB.put(id,dataUrl);}
+      catch(err){console.warn('restore: imgDB.put failed',id,err);imgFailed++;}
+    }
+
+    // localStorage に保存。容量オーバー時は失敗を伝える。
+    const saved=save();
+    if(!saved){
+      alert(
+        '復元データの保存に失敗しました (端末の容量不足の可能性)。\n\n'+
+        '画面上には復元されていますが、アプリを閉じると一部が失われるかもしれません。\n'+
+        '不要な写真メモを削除してから、もう一度お試しください。'
+      );
+    }
+
+    // 再描画
+    renderHome();
+    if(typeof renderLibrary==='function')renderLibrary();
+
+    let msg=`復元しました (新規${added}件`;
+    if(skipped)msg+=` / 重複${skipped}件はスキップ`;
+    msg+=')';
+    if(imgFailed)msg+=` ※画像 ${imgFailed} 件に問題`;
+    toast(msg);
+    showSaveOk();
+
+  }catch(err){
+    console.error('restore failed:',err);
+    alert('復元中にエラーが発生しました。\n\n'+(err.message||err));
+  }
 }
 
 // ═══ TODAY ═══
@@ -6527,6 +6855,10 @@ document.addEventListener('click',e=>{
     case 'goto-claim':gotoClaim();break;
     case 'claim-submit':doClaimSubmit();break;
     case 'logout-confirm':logoutConfirm();break;
+    case 'open-settings':openSettings();break;
+    case 'close-settings':closeSettings();break;
+    case 'export-backup':exportBackup();break;
+    case 'import-backup':importBackup();break;
     case 'nav-home':goto('screen-home');break;
     case 'nav-today':goto('screen-today');break;
     case 'nav-library':goto('screen-library');break;
@@ -6624,6 +6956,7 @@ $('detail-input').addEventListener('keydown',e=>{
 
 $('file-input').addEventListener('change',onFilePick);
 $('file-input-any').addEventListener('change',onFilePick);
+$('restore-input').addEventListener('change',handleRestoreFile);
 
 // ═══ PULL TO REFRESH ═══
 // 各 .scroll コンテナで、頂部から下に引っ張ると更新する
