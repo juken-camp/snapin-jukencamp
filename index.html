@@ -5669,10 +5669,14 @@ function appendUploadTagEditor(body){
     input.value='';
     renderChips();
     if(suggestApi)suggestApi.refresh();
+    // 連続でタグを追加できるようフォーカスを保つ
+    input.focus();
   };
   addBtn.addEventListener('click',()=>commit());
   input.addEventListener('keydown',e=>{
     if(e.key==='Enter'){
+      // IME 変換中の Enter は確定操作なので除外
+      if(e.isComposing||e.keyCode===229)return;
       e.preventDefault();
       commit();
     }
@@ -5758,6 +5762,8 @@ function buildListItemRow(wrap, i){
   inp.addEventListener('input',e=>{state.current.items[i].t=e.target.value;});
   inp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){
+      // IME 変換中の Enter は確定操作。新項目を作ってしまうと変換結果を捨てることになる。
+      if(e.isComposing||e.keyCode===229)return;
       e.preventDefault();
       // 直前の項目の記号を継承 (リストの見た目を作りやすくする)
       const prev=state.current.items[state.current.items.length-1];
@@ -6715,6 +6721,8 @@ function openDetail(c,origin){
   renderChatLog(c);
 
   // リスト項目クリック (自分の棚のみ、check モードの項目のみ)
+  // 全画面再描画を避け、該当行の DOM だけを書き換える。これでスクロール位置・
+  // タグ入力中のフォーカス・チャットログの状態がすべて維持される。
   if(!isOfficial){
     $('detail-content').querySelectorAll('.detail-list-item').forEach(el=>{
       el.addEventListener('click',()=>{
@@ -6723,13 +6731,23 @@ function openDetail(c,origin){
         if(!it)return;
         // 番号項目はチェック動作なし (装飾のみ)
         if((it.mark||'check')==='number')return;
+        // モデル更新
         state.current.items[idx].d=!state.current.items[idx].d;
+        const newDone=state.current.items[idx].d===true;
         const i=state.cards.findIndex(x=>x.id===state.current.id);
         if(i>=0){
           state.cards[i].items=state.current.items;
           save();
         }
-        openDetail(state.cards[i],'mine');
+        // DOMだけ差分更新: .done クラスとチェックマークSVG
+        el.classList.toggle('done',newDone);
+        const chk=el.querySelector('.chk');
+        if(chk){
+          chk.classList.toggle('on',newDone);
+          chk.innerHTML=newDone
+            ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4L19 7"/></svg>'
+            : '';
+        }
       });
     });
   }
@@ -8658,6 +8676,8 @@ $('search-q').addEventListener('input',doSearch);
 $('quick-input').addEventListener('input',onQuickInput);
 $('quick-input').addEventListener('keydown',e=>{
   if(e.key==='Enter' && !e.shiftKey){
+    // IME 変換中の Enter は確定操作なので除外
+    if(e.isComposing||e.keyCode===229)return;
     e.preventDefault();
     quickSave();
   }
@@ -8668,11 +8688,18 @@ $('detail-input').addEventListener('input',e=>{
   e.target.style.height=Math.min(120,e.target.scrollHeight)+'px';
 });
 $('detail-input').addEventListener('keydown',e=>{
-  if(e.key==='Enter' && !e.shiftKey && (e.metaKey || e.ctrlKey)){
-    // Cmd/Ctrl+Enter で送信
-    e.preventDefault();
-    detailSend();
-  }
+  // 送信ルール (LINE 風):
+  //   - Enter のみ           → 送信
+  //   - Shift + Enter        → 改行
+  //   - Cmd/Ctrl + Enter     → 送信 (PCの慣習にも対応)
+  // モバイルのソフトキーボードでも Enter キーで送れるようにすることで、
+  // LINE/iMessage と同じテンポで連投できる。
+  // ただし IME 変換中の Enter は誤送信になるので除外する (isComposing / keyCode 229)。
+  if(e.key!=='Enter')return;
+  if(e.isComposing||e.keyCode===229)return;
+  if(e.shiftKey)return; // 改行は Shift+Enter で
+  e.preventDefault();
+  detailSend();
 });
 
 
@@ -8690,10 +8717,19 @@ $('detail-input').addEventListener('keydown',e=>{
     addTag(v);
     inp.value='';
     if(suggestApi)suggestApi.refresh();
+    // 連続でもう1つタグを追加できるよう、入力欄にフォーカスを戻す。
+    // iOS Safari でも、これがユーザー操作 (click/keydown) のスコープ内で呼ばれているので
+    // キーボードは開いたまま。
+    inp.focus();
   }
   btn.addEventListener('click',()=>doAdd());
   inp.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){e.preventDefault();doAdd();}
+    if(e.key==='Enter'){
+      // IME 変換中の Enter は確定操作
+      if(e.isComposing||e.keyCode===229)return;
+      e.preventDefault();
+      doAdd();
+    }
   });
   // 詳細画面が開かれている間だけサジェストが意味を持つので、
   // フォーカス時に一度配線して使い回す。
@@ -9135,6 +9171,8 @@ if(load() && state.user){
   if(!nameInp || !bdInp)return;
   nameInp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){
+      // 漢字変換確定のEnterで誕生日欄に飛ばないようガード
+      if(e.isComposing||e.keyCode===229)return;
       e.preventDefault();
       bdInp.focus();
     }
@@ -9144,6 +9182,7 @@ if(load() && state.user){
   });
   bdInp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){
+      if(e.isComposing||e.keyCode===229)return;
       e.preventDefault();
       doClaimSubmit();
     }
