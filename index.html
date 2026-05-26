@@ -627,8 +627,91 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;align-items:center;justify-content:center;
   color:var(--g);
 }
+/* バブルメニューシートの古いスタイル (廃止予定だが互換のため残す)。
+   実際の表示は新ポップオーバーが担当する。 */
 .sheet-opt-title{font-size:13px;font-weight:600;color:var(--ink);}
 .sheet-opt-desc{font-size:10px;color:var(--ink3);line-height:1.4;}
+
+/* 続きを書き中のドットバブル: マルチバブル送信中の次バブル予告として、
+   通常のバブルと同じ形でドットを表示する。位置は .msg-bubbles の末尾。 */
+.bubble.dots{
+  padding:10px 14px;
+  display:inline-flex;
+  align-items:center;
+  background:var(--surface);
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
+  border-radius:18px;
+  border-bottom-left-radius:5px;
+  /* メニュー対象にならないように選択不可 */
+  -webkit-user-select:none;
+  user-select:none;
+  align-self:flex-start; /* AI側なので左寄せ */
+}
+.bubble.dots .typing-dots{height:1.2em;}
+
+/* バブル長押しメニュー(ポップオーバー型): LINE風にバブル付近にコンパクトに出す。
+   バブルの上 or 下に絶対配置して、その近くにメニューが浮かぶ。
+   .app の中に追加するので app の座標系で left/top を計算する。
+   visibility 制御にすることで常に display:flex を維持し、サイズ計測が確実に動く。 */
+.bubble-popover{
+  position:absolute;
+  display:flex;
+  visibility:hidden;
+  pointer-events:none;
+  background:#2A2A2A;
+  color:#fff;
+  border-radius:14px;
+  padding:6px 4px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.18);
+  z-index:120;
+  flex-direction:row;
+  gap:0;
+  -webkit-user-select:none;
+  user-select:none;
+  /* 初期は画面外に逃がしておく。openBubbleMenuで位置が決まる */
+  left:-9999px;
+  top:-9999px;
+}
+.bubble-popover.on{
+  visibility:visible;
+  pointer-events:auto;
+  animation:popover-in 0.15s ease-out;
+}
+@keyframes popover-in{
+  from{opacity:0;transform:translateY(4px) scale(0.95);}
+  to{opacity:1;transform:translateY(0) scale(1);}
+}
+.bubble-popover-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  padding:8px 12px;
+  background:none;
+  border:none;
+  color:#fff;
+  font-size:11px;
+  border-radius:10px;
+  min-width:56px;
+}
+.bubble-popover-item:active{background:rgba(255,255,255,.12);}
+.bubble-popover-item.danger{color:#FF8B7E;}
+.bubble-popover-item.danger:active{background:rgba(255,80,80,.18);}
+.bubble-popover-item svg{
+  width:18px;height:18px;
+  stroke-width:2;
+}
+.bubble-popover-item.hide{display:none;}
+/* ポップオーバー外をタップしたら閉じるための全画面透明マスク。
+   メニューが開いた瞬間の指離し(touchend)を食わないよう、open後の短時間は無効化する。 */
+.bubble-popover-mask{
+  position:absolute;
+  inset:0;
+  z-index:119;
+  display:none;
+  background:transparent;
+}
+.bubble-popover-mask.on{display:block;}
 
 /* バブル長押しメニュー: LINE風の縦リスト型シート。
    既存の .sheet と同じ枠組みを使い、項目を1列で並べる。 */
@@ -3009,37 +3092,26 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
 </div>
 
-<!-- バブル長押しメニュー: LINE風のコピー/部分コピー/リプライ/削除アクションシート。
-     開閉と項目選択は detail.js セクションのコードで管理する。 -->
-<div class="sheet-mask" id="bubble-menu-mask" data-action="close-bubble-menu"></div>
-<div class="sheet" id="bubble-menu-sheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-list">
-    <button class="sheet-row" data-action="bubble-copy">
-      <div class="sheet-row-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      </div>
-      <span>コピー</span>
-    </button>
-    <button class="sheet-row" data-action="bubble-select">
-      <div class="sheet-row-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M4 16v2a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M16 20h2a2 2 0 0 0 2-2v-2"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
-      </div>
-      <span>部分コピー</span>
-    </button>
-    <button class="sheet-row" data-action="bubble-reply" id="bubble-row-reply">
-      <div class="sheet-row-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
-      </div>
-      <span>リプライ</span>
-    </button>
-    <button class="sheet-row danger" data-action="bubble-delete">
-      <div class="sheet-row-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-      </div>
-      <span>削除</span>
-    </button>
-  </div>
+<!-- バブル長押しメニュー(ポップオーバー):
+     LINE風にバブル付近に小さく浮かぶ。マスクは外タップ閉じ用の透明全画面レイヤ。 -->
+<div class="bubble-popover-mask" id="bubble-popover-mask"></div>
+<div class="bubble-popover" id="bubble-popover">
+  <button class="bubble-popover-item" data-action="bubble-copy">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    <span>コピー</span>
+  </button>
+  <button class="bubble-popover-item" data-action="bubble-select">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M4 16v2a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M16 20h2a2 2 0 0 0 2-2v-2"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+    <span>部分コピー</span>
+  </button>
+  <button class="bubble-popover-item" data-action="bubble-reply" id="bubble-popover-reply">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+    <span>リプライ</span>
+  </button>
+  <button class="bubble-popover-item danger" data-action="bubble-delete">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+    <span>削除</span>
+  </button>
 </div>
 
 <div class="toast" id="toast">保存しました</div>
@@ -5978,27 +6050,80 @@ function attachBubbleLongPress(bubEl,cardId,msgIdx,role){
   bubEl.addEventListener('mouseleave',onEnd);
 }
 
-// バブルメニューを開く: 対象を記録 + シートを表示。
+// バブルメニュー(ポップオーバー)を開く: 対象を記録 + バブル付近に配置 + 誤クローズガード。
 // role が memo/user の自分発言ではリプライは出さない (AIへの返信ではないため)。
 function openBubbleMenu(bubEl,cardId,msgIdx,role){
   // バブルから「表示中のテキスト」を取得 (innerText で改行も維持される)
-  const text=bubEl.innerText||'';
-  bubbleMenuTarget={cardId,msgIdx,role,text,bubbleEl:bubEl};
-  // 役割によってリプライ項目の表示切り替え。
-  // AI発言にリプライ = AIへの追加質問。自分発言へのリプライは概念的に変なので非表示。
-  const replyRow=$('bubble-row-reply');
-  if(replyRow){
-    replyRow.style.display=(role==='ai')?'':'none';
+  // ただしリプライ引用 (.bubble-quote) があれば本文だけ抜く。
+  let text='';
+  const quoteEl=bubEl.querySelector('.bubble-quote');
+  if(quoteEl){
+    // .bubble-quote 以外のテキストを連結
+    bubEl.childNodes.forEach(n=>{
+      if(n.nodeType===3) text+=n.textContent;
+      else if(n.nodeType===1 && !n.classList.contains('bubble-quote')) text+=n.innerText||n.textContent;
+    });
+    text=text.trim();
+  }else{
+    text=bubEl.innerText||'';
   }
-  $('bubble-menu-mask').classList.add('on');
-  $('bubble-menu-sheet').classList.add('on');
+  bubbleMenuTarget={cardId,msgIdx,role,text,bubbleEl:bubEl};
+
+  // リプライ項目はAI発言だけ表示
+  const replyBtn=$('bubble-popover-reply');
+  if(replyBtn){
+    replyBtn.classList.toggle('hide', role!=='ai');
+  }
+
+  const pop=$('bubble-popover');
+  const mask=$('bubble-popover-mask');
+  if(!pop||!mask)return;
+
+  // ポップオーバーは display:flex のまま visibility:hidden で隠れている。
+  // getBoundingClientRect は正しく寸法を返すので、位置を決めてから .on を付ければ
+  // 画面に出る瞬間には既に正しい位置にいる。
+  const app=document.querySelector('.app');
+  const appRect=app.getBoundingClientRect();
+  const bubRect=bubEl.getBoundingClientRect();
+  const popRect=pop.getBoundingClientRect();
+
+  // X: バブルの中央に揃える。ただし画面端から 8px は余白を確保
+  let x = bubRect.left + bubRect.width/2 - popRect.width/2 - appRect.left;
+  const margin=8;
+  const maxX=appRect.width-popRect.width-margin;
+  if(x<margin)x=margin;
+  if(x>maxX)x=maxX;
+
+  // Y: バブルの上に置く。上側にスペースが足りなければ下に。
+  const gap=8;
+  let y = bubRect.top - popRect.height - gap - appRect.top;
+  if(y < 8){
+    // 上に入らない → バブルの下
+    y = bubRect.bottom - appRect.top + gap;
+  }
+  pop.style.left=x+'px';
+  pop.style.top=y+'px';
+  pop.classList.add('on');
+
+  // 誤クローズ防止: メニューを開いた直後に touchend → click が走ると即閉じる事故が起きる。
+  // 300ms はマスククリックでも閉じないようにロックする。
+  mask.classList.add('on');
+  bubbleMenuOpenedAt=Date.now();
 }
 
+// マスクのタップで閉じる。ただし開いた直後のロック時間内は無視する。
+function bubbleMenuMaskTap(){
+  if(Date.now()-bubbleMenuOpenedAt < 300)return;
+  closeBubbleMenu();
+}
+let bubbleMenuOpenedAt=0;
+
 function closeBubbleMenu(){
-  $('bubble-menu-mask').classList.remove('on');
-  $('bubble-menu-sheet').classList.remove('on');
+  const pop=$('bubble-popover');
+  const mask=$('bubble-popover-mask');
+  if(pop)pop.classList.remove('on');
+  if(mask)mask.classList.remove('on');
   // target はアクション関数で使うので、ここでは即クリアしない。
-  // 次のアクションが終わるか、別のバブルが長押しされた時にクリアされる。
 }
 
 // コピー: バブル全体のテキストをクリップボードへ
@@ -6457,19 +6582,25 @@ async function animateNewAiReply(card,placeholderIdx){
   const msgEl=log.querySelector(`.msg[data-midx="${placeholderIdx}"]`);
   if(!msgEl){renderChatLog(card);return;}
 
-  // msgEl の中身を「マルチ初期状態」に置き換える: 最初のバブルだけ + ドット
+  // msgEl の中身を「マルチ初期状態」に置き換える:
+  //   .msg-bubbles の中に [最初のバブル, ドットバブル] を入れる
+  //   .msg-time は最初は空 (時刻はバブルが全部出てから表示)
+  // ドットバブルを次のバブルの代わりに置くことで、LINE のように
+  // 「次の吹き出しが書かれている最中」感を出せる。
   msgEl.className='msg a multi';
-  const firstBubble=`<div class="bubble anim">${linkify(bubbles[0])}</div>`;
   msgEl.innerHTML=`
-    <div class="msg-bubbles">${firstBubble}</div>
-    <div class="msg-time"><div class="typing-dots" aria-label="続きを書いています"><span></span><span></span><span></span></div></div>
+    <div class="msg-bubbles">
+      <div class="bubble anim">${linkify(bubbles[0])}</div>
+      <div class="bubble dots" aria-label="続きを書いています"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+    </div>
+    <div class="msg-time"></div>
   `;
   scroller.scrollTop=scroller.scrollHeight;
 
   const bubblesEl=msgEl.querySelector('.msg-bubbles');
   const timeEl=msgEl.querySelector('.msg-time');
-  // 最初のバブルにも長押しメニューを付ける (時間差で全部表示し終えた後も同じ操作ができるように)
-  const firstBubEl=bubblesEl.querySelector('.bubble');
+  // 最初のバブルに長押しメニューを付ける
+  const firstBubEl=bubblesEl.querySelector('.bubble:not(.dots)');
   if(firstBubEl)attachBubbleLongPress(firstBubEl,card.id,placeholderIdx,'ai');
 
   // 表示中に画面が離れたら中断 (DOMから切り離されるか、card.id が変わる)
@@ -6492,19 +6623,26 @@ async function animateNewAiReply(card,placeholderIdx){
     const wait=Math.max(700, Math.min(4500, charCost+lineCost+500));
     await sleep(wait);
     if(!stillVisible()){renderChatLog(card);return;}
-    // 次のバブルを追加
+    // ドットバブルを取り外して、新バブルを追加し、ドットを末尾に戻す。
+    // これで「ドットの位置 = 次に出るバブルの位置」が常に保たれる。
+    const dotsEl=bubblesEl.querySelector('.bubble.dots');
+    if(dotsEl)dotsEl.remove();
     const next=document.createElement('div');
     next.className='bubble anim';
     next.innerHTML=linkify(bubbles[i]);
     bubblesEl.appendChild(next);
     // 追加バブルにも長押しメニュー
     attachBubbleLongPress(next,card.id,placeholderIdx,'ai');
+    // まだ次のバブルがある場合だけ、ドットバブルを末尾に戻す
+    if(i<bubbles.length-1 && dotsEl){
+      bubblesEl.appendChild(dotsEl);
+    }
     scroller.scrollTop=scroller.scrollHeight;
   }
 
-  // 全部出し終わったら、ドット部分を時刻表示に置き換える
+  // 全部出し終わったら、時刻を表示する (ドットバブルはもう外している)
   if(stillVisible() && timeEl){
-    timeEl.innerHTML=chatTimeLabel(msg.t||Date.now());
+    timeEl.textContent=chatTimeLabel(msg.t||Date.now());
   }
   // 念のため最後に再描画して確定状態に揃える (next openDetail などとも整合)
   // ただし anim クラスが再アニメーションすると煩いので、最後の renderChatLog は省略してOK。
@@ -8021,7 +8159,6 @@ document.addEventListener('click',e=>{
     case 'archive-selected':archiveSelected();break;
     case 'toggle-past-more':state.pastMoreOpen=!state.pastMoreOpen;renderToday();break;
     case 'goto-library-from-home':goto('screen-library');break;
-    case 'close-bubble-menu':closeBubbleMenu();break;
     case 'bubble-copy':bubbleCopy();break;
     case 'bubble-select':bubbleSelect();break;
     case 'bubble-reply':bubbleReply();break;
@@ -8349,6 +8486,25 @@ $('restore-input').addEventListener('change',handleRestoreFile);
 // 起動
 setupNavs();
 loadOfficialShelves(); // 公式棚をサーバーから取得 (非同期、UIブロックしない)
+
+// バブル長押しメニュー(ポップオーバー)の外側タップで閉じる。
+// open直後の短時間はガード関数内で無視 (touchend由来の誤クローズ対策)。
+(function setupBubblePopoverMask(){
+  const mask=document.getElementById('bubble-popover-mask');
+  if(!mask)return;
+  // touchstart/mousedown でも閉じてしまうとボタンの click が発火しないことがあるので、
+  // click のみで閉じる。スクロールでも閉じたいので touchmove も拾う。
+  mask.addEventListener('click',bubbleMenuMaskTap);
+  // チャットログのスクロールで閉じる
+  const scroller=document.getElementById('detail-scroll');
+  if(scroller){
+    scroller.addEventListener('scroll',()=>{
+      if(document.getElementById('bubble-popover').classList.contains('on')){
+        closeBubbleMenu();
+      }
+    },{passive:true});
+  }
+})();
 
 // 古い Service Worker (過去のデプロイで残ったもの) を解除する。
 // 現在この HTML 自体は SW を register していないが、過去に登録された SW が
