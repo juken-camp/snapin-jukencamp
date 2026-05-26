@@ -2149,14 +2149,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   cursor:pointer;
 }
 .today-newcard img{width:100%;height:100%;object-fit:cover;}
+/* .today-newcard .ctxt と .card .ctxt は完全に同じスタイルにする
+   (同じメモが両画面で全く同じ見た目になるように)。
+   font-size / line-height / -webkit-line-clamp は noteCardStyle がインラインで指定する。 */
 .today-newcard .ctxt{
   padding:10px;
+  color:var(--ink);
   height:100%;
   overflow:hidden;
   display:-webkit-box;
   -webkit-box-orient:vertical;
-  /* font-size / line-height / -webkit-line-clamp は noteCardStyle がインラインで指定する
-     (CSS で指定するとインラインが上書きされず、表示が崩れることがあるため) */
+  word-break:break-word;
+  background:var(--surface);
 }
 .today-newcard.note .ctxt{background:#FFFDF5;}
 .today-newcard.list .ctxt{background:#F4F8F3;font-size:10px;-webkit-line-clamp:6;}
