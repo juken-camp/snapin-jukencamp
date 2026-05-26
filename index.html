@@ -5466,11 +5466,10 @@ function renderUpload(){
       const newItem={t:'',mark:inheritMark};
       if(inheritMark==='check')newItem.d=false;
       state.current.items.push(newItem);
-      renderListItems(itemsWrap);
-      setTimeout(()=>{
-        const inps=itemsWrap.querySelectorAll('.cl-input');
-        if(inps.length)inps[inps.length-1].focus();
-      },50);
+      // Enter キー時と同じく差分追加方式。全体再描画は他の入力欄のフォーカスを奪うので避ける。
+      appendListItemRow(itemsWrap, state.current.items.length-1);
+      const inps=itemsWrap.querySelectorAll('.cl-input');
+      if(inps.length)inps[inps.length-1].focus();
     });
     body.appendChild(addBtn);
   }
@@ -5571,89 +5570,112 @@ function renderListItems(wrap){
   wrap.innerHTML='';
   const items=state.current.items;
   items.forEach((it,i)=>{
-    const row=document.createElement('div');
-    const mark=it.mark||'check';
-    const done=it.d===true;
-    row.className='cl-row'+(done && mark==='check'?' done':'');
-    row.dataset.i=i;
-
-    const handle=document.createElement('div');
-    handle.className='cl-handle';
-    handle.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>`;
-    row.appendChild(handle);
-
-    // 記号ボタン (タップで3状態を回す: □ → ☑ → 1. → □)
-    const mk=document.createElement('button');
-    if(mark==='number'){
-      // 番号: リスト内で number 項目の何番目か
-      let num=0;
-      for(let k=0;k<=i;k++){
-        if((items[k].mark||'check')==='number')num++;
-      }
-      mk.className='cl-mark num';
-      mk.textContent=num+'.';
-    }else if(done){
-      mk.className='cl-mark check on';
-      mk.innerHTML=`<span class="chk-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span>`;
-    }else{
-      mk.className='cl-mark check';
-      mk.innerHTML=`<span class="chk-box"></span>`;
-    }
-    mk.addEventListener('click',()=>{
-      const cur=state.current.items[i];
-      const curMark=cur.mark||'check';
-      const curDone=cur.d===true;
-      if(curMark==='check' && !curDone){
-        cur.d=true;
-        cur.mark='check';
-      }else if(curMark==='check' && curDone){
-        cur.mark='number';
-        delete cur.d;
-      }else{
-        cur.mark='check';
-        cur.d=false;
-      }
-      renderListItems(wrap);
-    });
-    row.appendChild(mk);
-
-    const inp=document.createElement('input');
-    inp.className='cl-input'+(done && mark==='check'?' done':'');
-    inp.value=it.t;
-    inp.placeholder='項目';
-    inp.addEventListener('input',e=>{state.current.items[i].t=e.target.value;});
-    inp.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){
-        e.preventDefault();
-        // 直前の項目の記号を継承 (リストの見た目を作りやすくする)
-        const prev=state.current.items[state.current.items.length-1];
-        const inheritMark=(prev && prev.mark)?prev.mark:'check';
-        const newItem={t:'',mark:inheritMark};
-        if(inheritMark==='check')newItem.d=false;
-        state.current.items.push(newItem);
-        renderListItems(wrap);
-        setTimeout(()=>{
-          const inps=wrap.querySelectorAll('.cl-input');
-          if(inps.length)inps[inps.length-1].focus();
-        },50);
-      }
-    });
-    row.appendChild(inp);
-
-    const del=document.createElement('button');
-    del.className='cl-del';
-    del.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
-    del.addEventListener('click',()=>{
-      state.current.items.splice(i,1);
-      if(state.current.items.length===0)state.current.items=[{t:'',mark:'check',d:false}];
-      renderListItems(wrap);
-    });
-    row.appendChild(del);
-
+    const row=buildListItemRow(wrap,i);
     wrap.appendChild(row);
   });
   // ハンドルからのドラッグ並べ替えをセットアップ
   setupListReorder(wrap);
+}
+
+// 末尾に1行だけ追加する (renderListItems 全体を呼ばないので既存 input のフォーカスを奪わない)。
+// Enter キーで次の項目を追加するときに使い、ソフトキーボードを開いたまま新行に focus できる。
+function appendListItemRow(wrap, i){
+  const row=buildListItemRow(wrap,i);
+  wrap.appendChild(row);
+  // 並べ替えハンドラの再セットアップ (新規行のハンドルにも反応させる)
+  setupListReorder(wrap);
+}
+
+// リスト項目1行ぶんの DOM を構築。renderListItems と appendListItemRow の共通化のため分離。
+function buildListItemRow(wrap, i){
+  const items=state.current.items;
+  const it=items[i];
+  const row=document.createElement('div');
+  const mark=it.mark||'check';
+  const done=it.d===true;
+  row.className='cl-row'+(done && mark==='check'?' done':'');
+  row.dataset.i=i;
+
+  const handle=document.createElement('div');
+  handle.className='cl-handle';
+  handle.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>`;
+  row.appendChild(handle);
+
+  // 記号ボタン (タップで3状態を回す: □ → ☑ → 1. → □)
+  const mk=document.createElement('button');
+  if(mark==='number'){
+    // 番号: リスト内で number 項目の何番目か
+    let num=0;
+    for(let k=0;k<=i;k++){
+      if((items[k].mark||'check')==='number')num++;
+    }
+    mk.className='cl-mark num';
+    mk.textContent=num+'.';
+  }else if(done){
+    mk.className='cl-mark check on';
+    mk.innerHTML=`<span class="chk-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span>`;
+  }else{
+    mk.className='cl-mark check';
+    mk.innerHTML=`<span class="chk-box"></span>`;
+  }
+  mk.addEventListener('click',()=>{
+    const cur=state.current.items[i];
+    const curMark=cur.mark||'check';
+    const curDone=cur.d===true;
+    if(curMark==='check' && !curDone){
+      cur.d=true;
+      cur.mark='check';
+    }else if(curMark==='check' && curDone){
+      cur.mark='number';
+      delete cur.d;
+    }else{
+      cur.mark='check';
+      cur.d=false;
+    }
+    renderListItems(wrap);
+  });
+  row.appendChild(mk);
+
+  const inp=document.createElement('input');
+  inp.className='cl-input'+(done && mark==='check'?' done':'');
+  inp.value=it.t;
+  inp.placeholder='項目';
+  inp.addEventListener('input',e=>{state.current.items[i].t=e.target.value;});
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){
+      e.preventDefault();
+      // 直前の項目の記号を継承 (リストの見た目を作りやすくする)
+      const prev=state.current.items[state.current.items.length-1];
+      const inheritMark=(prev && prev.mark)?prev.mark:'check';
+      const newItem={t:'',mark:inheritMark};
+      if(inheritMark==='check')newItem.d=false;
+      state.current.items.push(newItem);
+
+      // iOS Safari の制約: ユーザー操作 (keydown ハンドラ) と同じイベントループ内で
+      // 同期的に focus() を呼ばないと、ソフトキーボードが閉じてしまう。
+      // 以前は renderListItems(wrap) で全体を作り直したあと setTimeout で focus を当てていたが、
+      // 別タイマー内の focus は iOS では「キーボードは閉じ、ユーザーがタップするまで待機」になる。
+      //
+      // 解決: 全体再描画ではなく、末尾に新しい行 DOM を直接 append して、その input に
+      //       その場で focus() を呼ぶ。これでキーボードを開いたまま連続入力ができる。
+      appendListItemRow(wrap, state.current.items.length-1);
+      const inps=wrap.querySelectorAll('.cl-input');
+      if(inps.length)inps[inps.length-1].focus();
+    }
+  });
+  row.appendChild(inp);
+
+  const del=document.createElement('button');
+  del.className='cl-del';
+  del.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
+  del.addEventListener('click',()=>{
+    state.current.items.splice(i,1);
+    if(state.current.items.length===0)state.current.items=[{t:'',mark:'check',d:false}];
+    renderListItems(wrap);
+  });
+  row.appendChild(del);
+
+  return row;
 }
 
 // ═══ リスト項目の並べ替え (ハンドルドラッグ) ═══
