@@ -3186,24 +3186,22 @@ function login(mode){
 }
 
 // 塾生として claim を試みる (名前+誕生日4桁)
-async function doClaimSubmit(){
-  const nameInp=$('claim-name');
-  const bdInp=$('claim-bd');
+// force=true のとき: 既に別端末で claim 済みでも、同じ名前+誕生日が一致すれば deviceId を上書きする
+async function doClaimSubmit(force){
+  const nameEl=$('claim-name');
+  const bdEl=$('claim-bd');
   const errEl=$('claim-error');
   const btn=$('claim-submit');
-  if(!nameInp || !bdInp)return;
+  const name=(nameEl.value||'').trim();
+  const bd=(bdEl.value||'').replace(/\D/g,'');
 
-  const name=(nameInp.value||'').trim();
-  const bd=(bdInp.value||'').trim();
   errEl.classList.add('hide');
+  // 「この端末で使う」ボタンが残っていれば一度消す
+  const oldForceBtn=document.getElementById('claim-force-btn');
+  if(oldForceBtn)oldForceBtn.remove();
 
-  if(!name){
-    errEl.textContent='名前を入れてください。';
-    errEl.classList.remove('hide');
-    return;
-  }
-  if(!/^\d{4}$/.test(bd)){
-    errEl.textContent='誕生日は4桁の数字 (MMDD) で入れてください。';
+  if(!name || bd.length!==4){
+    errEl.textContent='名前と誕生日4桁を入れてください。';
     errEl.classList.remove('hide');
     return;
   }
@@ -3213,22 +3211,41 @@ async function doClaimSubmit(){
   btn.textContent='確認中…';
 
   try{
+    const body={name,birthday:bd,deviceId};
+    if(force)body.force=true;
     const res=await fetch('/api/claim',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name,birthday:bd,deviceId}),
+      body:JSON.stringify(body),
     });
     const data=await res.json();
     if(!data.ok){
       let msg='うまく確認できませんでした。';
-      if(data.reason==='not_found')msg='名前または誕生日が一致しません。先生に確認してください。';
-      else if(data.reason==='already_claimed')msg='この名前はすでに他の端末で使われています。\n機種変などで使えなくなった場合は先生に連絡してください。';
+      if(data.reason==='not_found')msg='名前または誕生日が一致しません。もう一度確認してください。';
+      else if(data.reason==='already_claimed')msg='この名前はすでに他の端末で使われています。\n機種変や入れ直しなら、下のボタンで切り替えられます。';
       else if(data.reason==='revoked')msg='現在このアカウントは利用できません。先生に確認してください。';
       else if(data.reason==='bad_request')msg='入力に不備があります。もう一度確認してください。';
       errEl.textContent=msg;
       errEl.classList.remove('hide');
       btn.disabled=false;
       btn.textContent='入る';
+
+      // 「他の端末で使われています」の時だけ、「この端末で使う」ボタンを出す。
+      // 押すと force:true で再リクエスト。サーバー側で 名前+誕生日 が一致すれば deviceId を上書きする。
+      if(data.reason==='already_claimed'){
+        const forceBtn=document.createElement('button');
+        forceBtn.id='claim-force-btn';
+        forceBtn.className='claim-submit';
+        forceBtn.style.cssText='margin-top:10px;background:var(--ink2);';
+        forceBtn.textContent='この端末で使う';
+        forceBtn.addEventListener('click',()=>{
+          if(!confirm('別の端末からこのアカウントを引き継ぎますか?\n(元の端末からは使えなくなります)'))return;
+          forceBtn.remove();
+          doClaimSubmit(true);
+        });
+        // 「入る」ボタンの直後に追加
+        btn.insertAdjacentElement('afterend',forceBtn);
+      }
       return;
     }
     // 成功: token と生徒情報を保存
