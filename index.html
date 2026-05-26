@@ -1110,19 +1110,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:white;
   font-size:10px;
   font-weight:700;
-  border-radius:999px; /* 確実に角丸を最大にして、サイズに関わらず端が丸くなる */
-  display:flex;
+  border-radius:999px;
+  display:inline-flex;
   align-items:center;
   justify-content:center;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
   font-variant-numeric:tabular-nums;
   pointer-events:none;
-  /* border-box にして、min-width:18px と height:18px が border 込みのサイズになる。
-     こうすると 1桁のときに 18x18 の正方形(=border-radius:999pxで真円)になる。 */
   box-sizing:border-box;
   letter-spacing:0;
-  line-height:1;
-  border:1.5px solid var(--surface); /* ナビバー背景色のリングでアイコンと自然に切り離す */
+  /* line-height は要素の高さに合わせる (line-height:1 だと文字の ascent/descent 不均衡で
+     見た目上 上にずれることがある)。.lib-new-badge と同じ仕組みで中央に置く。 */
+  line-height:18px;
+  border:1.5px solid var(--surface);
   box-shadow:0 1px 3px rgba(0,0,0,0.08);
 }
 
@@ -2106,11 +2106,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 
 /* 今日新しく保存したカード (横スクロール)。
-   gap と padding を .grid と揃えて、メモグリッドと同じ密度で並ぶようにする。 */
+   サイズは .grid のセルと同じだが、横スクロールでは1枚1枚を独立したカードに見せたいので
+   角丸を付け、カード間にゆとりのスペースを入れる。 */
 .today-newcards{
   display:flex;
-  gap:2px;
-  padding:0 2px 18px;
+  gap:10px;
+  padding:0 16px 18px;
   overflow-x:auto;
   scrollbar-width:none;
 }
@@ -2139,9 +2140,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   width:min(140px, calc((100vw - 12px) / 3));
   aspect-ratio:1;
   flex-shrink:0;
-  border-radius:2px;
+  /* 横スクロールでは1枚1枚をカードとして独立させたいので、角丸 + 薄い影を残す */
+  border-radius:10px;
   overflow:hidden;
   background:var(--surface);
+  box-shadow:0 1px 3px rgba(0,0,0,.04);
   position:relative;
   cursor:pointer;
 }
