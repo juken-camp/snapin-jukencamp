@@ -916,6 +916,73 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .pwa-btn.primary:active{background:var(--gd);}
 
+/* アプリ内確認ダイアログ:
+   ネイティブ confirm() の代わりに、SnapInの世界観に合うカードを下から出す。
+   削除など破壊的アクションは danger スタイルで赤系。Promise を返すので await できる。 */
+.confirm-mask{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,0.42);
+  z-index:150;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.18s;
+}
+.confirm-mask.on{opacity:1;pointer-events:auto;}
+.confirm-card{
+  position:absolute;
+  left:12px;right:12px;
+  bottom:16px;
+  background:var(--surface);
+  border-radius:18px;
+  box-shadow:0 12px 32px rgba(0,0,0,0.25), 0 4px 10px rgba(0,0,0,0.12);
+  z-index:151;
+  transform:translateY(120%);
+  transition:transform 0.28s cubic-bezier(.2,.7,.3,1);
+  padding:22px 22px 18px;
+  padding-bottom:calc(18px + env(safe-area-inset-bottom));
+}
+.confirm-card.on{transform:translateY(0);}
+.confirm-title{
+  font-size:16px;
+  font-weight:700;
+  color:var(--ink);
+  margin-bottom:6px;
+  line-height:1.45;
+}
+.confirm-body{
+  font-size:13px;
+  color:var(--ink2);
+  line-height:1.6;
+  margin-bottom:18px;
+  white-space:pre-wrap;
+}
+.confirm-actions{
+  display:flex;
+  gap:8px;
+}
+.confirm-btn{
+  flex:1;
+  height:44px;
+  border-radius:22px;
+  border:none;
+  font-size:15px;
+  font-weight:600;
+  background:var(--bg);
+  color:var(--ink2);
+}
+.confirm-btn:active{background:var(--gl);color:var(--gd);}
+.confirm-btn.primary{
+  background:var(--g);
+  color:white;
+}
+.confirm-btn.primary:active{background:var(--gd);}
+.confirm-btn.danger{
+  background:var(--rose);
+  color:white;
+}
+.confirm-btn.danger:active{background:#c84a3f;}
+
 /* バブル内のリプライ引用: ユーザー発言で対象バブルの引用を上に小さく表示。
    LINEと同じく、発言と一体感のあるブロック。色は反対側の補色に近いトーンを使う。 */
 .bubble-quote{
@@ -3258,6 +3325,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
 </div>
 
+<!-- アプリ内確認ダイアログ: ネイティブ confirm() の置き換え。
+     確認したい操作 (削除、ログアウト、上書き等) を SnapIn の世界観で問う。 -->
+<div class="confirm-mask" id="confirm-mask"></div>
+<div class="confirm-card" id="confirm-card" aria-hidden="true">
+  <div class="confirm-title" id="confirm-title"></div>
+  <div class="confirm-body" id="confirm-body"></div>
+  <div class="confirm-actions">
+    <button class="confirm-btn" id="confirm-cancel" type="button">キャンセル</button>
+    <button class="confirm-btn primary" id="confirm-ok" type="button">OK</button>
+  </div>
+</div>
+
 <input type="file" id="file-input" accept="image/*" style="display:none;">
 <input type="file" id="file-input-any" accept=".png,.jpg,.jpeg,.gif,.webp,.heic,.heif" style="display:none;">
 <input type="file" id="restore-input" accept="application/json,.json" style="display:none;">
@@ -4052,8 +4131,14 @@ async function doClaimSubmit(force){
         forceBtn.className='claim-submit';
         forceBtn.style.cssText='margin-top:10px;background:var(--ink2);';
         forceBtn.textContent='この端末で使う';
-        forceBtn.addEventListener('click',()=>{
-          if(!confirm('別の端末からこのアカウントを引き継ぎますか?\n(元の端末からは使えなくなります)'))return;
+        forceBtn.addEventListener('click',async()=>{
+          const ok=await confirmDialog({
+            title:'別の端末から引き継ぎますか?',
+            body:'元の端末からは使えなくなります。',
+            ok:'この端末で使う',
+            danger:true,
+          });
+          if(!ok)return;
           forceBtn.remove();
           doClaimSubmit(true);
         });
@@ -4097,8 +4182,14 @@ function gotoClaim(){
   goto('screen-claim');
 }
 
-function logoutConfirm(){
-  if(!confirm('ログアウトしますか?\n端末のデータは残ります。'))return;
+async function logoutConfirm(){
+  const ok=await confirmDialog({
+    title:'ログアウトしますか?',
+    body:'端末のデータは残ります。再ログインすれば復元されます。',
+    ok:'ログアウト',
+    danger:true,
+  });
+  if(!ok)return;
   state.user=null;
   state.auth=null; // 塾生情報もクリア (再ログインで再claim)
   save();
@@ -4215,31 +4306,28 @@ async function handleRestoreFile(e){
     let mode='merge';
     if(existingPersonal.length>0){
       // 既存メモあり: マージ(OK) か キャンセル
-      const ok=confirm(
-        'バックアップから復元します。\n\n'+
-        `書き出し日時: ${exportedAt}\n`+
-        `バックアップ内のメモ: ${incoming.length}件\n`+
-        `現在の個人メモ: ${existingPersonal.length}件\n\n`+
-        '【追加して復元】します。同じIDのメモは現在の内容を優先します。\n'+
-        '(端末の現在のメモは消えません)'
-      );
+      const ok=await confirmDialog({
+        title:'バックアップから復元しますか?',
+        body:`書き出し日時: ${exportedAt}\nバックアップ内のメモ: ${incoming.length}件\n現在の個人メモ: ${existingPersonal.length}件\n\n追加して復元します (端末の現在のメモは消えません)。`,
+        ok:'追加して復元',
+      });
       if(!ok)return;
       // 追加で「全部このバックアップで置き換える?」を聞く (任意の上書きモード)
-      const replaceAll=confirm(
-        '※特別な操作: 現在の個人メモをすべて削除して、\n'+
-        'バックアップの内容だけにしますか?\n\n'+
-        '[OK]    → 全置換 (現在のメモは消えます)\n'+
-        '[キャンセル] → 追加で復元 (推奨)'
-      );
+      const replaceAll=await confirmDialog({
+        title:'全置換しますか?',
+        body:'※特別な操作です。現在の個人メモをすべて削除して、バックアップの内容だけにします。\n\nキャンセルすれば、上の選択どおり「追加して復元」が実行されます。',
+        ok:'全置換',
+        cancel:'追加して復元のまま',
+        danger:true,
+      });
       mode=replaceAll?'replace':'merge';
     }else{
       // 既存メモなし: 確認だけ
-      const ok=confirm(
-        'バックアップから復元します。\n\n'+
-        `書き出し日時: ${exportedAt}\n`+
-        `メモ: ${incoming.length}件\n\n`+
-        '復元してよろしいですか?'
-      );
+      const ok=await confirmDialog({
+        title:'バックアップから復元しますか?',
+        body:`書き出し日時: ${exportedAt}\nメモ: ${incoming.length}件`,
+        ok:'復元',
+      });
       if(!ok)return;
     }
 
@@ -4903,10 +4991,16 @@ function updateSelectBarCount(){
   const el=$('select-bar-count');
   if(el)el.textContent=state.selectedIds.size+'件選択中';
 }
-function deleteSelected(){
+async function deleteSelected(){
   const n=state.selectedIds.size;
   if(n===0)return;
-  if(!confirm(`${n}件を捨てますか?\n7日間は「捨てたメモ」から戻せます。`)){return;}
+  const ok=await confirmDialog({
+    title:`${n}件を捨てますか?`,
+    body:'7日間は「捨てたメモ」から戻せます。',
+    ok:'捨てる',
+    danger:true,
+  });
+  if(!ok)return;
   const ids=new Set(state.selectedIds);
   const now=Date.now();
   state.cards.forEach(c=>{
@@ -4922,10 +5016,15 @@ function deleteSelected(){
 
 // 選択した複数のメモをまとめてリストから外す (= archive)
 // 1件版の archiveCard と挙動を揃える: archivedAt を立て、ピンも外す。
-function archiveSelected(){
+async function archiveSelected(){
   const n=state.selectedIds.size;
   if(n===0)return;
-  if(!confirm(`${n}件をリストから外しますか?\n「リストから外したメモ」からいつでも戻せます。`)){return;}
+  const ok=await confirmDialog({
+    title:`${n}件をリストから外しますか?`,
+    body:'「リストから外したメモ」からいつでも戻せます。',
+    ok:'リストから外す',
+  });
+  if(!ok)return;
   const ids=new Set(state.selectedIds);
   const now=Date.now();
   state.cards.forEach(c=>{
@@ -5015,19 +5114,18 @@ function startCreate(type){
   }else if(type==='note'){
     renderUpload();
     goto('screen-upload');
-    setTimeout(()=>{
-      const ta=$('up-body').querySelector('textarea');
-      if(ta)ta.focus();
-    },100);
+    // iOS Safari は setTimeout 内の focus() を受け付けない(キーボードが開かない)。
+    // ボタンタップのスコープと同じイベントループで同期的に focus を当てる。
+    const ta=$('up-body').querySelector('textarea');
+    if(ta)ta.focus();
   }else if(type==='list'){
     state.current.title='';
     state.current.items=[{t:'',mark:'check',d:false}];
     renderUpload();
     goto('screen-upload');
-    setTimeout(()=>{
-      const inp=$('up-body').querySelector('.cl-input');
-      if(inp)inp.focus();
-    },100);
+    // 同期 focus (iOS制約)
+    const inp=$('up-body').querySelector('.cl-input');
+    if(inp)inp.focus();
   }
 }
 
@@ -5433,13 +5531,30 @@ function renderUpload(){
       const sw=document.createElement('button');
       sw.style.cssText=`flex-shrink:0;width:38px;height:38px;border-radius:50%;background:${col.bg};color:${col.fg};font-size:11px;font-weight:600;border:2px solid ${(c.color||'default')===col.id?'var(--g)':'transparent'};display:flex;align-items:center;justify-content:center;`;
       sw.textContent=col.name;
+      // mousedown を preventDefault することで、入力欄からフォーカスが奪われない。
+      // iOS Safari でも同様に効くので、色変更時にキーボードが閉じない。
+      sw.addEventListener('mousedown',e=>e.preventDefault());
+      sw.addEventListener('touchstart',e=>{/* passive で良い: focus は奪わない */},{passive:true});
       sw.addEventListener('click',()=>{
         state.current.color=col.id;
+        // 編集中だった入力欄を覚えておいて、再構築後に同期 focus で戻す。
+        // (キーボードを開いたまま編集 → 色だけ変える 体験のため)
+        const focused=document.activeElement;
+        const focusedTag=focused && focused.tagName;
+        const wasNoteArea=focused && focused.id==='up-note-area';
+        const selStart=focused && focused.selectionStart;
+        const selEnd=focused && focused.selectionEnd;
         renderUpload();
-        setTimeout(()=>{
+        // 再構築直後、同じイベントループ内で focus を戻す (iOS は setTimeout だとダメ)
+        if(wasNoteArea){
           const t=$('up-note-area');
-          if(t)t.focus();
-        },50);
+          if(t){
+            t.focus();
+            if(selStart!=null && selEnd!=null){
+              try{t.setSelectionRange(selStart,selEnd);}catch(e){}
+            }
+          }
+        }
       });
       colorRow.appendChild(sw);
     });
@@ -6430,11 +6545,16 @@ function bubbleSelect(){
 }
 
 // 削除: メッセージ単位で deleted フラグを立てる。マルチバブルでも一括削除 (LINEと同じ)。
-function bubbleDelete(){
+async function bubbleDelete(){
   const t=bubbleMenuTarget;
   closeBubbleMenu();
   if(!t)return;
-  if(!confirm('このメッセージを取り消しますか?'))return;
+  const ok=await confirmDialog({
+    title:'このメッセージを取り消しますか?',
+    ok:'取り消す',
+    danger:true,
+  });
+  if(!ok)return;
   const cIdx=state.cards.findIndex(x=>x.id===t.cardId);
   if(cIdx<0)return;
   const c=state.cards[cIdx];
@@ -6800,6 +6920,8 @@ async function detailSend(){
     inp.style.height='auto';
     renderChatLog(c);
     $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
+    // 連続入力できるようにフォーカスを維持 (LINEで送信後も入力欄が active なのと同じ)
+    inp.focus();
   }
 }
 
@@ -6988,10 +7110,16 @@ function editCard(){
   goto('screen-upload');
 }
 
-function deleteCard(){
+async function deleteCard(){
   $('detail-menu').classList.remove('on');
   if(state.current._origin==='official'){toast('公式メモは削除できません');return;}
-  if(!confirm('このメモを捨てますか?\n\n7日間は探すページの「捨てたメモ」から戻せます。\nその後、完全に消えます。'))return;
+  const ok=await confirmDialog({
+    title:'このメモを捨てますか?',
+    body:'7日間は「探す」ページの「捨てたメモ」から戻せます。\nその後、完全に消えます。',
+    ok:'捨てる',
+    danger:true,
+  });
+  if(!ok)return;
   const id=state.current.id;
   const idx=state.cards.findIndex(x=>x.id===id);
   if(idx<0)return;
@@ -7049,7 +7177,13 @@ async function purgeOne(id){
 async function emptyTrash(){
   const trashed=state.cards.filter(isTrashedCard);
   if(trashed.length===0)return;
-  if(!confirm(`捨てたメモ ${trashed.length}件 を完全に削除しますか?\nこの操作は取り消せません。`))return;
+  const ok=await confirmDialog({
+    title:`捨てたメモ ${trashed.length}件を完全に削除しますか?`,
+    body:'この操作は取り消せません。',
+    ok:'完全に削除',
+    danger:true,
+  });
+  if(!ok)return;
   for(const c of trashed){
     if(c.id){try{await imgDB.delete(c.id);}catch(e){/* ignore */}}
   }
@@ -7162,7 +7296,13 @@ function trashFromArchive(id){
 
 // 完全削除 (確認付き)
 async function purgeOneConfirm(id){
-  if(!confirm('このメモを完全に削除しますか?\nこの操作は取り消せません。'))return;
+  const ok=await confirmDialog({
+    title:'このメモを完全に削除しますか?',
+    body:'この操作は取り消せません。',
+    ok:'完全に削除',
+    danger:true,
+  });
+  if(!ok)return;
   await purgeOne(id);
   renderTrashScreen();
 }
@@ -8290,6 +8430,62 @@ function toast(msg){
   t.classList.add('on');
   clearTimeout(toastT);
   toastT=setTimeout(()=>t.classList.remove('on'),1800);
+}
+
+// SnapIn 内の確認ダイアログ。ネイティブ confirm() の代わり。
+//   const ok = await confirmDialog({title, body, ok, cancel, danger});
+// title だけ必須、それ以外は省略可。danger:true で OK ボタンを赤に。
+// マスクタップ、キャンセル、Escキーで false。
+let confirmResolver=null;
+function confirmDialog(opts){
+  const o=typeof opts==='string'?{title:opts}:(opts||{});
+  return new Promise(resolve=>{
+    // 前のダイアログが残っていたら false で潰してから開く
+    if(confirmResolver){
+      try{confirmResolver(false);}catch(e){}
+      confirmResolver=null;
+    }
+    const titleEl=$('confirm-title');
+    const bodyEl=$('confirm-body');
+    const okBtn=$('confirm-ok');
+    const cancelBtn=$('confirm-cancel');
+    const mask=$('confirm-mask');
+    const card=$('confirm-card');
+    if(!titleEl||!bodyEl||!okBtn||!cancelBtn||!mask||!card){
+      // フォールバック: 何かおかしければネイティブで
+      resolve(window.confirm(o.title+(o.body?'\n\n'+o.body:'')));
+      return;
+    }
+    titleEl.textContent=o.title||'';
+    bodyEl.textContent=o.body||'';
+    bodyEl.style.display=o.body?'':'none';
+    okBtn.textContent=o.ok||'OK';
+    cancelBtn.textContent=o.cancel||'キャンセル';
+    okBtn.className='confirm-btn '+(o.danger?'danger':'primary');
+    mask.classList.add('on');
+    card.classList.add('on');
+    card.setAttribute('aria-hidden','false');
+
+    const close=(val)=>{
+      mask.classList.remove('on');
+      card.classList.remove('on');
+      card.setAttribute('aria-hidden','true');
+      okBtn.removeEventListener('click',onOk);
+      cancelBtn.removeEventListener('click',onCancel);
+      mask.removeEventListener('click',onCancel);
+      document.removeEventListener('keydown',onKey);
+      confirmResolver=null;
+      resolve(val);
+    };
+    const onOk=()=>close(true);
+    const onCancel=()=>close(false);
+    const onKey=e=>{if(e.key==='Escape')close(false); if(e.key==='Enter')close(true);};
+    okBtn.addEventListener('click',onOk);
+    cancelBtn.addEventListener('click',onCancel);
+    mask.addEventListener('click',onCancel);
+    document.addEventListener('keydown',onKey);
+    confirmResolver=close;
+  });
 }
 
 // 保存成功時の大きなチェックマーク。ボタン上の小さなチェックと併用して、
