@@ -814,6 +814,107 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   padding:6px 13px;
 }
 
+/* PWAインストール誘導: 初回起動時 (まだスタンドアロンで動いていない場合) に
+   下から出るカード。LINEの「友だち追加」案内に近い、押し付けがましくないトーン。 */
+.pwa-mask{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,0.4);
+  z-index:140;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.2s;
+}
+.pwa-mask.on{opacity:1;pointer-events:auto;}
+.pwa-card{
+  position:absolute;
+  left:12px;right:12px;
+  bottom:16px;
+  background:var(--surface);
+  border-radius:18px;
+  box-shadow:0 12px 32px rgba(0,0,0,0.25), 0 4px 10px rgba(0,0,0,0.12);
+  z-index:141;
+  transform:translateY(120%);
+  transition:transform 0.32s cubic-bezier(.2,.7,.3,1);
+  padding:22px 22px 18px;
+  padding-bottom:calc(18px + env(safe-area-inset-bottom));
+}
+.pwa-card.on{transform:translateY(0);}
+.pwa-card-icon{
+  width:48px;height:48px;
+  border-radius:12px;
+  background:var(--g);
+  color:white;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:12px;
+  font-family:Georgia,serif;
+  font-weight:700;
+  font-style:italic;
+  font-size:30px;
+}
+.pwa-card-title{
+  font-size:17px;
+  font-weight:700;
+  color:var(--ink);
+  margin-bottom:6px;
+}
+.pwa-card-sub{
+  font-size:13px;
+  color:var(--ink2);
+  line-height:1.55;
+  margin-bottom:16px;
+}
+.pwa-steps{
+  background:var(--bg);
+  border-radius:12px;
+  padding:14px 14px;
+  margin-bottom:16px;
+}
+.pwa-step{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:6px 0;
+  font-size:13px;
+  color:var(--ink);
+}
+.pwa-step-num{
+  width:22px;height:22px;
+  border-radius:50%;
+  background:var(--g);
+  color:white;
+  font-size:11px;
+  font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.pwa-step-icon{
+  width:22px;height:22px;
+  color:var(--ink2);
+  flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.pwa-actions{
+  display:flex;
+  gap:8px;
+}
+.pwa-btn{
+  flex:1;
+  height:42px;
+  border-radius:21px;
+  border:none;
+  font-size:14px;
+  font-weight:600;
+  background:var(--bg);
+  color:var(--ink2);
+}
+.pwa-btn:active{background:var(--gl);}
+.pwa-btn.primary{
+  background:var(--g);
+  color:white;
+}
+.pwa-btn.primary:active{background:var(--gd);}
+
 /* バブル内のリプライ引用: ユーザー発言で対象バブルの引用を上に小さく表示。
    LINEと同じく、発言と一体感のあるブロック。色は反対側の補色に近いトーンを使う。 */
 .bubble-quote{
@@ -3120,6 +3221,42 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
   </div>
 </div>
+
+<!-- PWAインストール誘導カード:
+     初回起動でブラウザから開かれている場合だけ、下からカードを出す。
+     iOS は OS の制約で自動インストールできないので手順を案内、Android はネイティブのインストールプロンプトを呼び出す。
+     「あとで」を選んだら7日間出さない。 -->
+<div class="pwa-mask" id="pwa-mask" data-action="pwa-later"></div>
+<div class="pwa-card" id="pwa-card" aria-hidden="true">
+  <div class="pwa-card-icon">S</div>
+  <div class="pwa-card-title">ホーム画面に置いて使う</div>
+  <div class="pwa-card-sub">アプリのように1タップで開けます。ブックマークと違い、Safariのタブを毎回探す必要もありません。</div>
+  <!-- iOS 用手順 (Safari で開いた時に表示) -->
+  <div class="pwa-steps" id="pwa-steps-ios">
+    <div class="pwa-step">
+      <div class="pwa-step-num">1</div>
+      <span>下の</span>
+      <div class="pwa-step-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      </div>
+      <span>共有ボタンをタップ</span>
+    </div>
+    <div class="pwa-step">
+      <div class="pwa-step-num">2</div>
+      <span>「ホーム画面に追加」を選ぶ</span>
+    </div>
+    <div class="pwa-step">
+      <div class="pwa-step-num">3</div>
+      <span>右上の「追加」をタップ</span>
+    </div>
+  </div>
+  <!-- Android 用ボタン (beforeinstallprompt が拾えた時に表示) -->
+  <div class="pwa-actions" id="pwa-actions">
+    <button class="pwa-btn" data-action="pwa-later">あとで</button>
+    <button class="pwa-btn primary" id="pwa-install-btn" data-action="pwa-install" style="display:none;">アプリとして追加</button>
+  </div>
+</div>
+
 <input type="file" id="file-input" accept="image/*" style="display:none;">
 <input type="file" id="file-input-any" accept=".png,.jpg,.jpeg,.gif,.webp,.heic,.heif" style="display:none;">
 <input type="file" id="restore-input" accept="application/json,.json" style="display:none;">
@@ -4896,7 +5033,10 @@ function startCreate(type){
 function onFilePick(e){
   const file=e.target.files[0];
   if(!file){
-    state.current=null;
+    // 新規作成のキャンセル時は state.current を捨てる。編集中の差し替えキャンセルは何もしない。
+    if(state.current && state.current._new && !state.current.image){
+      state.current=null;
+    }
     state.photoMode=null;
     return;
   }
@@ -4913,14 +5053,71 @@ function onFilePick(e){
     if(!state.current)state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:new Date().toISOString().slice(0,10),_new:true,text:''};
     state.current.image=compressed;
     state.photoMode=null;
-    renderUpload();
-    goto('screen-upload');
+
+    // 「新規作成の写真」なら撮影即保存フローへ。screen-upload を経由せず、
+    // データを保存してから detail 画面を開く。バックで戻れば完了。
+    // 「編集中の写真差し替え」(既に保存されたカードの編集中) は従来通り screen-upload。
+    const isNewPhoto=state.current._new && (state.current.type==='photo' || state.current.type==='photonote');
+    if(isNewPhoto){
+      quickSaveNewPhoto();
+    }else{
+      renderUpload();
+      goto('screen-upload');
+    }
   }).catch(err=>{
     toast('画像の読み込みに失敗しました');
     state.current=null;
     state.photoMode=null;
   });
   e.target.value='';
+}
+
+// 新規写真の撮影→即保存→detail画面遷移。
+// 「とにかく早く写メを保存したい」流れを最短にする。撮影完了からアプリ操作は不要、
+// 細かい編集は後で詳細画面の長押し/編集メニューから可能。
+// テキストはクイック入力で先に入れてあった分だけ反映 (state.current.text)。
+async function quickSaveNewPhoto(){
+  const c=state.current;
+  if(!c || !c.image)return;
+  // 復習システム用の初期値 (saveCard の _new 分岐と同じ初期化)
+  c.created=Date.now();
+  c.stage=0;
+  c.lastReview=null;
+  c.reviewCount=0;
+  delete c._new;
+
+  // 画像は IndexedDB へ。失敗時はロールバック。
+  try{
+    await imgDB.put(c.id,c.image);
+  }catch(err){
+    console.error('IndexedDB put failed:',err);
+    toast('保存に失敗しました');
+    return;
+  }
+  state.cards.unshift(c);
+  const ok=save();
+  if(!ok){
+    // localStorage 失敗 → 孤児画像を消してロールバック
+    state.cards.shift();
+    imgDB.delete(c.id).catch(()=>{});
+    toast('容量が足りません');
+    return;
+  }
+
+  // 詳細画面を開く。AIモードを自動オンに (利用権限がある人だけ) → 「写メ→即AI質問」が最短で始まる。
+  // 何もせずバックすればホームに戻るだけなので、AI質問しない人にも邪魔にならない。
+  openDetail(c,'mine');
+  if(canUseAI()){
+    setTimeout(()=>{
+      if(!state.detailAiMode){
+        state.detailAiMode=true;
+        const tgl=$('detail-ai-toggle');
+        if(tgl)tgl.classList.add('on');
+        const inp=$('detail-input');
+        if(inp)inp.placeholder='AIに質問して送信…';
+      }
+    },80);
+  }
 }
 
 // data URL のおおよそのバイト数
@@ -8195,6 +8392,8 @@ document.addEventListener('click',e=>{
     case 'bubble-reply':bubbleReply();break;
     case 'bubble-delete':bubbleDelete();break;
     case 'cancel-reply':cancelReply();break;
+    case 'pwa-later':pwaLater();break;
+    case 'pwa-install':pwaInstall();break;
   }
 });
 
@@ -8514,6 +8713,107 @@ $('restore-input').addEventListener('change',handleRestoreFile);
   document.addEventListener('touchcancel',onEnd);
 })();
 
+// ═══ PWA インストール誘導 ═══
+// ホーム画面に追加してもらうための案内。
+// - iOS: OS の仕様で自動インストールできないので、操作手順を表示
+// - Android (Chromeなど): beforeinstallprompt イベントを掴んで、自前ボタンで OS のプロンプトを出す
+// - すでにスタンドアロンで開いている (= 追加済み) なら出さない
+// - 「あとで」を選ばれた場合は 7日 出さない
+// - login 直後すぐ案内すると煩わしいので、初回起動から4秒後に出す
+let pwaDeferredPrompt=null;
+const PWA_LATER_KEY='snapin_pwa_later_until';
+const PWA_DAY=86400000;
+
+function pwaIsStandalone(){
+  if(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)return true;
+  // iOS Safari は navigator.standalone を持つ
+  if(typeof navigator.standalone==='boolean' && navigator.standalone)return true;
+  return false;
+}
+function pwaIsIOS(){
+  const ua=navigator.userAgent||'';
+  // iPad は iPadOS 13+ で macOS を名乗ることがあるので touch サポートも併用
+  const iOSish=/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
+  if(!iOSish)return false;
+  // Safari 以外のブラウザ (Chrome iOS, Line内ブラウザ等) は「ホーム画面に追加」できないので案内しない
+  const isSafari=/Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|GSA|LINE|FBAN|FBAV|Instagram|TwitterAndroid|TwitterIPhone/.test(ua);
+  return isSafari;
+}
+function pwaShouldShow(){
+  if(pwaIsStandalone())return false;
+  // 「あとで」期限内なら出さない
+  try{
+    const until=parseInt(localStorage.getItem(PWA_LATER_KEY)||'0',10);
+    if(until && Date.now()<until)return false;
+  }catch(e){}
+  // iOS Safari か、Android (beforeinstallprompt が来た) のどちらかでのみ案内
+  return pwaIsIOS() || !!pwaDeferredPrompt;
+}
+function showPwaPrompt(){
+  if(!pwaShouldShow())return;
+  const card=document.getElementById('pwa-card');
+  const mask=document.getElementById('pwa-mask');
+  const ios=document.getElementById('pwa-steps-ios');
+  const installBtn=document.getElementById('pwa-install-btn');
+  if(!card||!mask)return;
+  // iOS かどうかで手順 or ボタンを切り替える
+  if(pwaIsIOS()){
+    if(ios)ios.style.display='';
+    if(installBtn)installBtn.style.display='none';
+  }else{
+    if(ios)ios.style.display='none';
+    if(installBtn)installBtn.style.display='';
+  }
+  mask.classList.add('on');
+  card.classList.add('on');
+  card.setAttribute('aria-hidden','false');
+}
+function hidePwaPrompt(){
+  const card=document.getElementById('pwa-card');
+  const mask=document.getElementById('pwa-mask');
+  if(card){card.classList.remove('on');card.setAttribute('aria-hidden','true');}
+  if(mask)mask.classList.remove('on');
+}
+function pwaLater(){
+  try{localStorage.setItem(PWA_LATER_KEY,String(Date.now()+7*PWA_DAY));}catch(e){}
+  hidePwaPrompt();
+}
+async function pwaInstall(){
+  if(!pwaDeferredPrompt){hidePwaPrompt();return;}
+  try{
+    pwaDeferredPrompt.prompt();
+    const choice=await pwaDeferredPrompt.userChoice;
+    // 承認/拒否どちらでも、一旦は出さない
+    pwaDeferredPrompt=null;
+    if(choice && choice.outcome==='accepted'){
+      // インストール完了 → 永続的に出さない
+      try{localStorage.setItem(PWA_LATER_KEY,String(Date.now()+365*PWA_DAY));}catch(e){}
+    }else{
+      pwaLater();
+      return;
+    }
+  }catch(e){console.warn('pwa install failed',e);}
+  hidePwaPrompt();
+}
+// Android Chrome 系: インストール可能になった瞬間にイベントが飛んでくる。
+// preventDefault でブラウザ標準のミニバーを抑え、自前のタイミングで .prompt() を呼ぶ。
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  pwaDeferredPrompt=e;
+});
+// インストール完了通知 (Android)
+window.addEventListener('appinstalled',()=>{
+  pwaDeferredPrompt=null;
+  try{localStorage.setItem(PWA_LATER_KEY,String(Date.now()+365*PWA_DAY));}catch(e){}
+  hidePwaPrompt();
+});
+// 起動から少し経ってから案内 (初回ログイン直後に被ると煩わしい)
+function maybeShowPwaPromptDeferred(){
+  setTimeout(()=>{
+    if(pwaShouldShow())showPwaPrompt();
+  },4000);
+}
+
 // 起動
 setupNavs();
 loadOfficialShelves(); // 公式棚をサーバーから取得 (非同期、UIブロックしない)
@@ -8555,6 +8855,8 @@ if(load() && state.user){
   refreshMe(true);
   // 起動時に古いゴミ箱を整理 (7日経過したカードは完全削除)
   purgeOldTrash().catch(e=>console.warn('purgeOldTrash failed:',e));
+  // PWAインストール案内 (4秒後に判定して必要なら表示)
+  maybeShowPwaPromptDeferred();
   // 起動時に IndexedDB から画像を復元 (非同期、画像のあるカードだけ後から表示更新)
   hydrateCardImages().then(()=>{
     // 画像復元後、ホーム画面が表示中なら再描画して画像を表示
