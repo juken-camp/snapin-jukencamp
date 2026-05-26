@@ -2634,26 +2634,26 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="bnav" data-bnav="search"></div>
 </div>
 
-<!-- ARCHIVE (しまったメモ) -->
+<!-- ARCHIVE (リストから外したメモ) -->
 <div class="screen" id="screen-archive">
   <div class="bhdr">
     <button class="bhdr-back" data-action="back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
-    <div class="bhdr-title">しまったメモ</div>
+    <div class="bhdr-title">リストから外したメモ</div>
   </div>
   <div class="scroll" id="archive-scroll">
     <div id="archive-content"></div>
   </div>
 </div>
 
-<!-- TRASH (片付けたメモ) -->
+<!-- TRASH (捨てたメモ) -->
 <div class="screen" id="screen-trash">
   <div class="bhdr">
     <button class="bhdr-back" data-action="back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
-    <div class="bhdr-title">片付けたメモ</div>
+    <div class="bhdr-title">捨てたメモ</div>
     <button class="bhdr-trash-empty" data-action="empty-trash" id="trash-empty-btn">すべて削除</button>
   </div>
   <div class="scroll" id="trash-scroll">
@@ -2698,7 +2698,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       </button>
       <button class="menu-item" data-action="archive-card" id="menu-archive-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
-        しまう
+        リストから外す
       </button>
       <button class="menu-item danger" data-action="delete-card">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
@@ -3057,11 +3057,11 @@ function ensureDeviceId(){
 }
 
 // ═══ ARCHIVE / TRASH ユーティリティ ═══
-// state.cards は全カード (アクティブ + しまった + 消した) を保持する。
+// state.cards は全カード (アクティブ + 外した + 捨てた) を保持する。
 // 表示・検索・復習の通常導線では「アクティブ」のカードしか出さない。
-//   - archivedAt : しまった時刻 (ms)、「しまったメモ」画面に出す
-//   - deletedAt  : 片付けた時刻 (ms)、「片付けたメモ」画面に出す、7日後に自動消去
-// 両方セットされている場合は deletedAt を優先 (= 消した扱い)
+//   - archivedAt : リストから外した時刻 (ms)、「リストから外したメモ」画面に出す
+//   - deletedAt  : 捨てた時刻 (ms)、「捨てたメモ」画面に出す、7日後に自動消去
+// 両方セットされている場合は deletedAt を優先 (= 捨てた扱い)
 const TRASH_RETENTION_MS=7*24*60*60*1000; // 7日
 
 function isActiveCard(c){
@@ -3624,8 +3624,8 @@ async function exportBackup(){
     // 念のため、現在 state.cards に画像 dataURL が乗っていない可能性に備えて再 hydrate
     await hydrateCardImages();
 
-    // バックアップ対象: 公式棚由来でなく、片付けたメモ (deletedAt) でないもの。
-    // しまったメモ (archivedAt) は含める。本人にとってまだ大事なメモのはずなので。
+    // バックアップ対象: 公式棚由来でなく、捨てたメモ (deletedAt) でないもの。
+    // リストから外したメモ (archivedAt) は含める。本人にとってまだ大事なメモのはずなので。
     const personalCards=state.cards.filter(c=>c && !c.fromShelf && !c.deletedAt);
     const payload={
       app:'SnapIn',
@@ -4257,7 +4257,7 @@ function renderGrid(el,cards,origin){
     }
     // ピン留めバッジ
     if(origin==='mine' && c.pinned){
-      inner+=`<div class="pin-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2.5a2 2 0 0 1 1.5 3.32L14 7.6V13l4 3v2H6v-2l4-3V7.6L8.5 5.82A2 2 0 0 1 10 2.5h4zm-3 14.5h2v5l-1 1-1-1z"/></svg></div>`;
+      inner+=`<div class="pin-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
     }
     // 選択マーク (常に DOM に置いて CSS で表示制御)
     if(isHome){
@@ -4390,7 +4390,7 @@ function updateSelectBarCount(){
 function deleteSelected(){
   const n=state.selectedIds.size;
   if(n===0)return;
-  if(!confirm(`${n}件を片付けますか?\n7日間は「片付けたメモ」から戻せます。`)){return;}
+  if(!confirm(`${n}件を捨てますか?\n7日間は「捨てたメモ」から戻せます。`)){return;}
   const ids=new Set(state.selectedIds);
   const now=Date.now();
   state.cards.forEach(c=>{
@@ -4431,7 +4431,7 @@ function renderFeed(el,cards){
       inner+=`<div class="feed-meta" style="color:${col.fg};opacity:0.5;">${fmtDate(c.date)}</div>`;
     }
     if(c.pinned){
-      inner+=`<div class="pin-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2.5a2 2 0 0 1 1.5 3.32L14 7.6V13l4 3v2H6v-2l4-3V7.6L8.5 5.82A2 2 0 0 1 10 2.5h4zm-3 14.5h2v5l-1 1-1-1z"/></svg></div>`;
+      inner+=`<div class="pin-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
     }
     item.innerHTML=inner;
     // モザイクモード時: タップで blur 解除/再表示をトグル (暗記練習用)。
@@ -5939,19 +5939,19 @@ function editCard(){
 function deleteCard(){
   $('detail-menu').classList.remove('on');
   if(state.current._origin==='official'){toast('公式メモは削除できません');return;}
-  if(!confirm('このメモを片付けますか?\n\n7日間は探すページの「片付けたメモ」から戻せます。\nその後、完全に消えます。'))return;
+  if(!confirm('このメモを捨てますか?\n\n7日間は探すページの「捨てたメモ」から戻せます。\nその後、完全に消えます。'))return;
   const id=state.current.id;
   const idx=state.cards.findIndex(x=>x.id===id);
   if(idx<0)return;
   state.cards[idx].deletedAt=Date.now();
-  // 片付けたらピンは外す (画面に出てこないので意味がない)
+  // 捨てたらピンは外す (画面に出てこないので意味がない)
   state.cards[idx].pinned=false;
   save();
-  toast('片付けたメモに移動しました');
+  toast('捨てたメモに移動しました');
   back();
 }
 
-// リストから「しまう」: 暗記練習等で一時的に視界から消したいとき用
+// リストから外す: 暗記練習等で一時的に視界から消したいとき用
 function archiveCard(){
   $('detail-menu').classList.remove('on');
   if(!state.current)return;
@@ -5962,11 +5962,11 @@ function archiveCard(){
   state.cards[idx].archivedAt=Date.now();
   state.cards[idx].pinned=false; // 一覧から消えるのでピンも外しておく
   save();
-  toast('しまいました');
+  toast('リストから外しました');
   back();
 }
 
-// しまったメモを一覧に戻す
+// リストから外したメモを一覧に戻す
 function unarchiveCard(id){
   const idx=state.cards.findIndex(x=>x.id===id);
   if(idx<0)return;
@@ -5975,7 +5975,7 @@ function unarchiveCard(id){
   toast('一覧に戻しました');
 }
 
-// 片付けたメモを復元
+// 捨てたメモを復元
 function restoreFromTrash(id){
   const idx=state.cards.findIndex(x=>x.id===id);
   if(idx<0)return;
@@ -5984,7 +5984,7 @@ function restoreFromTrash(id){
   toast('一覧に戻しました');
 }
 
-// 片付けたメモを完全に削除 (1件)
+// 捨てたメモを完全に削除 (1件)
 async function purgeOne(id){
   const idx=state.cards.findIndex(x=>x.id===id);
   if(idx<0)return;
@@ -5993,11 +5993,11 @@ async function purgeOne(id){
   save();
 }
 
-// 「片付けたメモ」を一括で空にする
+// 「捨てたメモ」を一括で空にする
 async function emptyTrash(){
   const trashed=state.cards.filter(isTrashedCard);
   if(trashed.length===0)return;
-  if(!confirm(`片付けたメモ ${trashed.length}件 を完全に削除しますか?\nこの操作は取り消せません。`))return;
+  if(!confirm(`捨てたメモ ${trashed.length}件 を完全に削除しますか?\nこの操作は取り消せません。`))return;
   for(const c of trashed){
     if(c.id){try{await imgDB.delete(c.id);}catch(e){/* ignore */}}
   }
@@ -6008,7 +6008,7 @@ async function emptyTrash(){
   renderTrashScreen();
 }
 
-// ── しまったメモ / 片付けたメモ 画面の共通描画 ──
+// ── リストから外したメモ / 捨てたメモ 画面の共通描画 ──
 // 各カードを1行 (サムネ + タイトル + 操作ボタン) で表示する。
 // 詳細画面に遷移はさせない (戻すアクションを優先したいため)。
 function binRowHtml(c,kind){
@@ -6031,22 +6031,22 @@ function binRowHtml(c,kind){
   else if(c.type==='list')title=c.title||'リスト';
   else if(c.type==='photo'||c.type==='photonote')title=(c.text||'').replace(/\s+/g,' ').trim()||'(写真メモ)';
 
-  // メタ (日付 + 残り日数 or しまった日)
+  // メタ (日付 + 残り日数 or 外した日)
   let meta='';
   if(kind==='trash'){
     const elapsed=Date.now()-(c.deletedAt||0);
     const left=Math.max(0,Math.ceil((TRASH_RETENTION_MS-elapsed)/(24*60*60*1000)));
     const ago=Math.floor(elapsed/(24*60*60*1000));
-    meta=`${ago===0?'今日':ago+'日前'}に片付けた<span class="bin-days-left"> ・ あと${left}日</span>`;
+    meta=`${ago===0?'今日':ago+'日前'}に捨てた<span class="bin-days-left"> ・ あと${left}日</span>`;
   }else{
     const elapsed=Date.now()-(c.archivedAt||0);
     const ago=Math.floor(elapsed/(24*60*60*1000));
-    meta=`${ago===0?'今日':ago+'日前'}にしまった`;
+    meta=`${ago===0?'今日':ago+'日前'}にリストから外した`;
   }
 
   // 操作ボタン
   const restoreLabel='戻す';
-  const dangerLabel=kind==='trash'?'完全に削除':'片付ける';
+  const dangerLabel=kind==='trash'?'完全に削除':'捨てる';
   const dangerAction=kind==='trash'?'purge-one':'trash-from-archive';
 
   return `<div class="bin-row" data-card-id="${esc(c.id)}">
@@ -6065,14 +6065,14 @@ function binRowHtml(c,kind){
 function renderArchiveScreen(){
   const wrap=$('archive-content');
   if(!wrap)return;
-  // 新しくしまった順
+  // 新しく外した順
   const items=state.cards.filter(isArchivedCard).sort((a,b)=>(b.archivedAt||0)-(a.archivedAt||0));
   if(items.length===0){
     wrap.innerHTML=`<div class="bin-empty">
       <div class="bin-empty-icon">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
       </div>
-      しまったメモはまだありません。<br>暗記に使うため、一旦リストから外したいメモは<br>詳細メニューから「しまう」を選んでください。
+      リストから外したメモはまだありません。<br>暗記練習などで一旦視界から外したいメモは<br>詳細メニューから「リストから外す」を選んでください。
     </div>`;
     return;
   }
@@ -6090,21 +6090,21 @@ function renderTrashScreen(){
       <div class="bin-empty-icon">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
       </div>
-      片付けたメモはまだありません。<br>片付けたメモは7日間ここに残ります。
+      捨てたメモはまだありません。<br>捨てたメモは7日間ここに残ります。
     </div>`;
     return;
   }
   wrap.innerHTML=`<div class="bin-list">${items.map(c=>binRowHtml(c,'trash')).join('')}</div>`;
 }
 
-// 「しまったメモ」画面から片付ける (= ゴミ箱送り)
+// 「リストから外したメモ」画面から捨てる (= ゴミ箱送り)
 function trashFromArchive(id){
   const idx=state.cards.findIndex(x=>x.id===id);
   if(idx<0)return;
   state.cards[idx].deletedAt=Date.now();
   delete state.cards[idx].archivedAt;
   save();
-  toast('片付けたメモに移動しました');
+  toast('捨てたメモに移動しました');
   renderArchiveScreen();
 }
 
@@ -6966,7 +6966,7 @@ function renderSearchIdle(){
     </div>`;
   }
 
-  // 控えめな入口: しまったメモ と 片付けたメモ (件数表示付き)
+  // 控えめな入口: リストから外したメモ と 捨てたメモ (件数表示付き)
   const archivedCount=state.cards.filter(isArchivedCard).length;
   const trashedCount=state.cards.filter(isTrashedCard).length;
   html+=`<div class="search-extras">
@@ -6974,7 +6974,7 @@ function renderSearchIdle(){
       <span class="search-extra-icon">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
       </span>
-      <span class="search-extra-label">しまったメモ</span>
+      <span class="search-extra-label">リストから外したメモ</span>
       <span class="search-extra-count">${archivedCount?archivedCount:''}</span>
       <svg class="search-extra-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
@@ -6982,11 +6982,11 @@ function renderSearchIdle(){
       <span class="search-extra-icon">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
       </span>
-      <span class="search-extra-label">片付けたメモ</span>
+      <span class="search-extra-label">捨てたメモ</span>
       <span class="search-extra-count">${trashedCount?trashedCount:''}</span>
       <svg class="search-extra-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
-    <div class="search-extras-note">片付けたメモは7日間ここに残ります</div>
+    <div class="search-extras-note">捨てたメモは7日間ここに残ります</div>
   </div>`;
 
   idle.innerHTML=html;
@@ -7322,7 +7322,7 @@ document.addEventListener('click',e=>{
   setScope(c.dataset.scope);
 });
 
-// しまったメモ・片付けたメモ画面の行内ボタン処理
+// リストから外したメモ・捨てたメモ画面の行内ボタン処理
 document.addEventListener('click',e=>{
   const btn=e.target.closest('[data-bin-action]');
   if(!btn)return;
