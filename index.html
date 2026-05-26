@@ -2533,7 +2533,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <input id="claim-name" type="text" placeholder="例: 合格太郎" autocomplete="off" autocapitalize="off">
     </div>
     <div class="claim-field">
-      <label>誕生日 4桁</label>
+      <label>誕生日</label>
       <input id="claim-bd" type="tel" inputmode="numeric" maxlength="4" placeholder="例: 0401" autocomplete="off">
     </div>
     <div class="claim-error hide" id="claim-error"></div>
@@ -3559,7 +3559,7 @@ async function doClaimSubmit(force){
   if(oldForceBtn)oldForceBtn.remove();
 
   if(!name || bd.length!==4){
-    errEl.textContent='名前と誕生日4桁を入れてください。';
+    errEl.textContent='名前と誕生日を入れてください。';
     errEl.classList.remove('hide');
     return;
   }
