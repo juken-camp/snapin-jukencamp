@@ -5388,11 +5388,15 @@ function renderUpload(){
     });
     body.appendChild(ta);
   }else if(c.type==='note'){
-    // contenteditable な div を使う (textarea は縦揃えが効かないため)。
-    // 編集中の入力体験を保ちつつ、横揃え/縦揃えの両方をその場でプレビューできる。
+    // 編集 wrap を「グリッドカードを大きくスケールしたプレビュー」にする。
+    // グリッドのカードは画面幅 ÷ 3 ≒ 140px の正方形。編集画面では画面幅まるごとを
+    // 使えるので、その比率(おおむね 3倍)でフォントサイズもスケールする。
+    // → 結果: グリッドに表示された時と「同じ位置で改行」「同じ行数」が編集中に確認できる。
+    // 横幅と内寸のpaddingもグリッドカードと同じ比率にする。
     const wrap=document.createElement('div');
     wrap.id='up-note-wrap';
-    wrap.style.cssText='min-height:240px;padding:20px;border-radius:12px;display:flex;flex-direction:column;line-height:1.5;cursor:text;';
+    // 正方形にして、padding は内寸の 7% (グリッドの padding:10px / 140px ≒ 7%)
+    wrap.style.cssText='width:100%;aspect-ratio:1;padding:7%;border-radius:12px;display:flex;flex-direction:column;line-height:1.5;cursor:text;box-sizing:border-box;overflow:hidden;';
 
     const editor=document.createElement('div');
     editor.id='up-note-area';
@@ -5427,14 +5431,36 @@ function renderUpload(){
       }
     });
 
-    // 揃え/色を反映する関数
+    // 揃え/色/フォントサイズを反映する関数。
+    // フォントサイズはグリッドカードと同じロジック (noteCardStyle) を使い、
+    // 編集領域がグリッドの何倍かを掛けてスケールする。これにより
+    // 「グリッド表示時と同じ位置で改行する」のが編集中に WYSIWYG で見える。
     const applyStyle=()=>{
       const col=colorById(c.color);
       wrap.style.background=col.bg;
       wrap.style.color=col.fg;
       const txt=editor.innerText;
-      const fz=autoFontSizeDetail(txt);
-      wrap.style.fontSize=fz+'px';
+
+      // グリッドカードと同じサイズ計算 (文字数 + 改行数で fz, lh, clamp を決定)
+      const tlen=txt.length;
+      let idx=noteCardInitialSizeIndex(tlen);
+      while(idx<NOTE_CARD_SIZES.length-1){
+        const s=NOTE_CARD_SIZES[idx];
+        if(estimateNoteLineCount(txt,s.fz)<=s.clamp)break;
+        idx++;
+      }
+      const gridFz=NOTE_CARD_SIZES[idx].fz;
+      const lh=NOTE_CARD_SIZES[idx].lh;
+
+      // 編集領域はグリッドのカード幅(画面幅÷3 ≒ 140px)に対して、画面幅まるごと使う(約430px)
+      // → 約 3倍のスケール。実測ベースで wrap の実寸から動的に倍率を計算する。
+      const wrapW=wrap.clientWidth||300;
+      const gridCardW=140; // グリッドの1セル幅の想定値
+      const scale=wrapW/gridCardW;
+      const previewFz=Math.max(12, Math.round(gridFz*scale));
+      wrap.style.fontSize=previewFz+'px';
+      wrap.style.lineHeight=lh;
+
       const align=resolveAlign({text:txt,alignH:c.alignH,alignV:c.alignV});
       // 横揃え: flex 親の align-items + 子の text-align
       wrap.style.alignItems=align.h==='center'?'center':'flex-start';
@@ -5443,6 +5469,8 @@ function renderUpload(){
       wrap.style.justifyContent=align.v==='center'?'center':'flex-start';
     };
     applyStyle();
+    // ウィンドウ幅が変わったとき (回転、PWA起動直後の確定など) にも再計算
+    window.addEventListener('resize',applyStyle);
 
     editor.addEventListener('input',()=>{
       // innerText を使うと <br> や <div> が改行 \n に正しく変換される (textContent では失われる)
@@ -5454,6 +5482,9 @@ function renderUpload(){
     // Enter で改行 (contenteditable のデフォルト挙動は <br> 挿入で OK)
 
     body.appendChild(wrap);
+    // DOM にマウントされた後に再度 applyStyle: wrap.clientWidth が確定するので、
+    // スケール計算 (gridFz × wrap幅/140) が正確になる。最初は仮の値で出ているのを上書き。
+    requestAnimationFrame(applyStyle);
 
     // ─── 揃えツールバー (横揃え / 縦揃え) ───
     // 投稿/編集中にその場で押せて、プレビュー(上のメモ本文)に即反映される。
