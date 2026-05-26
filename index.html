@@ -638,6 +638,56 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .up-text.title{font-size:17px;font-weight:500;min-height:auto;padding-bottom:4px;}
 
+/* メモ編集の揃えツールバー */
+.up-align-bar{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin:10px 0 4px;
+  padding:2px;
+}
+.up-align-group{
+  display:flex;
+  background:var(--bg);
+  border-radius:9px;
+  padding:2px;
+  gap:2px;
+}
+.up-align-sep{
+  width:1px;
+  height:20px;
+  background:var(--line);
+  margin:0 4px;
+}
+.up-align-btn{
+  width:36px;
+  height:30px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:7px;
+  color:var(--ink3);
+  transition:background .12s, color .12s;
+}
+.up-align-btn:active{transform:scale(0.94);}
+.up-align-btn.on{
+  background:var(--surface);
+  color:var(--ink);
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
+}
+/* 自動判定で選ばれている状態は、明示選択ほど強くハイライトしない */
+.up-align-btn.on.auto{
+  background:transparent;
+  color:var(--g);
+  box-shadow:none;
+}
+.up-align-hint{
+  font-size:11px;
+  color:var(--ink3);
+  margin-left:auto;
+  font-family:var(--font-en);
+}
+
 /* LIST EDITING */
 .cl-row{
   display:flex;
@@ -2763,6 +2813,52 @@ function autoFontSizeDetail(text){
   return 16;
 }
 
+// テキストメモの揃え設定を解決する。
+// 明示設定 (c.alignH / c.alignV) があればそれを使い、なければ文字量から自動判定。
+// 既存メモ (alignH/alignV 未設定) の挙動を保ったまま、新規/編集時には明示的に変えられる。
+function resolveAlign(c){
+  const tlen=(c.text||'').length;
+  // 短文 (25字以下) は中央寄せがデフォルト、それ以外は左上が自動デフォルト
+  const autoH=tlen<=25?'center':'left';
+  const autoV=tlen<=25?'center':'top';
+  return {
+    h:(c.alignH==='left'||c.alignH==='center')?c.alignH:autoH,
+    v:(c.alignV==='top'||c.alignV==='center')?c.alignV:autoV,
+  };
+}
+
+// グリッドのテキストメモ用: 文字数に応じてフォントサイズ・行高・行数制限を決める。
+// グリッドセルは 142×142px 前後、内部 padding 10pxで 122×122px。
+// 長文でも全体が見えることを優先し、極小サイズでも下限まで縮める。
+// 第2引数の card で揃え設定 (alignH/alignV) を反映。
+function noteCardStyle(card,col){
+  const text=card.text||'';
+  const tlen=text.length;
+  const align=resolveAlign(card);
+  let fz,lh,clamp;
+  if(tlen<=12){fz=17;lh=1.5;clamp=null;}
+  else if(tlen<=25){fz=15;lh=1.45;clamp=null;}
+  else if(tlen<=50){fz=13;lh=1.4;clamp=10;}
+  else if(tlen<=85){fz=11;lh=1.4;clamp=14;}
+  else if(tlen<=130){fz=9;lh=1.35;clamp=18;}
+  else if(tlen<=200){fz=8;lh=1.3;clamp=22;}
+  else {fz=7;lh=1.25;clamp=27;}
+  let style=`background:${col.bg};color:${col.fg};font-size:${fz}px;line-height:${lh};`;
+  // 揃え:
+  //   alignV=center または alignH=center を使うとき → flex レイアウト
+  //   両方 left/top のみ → -webkit-box のまま (line-clamp が効く)
+  if(align.h==='center' || align.v==='center'){
+    style+='display:flex;flex-direction:column;-webkit-line-clamp:initial;';
+    style+=align.h==='center'?'align-items:center;text-align:center;':'align-items:flex-start;text-align:left;';
+    style+=align.v==='center'?'justify-content:center;':'justify-content:flex-start;';
+  }else{
+    // 既定の -webkit-box レイアウト (グリッドでは line-clamp で長文を切る)
+    style+='text-align:left;';
+    if(clamp)style+=`-webkit-line-clamp:${clamp};`;
+  }
+  return style;
+}
+
 // 公式棚デモデータ
 // 公式棚データ。起動時に /api/shelves から取得する。
 // (Vercel Redis に保存されているデータをロード)
@@ -3582,9 +3678,8 @@ function renderGrid(el,cards,origin){
       if(c.text)inner+=`<div class="card-source">${esc(c.text.slice(0,30))}</div>`;
     }else if(c.type==='note'){
       const col=colorById(c.color);
-      const fz=autoFontSize(c.text||'',11,17);
-      const centered=fz>=15;
-      const style=`background:${col.bg};color:${col.fg};font-size:${fz}px;${centered?'display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.4;-webkit-line-clamp:initial;':''}`;
+      // テキスト量に応じてフォントサイズと行数を決める (共通関数)
+      const style=noteCardStyle(c,col);
       inner=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
     }else if(c.type==='list'){
       const itemsArr=(c.items||[]).slice(0,5);
@@ -4050,21 +4145,90 @@ function renderUpload(){
     ta.style.padding='20px';
     ta.style.borderRadius='12px';
     ta.style.lineHeight='1.5';
+    // 揃えを textarea に反映する関数
     const applyStyle=()=>{
       const col=colorById(c.color);
       ta.style.background=col.bg;
       ta.style.color=col.fg;
       const fz=autoFontSizeDetail(ta.value);
       ta.style.fontSize=fz+'px';
-      ta.style.textAlign=fz>=24?'center':'left';
+      // 揃え設定 (明示 alignH/alignV があればそれを使う、なければ自動)
+      const align=resolveAlign({text:ta.value,alignH:c.alignH,alignV:c.alignV});
+      ta.style.textAlign=align.h==='center'?'center':'left';
+      // 縦揃え: textarea では justify-content が効かないので、padding-top で代替する
+      // 中央揃え時は textarea の高さに対して内容が短ければ、それっぽく見せる工夫が要る。
+      // 単純解: 中央寄せ希望時は align="center" な flex 親をシミュレートする代わりに、
+      // textarea の vertical-align は使えないので、上端固定のままにし、見た目は詳細・グリッド側で反映する。
+      // ※textarea自体は上端スタートのまま (編集の使い勝手のため)。揃えボタンの選択状態は別UIで示す。
     };
     ta.value=c.text||'';
     applyStyle();
     ta.addEventListener('input',e=>{
       state.current.text=e.target.value;
       applyStyle();
+      // 揃えボタンの自動判定表示も更新 (テキスト量で自動デフォルトが変わるため)
+      refreshAlignToolbar();
     });
     body.appendChild(ta);
+
+    // ─── 揃えツールバー (横揃え / 縦揃え) ───
+    // 投稿/編集中にその場で押せて、プレビュー(下のメモ本文)に即反映される。
+    const alignBar=document.createElement('div');
+    alignBar.className='up-align-bar';
+    alignBar.innerHTML=`
+      <div class="up-align-group" data-axis="h">
+        <button class="up-align-btn" data-align="left" aria-label="左揃え">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+        </button>
+        <button class="up-align-btn" data-align="center" aria-label="中央揃え">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="up-align-sep"></div>
+      <div class="up-align-group" data-axis="v">
+        <button class="up-align-btn" data-align="top" aria-label="上揃え">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="4" x2="20" y2="4"/><line x1="9" y1="9" x2="9" y2="20"/><line x1="15" y1="9" x2="15" y2="16"/></svg>
+        </button>
+        <button class="up-align-btn" data-align="center" aria-label="中央揃え (縦)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="12" x2="20" y2="12"/><line x1="9" y1="6" x2="9" y2="18"/><line x1="15" y1="8" x2="15" y2="16"/></svg>
+        </button>
+      </div>
+      <div class="up-align-hint" id="up-align-hint"></div>
+    `;
+    body.appendChild(alignBar);
+
+    // 揃えボタンのアクティブ状態を更新する関数
+    function refreshAlignToolbar(){
+      const align=resolveAlign({text:ta.value,alignH:c.alignH,alignV:c.alignV});
+      const isAutoH=!c.alignH;
+      const isAutoV=!c.alignV;
+      alignBar.querySelectorAll('[data-axis="h"] .up-align-btn').forEach(btn=>{
+        btn.classList.toggle('on',btn.dataset.align===align.h);
+        btn.classList.toggle('auto',isAutoH && btn.dataset.align===align.h);
+      });
+      alignBar.querySelectorAll('[data-axis="v"] .up-align-btn').forEach(btn=>{
+        btn.classList.toggle('on',btn.dataset.align===align.v);
+        btn.classList.toggle('auto',isAutoV && btn.dataset.align===align.v);
+      });
+      const hint=$('up-align-hint');
+      if(hint){
+        hint.textContent=(isAutoH&&isAutoV)?'自動':'';
+      }
+    }
+    refreshAlignToolbar();
+
+    // ボタンクリック: 横揃え or 縦揃えを切り替え
+    alignBar.querySelectorAll('.up-align-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const axis=btn.closest('.up-align-group').dataset.axis;
+        const val=btn.dataset.align;
+        if(axis==='h')c.alignH=val;
+        else c.alignV=val;
+        refreshAlignToolbar();
+        // textarea のスタイルにも反映 (横揃えは textarea で見える)
+        applyStyle();
+      });
+    });
 
     // 色選択ボタン (横スクロール)
     const colorRow=document.createElement('div');
@@ -4806,8 +4970,13 @@ function openDetail(c,origin){
     if(c.type==='note'){
       const col=colorById(c.color);
       const fz=autoFontSizeDetail(c.text||'');
-      const isShort=fz>=24;
-      const style=`background:${col.bg};color:${col.fg};font-size:${fz}px;padding:${isShort?'40px 24px':'24px 20px'};border-radius:12px;line-height:1.5;${isShort?'text-align:center;':''}`;
+      const align=resolveAlign(c);
+      // 詳細画面は十分に高さがあるので、揃え設定をストレートに反映できる。
+      // min-height を設けて、縦中央寄せが効くようにする。
+      const padding=fz>=24?'40px 24px':'24px 20px';
+      let style=`background:${col.bg};color:${col.fg};font-size:${fz}px;padding:${padding};border-radius:12px;line-height:1.5;min-height:240px;display:flex;flex-direction:column;`;
+      style+=align.h==='center'?'align-items:center;text-align:center;':'align-items:flex-start;text-align:left;';
+      style+=align.v==='center'?'justify-content:center;':'justify-content:flex-start;';
       contentHtml=`<div class="detail-text" style="${style}">${linkify(c.text||'')}</div>`;
     }else{
       contentHtml=`<div class="detail-text">${linkify(c.text||'')}</div>`;
@@ -5852,7 +6021,8 @@ function doSearch(){
       if(c.type==='photo'||c.type==='photonote')inner=`<img src="${c.image||''}">`;
       else if(c.type==='note'){
         const col=colorById(c.color);
-        inner=`<div class="ctxt" style="background:${col.bg};color:${col.fg};">${esc(c.text||'')}</div>`;
+        const style=noteCardStyle(c,col);
+        inner=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
       }
       else if(c.type==='list'){
         const items=(c.items||[]).slice(0,4);
