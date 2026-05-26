@@ -2982,18 +2982,18 @@ function listCardInner(c){
   return `<div class="ctxt">${title}${itemsHtml}</div>`;
 }
 // グリッドのテキストメモ用: 文字数に応じてフォントサイズ・行高・行数制限を決める。
-// グリッドセルは ~140×140px、内部 padding 10pxで実テキスト領域は ~100×100px。
-// この領域に必ず収まるよう、各フォントサイズの「収容文字数」を実測ベースで設計:
-//   1行あたり収まる全角文字数 ≒ 100 / fz, 行数 ≒ 100 / (fz*lh)
-//   実際は記号・改行・約物のぶれがあるので 5% の安全マージンを取って閾値を決める:
-//     fz=17 lh=1.5  → 約21字まで / 3行
-//     fz=15 lh=1.45 → 約29字まで / 4行
-//     fz=13 lh=1.4  → 約40字まで / 5行
-//     fz=11 lh=1.4  → 約56字まで / 6行
-//     fz=10 lh=1.35 → 約70字まで / 7行
-//     fz=9  lh=1.35 → 約86字まで / 8行
-//     fz=8  lh=1.3  → 約114字まで / 9行
-//     fz=7  lh=1.25 → 約155字まで / 11行
+// グリッドセルと今日のメモのカード両方で同じ寸法 (内側 ~100×100px) になるが、
+// サブピクセル丸めや端末ごとの差で 1〜2px 揺れる。
+// その揺れで「クランプ直前ぴったりの文字数」だと改行位置がズレて切れる事故が起きるため、
+// 内側を 96×96px の「最悪ケース」で設計し、さらに 85% の安全マージンを取って閾値を決める:
+//   fz=17 lh=1.5  → 安全 14字 / 3行
+//   fz=15 lh=1.45 → 安全 21字 / 4行
+//   fz=13 lh=1.4  → 安全 31字 / 5行
+//   fz=11 lh=1.4  → 安全 44字 / 6行
+//   fz=10 lh=1.35 → 安全 57字 / 7行
+//   fz=9  lh=1.3  → 安全 72字 / 8行
+//   fz=8  lh=1.3  → 安全 91字 / 9行
+//   fz=7  lh=1.25 → 安全 116字 / 10行
 // 第2引数の card で揃え設定 (alignH/alignV) を反映。
 function noteCardStyle(card,col){
   const text=card.text||'';
@@ -3002,12 +3002,12 @@ function noteCardStyle(card,col){
   let fz,lh,clamp;
   if(tlen<=12){fz=17;lh=1.5;clamp=null;}
   else if(tlen<=21){fz=15;lh=1.45;clamp=4;}
-  else if(tlen<=40){fz=13;lh=1.4;clamp=5;}
-  else if(tlen<=56){fz=11;lh=1.4;clamp=6;}
-  else if(tlen<=70){fz=10;lh=1.35;clamp=7;}
-  else if(tlen<=86){fz=9;lh=1.35;clamp=8;}
-  else if(tlen<=114){fz=8;lh=1.3;clamp=9;}
-  else {fz=7;lh=1.25;clamp=11;}
+  else if(tlen<=31){fz=13;lh=1.4;clamp=5;}
+  else if(tlen<=44){fz=11;lh=1.4;clamp=6;}
+  else if(tlen<=57){fz=10;lh=1.35;clamp=7;}
+  else if(tlen<=72){fz=9;lh=1.3;clamp=8;}
+  else if(tlen<=91){fz=8;lh=1.3;clamp=9;}
+  else {fz=7;lh=1.25;clamp=10;}
   let style=`background:${col.bg};color:${col.fg};font-size:${fz}px;line-height:${lh};`;
   // 揃え:
   //   alignV=center または alignH=center を使うとき → flex レイアウト
@@ -5797,7 +5797,7 @@ function closeColorPicker(){
   $('color-sheet').classList.remove('on');
 }
 
-function copyToShelf(){
+async function copyToShelf(){
   const c=Object.assign({},state.current);
   delete c._origin;
   c.id='c_'+Date.now();
@@ -5815,7 +5815,20 @@ function copyToShelf(){
     };
   }
   state.cards.unshift(c);
-  save();
+  // 画像付き (公式の写真メモ等) は IndexedDB にも書き込まないと、
+  // 次回起動時に hydrateCardImages が画像を見つけられず真っ白になる。
+  // 新IDを振り直しているので、元の公式メモのIDで保存されていた画像とは別キー。
+  if(c.image && typeof c.image==='string' && c.image.startsWith('data:')){
+    const ok=await saveWithImages();
+    if(!ok){
+      // 容量不足などで保存できなかった
+      toast('保存に失敗しました (容量不足の可能性)');
+      // state.cards への追加自体は残しておく (画面上では見える)
+      return;
+    }
+  }else{
+    save();
+  }
   toast('自分のメモに保存しました');
 }
 
