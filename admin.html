@@ -1209,6 +1209,193 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 
 .hide{display:none !important;}
+
+/* ━━━ 新規スタイル ━━━ */
+
+/* ホーム要約 (タブ直下の軽い数字パネル) */
+.summary-row{
+  display:flex;
+  gap:8px;
+  padding:12px 16px 4px;
+}
+.summary-card{
+  flex:1;
+  background:var(--surface);
+  border-radius:12px;
+  padding:10px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  border:0.5px solid var(--line);
+}
+.summary-card .num{
+  font-family:var(--font-en);
+  font-size:22px;
+  font-weight:600;
+  color:var(--ink);
+  line-height:1.1;
+}
+.summary-card .lbl{
+  font-size:10px;
+  color:var(--ink3);
+  font-weight:500;
+  letter-spacing:0.02em;
+}
+.summary-card.alert .num{color:var(--amber);}
+.summary-card.alert{background:#FFF8E8;border-color:#F2D88B;}
+
+/* 検索バー (塾生・メモ共通) */
+.admin-search{
+  margin:10px 16px 0;
+  height:38px;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:19px;
+  display:flex;
+  align-items:center;
+  padding:0 14px;
+  gap:8px;
+  transition:border-color .12s, background .12s;
+}
+.admin-search:focus-within{
+  border-color:var(--g);
+  background:var(--surface);
+}
+.admin-search svg{
+  color:var(--ink3);
+  flex-shrink:0;
+}
+.admin-search input{
+  flex:1;
+  font-size:14px;
+  color:var(--ink);
+  height:100%;
+}
+.admin-search input::placeholder{color:var(--ink3);}
+.admin-search-clear{
+  width:22px;height:22px;
+  border-radius:50%;
+  background:var(--line);
+  color:var(--ink2);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.admin-search-clear.show{display:flex;}
+.admin-search-clear:active{background:var(--line2);}
+
+/* フィルタチップ (塾生用) */
+.filter-row{
+  display:flex;
+  gap:6px;
+  padding:8px 16px 0;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.filter-row::-webkit-scrollbar{display:none;}
+.filter-chip{
+  flex-shrink:0;
+  padding:6px 12px;
+  font-size:12px;
+  color:var(--ink2);
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:14px;
+  font-weight:500;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  white-space:nowrap;
+  transition:background .12s, color .12s, border-color .12s;
+}
+.filter-chip.on{
+  background:var(--gl);
+  color:var(--gd);
+  border-color:var(--g);
+}
+.filter-chip:active{transform:scale(0.96);}
+.filter-chip .c-count{
+  font-size:10px;
+  color:var(--ink3);
+  font-family:var(--font-en);
+}
+.filter-chip.on .c-count{color:var(--gd);}
+
+/* 塾生編集モーダル: ライブラリオプションにアバター追加 */
+.student-shelf-opt .mini-avatar{
+  width:24px;height:24px;
+  border-radius:50%;
+  background:var(--gl);
+  color:var(--gd);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;
+  overflow:hidden;
+  flex-shrink:0;
+}
+.student-shelf-opt .mini-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* 公式ライブラリ編集: 画面遷移風 (一覧の上に重ねる) */
+.shelf-edit-screen{
+  display:none;
+  flex-direction:column;
+  position:absolute;
+  inset:0;
+  background:var(--bg);
+  z-index:20;
+  overflow-y:auto;
+  padding-bottom:40px;
+  /* スライドイン */
+  transform:translateX(100%);
+  transition:transform .25s cubic-bezier(.22,.94,.34,1);
+}
+.shelf-edit-screen.on{
+  display:flex;
+  transform:translateX(0);
+}
+.shelf-edit-back{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:14px 12px 8px;
+  background:var(--bg);
+  position:sticky;
+  top:0;
+  z-index:5;
+}
+.shelf-edit-back button{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  padding:6px 10px;
+  color:var(--ink2);
+  font-size:14px;
+  font-weight:500;
+  border-radius:8px;
+}
+.shelf-edit-back button:active{background:var(--gl);color:var(--g);}
+.shelf-edit-back .crumb{
+  font-size:14px;
+  font-weight:600;
+  color:var(--ink);
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* main-screen を相対配置に (画面遷移の基準) */
+#main-screen{position:relative;}
+
+/* 空メッセージ (検索結果なし) */
+.no-result{
+  text-align:center;
+  color:var(--ink3);
+  font-size:13px;
+  padding:30px 20px;
+}
 </style>
 </head>
 <body>
@@ -1271,13 +1458,32 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
       新しい公式ライブラリを作る
     </button>
+  </div>
 
+  <!-- 公式ライブラリ編集 (画面遷移風) -->
+  <div class="shelf-edit-screen" id="shelf-edit-screen">
+    <div class="shelf-edit-back">
+      <button id="shelf-edit-back-btn" aria-label="戻る">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        戻る
+      </button>
+      <div class="crumb" id="shelf-edit-crumb"></div>
+    </div>
     <div id="shelf-edit-panel"></div>
   </div>
 
   <!-- 塾生タブ -->
   <div class="admin-tab-pane" id="pane-students">
-    <div class="section-title">塾生名簿</div>
+    <div class="summary-row" id="students-summary"></div>
+    <div class="admin-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="students-search" type="text" placeholder="名前で探す">
+      <button class="admin-search-clear" id="students-search-clear" aria-label="クリア">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="filter-row" id="students-filter"></div>
+    <div class="section-title" id="students-list-title">塾生名簿</div>
     <div class="students-list" id="students-list"></div>
     <div class="students-actions">
       <button class="new-shelf-btn" id="new-student-btn">
@@ -1388,6 +1594,11 @@ const state={
   students:[],           // 塾生名簿
   editingStudent:null,   // 編集中の塾生
   bulkText:'',           // 一括追加のテキスト
+  // ─── 検索/フィルタ ───
+  studentSearch:'',      // 塾生検索文字列
+  studentFilter:'all',   // 'all' | 'unclaimed' | 'claimed' | 'shelf:<id>'
+  memoSearch:'',         // メモ検索文字列
+  memoTypeFilter:'all',  // 'all' | 'note' | 'photo' | 'list'
 };
 
 const ADMIN_AUTH_KEY='snapin_admin_auth';
@@ -1561,16 +1772,109 @@ function updateStudentsTabCount(){
   if(el)el.textContent=state.students.length;
 }
 
+// 塾生サマリーカード (登録済/未登録の数)
+function renderStudentsSummary(){
+  const el=$('students-summary');
+  if(!el)return;
+  const total=state.students.length;
+  const claimed=state.students.filter(s=>!!s.claimedBy).length;
+  const unclaimed=total-claimed;
+  const totalMemos=state.shelves.reduce((sum,sh)=>sum+(sh.cards||[]).filter(c=>!c._ref).length,0);
+  el.innerHTML=`
+    <div class="summary-card">
+      <div class="num">${total}</div>
+      <div class="lbl">塾生</div>
+    </div>
+    <div class="summary-card ${unclaimed>0?'alert':''}">
+      <div class="num">${unclaimed}</div>
+      <div class="lbl">未登録</div>
+    </div>
+    <div class="summary-card">
+      <div class="num">${totalMemos}</div>
+      <div class="lbl">メモ総数</div>
+    </div>
+  `;
+}
+
+// 塾生フィルタチップを描画
+function renderStudentsFilter(){
+  const el=$('students-filter');
+  if(!el)return;
+  const f=state.studentFilter;
+  const total=state.students.length;
+  const claimed=state.students.filter(s=>!!s.claimedBy).length;
+  const unclaimed=total-claimed;
+  const chips=[
+    {id:'all',label:'すべて',count:total},
+    {id:'unclaimed',label:'未登録',count:unclaimed},
+    {id:'claimed',label:'登録済',count:claimed},
+  ];
+  // 各ライブラリ別チップ
+  state.shelves.forEach(sh=>{
+    const c=state.students.filter(s=>Array.isArray(s.shelfIds) && s.shelfIds.includes(sh.id)).length;
+    if(c>0)chips.push({id:'shelf:'+sh.id,label:sh.name||'(無題)',count:c});
+  });
+  el.innerHTML=chips.map(ch=>`
+    <button class="filter-chip ${f===ch.id?'on':''}" data-filter="${esc(ch.id)}">
+      ${esc(ch.label)} <span class="c-count">${ch.count}</span>
+    </button>
+  `).join('');
+  el.querySelectorAll('[data-filter]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      state.studentFilter=btn.dataset.filter;
+      renderStudentsFilter();
+      renderStudentsList();
+    });
+  });
+}
+
+// 検索・フィルタを適用した塾生リスト
+function getFilteredStudents(){
+  const q=(state.studentSearch||'').trim().toLowerCase();
+  const f=state.studentFilter||'all';
+  return state.students.filter(s=>{
+    // フィルタ
+    if(f==='unclaimed' && s.claimedBy)return false;
+    if(f==='claimed' && !s.claimedBy)return false;
+    if(f.startsWith('shelf:')){
+      const sid=f.slice(6);
+      if(!Array.isArray(s.shelfIds) || !s.shelfIds.includes(sid))return false;
+    }
+    // 検索 (名前 or 誕生日)
+    if(q){
+      const name=(s.name||'').toLowerCase();
+      const bd=(s.birthday||'').toLowerCase();
+      if(!name.includes(q) && !bd.includes(q))return false;
+    }
+    return true;
+  });
+}
+
 function renderStudentsList(){
   const el=$('students-list');
   if(!el)return;
   el.innerHTML='';
+  const filtered=getFilteredStudents();
+  // タイトル更新 (検索/フィルタ中なら件数表示)
+  const titleEl=$('students-list-title');
+  if(titleEl){
+    const total=state.students.length;
+    if(filtered.length===total){
+      titleEl.textContent='塾生名簿';
+    }else{
+      titleEl.textContent=`絞り込み結果 ${filtered.length}/${total}`;
+    }
+  }
   if(state.students.length===0){
     el.innerHTML='<div class="students-empty">まだ塾生が登録されていません。<br>下のボタンから追加してください。</div>';
     return;
   }
+  if(filtered.length===0){
+    el.innerHTML='<div class="no-result">該当する塾生はいません</div>';
+    return;
+  }
   // 名前順にソート (nameKeyベース、フォールバックで name)
-  const sorted=[...state.students].sort((a,b)=>{
+  const sorted=[...filtered].sort((a,b)=>{
     const ka=(a.nameKey||a.name||'').toString();
     const kb=(b.nameKey||b.name||'').toString();
     return ka.localeCompare(kb,'ja');
@@ -1656,9 +1960,13 @@ function renderStudentModalBody(){
         ? '<div style="font-size:12px;color:var(--ink3);padding:8px 0;">まだ公式ライブラリがありません。先に作ってください。</div>'
         : shelves.map(sh=>{
           const on=shelfIds.includes(sh.id);
+          const avatar=sh.icon
+            ? `<div class="mini-avatar"><img src="${esc(sh.icon)}" alt=""></div>`
+            : `<div class="mini-avatar">${esc((sh.name||'?').slice(0,1))}</div>`;
           return `
             <div class="student-shelf-opt ${on?'on':''}" data-stu-shelf="${esc(sh.id)}">
               <div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+              ${avatar}
               <div class="student-shelf-opt-name">${esc(sh.name||'(無題)')}</div>
             </div>
           `;
@@ -1732,6 +2040,8 @@ async function saveStudentFromModal(){
   closeStudentModal();
   // サーバーから取り直して claim 状態などを同期
   await fetchStudents();
+  renderStudentsSummary();
+  renderStudentsFilter();
   renderStudentsList();
   updateStudentsTabCount();
 }
@@ -1744,6 +2054,8 @@ async function deleteStudentFromModal(){
   const ok=await saveStudents();
   if(!ok)return;
   closeStudentModal();
+  renderStudentsSummary();
+  renderStudentsFilter();
   renderStudentsList();
   updateStudentsTabCount();
 }
@@ -1768,6 +2080,8 @@ async function unclaimStudent(){
     setStatus('端末登録を解除しました');
     setTimeout(()=>setStatus(''),1500);
     await fetchStudents();
+    renderStudentsSummary();
+    renderStudentsFilter();
     renderStudentsList();
     closeStudentModal();
   }catch(err){
@@ -1835,7 +2149,7 @@ function renderBulkModalBody(){
       公式ライブラリの紐付けは追加後に1人ずつ設定してください。
     </div>
     <div class="bulk-add-area">
-      <textarea id="bulk-textarea" placeholder="ここに貼り付け">${esc(state.bulkText)}</textarea>
+      <textarea id="bulk-textarea" placeholder="山田太郎,0401&#10;佐藤花子,1225&#10;鈴木一郎,0815">${esc(state.bulkText)}</textarea>
     </div>
     ${previewHtml}
   `;
@@ -1897,6 +2211,8 @@ async function saveBulkStudents(){
   if(!saved)return;
   closeBulkModal();
   await fetchStudents();
+  renderStudentsSummary();
+  renderStudentsFilter();
   renderStudentsList();
   updateStudentsTabCount();
 }
@@ -1910,9 +2226,13 @@ function switchAdminTab(tab){
   document.querySelectorAll('.admin-tab-pane').forEach(el=>{
     el.classList.toggle('on',el.id==='pane-'+tab);
   });
+  // タブ切替時は編集画面も閉じる
+  closeShelfEditScreen();
   // 塾生タブを開いた時、毎回最新の状態を取りに行く
   if(tab==='students' && state.password){
     fetchStudents().then(()=>{
+      renderStudentsSummary();
+      renderStudentsFilter();
       renderStudentsList();
       updateStudentsTabCount();
     });
@@ -1968,11 +2288,12 @@ function showMain(){
   $('main-screen').classList.remove('hide');
   $('hdr-icons').style.display='flex';
   renderShelfList();
-  if(state.selectedId){
-    renderShelfEdit();
-  }
+  // 編集画面は最初は閉じておく
+  closeShelfEditScreen();
   // 塾生名簿も取得 (非同期、UIブロックしない)
   fetchStudents().then(()=>{
+    renderStudentsSummary();
+    renderStudentsFilter();
     renderStudentsList();
     updateStudentsTabCount();
   });
@@ -1988,7 +2309,7 @@ function renderShelfList(){
   }
   state.shelves.forEach(s=>{
     const row=document.createElement('div');
-    row.className='shelf-item'+(state.selectedId===s.id?' active':'');
+    row.className='shelf-item';
     const avatar=s.icon
       ? `<div class="shelf-avatar has-icon"><img src="${esc(s.icon)}" alt=""></div>`
       : `<div class="shelf-avatar">${esc((s.name||'?').slice(0,1))}</div>`;
@@ -2001,17 +2322,35 @@ function renderShelfList(){
       <div class="shelf-count">${(s.cards||[]).length}</div>
     `;
     row.addEventListener('click',()=>{
-      state.selectedId=s.id;
-      renderShelfList();
-      renderShelfEdit();
-      // スクロールを編集パネル位置に
-      setTimeout(()=>{
-        const panel=$('shelf-edit-panel');
-        if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
-      },50);
+      openShelfEditScreen(s.id);
     });
     el.appendChild(row);
   });
+}
+
+// ─── 公式ライブラリ編集画面の開閉 ───
+function openShelfEditScreen(id){
+  state.selectedId=id;
+  state.memoSearch='';
+  state.memoTypeFilter='all';
+  const s=getSelectedShelf();
+  if(!s)return;
+  const crumb=$('shelf-edit-crumb');
+  if(crumb)crumb.textContent=s.name||'(無題)';
+  renderShelfEdit();
+  $('shelf-edit-screen').classList.add('on');
+  // スクロールを最上部に
+  setTimeout(()=>{
+    const screen=$('shelf-edit-screen');
+    if(screen)screen.scrollTop=0;
+  },20);
+}
+
+function closeShelfEditScreen(){
+  $('shelf-edit-screen').classList.remove('on');
+  state.selectedId=null;
+  state.memoSearch='';
+  state.memoTypeFilter='all';
 }
 
 function newShelf(){
@@ -2024,9 +2363,8 @@ function newShelf(){
     cards:[],
   };
   state.shelves.push(s);
-  state.selectedId=id;
   renderShelfList();
-  renderShelfEdit();
+  openShelfEditScreen(id);
   saveShelves();
 }
 
@@ -2043,7 +2381,7 @@ async function deleteShelf(id){
     other.cards=other.cards.filter(c=>!(c._ref && (c._originShelf===id || masterIds.has(c.id))));
   });
   state.shelves=state.shelves.filter(x=>x.id!==id);
-  if(state.selectedId===id)state.selectedId=null;
+  closeShelfEditScreen();
   await saveShelves();
   renderShelfList();
   $('shelf-edit-panel').innerHTML='';
@@ -2058,6 +2396,23 @@ function renderShelfEdit(){
   const panel=$('shelf-edit-panel');
   const s=getSelectedShelf();
   if(!s){panel.innerHTML='';return;}
+  // タイプ別カウント
+  const cards=(s.cards||[]).filter(c=>!c._ref);
+  const refs=(s.cards||[]).filter(c=>c._ref);
+  // 参照メモはoriginを参照して type を取得
+  const byId=new Map();
+  for(const sh of state.shelves){
+    for(const cc of (sh.cards||[])){
+      if(!cc._ref)byId.set(cc.id,cc);
+    }
+  }
+  const allDisplayCards=(s.cards||[]).map(c=>c._ref ? byId.get(c.id) : c).filter(Boolean);
+  const cnts={
+    all:allDisplayCards.length,
+    note:allDisplayCards.filter(c=>c.type==='note').length,
+    photo:allDisplayCards.filter(c=>c.type==='photo' || c.type==='photonote').length,
+    list:allDisplayCards.filter(c=>c.type==='list').length,
+  };
   panel.innerHTML=`
     <div class="shelf-edit">
       <div class="shelf-edit-head">
@@ -2100,6 +2455,19 @@ function renderShelfEdit(){
       <div class="memo-list-head-title">メモ</div>
       <div class="memo-list-head-count">${(s.cards||[]).length} 件</div>
     </div>
+    <div class="admin-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="memo-search" type="text" placeholder="メモの中身で探す" value="${esc(state.memoSearch||'')}">
+      <button class="admin-search-clear ${state.memoSearch?'show':''}" id="memo-search-clear" aria-label="クリア">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="filter-row" id="memo-type-filter">
+      <button class="filter-chip ${state.memoTypeFilter==='all'?'on':''}" data-type-filter="all">すべて <span class="c-count">${cnts.all}</span></button>
+      <button class="filter-chip ${state.memoTypeFilter==='note'?'on':''}" data-type-filter="note">メモ <span class="c-count">${cnts.note}</span></button>
+      <button class="filter-chip ${state.memoTypeFilter==='photo'?'on':''}" data-type-filter="photo">写真 <span class="c-count">${cnts.photo}</span></button>
+      <button class="filter-chip ${state.memoTypeFilter==='list'?'on':''}" data-type-filter="list">リスト <span class="c-count">${cnts.list}</span></button>
+    </div>
     <div class="memo-grid" id="memo-grid"></div>
   `;
 
@@ -2114,8 +2482,10 @@ function renderShelfEdit(){
       cur.handle=$('shelf-handle').value.trim();
       cur.desc=$('shelf-desc').value.trim();
       await saveShelves();
-      // ヘッダーの名前と一覧を再描画 (編集中の input は触らない)
+      // ヘッダーの名前と一覧、パンくずを再描画 (編集中の input は触らない)
       panel.querySelector('.shelf-edit-title').textContent=cur.name;
+      const crumb=$('shelf-edit-crumb');
+      if(crumb)crumb.textContent=cur.name;
       renderShelfList();
     },600);
   };
@@ -2125,6 +2495,36 @@ function renderShelfEdit(){
   });
 
   $('shelf-delete-btn').addEventListener('click',()=>deleteShelf(s.id));
+
+  // メモ検索とタイプフィルタ
+  const memoSearch=$('memo-search');
+  const memoSearchClear=$('memo-search-clear');
+  if(memoSearch){
+    memoSearch.addEventListener('input',e=>{
+      state.memoSearch=e.target.value;
+      memoSearchClear.classList.toggle('show',!!state.memoSearch);
+      renderMemoGrid();
+    });
+  }
+  if(memoSearchClear){
+    memoSearchClear.addEventListener('click',()=>{
+      state.memoSearch='';
+      memoSearch.value='';
+      memoSearchClear.classList.remove('show');
+      memoSearch.focus();
+      renderMemoGrid();
+    });
+  }
+  panel.querySelectorAll('[data-type-filter]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      state.memoTypeFilter=btn.dataset.typeFilter;
+      // ボタンの on/off だけ更新 (再描画は最小限)
+      panel.querySelectorAll('[data-type-filter]').forEach(b=>{
+        b.classList.toggle('on',b.dataset.typeFilter===state.memoTypeFilter);
+      });
+      renderMemoGrid();
+    });
+  });
 
   // アイコン (公式ライブラリ用) のアップロード
   const iconFile=$('icon-file');
@@ -2184,6 +2584,25 @@ function renderMemoGrid(){
       if(!cc._ref)byId.set(cc.id,{card:cc,shelf:sh});
     }
   }
+  // 検索/フィルタ条件
+  const q=(state.memoSearch||'').trim().toLowerCase();
+  const tf=state.memoTypeFilter||'all';
+  const matchesType=(t)=>{
+    if(tf==='all')return true;
+    if(tf==='photo')return t==='photo' || t==='photonote';
+    return t===tf;
+  };
+  const matchesText=(card)=>{
+    if(!q)return true;
+    const parts=[];
+    if(card.text)parts.push(card.text);
+    if(card.title)parts.push(card.title);
+    if(Array.isArray(card.items)){
+      for(const it of card.items){if(it && it.t)parts.push(it.t);}
+    }
+    return parts.join(' ').toLowerCase().includes(q);
+  };
+  let shownCount=0;
   (s.cards||[]).forEach((c,idx)=>{
     let displayCard=c;
     let isRef=false;
@@ -2195,6 +2614,10 @@ function renderMemoGrid(){
       originShelf=origin.shelf;
       isRef=true;
     }
+    // フィルタ判定
+    if(!matchesType(displayCard.type))return;
+    if(!matchesText(displayCard))return;
+    shownCount++;
     const cell=document.createElement('div');
     cell.className='memo-card '+(displayCard.type||'note')+(isRef?' is-ref':'');
     let inner='';
@@ -2230,12 +2653,23 @@ function renderMemoGrid(){
     cell.addEventListener('click',()=>openMemoModal(c));
     grid.appendChild(cell);
   });
-  // 追加ボタン
-  const addCell=document.createElement('div');
-  addCell.className='memo-card memo-card-add';
-  addCell.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>';
-  addCell.addEventListener('click',()=>openMemoModal(null));
-  grid.appendChild(addCell);
+  // 検索/フィルタ中で結果ゼロなら、その旨を表示 (追加ボタンは出さない)
+  if((q || tf!=='all') && shownCount===0){
+    const empty=document.createElement('div');
+    empty.className='no-result';
+    empty.style.gridColumn='1 / -1';
+    empty.textContent='該当するメモはありません';
+    grid.appendChild(empty);
+    return;
+  }
+  // 追加ボタン (検索/フィルタ未使用時のみ末尾に置く)
+  if(!q && tf==='all'){
+    const addCell=document.createElement('div');
+    addCell.className='memo-card memo-card-add';
+    addCell.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>';
+    addCell.addEventListener('click',()=>openMemoModal(null));
+    grid.appendChild(addCell);
+  }
 }
 
 // ═══ MEMO MODAL ═══
@@ -3023,6 +3457,29 @@ $('memo-save').addEventListener('click',saveMemoFromModal);
 $('memo-modal').addEventListener('click',e=>{
   if(e.target===$('memo-modal'))closeMemoModal();
 });
+
+// ─── 公式ライブラリ編集画面の戻るボタン ───
+$('shelf-edit-back-btn').addEventListener('click',closeShelfEditScreen);
+
+// ─── 塾生検索バー ───
+const studentSearchInput=$('students-search');
+const studentSearchClear=$('students-search-clear');
+if(studentSearchInput){
+  studentSearchInput.addEventListener('input',e=>{
+    state.studentSearch=e.target.value;
+    studentSearchClear.classList.toggle('show',!!state.studentSearch);
+    renderStudentsList();
+  });
+}
+if(studentSearchClear){
+  studentSearchClear.addEventListener('click',()=>{
+    state.studentSearch='';
+    studentSearchInput.value='';
+    studentSearchClear.classList.remove('show');
+    studentSearchInput.focus();
+    renderStudentsList();
+  });
+}
 
 // ─── 塾生タブ ───
 document.querySelectorAll('[data-admin-tab]').forEach(el=>{
