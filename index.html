@@ -347,19 +347,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .card img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
 .card .ctxt{
   padding:10px;
-  font-size:11px;
-  line-height:1.5;
   color:var(--ink);
   height:100%;
   overflow:hidden;
   display:-webkit-box;
-  -webkit-line-clamp:7;
   -webkit-box-orient:vertical;
   word-break:break-word;
   background:var(--surface);
+  /* font-size / line-height / -webkit-line-clamp は noteCardStyle がインラインで指定する
+     (CSS で指定するとインラインが上書きされず、表示が崩れることがあるため) */
 }
 .card.note .ctxt{background:#FFFDF5;}
-.card.list .ctxt{background:#F4F8F3;font-size:10px;}
+.card.list .ctxt{background:#F4F8F3;font-size:10px;-webkit-line-clamp:7;}
 /* リスト型カードのアイテム表示 (グリッドの.cardと今日の横スクロール.today-newcardで共通) */
 .card .li, .today-newcard .li{display:flex;gap:4px;margin-bottom:3px;align-items:flex-start;}
 .card .li .chk, .today-newcard .li .chk{width:9px;height:9px;border:1px solid var(--ink3);border-radius:2px;flex-shrink:0;margin-top:2px;}
@@ -2146,16 +2145,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .today-newcard img{width:100%;height:100%;object-fit:cover;}
 .today-newcard .ctxt{
   padding:10px;
-  font-size:11px;
-  line-height:1.5;
   height:100%;
   overflow:hidden;
   display:-webkit-box;
-  -webkit-line-clamp:6;
   -webkit-box-orient:vertical;
+  /* font-size / line-height / -webkit-line-clamp は noteCardStyle がインラインで指定する
+     (CSS で指定するとインラインが上書きされず、表示が崩れることがあるため) */
 }
 .today-newcard.note .ctxt{background:#FFFDF5;}
-.today-newcard.list .ctxt{background:#F4F8F3;font-size:10px;}
+.today-newcard.list .ctxt{background:#F4F8F3;font-size:10px;-webkit-line-clamp:6;}
 
 .today-empty-block{
   padding:20px;
@@ -4241,17 +4239,25 @@ function renderUpload(){
     refreshAlignToolbar();
 
     // ボタンクリック: 横揃え or 縦揃えを切り替え
-    // mousedown/touchstart 段階で preventDefault することで、editor からフォーカスが奪われない
+    // 揃えボタンをタップ。iOS Safari では touchstart で preventDefault すると
+    // click 自体が発火しなくなるので、touchstart は触らない。フォーカス維持は click 後に editor.focus() で行う。
+    // SVGアイコンがクリック対象になると this のbtnと違うので currentTarget を使う。
     alignBar.querySelectorAll('.up-align-btn').forEach(btn=>{
-      btn.addEventListener('mousedown',e=>e.preventDefault());
-      btn.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
-      btn.addEventListener('click',()=>{
-        const axis=btn.closest('.up-align-group').dataset.axis;
-        const val=btn.dataset.align;
+      // SVG内クリックの委譲: SVG要素は pointer-events を受け取らないように
+      const svg=btn.querySelector('svg');
+      if(svg)svg.style.pointerEvents='none';
+      btn.addEventListener('click',e=>{
+        const target=e.currentTarget;
+        const axis=target.closest('.up-align-group').dataset.axis;
+        const val=target.dataset.align;
         if(axis==='h')c.alignH=val;
         else c.alignV=val;
         refreshAlignToolbar();
         applyStyle();
+        // editor にフォーカスを戻す
+        const sel=window.getSelection();
+        const hadFocus=sel.rangeCount>0 && editor.contains(sel.anchorNode);
+        if(hadFocus)editor.focus();
       });
     });
 
