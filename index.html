@@ -424,8 +424,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--surface);
   display:flex;
   align-items:center;
-  padding:0 14px;
-  gap:12px;
+  padding:0 12px;
+  gap:8px;
   border-bottom:0.5px solid var(--line);
   z-index:10;
   animation:slideDown .15s ease-out;
@@ -436,20 +436,40 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink2);
   font-size:14px;
   padding:6px 4px;
+  flex-shrink:0;
 }
 .select-bar-count{
   flex:1;
-  font-size:14px;
+  font-size:13px;
   font-weight:600;
+  min-width:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
+/* 「リストから外す」: 控えめな二次的アクション (破壊的ではない) */
+.select-bar-archive{
+  background:var(--bg);
+  color:var(--ink);
+  font-size:12px;
+  font-weight:600;
+  padding:8px 12px;
+  border-radius:18px;
+  border:0.5px solid var(--line2);
+  flex-shrink:0;
+}
+.select-bar-archive:active{background:var(--gl);color:var(--gd);border-color:var(--g);}
+.select-bar-archive:disabled{opacity:.35;}
+/* 「捨てる」: 主要な破壊的アクション (赤) */
 .select-bar-delete{
   background:var(--rose);
   color:white;
-  font-size:13px;
+  font-size:12px;
   font-weight:600;
-  padding:8px 14px;
+  padding:8px 12px;
   border-radius:18px;
   border:none;
+  flex-shrink:0;
 }
 .select-bar-delete:disabled{opacity:.35;}
 
@@ -4411,7 +4431,8 @@ function showSelectBar(){
     bar.innerHTML=`
       <button class="select-bar-cancel" data-action="exit-select">キャンセル</button>
       <div class="select-bar-count" id="select-bar-count">1件選択中</div>
-      <button class="select-bar-delete" data-action="delete-selected">削除</button>
+      <button class="select-bar-archive" data-action="archive-selected">リストから外す</button>
+      <button class="select-bar-delete" data-action="delete-selected">捨てる</button>
     `;
     document.querySelector('.app').appendChild(bar);
   }
@@ -4440,6 +4461,25 @@ function deleteSelected(){
   });
   save();
   toast(`${n}件消しました`);
+  exitSelectMode();
+}
+
+// 選択した複数のメモをまとめてリストから外す (= archive)
+// 1件版の archiveCard と挙動を揃える: archivedAt を立て、ピンも外す。
+function archiveSelected(){
+  const n=state.selectedIds.size;
+  if(n===0)return;
+  if(!confirm(`${n}件をリストから外しますか?\n「リストから外したメモ」からいつでも戻せます。`)){return;}
+  const ids=new Set(state.selectedIds);
+  const now=Date.now();
+  state.cards.forEach(c=>{
+    if(c && ids.has(c.id)){
+      c.archivedAt=now;
+      c.pinned=false;
+    }
+  });
+  save();
+  toast(`${n}件をリストから外しました`);
   exitSelectMode();
 }
 
@@ -7410,6 +7450,7 @@ document.addEventListener('click',e=>{
     case 'ocr-retake':ocrRetake();break;
     case 'exit-select':exitSelectMode();break;
     case 'delete-selected':deleteSelected();break;
+    case 'archive-selected':archiveSelected();break;
     case 'toggle-past-more':state.pastMoreOpen=!state.pastMoreOpen;renderToday();break;
     case 'goto-library-from-home':goto('screen-library');break;
   }
