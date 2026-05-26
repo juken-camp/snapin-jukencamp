@@ -360,11 +360,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .card.note .ctxt{background:#FFFDF5;}
 .card.list .ctxt{background:#F4F8F3;font-size:10px;}
-.card .li{display:flex;gap:4px;margin-bottom:3px;align-items:flex-start;}
-.card .li .chk{width:9px;height:9px;border:1px solid var(--ink3);border-radius:2px;flex-shrink:0;margin-top:2px;}
-.card .li.done .chk{background:var(--g);border-color:var(--g);}
-.card .li.done{color:var(--ink3);text-decoration:line-through;}
-.card .li .li-num{width:9px;font-size:9px;text-align:left;flex-shrink:0;color:var(--ink2);font-family:var(--font-en);}
+/* リスト型カードのアイテム表示 (グリッドの.cardと今日の横スクロール.today-newcardで共通) */
+.card .li, .today-newcard .li{display:flex;gap:4px;margin-bottom:3px;align-items:flex-start;}
+.card .li .chk, .today-newcard .li .chk{width:9px;height:9px;border:1px solid var(--ink3);border-radius:2px;flex-shrink:0;margin-top:2px;}
+.card .li.done .chk, .today-newcard .li.done .chk{background:var(--g);border-color:var(--g);}
+.card .li.done, .today-newcard .li.done{color:var(--ink3);text-decoration:line-through;}
+.card .li .li-num, .today-newcard .li .li-num{width:9px;font-size:9px;text-align:left;flex-shrink:0;color:var(--ink2);font-family:var(--font-en);}
 
 .card-source{
   position:absolute;
@@ -637,6 +638,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:block;
 }
 .up-text.title{font-size:17px;font-weight:500;min-height:auto;padding-bottom:4px;}
+
+/* contenteditable な編集エリアの空時プレースホルダ */
+#up-note-area:empty:before{
+  content:attr(data-placeholder);
+  color:var(--ink3);
+  opacity:0.7;
+  pointer-events:none;
+}
 
 /* メモ編集の揃えツールバー */
 .up-align-bar{
@@ -1041,6 +1050,29 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .msg.u .bubble-link{color:#E8F5EF;}
 .detail-text .bubble-link{color:var(--g);text-decoration:underline;}
+
+/* AI 返信待機中のタイピングインジケーター (3つのドットがふわっと跳ねる) */
+.typing-dots{
+  display:inline-flex;
+  gap:5px;
+  align-items:center;
+  padding:2px 2px;
+  height:1.55em; /* line-height相当 */
+}
+.typing-dots span{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--ink3);
+  display:inline-block;
+  animation:typing-bounce 1.3s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2){animation-delay:0.18s;}
+.typing-dots span:nth-child(3){animation-delay:0.36s;}
+@keyframes typing-bounce{
+  0%,60%,100%{transform:translateY(0);opacity:0.45;}
+  30%{transform:translateY(-4px);opacity:0.95;}
+}
 
 /* 出典タグ (公式コピー元) */
 .source-tag{
@@ -2827,6 +2859,25 @@ function resolveAlign(c){
   };
 }
 
+// グリッド/横スクロールのリスト型カード用: チェックボックス付きの統一見た目を返す。
+// today-newcard でも card でも同じ HTML を使うことで、見た目が一貫する。
+function listCardInner(c){
+  const itemsArr=(c.items||[]).slice(0,5);
+  const itemsHtml=itemsArr.map((i,idx)=>{
+    const m=i.mark||'check';
+    const done=i.d===true;
+    if(m==='number'){
+      let num=0;
+      for(let k=0;k<=idx;k++){
+        if(((c.items||[])[k].mark||'check')==='number')num++;
+      }
+      return `<div class="li"><div class="li-num">${num}.</div><span>${esc(i.t)}</span></div>`;
+    }
+    return `<div class="li ${done?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`;
+  }).join('');
+  const title=c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;color:var(--gd);">${esc(c.title)}</div>`:'';
+  return `<div class="ctxt">${title}${itemsHtml}</div>`;
+}
 // グリッドのテキストメモ用: 文字数に応じてフォントサイズ・行高・行数制限を決める。
 // グリッドセルは 142×142px 前後、内部 padding 10pxで 122×122px。
 // 長文でも全体が見えることを優先し、極小サイズでも下限まで縮める。
@@ -3312,54 +3363,15 @@ function renderToday(){
 
   // 以下のセクションで使うデータを取得
   const todayCards=getTodayCards();
-  const openTasks=getTodayOpenTasks();
 
   // 復習ブロックは削除済み (機械的判定は感覚を上書きする)
   const rv=$('today-review-section');
   if(rv)rv.innerHTML='';
 
-  // 未完のタスク (リスト型カードの未完項目を集約)
+  // 「やること」セクションは廃止 (リスト型メモを大きく扱うと一覧の主役が変わってしまうため)。
+  // やることはリストメモの中で確認できる。
   const tasksSec=$('today-tasks-section');
-  if(openTasks.length>0){
-    tasksSec.innerHTML=`
-      <div class="today-block">
-        <div class="today-block-head">
-          <div class="today-block-title">
-            <div class="today-block-icon tasks">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            </div>
-            やること
-          </div>
-          <div class="today-block-count">${openTasks.length}</div>
-        </div>
-      </div>
-      <div class="today-tasks" id="today-tasks-list"></div>
-    `;
-    const listEl=$('today-tasks-list');
-    openTasks.forEach(t=>{
-      const row=document.createElement('div');
-      row.className='today-task';
-      row.innerHTML=`
-        <div class="tchk"></div>
-        <div class="today-task-body">
-          <div class="ttxt">${esc(t.item.t)}</div>
-          <div class="tlist">${esc(t.card.title||'リスト')}</div>
-        </div>
-      `;
-      row.addEventListener('click',()=>{
-        const cIdx=state.cards.findIndex(x=>x.id===t.card.id);
-        if(cIdx<0)return;
-        const itemIdx=state.cards[cIdx].items.findIndex(x=>x===t.item);
-        if(itemIdx<0)return;
-        state.cards[cIdx].items[itemIdx].d=true;
-        save();
-        renderToday();
-      });
-      listEl.appendChild(row);
-    });
-  }else{
-    tasksSec.innerHTML='';
-  }
+  if(tasksSec)tasksSec.innerHTML='';
 
   // 今日新しく保存したカード
   const newSec=$('today-new-section');
@@ -3386,12 +3398,10 @@ function renderToday(){
         el.innerHTML=`<img src="${c.image||''}">`;
       }else if(c.type==='note'){
         const col=colorById(c.color);
-        const fz=autoFontSize(c.text||'',11,16);
-        const centered=fz>=14;
-        el.innerHTML=`<div class="ctxt" style="background:${col.bg};color:${col.fg};font-size:${fz}px;${centered?'display:flex;align-items:center;justify-content:center;text-align:center;-webkit-line-clamp:initial;':''}">${esc(c.text||'')}</div>`;
+        const style=noteCardStyle(c,col);
+        el.innerHTML=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
       }else if(c.type==='list'){
-        const items=(c.items||[]).slice(0,4).map(i=>`<div>・${esc(i.t)}</div>`).join('');
-        el.innerHTML=`<div class="ctxt">${c.title?`<b>${esc(c.title)}</b>`:''}${items}</div>`;
+        el.innerHTML=listCardInner(c);
       }
       el.addEventListener('click',()=>openDetail(c,'mine'));
       wrap.appendChild(el);
@@ -3433,12 +3443,10 @@ function renderToday(){
         el.innerHTML=`<img src="${c.image||''}">`;
       }else if(c.type==='note'){
         const col=colorById(c.color);
-        const fz=autoFontSize(c.text||'',11,16);
-        const centered=fz>=14;
-        el.innerHTML=`<div class="ctxt" style="background:${col.bg};color:${col.fg};font-size:${fz}px;${centered?'display:flex;align-items:center;justify-content:center;text-align:center;-webkit-line-clamp:initial;':''}">${esc(c.text||'')}</div>`;
+        const style=noteCardStyle(c,col);
+        el.innerHTML=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
       }else if(c.type==='list'){
-        const items=(c.items||[]).slice(0,4).map(i=>`<div>・${esc(i.t)}</div>`).join('');
-        el.innerHTML=`<div class="ctxt">${c.title?`<b>${esc(c.title)}</b>`:''}${items}</div>`;
+        el.innerHTML=listCardInner(c);
       }
       el.addEventListener('click',()=>openDetail(c,'mine'));
       wrap.appendChild(el);
@@ -3515,12 +3523,10 @@ function renderPastDaySection(daysAgo){
       el.innerHTML=`<img src="${c.image||''}">`;
     }else if(c.type==='note'){
       const col=colorById(c.color);
-      const fz=autoFontSize(c.text||'',11,16);
-      const centered=fz>=14;
-      el.innerHTML=`<div class="ctxt" style="background:${col.bg};color:${col.fg};font-size:${fz}px;${centered?'display:flex;align-items:center;justify-content:center;text-align:center;-webkit-line-clamp:initial;':''}">${esc(c.text||'')}</div>`;
+      const style=noteCardStyle(c,col);
+      el.innerHTML=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
     }else if(c.type==='list'){
-      const items=(c.items||[]).slice(0,4).map(i=>`<div>・${esc(i.t)}</div>`).join('');
-      el.innerHTML=`<div class="ctxt">${c.title?`<b>${esc(c.title)}</b>`:''}${items}</div>`;
+      el.innerHTML=listCardInner(c);
     }
     el.addEventListener('click',()=>openDetail(c,'mine'));
     wrap.appendChild(el);
@@ -3577,12 +3583,10 @@ function renderPastMoreSection(){
         body=`<img src="${c.image||''}">`;
       }else if(c.type==='note'){
         const col=colorById(c.color);
-        const fz=autoFontSize(c.text||'',11,16);
-        const centered=fz>=14;
-        body=`<div class="ctxt" style="background:${col.bg};color:${col.fg};font-size:${fz}px;${centered?'display:flex;align-items:center;justify-content:center;text-align:center;-webkit-line-clamp:initial;':''}">${esc(c.text||'')}</div>`;
+        const style=noteCardStyle(c,col);
+        body=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
       }else if(c.type==='list'){
-        const items=(c.items||[]).slice(0,4).map(i=>`<div>・${esc(i.t)}</div>`).join('');
-        body=`<div class="ctxt">${c.title?`<b>${esc(c.title)}</b>`:''}${items}</div>`;
+        body=listCardInner(c);
       }
       return `<div class="today-newcard ${c.type}" data-card-id="${esc(c.id)}">${body}</div>`;
     }).join('');
@@ -3682,21 +3686,7 @@ function renderGrid(el,cards,origin){
       const style=noteCardStyle(c,col);
       inner=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
     }else if(c.type==='list'){
-      const itemsArr=(c.items||[]).slice(0,5);
-      const itemsHtml=itemsArr.map((i,idx)=>{
-        const m=i.mark||'check';
-        const done=i.d===true;
-        if(m==='number'){
-          let num=0;
-          for(let k=0;k<=idx;k++){
-            if(((c.items||[])[k].mark||'check')==='number')num++;
-          }
-          return `<div class="li"><div class="li-num">${num}.</div><span>${esc(i.t)}</span></div>`;
-        }
-        return `<div class="li ${done?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`;
-      }).join('');
-      const title=c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;color:var(--gd);">${esc(c.title)}</div>`:'';
-      inner=`<div class="ctxt">${title}${itemsHtml}</div>`;
+      inner=listCardInner(c);
     }
     // ピン留めバッジ
     if(origin==='mine' && c.pinned){
@@ -4137,42 +4127,75 @@ function renderUpload(){
     });
     body.appendChild(ta);
   }else if(c.type==='note'){
-    const ta=document.createElement('textarea');
-    ta.className='up-text';
-    ta.id='up-note-area';
-    ta.placeholder='メモを書く…';
-    ta.style.minHeight='240px';
-    ta.style.padding='20px';
-    ta.style.borderRadius='12px';
-    ta.style.lineHeight='1.5';
-    // 揃えを textarea に反映する関数
+    // contenteditable な div を使う (textarea は縦揃えが効かないため)。
+    // 編集中の入力体験を保ちつつ、横揃え/縦揃えの両方をその場でプレビューできる。
+    const wrap=document.createElement('div');
+    wrap.id='up-note-wrap';
+    wrap.style.cssText='min-height:240px;padding:20px;border-radius:12px;display:flex;flex-direction:column;line-height:1.5;cursor:text;';
+
+    const editor=document.createElement('div');
+    editor.id='up-note-area';
+    editor.contentEditable='true';
+    editor.setAttribute('inputmode','text');
+    editor.setAttribute('autocapitalize','sentences');
+    editor.setAttribute('spellcheck','false');
+    editor.setAttribute('data-placeholder','メモを書く…');
+    editor.style.cssText='outline:none;width:100%;white-space:pre-wrap;word-break:break-word;-webkit-user-select:text;user-select:text;min-height:1.5em;';
+    // 初期値設定: textContent では改行が表示されないので、innerHTML に変換する。
+    // ただし XSS を避けるため、HTML エスケープしてから改行を <br> に変える。
+    const initText=c.text||'';
+    if(initText){
+      editor.innerHTML=esc(initText).replace(/\n/g,'<br>');
+    }else{
+      editor.textContent='';
+    }
+
+    wrap.appendChild(editor);
+
+    // 親 wrap をクリックしたら editor にフォーカス (タップしやすく)
+    wrap.addEventListener('click',e=>{
+      if(e.target===wrap){
+        editor.focus();
+        // 末尾にキャレットを置く
+        const range=document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        const sel=window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    });
+
+    // 揃え/色を反映する関数
     const applyStyle=()=>{
       const col=colorById(c.color);
-      ta.style.background=col.bg;
-      ta.style.color=col.fg;
-      const fz=autoFontSizeDetail(ta.value);
-      ta.style.fontSize=fz+'px';
-      // 揃え設定 (明示 alignH/alignV があればそれを使う、なければ自動)
-      const align=resolveAlign({text:ta.value,alignH:c.alignH,alignV:c.alignV});
-      ta.style.textAlign=align.h==='center'?'center':'left';
-      // 縦揃え: textarea では justify-content が効かないので、padding-top で代替する
-      // 中央揃え時は textarea の高さに対して内容が短ければ、それっぽく見せる工夫が要る。
-      // 単純解: 中央寄せ希望時は align="center" な flex 親をシミュレートする代わりに、
-      // textarea の vertical-align は使えないので、上端固定のままにし、見た目は詳細・グリッド側で反映する。
-      // ※textarea自体は上端スタートのまま (編集の使い勝手のため)。揃えボタンの選択状態は別UIで示す。
+      wrap.style.background=col.bg;
+      wrap.style.color=col.fg;
+      const txt=editor.innerText;
+      const fz=autoFontSizeDetail(txt);
+      wrap.style.fontSize=fz+'px';
+      const align=resolveAlign({text:txt,alignH:c.alignH,alignV:c.alignV});
+      // 横揃え: flex 親の align-items + 子の text-align
+      wrap.style.alignItems=align.h==='center'?'center':'flex-start';
+      editor.style.textAlign=align.h==='center'?'center':'left';
+      // 縦揃え: flex 親の justify-content
+      wrap.style.justifyContent=align.v==='center'?'center':'flex-start';
     };
-    ta.value=c.text||'';
     applyStyle();
-    ta.addEventListener('input',e=>{
-      state.current.text=e.target.value;
+
+    editor.addEventListener('input',()=>{
+      // innerText を使うと <br> や <div> が改行 \n に正しく変換される (textContent では失われる)
+      state.current.text=editor.innerText;
       applyStyle();
       // 揃えボタンの自動判定表示も更新 (テキスト量で自動デフォルトが変わるため)
       refreshAlignToolbar();
     });
-    body.appendChild(ta);
+    // Enter で改行 (contenteditable のデフォルト挙動は <br> 挿入で OK)
+
+    body.appendChild(wrap);
 
     // ─── 揃えツールバー (横揃え / 縦揃え) ───
-    // 投稿/編集中にその場で押せて、プレビュー(下のメモ本文)に即反映される。
+    // 投稿/編集中にその場で押せて、プレビュー(上のメモ本文)に即反映される。
     const alignBar=document.createElement('div');
     alignBar.className='up-align-bar';
     alignBar.innerHTML=`
@@ -4199,7 +4222,7 @@ function renderUpload(){
 
     // 揃えボタンのアクティブ状態を更新する関数
     function refreshAlignToolbar(){
-      const align=resolveAlign({text:ta.value,alignH:c.alignH,alignV:c.alignV});
+      const align=resolveAlign({text:editor.textContent,alignH:c.alignH,alignV:c.alignV});
       const isAutoH=!c.alignH;
       const isAutoV=!c.alignV;
       alignBar.querySelectorAll('[data-axis="h"] .up-align-btn').forEach(btn=>{
@@ -4218,14 +4241,16 @@ function renderUpload(){
     refreshAlignToolbar();
 
     // ボタンクリック: 横揃え or 縦揃えを切り替え
+    // mousedown/touchstart 段階で preventDefault することで、editor からフォーカスが奪われない
     alignBar.querySelectorAll('.up-align-btn').forEach(btn=>{
+      btn.addEventListener('mousedown',e=>e.preventDefault());
+      btn.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
       btn.addEventListener('click',()=>{
         const axis=btn.closest('.up-align-group').dataset.axis;
         const val=btn.dataset.align;
         if(axis==='h')c.alignH=val;
         else c.alignV=val;
         refreshAlignToolbar();
-        // textarea のスタイルにも反映 (横揃えは textarea で見える)
         applyStyle();
       });
     });
@@ -4889,9 +4914,14 @@ function renderChatLog(c){
     const isUser=(m.role==='user' || m.role==='memo');
     div.className='msg '+(isUser?'u':'a');
     div.dataset.midx=idx;
+    // pending (AI待ち) のメッセージは、ただの「…」ではなく動くドットで表示する。
+    // 反応している実感がないと不安になるため。
+    const bubbleHtml=m.pending
+      ? `<div class="bubble"><div class="typing-dots" aria-label="返信を考えています"><span></span><span></span><span></span></div></div>`
+      : `<div class="bubble">${linkify(cleanAIText(m.text,m.role))}</div>`;
     div.innerHTML=`
       <div class="msg-time">${chatTimeLabel(t)}</div>
-      <div class="bubble">${linkify(m.text)}</div>
+      ${bubbleHtml}
     `;
     log.appendChild(div);
 
@@ -5260,7 +5290,7 @@ async function callAI(userMessage,cardContext){
     if(cardContext.title)contextStr+='タイトル: '+cardContext.title+'\n';
     if(cardContext.items)contextStr+='リスト項目: '+cardContext.items.map(i=>i.t).join(', ')+'\n';
   }
-  const systemPrompt='あなたは学習支援のアシスタントです。生徒が保存したメモについて、わかりやすく端的に答えてください。説教はせず、必要な情報を簡潔に伝えます。';
+  const systemPrompt='あなたは学習支援のアシスタントです。生徒が保存したメモについて、わかりやすく端的に答えてください。説教はせず、必要な情報を簡潔に伝えます。返信はプレーンテキストで書いてください。Markdown 記法 (# 見出し、**強調**、*斜体*、`コード`、- 箇条書きなど) は使わず、装飾なしの普通の文章で答えてください。箇条書きが必要な時は行頭に「・」を使ってください。';
 
   // user メッセージの content を組み立てる
   let userContent;
@@ -6025,22 +6055,7 @@ function doSearch(){
         inner=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
       }
       else if(c.type==='list'){
-        const items=(c.items||[]).slice(0,4);
-        let numCount=0;
-        const itemsHtml=items.map((i,idx)=>{
-          const m=i.mark||'check';
-          const done=i.d===true;
-          if(m==='number'){
-            // 元のリストでの番号を計算
-            let num=0;
-            for(let k=0;k<=idx;k++){
-              if(((c.items||[])[k].mark||'check')==='number')num++;
-            }
-            return `<div class="li"><div class="li-num">${num}.</div><span>${esc(i.t)}</span></div>`;
-          }
-          return `<div class="li ${done?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`;
-        }).join('');
-        inner=`<div class="ctxt">${c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;">${esc(c.title)}</div>`:''}${itemsHtml}</div>`;
+        inner=listCardInner(c);
       }
       if(r.origin==='official')inner+=`<div class="card-source">${esc(r.shelf.handle)}</div>`;
       card.innerHTML=inner;
@@ -6319,6 +6334,37 @@ function esc(s){
   if(s==null)return '';
   return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// AI返信から Markdown 装飾記号を取り除いてプレーンテキスト化する。
+// # や * といった記号が生で出ると読みにくいので、表示前にここで除去/変換する。
+// 内容は壊さず、見出し記号や強調マークだけを取る、リストの - は ・ に置換する。
+function cleanAIText(s,role){
+  if(s==null)return '';
+  // 安全側: 装飾除去は AI 返信に対してだけ行う。ユーザー発言や memo はそのまま。
+  if(role && role!=='ai')return String(s);
+  let t=String(s);
+  // コードブロック ```...``` を中身だけに (前後の言語名行を取り、フェンスを外す)
+  t=t.replace(/```[a-zA-Z0-9_-]*\n?([\s\S]*?)```/g,(_,inner)=>inner.trim());
+  // インラインコード `code` → code
+  t=t.replace(/`([^`\n]+)`/g,'$1');
+  // 太字 **text** や __text__ → text
+  t=t.replace(/\*\*([^*\n]+)\*\*/g,'$1');
+  t=t.replace(/__([^_\n]+)__/g,'$1');
+  // 斜体 *text* や _text_ → text  (※ URLや変数名の _ は除外したいので前後が単語境界の時のみ)
+  t=t.replace(/(^|[^\w*])\*([^*\n]+)\*(?=[^\w*]|$)/g,'$1$2');
+  // アンダースコア斜体: 前後が空白か改行か行頭/行末 のときだけ (日本語の単語内 _ を巻き込まない)
+  t=t.replace(/(^|\s)_([^_\n]+)_(?=\s|$)/g,'$1$2');
+  // 見出し: 行頭の # / ## / ### ... を除去
+  t=t.replace(/^[ \t]*#{1,6}[ \t]+/gm,'');
+  // 箇条書き: 行頭の - * + を ・ に置換 (インデント維持)
+  t=t.replace(/^([ \t]*)[-*+][ \t]+/gm,'$1・');
+  // 番号付きリスト: "1. " のまま残す (これは読みやすい)
+  // 引用 "> " → そのまま読みやすいので 「」 ではなく削除
+  t=t.replace(/^[ \t]*>[ \t]?/gm,'');
+  // 連続した3行以上の空行を2行に圧縮
+  t=t.replace(/\n{3,}/g,'\n\n');
+  return t.trim();
+}
+
 // URLを安全にリンク化: 1) URLとテキストに分割 2) テキスト部分のみescape 3) URLは<a>に
 function linkify(s){
   if(s==null)return '';
