@@ -797,8 +797,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .bubble.selecting *::-moz-selection{
   background:rgba(29,158,117,0.30);
 }
-/* 選択モード中であることを示す薄い枠 */
-.bubble.selecting{outline:2px solid var(--g);outline-offset:1px;}
+/* 選択モード中はテキスト選択のハイライト + 範囲ハンドルが視覚フィードバックになるので、
+   バブル自体には目立つ装飾は付けない (LINEと同じ静かな見た目)。 */
 
 /* 長押し中の視覚フィードバック (ぐっと押されている感) */
 .bubble.pressing{transform:scale(0.96);transition:transform .15s;}
@@ -6145,8 +6145,9 @@ async function bubbleCopy(){
   }
 }
 
-// 部分コピー: 該当バブルだけ user-select を許可して、ネイティブの選択UIを使ってもらう。
-// もう一度どこかをタップ/別バブルを触る/画面遷移で抜ける。
+// 部分コピー: バブル全体を選択した状態にして、ネイティブの選択ハンドル+コピー
+// ツールバーを表示する。ユーザーはそこから範囲を狭めて自由にコピーできる。
+// LINEと同じ挙動: 最初は全文選択 → 必要なら手で範囲を縮める → 上のメニューでコピー。
 let selectingBubbleEl=null;
 function bubbleSelect(){
   const t=bubbleMenuTarget;
@@ -6156,26 +6157,56 @@ function bubbleSelect(){
   if(selectingBubbleEl && selectingBubbleEl!==t.bubbleEl){
     selectingBubbleEl.classList.remove('selecting');
   }
-  t.bubbleEl.classList.add('selecting');
-  selectingBubbleEl=t.bubbleEl;
-  toast('文字を選んでコピーしてください');
-  // 軽く案内: バブルの一部を選択しやすいよう、テキスト先頭にキャレットを置く。
-  // モバイルでは選択ハンドルが出るのを待つ必要があるので、自動選択はしない。
-  // ユーザー操作で範囲を選んでもらう。
-  // クリーンアップ用の自動解除リスナー: 入力欄をタップしたら抜ける
+  const bubEl=t.bubbleEl;
+  bubEl.classList.add('selecting');
+  selectingBubbleEl=bubEl;
+
+  // バブル全体を選択範囲にする。リプライ引用 (.bubble-quote) がある場合は
+  // 本文部分だけを選択範囲に含める (引用はユーザーが書いた本文ではないので)。
+  // iOS では選択直後にツールバー(コピー/共有)が自動で表示される。
+  // 即時実行だとブラウザの選択状態リセットと競合することがあるので、
+  // 短いディレイを置いて確実に選択状態を確定させる。
+  setTimeout(()=>{
+    if(!selectingBubbleEl || selectingBubbleEl!==bubEl)return;
+    try{
+      const sel=window.getSelection();
+      if(!sel)return;
+      sel.removeAllRanges();
+      const range=document.createRange();
+      const quoteEl=bubEl.querySelector('.bubble-quote');
+      if(quoteEl){
+        // 引用ブロックの後ろから、バブルの末尾までを選択
+        range.setStartAfter(quoteEl);
+        range.setEndAfter(bubEl.lastChild);
+      }else{
+        range.selectNodeContents(bubEl);
+      }
+      sel.addRange(range);
+    }catch(e){
+      // 何か失敗してもユーザー操作で選択できる状態にはあるので致命的ではない
+      console.warn('bubbleSelect: failed to set selection range',e);
+    }
+  },30);
+
+  // クリーンアップ用の自動解除リスナー: 別の場所をタップしたら選択モード抜ける。
+  // ただし上に出るネイティブの選択ツールバー(iOS の "コピー" バー) はタップ可能のままにしたいので、
+  // バブル自身に対する操作以外でも、選択範囲が空になった時にも解除するように。
   setTimeout(()=>{
     const onAnywhere=ev=>{
       if(!selectingBubbleEl)return;
-      // 選択中バブル自身のクリックは無視 (選択操作の邪魔をしない)
+      // 選択中バブル自身のタップは無視 (選択操作の邪魔をしない)
       if(selectingBubbleEl.contains(ev.target))return;
       selectingBubbleEl.classList.remove('selecting');
       selectingBubbleEl=null;
+      // 選択範囲もクリア (画面に残ると気持ち悪い)
+      const sel=window.getSelection();
+      if(sel)sel.removeAllRanges();
       document.removeEventListener('mousedown',onAnywhere,true);
       document.removeEventListener('touchstart',onAnywhere,true);
     };
     document.addEventListener('mousedown',onAnywhere,true);
     document.addEventListener('touchstart',onAnywhere,true);
-  },50);
+  },80);
 }
 
 // 削除: メッセージ単位で deleted フラグを立てる。マルチバブルでも一括削除 (LINEと同じ)。
