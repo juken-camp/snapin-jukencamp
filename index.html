@@ -646,7 +646,30 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   padding:8px 0;
   border-bottom:0.5px solid var(--line);
 }
-.cl-handle{color:var(--ink3);padding:4px;touch-action:none;}
+.cl-handle{
+  color:var(--ink3);
+  padding:6px 4px;
+  touch-action:none;
+  cursor:grab;
+  /* タップ範囲をやや広げて掴みやすくする */
+}
+.cl-handle:active{cursor:grabbing;color:var(--ink2);}
+/* ドラッグ中の行 (持ち上がり) */
+.cl-row.cl-dragging{
+  background:var(--surface);
+  box-shadow:0 8px 22px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.06);
+  border-radius:8px;
+  border-bottom-color:transparent;
+  position:relative;
+  z-index:50;
+  transform:scale(1.01);
+  transition:transform .12s ease, box-shadow .12s ease;
+  pointer-events:none;
+}
+/* 他の行: なめらかにスライドして席を譲る */
+.cl-row.cl-shifting{
+  transition:transform .22s cubic-bezier(.2,.7,.2,1);
+}
 .cl-mark{
   width:26px;height:26px;
   flex-shrink:0;
@@ -2098,6 +2121,35 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
 
+/* 保存成功オーバーレイ: 画面中央に大きなチェック */
+.save-ok{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:300;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .18s ease;
+  background:rgba(0,0,0,0);
+}
+.save-ok.on{opacity:1;}
+.save-ok-circle{
+  width:96px;
+  height:96px;
+  border-radius:50%;
+  background:var(--g);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:white;
+  box-shadow:0 12px 32px rgba(29,158,117,.35), 0 4px 12px rgba(0,0,0,.12);
+  transform:scale(0.6);
+  transition:transform .28s cubic-bezier(.34,1.56,.64,1);
+}
+.save-ok.on .save-ok-circle{transform:scale(1);}
+
 .hide{display:none !important;}
 </style>
 </head>
@@ -2423,6 +2475,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 </div>
 
 <div class="toast" id="toast">保存しました</div>
+<div class="save-ok" id="save-ok" aria-hidden="true">
+  <div class="save-ok-circle">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+  </div>
+</div>
 <input type="file" id="file-input" accept="image/*" style="display:none;">
 <input type="file" id="file-input-any" accept=".png,.jpg,.jpeg,.gif,.webp,.heic,.heif" style="display:none;">
 
@@ -2461,15 +2518,174 @@ const state={
 };
 
 function save(){
-  localStorage.setItem(STORAGE_KEY,JSON.stringify({
-    user:state.user,
-    cards:state.cards,
-    subscribed:state.subscribed,
-    shelfLastSeen:state.shelfLastSeen,
-    libraryOrder:state.libraryOrder,
-    auth:state.auth,
-    deviceId:state.deviceId,
-  }));
+  // 画像なしの軽量カードのみ localStorage に書く。
+  // 画像 (c.image) は IndexedDB に別保存し、ここでは __hasImg フラグだけ立てる。
+  // 失敗時 (容量オーバー等) は false を返す。
+  try{
+    const lightCards=state.cards.map(c=>{
+      if(c && c.image){
+        const {image,...rest}=c;
+        return {...rest,__hasImg:true};
+      }
+      return c;
+    });
+    localStorage.setItem(STORAGE_KEY,JSON.stringify({
+      user:state.user,
+      cards:lightCards,
+      subscribed:state.subscribed,
+      shelfLastSeen:state.shelfLastSeen,
+      libraryOrder:state.libraryOrder,
+      auth:state.auth,
+      deviceId:state.deviceId,
+    }));
+    return true;
+  }catch(e){
+    // 容量オーバー (QuotaExceededError) など
+    console.error('save() failed:',e);
+    return false;
+  }
+}
+
+// 画像も含めて完全に保存する (IndexedDB への画像書き込みを await する版)。
+// 写真メモ保存時など、画像の永続化が成功したかを確認したい場面で使う。
+// 戻り値: true (成功) / false (localStorage or IndexedDB の書き込み失敗)
+async function saveWithImages(){
+  // 1. 各 card の画像を IndexedDB に書く
+  try{
+    for(const c of state.cards){
+      if(c && c.image && c.id){
+        await imgDB.put(c.id,c.image);
+      }
+    }
+  }catch(e){
+    console.error('IndexedDB image write failed:',e);
+    return false;
+  }
+  // 2. localStorage に軽量カードを書く
+  return save();
+}
+
+// 現在の state を保存したら何バイトになるか見積もる (容量チェック用)
+function estimateSaveBytes(){
+  try{
+    const lightCards=state.cards.map(c=>{
+      if(c && c.image){
+        const {image,...rest}=c;
+        return {...rest,__hasImg:true};
+      }
+      return c;
+    });
+    const s=JSON.stringify({
+      user:state.user,
+      cards:lightCards,
+      subscribed:state.subscribed,
+      shelfLastSeen:state.shelfLastSeen,
+      libraryOrder:state.libraryOrder,
+      auth:state.auth,
+      deviceId:state.deviceId,
+    });
+    // 1文字あたり最大2バイト(UTF-16)で見積もる
+    return s.length*2;
+  }catch(e){return 0;}
+}
+
+// ═══ IndexedDB: 画像 (base64 dataURL) を別ストレージに保存 ═══
+// localStorage は ~5MB 上限で写真数枚で枯渇するが、IndexedDB は桁違いに大きい。
+// メモリ上の state.cards.c.image は今まで通り dataURL を持つ (UI コードは無変更)。
+// 永続化先だけが localStorage → IndexedDB に分かれる。
+const imgDB={
+  _db:null,
+  _DB_NAME:'snapin_db',
+  _STORE:'images',
+  _VERSION:1,
+  async open(){
+    if(this._db)return this._db;
+    return new Promise((res,rej)=>{
+      const req=indexedDB.open(this._DB_NAME,this._VERSION);
+      req.onupgradeneeded=()=>{
+        const db=req.result;
+        if(!db.objectStoreNames.contains(this._STORE)){
+          db.createObjectStore(this._STORE);
+        }
+      };
+      req.onsuccess=()=>{
+        this._db=req.result;
+        res(this._db);
+      };
+      req.onerror=()=>rej(req.error);
+    });
+  },
+  async put(id,dataUrl){
+    const db=await this.open();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(this._STORE,'readwrite');
+      const store=tx.objectStore(this._STORE);
+      const req=store.put(dataUrl,id);
+      req.onsuccess=()=>res();
+      req.onerror=()=>rej(req.error);
+    });
+  },
+  async get(id){
+    const db=await this.open();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(this._STORE,'readonly');
+      const store=tx.objectStore(this._STORE);
+      const req=store.get(id);
+      req.onsuccess=()=>res(req.result||null);
+      req.onerror=()=>rej(req.error);
+    });
+  },
+  async delete(id){
+    const db=await this.open();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(this._STORE,'readwrite');
+      const store=tx.objectStore(this._STORE);
+      const req=store.delete(id);
+      req.onsuccess=()=>res();
+      req.onerror=()=>rej(req.error);
+    });
+  },
+  async allKeys(){
+    const db=await this.open();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(this._STORE,'readonly');
+      const store=tx.objectStore(this._STORE);
+      const req=store.getAllKeys();
+      req.onsuccess=()=>res(req.result||[]);
+      req.onerror=()=>rej(req.error);
+    });
+  },
+};
+
+// 起動時に state.cards の画像を IndexedDB から復元する。
+// 既存ユーザー (localStorage に画像入り cards を持つ人) は、ここで自動マイグレーションされる:
+//   - 画像が localStorage に残っていれば、それをそのまま使いつつ IndexedDB にもコピー
+//   - 次回 save() 時に localStorage 側からは画像が除かれる
+async function hydrateCardImages(){
+  if(!Array.isArray(state.cards))return;
+  for(const c of state.cards){
+    if(!c || !c.id)continue;
+    if(c.image && typeof c.image==='string' && c.image.startsWith('data:')){
+      // 既に画像データを持っている (旧形式 or マイグレーション前) → IndexedDB に移す
+      try{await imgDB.put(c.id,c.image);}catch(e){console.warn('migrate img failed',c.id,e);}
+      // c.image はそのまま使う (画面表示できる状態を維持)
+      delete c.__hasImg;
+    }else if(c.__hasImg){
+      // 新形式: localStorage には画像が無い、IndexedDB から復元
+      try{
+        const dataUrl=await imgDB.get(c.id);
+        if(dataUrl){c.image=dataUrl;}
+        else{
+          // IndexedDB にも無い → 画像が失われている (異常系)
+          console.warn('image missing for card',c.id);
+        }
+      }catch(e){console.warn('load img failed',c.id,e);}
+      delete c.__hasImg;
+    }
+  }
+  // マイグレーション後、localStorage を軽量化して書き直す (ストレージ圧迫を解消)
+  // ※ 既存ユーザーの初回読み込み時に効くので、ここでは save() を呼んでも安全
+  save();
 }
 function load(){
   try{
@@ -3525,8 +3741,13 @@ function deleteSelected(){
   const n=state.selectedIds.size;
   if(n===0)return;
   if(!confirm(`${n}件のメモを削除しますか?`)){return;}
-  state.cards=state.cards.filter(c=>!state.selectedIds.has(c.id));
+  const idsToDelete=new Set(state.selectedIds);
+  state.cards=state.cards.filter(c=>!idsToDelete.has(c.id));
   save();
+  // IndexedDB の画像も消す
+  for(const id of idsToDelete){
+    imgDB.delete(id).catch(()=>{});
+  }
   toast(`${n}件削除しました`);
   exitSelectMode();
 }
@@ -3690,7 +3911,9 @@ function compressOnce(dataUrl,maxSide,quality){
   });
 }
 
-// 賢い圧縮: ターゲット (1.5MB以下) を超えたら品質・寸法を下げて再試行
+// 賢い圧縮: ターゲット (400KB以下) を超えたら品質・寸法を下げて再試行
+// 注: localStorage の容量制限は通常5MB。画像を base64 で保存するため
+// 各画像を小さく抑えないと数枚で容量オーバーになる。
 async function smartCompressImage(file){
   const reader=new FileReader();
   const dataUrl=await new Promise((res,rej)=>{
@@ -3698,15 +3921,19 @@ async function smartCompressImage(file){
     reader.onerror=()=>rej(new Error('読み込み失敗'));
     reader.readAsDataURL(file);
   });
-  const TARGET_BYTES=1.5*1024*1024;
-  let side=1600, q=0.85;
-  for(let i=0;i<4;i++){
+  const TARGET_BYTES=400*1024;     // 400KB を目標
+  const HARD_LIMIT=600*1024;       // 600KBは絶対に超えない
+  let side=1280, q=0.78;
+  for(let i=0;i<6;i++){
     try{
       const out=await compressOnce(dataUrl,side,q);
-      if(dataUrlBytes(out)<=TARGET_BYTES)return out;
+      const bytes=dataUrlBytes(out);
+      if(bytes<=TARGET_BYTES)return out;
+      if(i>=4 && bytes<=HARD_LIMIT)return out; // 後半は HARD_LIMIT を超えなければ採用
       // 大きすぎる: まず品質を下げる、それでも大きければ寸法も下げる
-      q-=0.15;
-      if(q<0.5){q=0.55;side=Math.floor(side*0.75);}
+      q-=0.12;
+      if(q<0.45){q=0.5;side=Math.floor(side*0.75);}
+      if(side<480){side=480;}
     }catch(e){
       // 圧縮失敗時は元の dataUrl を返す (最終手段)
       return dataUrl;
@@ -4049,6 +4276,153 @@ function renderListItems(wrap){
 
     wrap.appendChild(row);
   });
+  // ハンドルからのドラッグ並べ替えをセットアップ
+  setupListReorder(wrap);
+}
+
+// ═══ リスト項目の並べ替え (ハンドルドラッグ) ═══
+// .cl-handle を掴んだ瞬間にドラッグ開始 (長押し不要)。
+// 公式ライブラリ並べ替えと違って専用ハンドルがあるので即時開始で OK。
+function setupListReorder(wrap){
+  if(!wrap)return;
+  // 二重バインド防止: 既に設定済みなら何もしない
+  if(wrap._listReorderInit)return;
+  wrap._listReorderInit=true;
+
+  let drag=null;
+  // drag = { row, rows, originalIndex, currentIndex, offsetWithinRow, rowHeight, originalTop }
+
+  function onPointerDown(e){
+    const handle=e.target.closest('.cl-handle');
+    if(!handle)return;
+    const row=handle.closest('.cl-row');
+    if(!row)return;
+    if(e.pointerType==='mouse' && e.button!==0)return;
+    e.preventDefault();
+
+    const rows=Array.from(wrap.querySelectorAll('.cl-row'));
+    if(rows.length<2)return; // 1個しかなければ並べ替え不要
+
+    const rect=row.getBoundingClientRect();
+    const offsetWithinRow=e.clientY-rect.top;
+    const rowHeight=rect.height;
+    const originalIndex=rows.indexOf(row);
+
+    drag={
+      row,
+      rows,
+      originalIndex,
+      currentIndex:originalIndex,
+      offsetWithinRow,
+      rowHeight,
+      originalTop:rect.top,
+      shifts:new Map(),
+    };
+
+    row.classList.add('cl-dragging');
+    for(const r of rows){
+      if(r===row)continue;
+      r.classList.add('cl-shifting');
+      drag.shifts.set(r,0);
+    }
+    if(navigator.vibrate)navigator.vibrate(8);
+
+    // ポインタキャプチャでrow外に出ても追える
+    try{handle.setPointerCapture(e.pointerId);}catch(_){}
+  }
+
+  function onPointerMove(e){
+    if(!drag)return;
+    e.preventDefault();
+
+    const desiredTop=e.clientY-drag.offsetWithinRow;
+    let translateY=desiredTop-drag.originalTop;
+
+    const rowCenter=desiredTop+drag.rowHeight/2;
+    let newIndex=drag.originalIndex;
+    for(let i=0;i<drag.rows.length;i++){
+      if(i===drag.originalIndex)continue;
+      const otherOriginalTop=drag.originalTop+(i-drag.originalIndex)*drag.rowHeight;
+      const otherCenter=otherOriginalTop+drag.rowHeight/2;
+      if(i>drag.originalIndex && rowCenter>otherCenter){
+        newIndex=Math.max(newIndex,i);
+      }
+      if(i<drag.originalIndex && rowCenter<otherCenter){
+        newIndex=Math.min(newIndex,i);
+      }
+    }
+
+    // 上下端でちょっとだけバウンス余地
+    const minT=-drag.originalIndex*drag.rowHeight - drag.rowHeight*0.4;
+    const maxT=(drag.rows.length-1-drag.originalIndex)*drag.rowHeight + drag.rowHeight*0.4;
+    if(translateY<minT)translateY=minT;
+    if(translateY>maxT)translateY=maxT;
+
+    drag.row.style.transform=`translateY(${translateY}px) scale(1.01)`;
+
+    if(newIndex!==drag.currentIndex){
+      drag.currentIndex=newIndex;
+      applyShifts();
+    }
+  }
+
+  function applyShifts(){
+    if(!drag)return;
+    const {rows,originalIndex,currentIndex,rowHeight}=drag;
+    for(let i=0;i<rows.length;i++){
+      const r=rows[i];
+      if(r===drag.row)continue;
+      let shift=0;
+      if(currentIndex>originalIndex){
+        if(i>originalIndex && i<=currentIndex)shift=-rowHeight;
+      }else if(currentIndex<originalIndex){
+        if(i<originalIndex && i>=currentIndex)shift=rowHeight;
+      }
+      const prev=drag.shifts.get(r)||0;
+      if(prev!==shift){
+        drag.shifts.set(r,shift);
+        r.style.transform=shift===0?'':`translateY(${shift}px)`;
+      }
+    }
+  }
+
+  function onPointerUp(e){
+    if(!drag)return;
+    const {row,rows,originalIndex,currentIndex}=drag;
+
+    // state.current.items を実際に並べ替える
+    if(currentIndex!==originalIndex && state.current && Array.isArray(state.current.items)){
+      const moved=state.current.items.splice(originalIndex,1)[0];
+      state.current.items.splice(currentIndex,0,moved);
+    }
+
+    // 全てのインラインstyle/クラスをクリアして再描画 (番号付きリストの番号も振り直すため)
+    drag.row.classList.remove('cl-dragging');
+    drag.row.style.transform='';
+    for(const r of rows){
+      r.classList.remove('cl-shifting');
+      r.style.transform='';
+    }
+    drag=null;
+    renderListItems(wrap);
+  }
+
+  function onPointerCancel(){
+    if(!drag)return;
+    // キャンセル時は元の位置に戻して終了
+    drag.row.classList.remove('cl-dragging');
+    drag.row.style.transform='';
+    for(const r of drag.rows){
+      r.classList.remove('cl-shifting');
+      r.style.transform='';
+    }
+    drag=null;
+  }
+
+  wrap.addEventListener('pointerdown',onPointerDown);
+  wrap.addEventListener('pointermove',onPointerMove);
+  wrap.addEventListener('pointerup',onPointerUp);
+  wrap.addEventListener('pointercancel',onPointerCancel);
 }
 
 function saveCard(){
@@ -4075,39 +4449,85 @@ function saveCard(){
   }
   delete c._new;
 
+  // ★ state を更新する前に、保存前のスナップショットを取っておく (失敗時のロールバック用)
   const idx=state.cards.findIndex(x=>x.id===c.id);
+  const wasNew=idx<0;
+  const prevCard=wasNew?null:state.cards[idx];
+
   if(idx>=0)state.cards[idx]=c;
   else state.cards.unshift(c);
-  save();
 
-  // (OCR は AI 会話時にだけ実行する設計。投稿しただけでは API を呼ばない。)
+  // 保存処理: 画像なしなら同期的、ありなら IndexedDB の完了を待ってから success UI
+  const rollback=()=>{
+    if(wasNew){state.cards.shift();}
+    else{state.cards[idx]=prevCard;}
+  };
 
-  // 保存ボタンを ✓ に変えて「保存された」感を出す (admin の memo-save と同じ仕様)
-  // 多重タップ対策: saving フラグで2回目以降のタップを無視する。
-  // 失敗時の保険として、ボタン状態は finally でリセットされる。
+  // 連打防止 (UI 上の保存ボタン)
   const btn=$('up-save-btn');
-  if(!btn){
-    // ボタンが見つからない異常系: そのまま遷移
-    state.current=null;
-    finishAndLeave();
-    return;
+  if(btn && btn.dataset.saving==='1')return;
+  if(btn)btn.dataset.saving='1';
+
+  if(c.image){
+    // 画像あり: IndexedDB に await してから localStorage 書き込み
+    (async()=>{
+      try{
+        await imgDB.put(c.id,c.image);
+      }catch(err){
+        console.error('IndexedDB put failed:',err);
+        rollback();
+        if(btn)delete btn.dataset.saving;
+        showSaveError();
+        return;
+      }
+      const ok=save();
+      if(!ok){
+        rollback();
+        // 孤児画像を残さない
+        imgDB.delete(c.id).catch(()=>{});
+        if(btn)delete btn.dataset.saving;
+        showSaveError();
+        return;
+      }
+      // 成功 → UI フィードバック
+      onSaveSuccess();
+    })();
+  }else{
+    const ok=save();
+    if(!ok){
+      rollback();
+      if(btn)delete btn.dataset.saving;
+      showSaveError();
+      return;
+    }
+    onSaveSuccess();
   }
-  if(btn.dataset.saving==='1')return; // 連打防止
-  btn.dataset.saving='1';
-  btn.disabled=true;
-  btn.classList.add('saved');
-  btn.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
-  if(navigator.vibrate)navigator.vibrate(15);
-  // チェックマークを十分目視できる時間を確保してから遷移
-  setTimeout(()=>{
-    state.current=null;
-    finishAndLeave();
-    // ボタンを元に戻す (次回開いた時のため)
-    btn.innerHTML='保存';
-    btn.classList.remove('saved');
-    btn.disabled=false;
-    delete btn.dataset.saving;
-  },1100);
+
+  function onSaveSuccess(){
+    // 保存ボタンを ✓ に変えて「保存された」感を出す
+    if(!btn){
+      // ボタンが見つからない異常系: そのまま遷移
+      state.current=null;
+      finishAndLeave();
+      return;
+    }
+    btn.disabled=true;
+    btn.classList.add('saved');
+    btn.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+    if(navigator.vibrate)navigator.vibrate(15);
+    // ★ 画面中央に大きな✓オーバーレイを出す (見落とし防止)
+    showSaveOk();
+    // チェックマークを十分目視できる時間を確保してから遷移
+    setTimeout(()=>{
+      state.current=null;
+      finishAndLeave();
+      // ボタンを元に戻す (次回開いた時のため)
+      btn.innerHTML='保存';
+      btn.classList.remove('saved');
+      btn.disabled=false;
+      delete btn.dataset.saving;
+    },1100);
+  }
 
   function finishAndLeave(){
     // screen-upload と screen-detail をスタックから除去してホームへ
@@ -4224,6 +4644,8 @@ function ocrRetake(){
       state.cards[cIdx].image=newImage;
       delete state.cards[cIdx].ocrText;
       delete state.cards[cIdx].ocrFailed;
+      // IndexedDB に新しい画像を書く (失敗してもUIは続行、次回保存時にリトライ)
+      try{await imgDB.put(c.id,newImage);}catch(err){console.warn('img put failed',err);}
       save();
       // 画面を即時更新
       state.current=state.cards[cIdx];
@@ -4740,8 +5162,11 @@ function deleteCard(){
   $('detail-menu').classList.remove('on');
   if(state.current._origin==='official'){toast('公式メモは削除できません');return;}
   if(!confirm('このメモを削除しますか?'))return;
-  state.cards=state.cards.filter(x=>x.id!==state.current.id);
+  const id=state.current.id;
+  state.cards=state.cards.filter(x=>x.id!==id);
   save();
+  // IndexedDB の画像も消す (孤児画像を残さない)
+  imgDB.delete(id).catch(()=>{});
   toast('削除しました');
   back();
 }
@@ -5758,6 +6183,47 @@ function toast(msg){
   toastT=setTimeout(()=>t.classList.remove('on'),1800);
 }
 
+// 保存成功時の大きなチェックマーク。ボタン上の小さなチェックと併用して、
+// 「保存された感」を絶対に見落とさないようにする。
+let saveOkT=null;
+function showSaveOk(){
+  const el=$('save-ok');
+  if(!el)return;
+  // 既に表示中なら一度クリアして再演出
+  el.classList.remove('on');
+  // void el.offsetWidth; // reflowを強制 (アニメーション再生のため)
+  requestAnimationFrame(()=>{
+    el.classList.add('on');
+  });
+  if(saveOkT)clearTimeout(saveOkT);
+  saveOkT=setTimeout(()=>{el.classList.remove('on');},900);
+}
+
+// 保存失敗 (主に localStorage 容量オーバー) 時のアラート。
+// ユーザーがデータを失っていないこと、対処法を明確に伝える。
+function showSaveError(){
+  // ボタンの状態をリセット (チェックマーク状態にしてしまわないよう)
+  const btn=$('up-save-btn');
+  if(btn){
+    btn.innerHTML='保存';
+    btn.classList.remove('saved');
+    btn.disabled=false;
+    delete btn.dataset.saving;
+  }
+  // 写真メモが多いと容量超過しやすい
+  const photoCount=state.cards.filter(c=>c.type==='photo'||c.type==='photonote').length;
+  let msg='端末の保存容量がいっぱいで、これ以上保存できません。\n\n';
+  if(photoCount>=3){
+    msg+=`写真付きメモが ${photoCount} 件あります。\n古い写真メモをいくつか削除すると、新しく保存できるようになります。`;
+  }else{
+    msg+='古いメモをいくつか削除すると、新しく保存できるようになります。';
+  }
+  msg+='\n\n(今書いた内容はそのまま残っています)';
+  // alert は UI 的に少し雑だが、確実に伝わる。toast だと見落とす可能性あり。
+  if(navigator.vibrate)navigator.vibrate([15,40,15]);
+  setTimeout(()=>{alert(msg);},10);
+}
+
 function setView(v){
   state.view=v;
   $('vt-grid').classList.toggle('on',v==='grid');
@@ -6110,11 +6576,38 @@ $('file-input-any').addEventListener('change',onFilePick);
 // 起動
 setupNavs();
 loadOfficialShelves(); // 公式棚をサーバーから取得 (非同期、UIブロックしない)
+
+// 古い Service Worker (過去のデプロイで残ったもの) を解除する。
+// 現在この HTML 自体は SW を register していないが、過去に登録された SW が
+// 端末に残っていることがあり、キャッシュやエラーの原因になるため。
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(regs=>{
+    for(const reg of regs){
+      reg.unregister().catch(()=>{});
+    }
+  }).catch(()=>{});
+}
+
 if(load() && state.user){
   state.navStack=['screen-home'];
   goto('screen-home',false);
   // 起動時に塾生情報を最新化 (force=true、スロットリング無視)
   refreshMe(true);
+  // 起動時に IndexedDB から画像を復元 (非同期、画像のあるカードだけ後から表示更新)
+  hydrateCardImages().then(()=>{
+    // 画像復元後、ホーム画面が表示中なら再描画して画像を表示
+    const cur=document.querySelector('.screen.active');
+    if(cur && cur.id==='screen-home')renderHome();
+    if(cur && cur.id==='screen-today')renderToday();
+    if(cur && cur.id==='screen-detail' && state.current){
+      // 詳細画面を再描画 (現在のカードの画像が復元されている可能性)
+      const fresh=state.cards.find(x=>x.id===state.current.id);
+      if(fresh){
+        state.current=fresh;
+        openDetail(fresh,state.current._origin||'mine');
+      }
+    }
+  }).catch(e=>console.warn('hydrateCardImages failed:',e));
 }else{
   goto('screen-login',false);
 }
