@@ -1285,11 +1285,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .admin-search-clear.show{display:flex;}
 .admin-search-clear:active{background:var(--line2);}
 
-/* フィルタチップ (塾生用) */
+/* フィルタチップ (塾生用・メモタイプ用) */
 .filter-row{
   display:flex;
   gap:6px;
-  padding:8px 16px 0;
+  padding:10px 16px 14px;
   overflow-x:auto;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
@@ -1336,33 +1336,28 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .student-shelf-opt .mini-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
 
-/* 公式ライブラリ編集: 画面遷移風 (一覧の上に重ねる) */
+/* 公式ライブラリ編集: 画面遷移 (リストと編集を切り替え) */
 .shelf-edit-screen{
   display:none;
   flex-direction:column;
-  position:absolute;
-  inset:0;
-  background:var(--bg);
-  z-index:20;
-  overflow-y:auto;
-  padding-bottom:40px;
-  /* スライドイン */
-  transform:translateX(100%);
-  transition:transform .25s cubic-bezier(.22,.94,.34,1);
+  /* 表示時に滑らかに見せるためのフェード/スライド */
+  animation:shelf-edit-in .22s ease-out;
 }
 .shelf-edit-screen.on{
   display:flex;
-  transform:translateX(0);
 }
+@keyframes shelf-edit-in{
+  from{opacity:0;transform:translateX(8px);}
+  to{opacity:1;transform:translateX(0);}
+}
+/* リスト側を隠す時のクラス */
+.pane-hidden{display:none !important;}
 .shelf-edit-back{
   display:flex;
   align-items:center;
   gap:6px;
   padding:14px 12px 8px;
   background:var(--bg);
-  position:sticky;
-  top:0;
-  z-index:5;
 }
 .shelf-edit-back button{
   display:flex;
@@ -1385,9 +1380,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   text-overflow:ellipsis;
   white-space:nowrap;
 }
-
-/* main-screen を相対配置に (画面遷移の基準) */
-#main-screen{position:relative;}
 
 /* 空メッセージ (検索結果なし) */
 .no-result{
@@ -2338,16 +2330,20 @@ function openShelfEditScreen(id){
   const crumb=$('shelf-edit-crumb');
   if(crumb)crumb.textContent=s.name||'(無題)';
   renderShelfEdit();
+  // リスト側を隠し、編集画面を表示
+  $('pane-shelves').classList.add('pane-hidden');
   $('shelf-edit-screen').classList.add('on');
-  // スクロールを最上部に
-  setTimeout(()=>{
-    const screen=$('shelf-edit-screen');
-    if(screen)screen.scrollTop=0;
-  },20);
+  // メイン画面のスクロール位置を最上部に
+  const main=$('main-screen');
+  if(main){
+    // 即座にトップへ(アニメーション無しで遷移感を出す)
+    main.scrollTop=0;
+  }
 }
 
 function closeShelfEditScreen(){
   $('shelf-edit-screen').classList.remove('on');
+  $('pane-shelves').classList.remove('pane-hidden');
   state.selectedId=null;
   state.memoSearch='';
   state.memoTypeFilter='all';
