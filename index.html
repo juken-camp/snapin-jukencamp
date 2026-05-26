@@ -380,21 +380,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   pointer-events:none;
 }
 
-/* ピン留めバッジ */
+/* ピン留めバッジ (右上、白アイコン、ドロップシャドウで写真にもメモ背景にも馴染ませる) */
 .pin-badge{
   position:absolute;
-  top:6px;left:6px;
-  width:22px;height:22px;
-  background:rgba(0,0,0,.55);
+  top:6px;right:6px;
   color:#fff;
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
   pointer-events:none;
   z-index:2;
-  backdrop-filter:blur(4px);
-  -webkit-backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));
+  -webkit-filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));
 }
-.feed-item .pin-badge{top:14px;left:14px;width:28px;height:28px;}
+.feed-item .pin-badge{top:16px;right:16px;}
 
 /* グリッドの選択モード (長押しで起動、複数選択して削除) */
 .card.selectable{cursor:pointer;}
@@ -411,6 +408,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   z-index:3;
 }
 .grid.selecting .card .sel-mark{display:flex;}
+/* 選択モード中はピン留めバッジを隠す (右上で位置が被るため) */
+.grid.selecting .card .pin-badge{display:none;}
 .card.selected .sel-mark{
   background:var(--g);
   border-color:var(--g);
@@ -1604,6 +1603,132 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   margin-bottom:10px;
   display:flex;align-items:center;gap:6px;
 }
+/* 探すページ下部の控えめな入口: アーカイブ / ゴミ箱 */
+.search-extras{
+  padding:6px 0 24px;
+  margin-top:8px;
+  border-top:0.5px solid var(--line);
+}
+.search-extra-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  padding:14px 20px;
+  text-align:left;
+  color:var(--ink2);
+  font-size:14px;
+}
+.search-extra-row:active{background:var(--bg);}
+.search-extra-icon{
+  width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ink3);
+  flex-shrink:0;
+}
+.search-extra-label{flex:1;}
+.search-extra-count{
+  color:var(--ink3);
+  font-size:12px;
+  font-family:var(--font-en);
+  min-width:18px;
+  text-align:right;
+}
+.search-extra-chev{color:var(--ink3);flex-shrink:0;}
+.search-extras-note{
+  padding:8px 20px 0;
+  font-size:11px;
+  color:var(--ink3);
+}
+
+/* アーカイブ画面 / ゴミ箱画面共通 */
+.bin-empty{
+  padding:80px 24px;
+  text-align:center;
+  color:var(--ink3);
+  font-size:13px;
+  line-height:1.7;
+}
+.bin-empty-icon{
+  width:48px;height:48px;
+  margin:0 auto 14px;
+  color:var(--ink3);
+  opacity:.4;
+}
+.bin-list{padding:8px 0 24px;}
+.bin-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 20px;
+  border-bottom:0.5px solid var(--line);
+  cursor:pointer;
+}
+.bin-row:active{background:var(--bg);}
+.bin-row-thumb{
+  width:48px;height:48px;
+  border-radius:8px;
+  overflow:hidden;
+  flex-shrink:0;
+  background:var(--surface);
+  font-size:9px;
+  color:var(--ink2);
+  padding:4px 6px;
+  word-break:break-word;
+  -webkit-line-clamp:4;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  line-height:1.2;
+}
+.bin-row-thumb img{width:100%;height:100%;object-fit:cover;display:block;margin:-4px -6px;}
+.bin-row-main{flex:1;min-width:0;}
+.bin-row-title{
+  font-size:13px;
+  color:var(--ink);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  line-height:1.4;
+}
+.bin-row-meta{
+  font-size:11px;
+  color:var(--ink3);
+  margin-top:3px;
+}
+.bin-row-meta .bin-days-left{color:var(--rose);}
+.bin-row-actions{
+  display:flex;
+  gap:4px;
+  flex-shrink:0;
+}
+.bin-row-btn{
+  padding:8px 12px;
+  font-size:12px;
+  border-radius:8px;
+  font-weight:500;
+  color:var(--ink2);
+  background:var(--bg);
+  white-space:nowrap;
+}
+.bin-row-btn:active{transform:scale(0.97);}
+.bin-row-btn.primary{
+  background:var(--gl);
+  color:var(--gd);
+}
+.bin-row-btn.danger{
+  background:transparent;
+  color:var(--ink3);
+}
+
+/* ゴミ箱ヘッダーの「すべて削除」ボタン */
+.bhdr-trash-empty{
+  font-size:12px;
+  color:var(--ink3);
+  margin-left:auto;
+  padding:6px 10px;
+}
+.bhdr-trash-empty:active{color:var(--rose);}
+
 .color-filter-chip{
   display:flex;align-items:center;gap:6px;
   padding:6px 12px 6px 8px;
@@ -1771,7 +1896,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   -webkit-line-clamp:5;-webkit-box-orient:vertical;
   overflow:hidden;
 }
-.pin-card .pin-badge{top:4px;left:4px;width:18px;height:18px;}
+.pin-card .pin-badge{top:4px;right:4px;}
 
 /* LOGIN */
 .login-wrap{
@@ -2509,6 +2634,33 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="bnav" data-bnav="search"></div>
 </div>
 
+<!-- ARCHIVE (しまったメモ) -->
+<div class="screen" id="screen-archive">
+  <div class="bhdr">
+    <button class="bhdr-back" data-action="back">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div class="bhdr-title">しまったメモ</div>
+  </div>
+  <div class="scroll" id="archive-scroll">
+    <div id="archive-content"></div>
+  </div>
+</div>
+
+<!-- TRASH (片付けたメモ) -->
+<div class="screen" id="screen-trash">
+  <div class="bhdr">
+    <button class="bhdr-back" data-action="back">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div class="bhdr-title">片付けたメモ</div>
+    <button class="bhdr-trash-empty" data-action="empty-trash" id="trash-empty-btn">すべて削除</button>
+  </div>
+  <div class="scroll" id="trash-scroll">
+    <div id="trash-content"></div>
+  </div>
+</div>
+
 <!-- UPLOAD -->
 <div class="screen" id="screen-upload">
   <div class="bhdr">
@@ -2543,6 +2695,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button class="menu-item" data-action="open-color-picker" id="menu-color-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 22c5.523 0 10-4.477 10-10 0-4.418-2-7-5-7"/></svg>
         色を変える
+      </button>
+      <button class="menu-item" data-action="archive-card" id="menu-archive-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+        しまう
       </button>
       <button class="menu-item danger" data-action="delete-card">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
@@ -2898,6 +3054,43 @@ function ensureDeviceId(){
   state.deviceId='dev_'+hex;
   save();
   return state.deviceId;
+}
+
+// ═══ ARCHIVE / TRASH ユーティリティ ═══
+// state.cards は全カード (アクティブ + しまった + 消した) を保持する。
+// 表示・検索・復習の通常導線では「アクティブ」のカードしか出さない。
+//   - archivedAt : しまった時刻 (ms)、「しまったメモ」画面に出す
+//   - deletedAt  : 片付けた時刻 (ms)、「片付けたメモ」画面に出す、7日後に自動消去
+// 両方セットされている場合は deletedAt を優先 (= 消した扱い)
+const TRASH_RETENTION_MS=7*24*60*60*1000; // 7日
+
+function isActiveCard(c){
+  return c && !c.archivedAt && !c.deletedAt;
+}
+function isArchivedCard(c){
+  // ゴミ箱送りされたものは archive 画面には出さない (deletedAt 優先)
+  return c && c.archivedAt && !c.deletedAt;
+}
+function isTrashedCard(c){
+  return c && c.deletedAt;
+}
+// 通常の一覧で対象になるカードのみ抽出
+function getActiveCards(){
+  return state.cards.filter(isActiveCard);
+}
+// ゴミ箱の自動消去 (起動時に呼ぶ)
+async function purgeOldTrash(){
+  if(!Array.isArray(state.cards))return;
+  const now=Date.now();
+  const expired=state.cards.filter(c=>c && c.deletedAt && (now-c.deletedAt)>=TRASH_RETENTION_MS);
+  if(expired.length===0)return;
+  // 画像を IndexedDB から消す
+  for(const c of expired){
+    if(c.id){try{await imgDB.delete(c.id);}catch(e){/* ignore */}}
+  }
+  const expiredIds=new Set(expired.map(c=>c.id));
+  state.cards=state.cards.filter(c=>!expiredIds.has(c.id));
+  save();
 }
 
 // 認証状態のショートカット
@@ -3264,6 +3457,8 @@ function goto(id,push){
     state.searchTag=null;
     doSearch();
   }
+  if(id==='screen-archive')renderArchiveScreen();
+  if(id==='screen-trash')renderTrashScreen();
 }
 
 function back(){
@@ -3406,8 +3601,8 @@ function logoutConfirm(){
 function openSettings(){
   const sub=$('settings-export-sub');
   if(sub){
-    const personalCount=state.cards.filter(c=>!c.fromShelf).length;
-    const photoCount=state.cards.filter(c=>(c.type==='photo'||c.type==='photonote') && !c.fromShelf).length;
+    const personalCount=getActiveCards().filter(c=>!c.fromShelf).length;
+    const photoCount=getActiveCards().filter(c=>(c.type==='photo'||c.type==='photonote') && !c.fromShelf).length;
     sub.textContent=`個人メモ ${personalCount} 件${photoCount?` (うち写真 ${photoCount} 件)`:''}`;
   }
   $('settings-backdrop').classList.add('on');
@@ -3429,7 +3624,9 @@ async function exportBackup(){
     // 念のため、現在 state.cards に画像 dataURL が乗っていない可能性に備えて再 hydrate
     await hydrateCardImages();
 
-    const personalCards=state.cards.filter(c=>c && !c.fromShelf);
+    // バックアップ対象: 公式棚由来でなく、片付けたメモ (deletedAt) でないもの。
+    // しまったメモ (archivedAt) は含める。本人にとってまだ大事なメモのはずなので。
+    const personalCards=state.cards.filter(c=>c && !c.fromShelf && !c.deletedAt);
     const payload={
       app:'SnapIn',
       version:1,
@@ -3496,7 +3693,7 @@ async function handleRestoreFile(e){
     }
 
     // 現在の個人メモ件数
-    const existingPersonal=state.cards.filter(c=>c && !c.fromShelf);
+    const existingPersonal=state.cards.filter(c=>c && !c.fromShelf && !c.deletedAt);
 
     // 確認ダイアログ: マージか全置換か
     const exportedAt=payload.exportedAt?new Date(payload.exportedAt).toLocaleString('ja-JP'):'(日時不明)';
@@ -3830,7 +4027,7 @@ function getForgottenCards(){
   const DAY=86400000;
   const startOfToday=new Date();
   startOfToday.setHours(0,0,0,0);
-  return state.cards.filter(c=>{
+  return getActiveCards().filter(c=>{
     if(c.type==='list')return false; // タスクは別管理
     const created=c.created||0;
     if(created>=startOfToday.getTime())return false; // 今日の保存は除外
@@ -3849,7 +4046,7 @@ function getTodayCards(){
   const startOfToday=new Date();
   startOfToday.setHours(0,0,0,0);
   const t=startOfToday.getTime();
-  return state.cards.filter(c=>(c.created||0)>=t);
+  return getActiveCards().filter(c=>(c.created||0)>=t);
 }
 
 // daysAgo=1 → 昨日, 2 → 2日前 ...
@@ -3858,7 +4055,7 @@ function getCardsForDayOffset(daysAgo){
   start.setHours(0,0,0,0);
   const end=start.getTime() - (daysAgo-1)*86400000;
   const begin=start.getTime() - daysAgo*86400000;
-  return state.cards.filter(c=>{
+  return getActiveCards().filter(c=>{
     const cr=c.created||0;
     return cr>=begin && cr<end;
   });
@@ -3906,7 +4103,7 @@ function getTodayOpenTasks(){
   // 全リストカードの未完項目を集約 (最大20件)
   // ※ 番号項目(mark:'number')は「やること」じゃないので除外
   const out=[];
-  for(const c of state.cards){
+  for(const c of getActiveCards()){
     if(c.type!=='list')continue;
     for(const item of (c.items||[])){
       const mark=item.mark||'check';
@@ -4006,13 +4203,14 @@ function renderHome(){
   const grid=$('grid-home');
   const feed=$('feed-home');
 
-  if(state.cards.length===0){
+  const activeCards=getActiveCards();
+  if(activeCards.length===0){
     empty.classList.remove('hide');
     grid.classList.add('hide');
     feed.classList.add('hide');
   }else{
     empty.classList.add('hide');
-    const sorted=sortPinnedFirst(state.cards);
+    const sorted=sortPinnedFirst(activeCards);
     if(state.view==='grid'){
       grid.classList.remove('hide');
       feed.classList.add('hide');
@@ -4059,7 +4257,7 @@ function renderGrid(el,cards,origin){
     }
     // ピン留めバッジ
     if(origin==='mine' && c.pinned){
-      inner+=`<div class="pin-badge"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
+      inner+=`<div class="pin-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2.5a2 2 0 0 1 1.5 3.32L14 7.6V13l4 3v2H6v-2l4-3V7.6L8.5 5.82A2 2 0 0 1 10 2.5h4zm-3 14.5h2v5l-1 1-1-1z"/></svg></div>`;
     }
     // 選択マーク (常に DOM に置いて CSS で表示制御)
     if(isHome){
@@ -4091,11 +4289,9 @@ function renderGrid(el,cards,origin){
           return;
         }
         if(state.mosaicMode){
-          if(card.classList.contains('mosaic')){
-            card.classList.remove('mosaic');
-          }else{
-            openDetail(c,'mine');
-          }
+          // モザイク中: タップで見える/隠れるをトグル (暗記練習用)
+          // 通常モードに戻すには右上の目玉ボタンを押す
+          card.classList.toggle('mosaic');
         }else{
           openDetail(c,'mine');
         }
@@ -4194,15 +4390,17 @@ function updateSelectBarCount(){
 function deleteSelected(){
   const n=state.selectedIds.size;
   if(n===0)return;
-  if(!confirm(`${n}件のメモを削除しますか?`)){return;}
-  const idsToDelete=new Set(state.selectedIds);
-  state.cards=state.cards.filter(c=>!idsToDelete.has(c.id));
+  if(!confirm(`${n}件を片付けますか?\n7日間は「片付けたメモ」から戻せます。`)){return;}
+  const ids=new Set(state.selectedIds);
+  const now=Date.now();
+  state.cards.forEach(c=>{
+    if(c && ids.has(c.id)){
+      c.deletedAt=now;
+      c.pinned=false;
+    }
+  });
   save();
-  // IndexedDB の画像も消す
-  for(const id of idsToDelete){
-    imgDB.delete(id).catch(()=>{});
-  }
-  toast(`${n}件削除しました`);
+  toast(`${n}件消しました`);
   exitSelectMode();
 }
 
@@ -4233,13 +4431,14 @@ function renderFeed(el,cards){
       inner+=`<div class="feed-meta" style="color:${col.fg};opacity:0.5;">${fmtDate(c.date)}</div>`;
     }
     if(c.pinned){
-      inner+=`<div class="pin-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
+      inner+=`<div class="pin-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2.5a2 2 0 0 1 1.5 3.32L14 7.6V13l4 3v2H6v-2l4-3V7.6L8.5 5.82A2 2 0 0 1 10 2.5h4zm-3 14.5h2v5l-1 1-1-1z"/></svg></div>`;
     }
     item.innerHTML=inner;
-    // モザイクモード時: 1タップで blur 解除、2タップ目で詳細
+    // モザイクモード時: タップで blur 解除/再表示をトグル (暗記練習用)。
+    // 通常モードに戻したいときは右上の目玉ボタンを押す。
     item.addEventListener('click',()=>{
-      if(state.mosaicMode && !item.classList.contains('tapped')){
-        item.classList.add('tapped');
+      if(state.mosaicMode){
+        item.classList.toggle('tapped');
         return;
       }
       openDetail(c,'mine');
@@ -5493,6 +5692,9 @@ function openDetail(c,origin){
     pinBtn.style.display=isOfficial?'none':'';
     if(pinLabel)pinLabel.textContent=c.pinned?'ピン留めを外す':'ピン留め';
   }
+  // 「リストから外す」も公式メモには出さない
+  const archBtn=$('menu-archive-btn');
+  if(archBtn)archBtn.style.display=isOfficial?'none':'';
 
   // 公式カードでは入力バー非表示
   $('detail-input-bar').style.display=isOfficial?'none':'';
@@ -5737,14 +5939,180 @@ function editCard(){
 function deleteCard(){
   $('detail-menu').classList.remove('on');
   if(state.current._origin==='official'){toast('公式メモは削除できません');return;}
-  if(!confirm('このメモを削除しますか?'))return;
+  if(!confirm('このメモを片付けますか?\n\n7日間は探すページの「片付けたメモ」から戻せます。\nその後、完全に消えます。'))return;
   const id=state.current.id;
-  state.cards=state.cards.filter(x=>x.id!==id);
+  const idx=state.cards.findIndex(x=>x.id===id);
+  if(idx<0)return;
+  state.cards[idx].deletedAt=Date.now();
+  // 片付けたらピンは外す (画面に出てこないので意味がない)
+  state.cards[idx].pinned=false;
   save();
-  // IndexedDB の画像も消す (孤児画像を残さない)
-  imgDB.delete(id).catch(()=>{});
-  toast('削除しました');
+  toast('片付けたメモに移動しました');
   back();
+}
+
+// リストから「しまう」: 暗記練習等で一時的に視界から消したいとき用
+function archiveCard(){
+  $('detail-menu').classList.remove('on');
+  if(!state.current)return;
+  if(state.current._origin==='official'){toast('公式メモは操作できません');return;}
+  const id=state.current.id;
+  const idx=state.cards.findIndex(x=>x.id===id);
+  if(idx<0)return;
+  state.cards[idx].archivedAt=Date.now();
+  state.cards[idx].pinned=false; // 一覧から消えるのでピンも外しておく
+  save();
+  toast('しまいました');
+  back();
+}
+
+// しまったメモを一覧に戻す
+function unarchiveCard(id){
+  const idx=state.cards.findIndex(x=>x.id===id);
+  if(idx<0)return;
+  delete state.cards[idx].archivedAt;
+  save();
+  toast('一覧に戻しました');
+}
+
+// 片付けたメモを復元
+function restoreFromTrash(id){
+  const idx=state.cards.findIndex(x=>x.id===id);
+  if(idx<0)return;
+  delete state.cards[idx].deletedAt;
+  save();
+  toast('一覧に戻しました');
+}
+
+// 片付けたメモを完全に削除 (1件)
+async function purgeOne(id){
+  const idx=state.cards.findIndex(x=>x.id===id);
+  if(idx<0)return;
+  state.cards.splice(idx,1);
+  try{await imgDB.delete(id);}catch(e){/* ignore */}
+  save();
+}
+
+// 「片付けたメモ」を一括で空にする
+async function emptyTrash(){
+  const trashed=state.cards.filter(isTrashedCard);
+  if(trashed.length===0)return;
+  if(!confirm(`片付けたメモ ${trashed.length}件 を完全に削除しますか?\nこの操作は取り消せません。`))return;
+  for(const c of trashed){
+    if(c.id){try{await imgDB.delete(c.id);}catch(e){/* ignore */}}
+  }
+  const trashIds=new Set(trashed.map(c=>c.id));
+  state.cards=state.cards.filter(c=>!trashIds.has(c.id));
+  save();
+  toast('すべて削除しました');
+  renderTrashScreen();
+}
+
+// ── しまったメモ / 片付けたメモ 画面の共通描画 ──
+// 各カードを1行 (サムネ + タイトル + 操作ボタン) で表示する。
+// 詳細画面に遷移はさせない (戻すアクションを優先したいため)。
+function binRowHtml(c,kind){
+  // サムネ部分
+  let thumb='';
+  if((c.type==='photo'||c.type==='photonote') && c.image){
+    thumb=`<img src="${c.image}" alt="">`;
+  }else if(c.type==='note'){
+    const col=colorById(c.color);
+    thumb=`<div style="background:${col.bg};width:100%;height:100%;padding:4px 5px;color:${col.fg};font-size:9px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;">${esc((c.text||'').slice(0,50))}</div>`;
+  }else if(c.type==='list'){
+    thumb=`<div style="background:#F4F8F3;width:100%;height:100%;padding:5px 6px;font-size:9px;line-height:1.25;overflow:hidden;"><div style="font-weight:600;color:var(--gd);">${esc(c.title||'リスト')}</div><div style="color:var(--ink2);margin-top:2px;">${(c.items||[]).length}項目</div></div>`;
+  }else{
+    thumb='<div style="background:var(--bg);width:100%;height:100%;"></div>';
+  }
+
+  // タイトル (一行で要約)
+  let title='';
+  if(c.type==='note')title=(c.text||'').replace(/\s+/g,' ').trim()||'(空のメモ)';
+  else if(c.type==='list')title=c.title||'リスト';
+  else if(c.type==='photo'||c.type==='photonote')title=(c.text||'').replace(/\s+/g,' ').trim()||'(写真メモ)';
+
+  // メタ (日付 + 残り日数 or しまった日)
+  let meta='';
+  if(kind==='trash'){
+    const elapsed=Date.now()-(c.deletedAt||0);
+    const left=Math.max(0,Math.ceil((TRASH_RETENTION_MS-elapsed)/(24*60*60*1000)));
+    const ago=Math.floor(elapsed/(24*60*60*1000));
+    meta=`${ago===0?'今日':ago+'日前'}に片付けた<span class="bin-days-left"> ・ あと${left}日</span>`;
+  }else{
+    const elapsed=Date.now()-(c.archivedAt||0);
+    const ago=Math.floor(elapsed/(24*60*60*1000));
+    meta=`${ago===0?'今日':ago+'日前'}にしまった`;
+  }
+
+  // 操作ボタン
+  const restoreLabel='戻す';
+  const dangerLabel=kind==='trash'?'完全に削除':'片付ける';
+  const dangerAction=kind==='trash'?'purge-one':'trash-from-archive';
+
+  return `<div class="bin-row" data-card-id="${esc(c.id)}">
+    <div class="bin-row-thumb">${thumb}</div>
+    <div class="bin-row-main">
+      <div class="bin-row-title">${esc(title)}</div>
+      <div class="bin-row-meta">${meta}</div>
+    </div>
+    <div class="bin-row-actions">
+      <button class="bin-row-btn primary" data-bin-action="${kind==='trash'?'restore':'unarchive'}">${restoreLabel}</button>
+      <button class="bin-row-btn danger" data-bin-action="${dangerAction}">${dangerLabel}</button>
+    </div>
+  </div>`;
+}
+
+function renderArchiveScreen(){
+  const wrap=$('archive-content');
+  if(!wrap)return;
+  // 新しくしまった順
+  const items=state.cards.filter(isArchivedCard).sort((a,b)=>(b.archivedAt||0)-(a.archivedAt||0));
+  if(items.length===0){
+    wrap.innerHTML=`<div class="bin-empty">
+      <div class="bin-empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+      </div>
+      しまったメモはまだありません。<br>暗記に使うため、一旦リストから外したいメモは<br>詳細メニューから「しまう」を選んでください。
+    </div>`;
+    return;
+  }
+  wrap.innerHTML=`<div class="bin-list">${items.map(c=>binRowHtml(c,'archive')).join('')}</div>`;
+}
+
+function renderTrashScreen(){
+  const wrap=$('trash-content');
+  if(!wrap)return;
+  const items=state.cards.filter(isTrashedCard).sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0));
+  const emptyBtn=$('trash-empty-btn');
+  if(emptyBtn)emptyBtn.style.display=items.length>0?'':'none';
+  if(items.length===0){
+    wrap.innerHTML=`<div class="bin-empty">
+      <div class="bin-empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      </div>
+      片付けたメモはまだありません。<br>片付けたメモは7日間ここに残ります。
+    </div>`;
+    return;
+  }
+  wrap.innerHTML=`<div class="bin-list">${items.map(c=>binRowHtml(c,'trash')).join('')}</div>`;
+}
+
+// 「しまったメモ」画面から片付ける (= ゴミ箱送り)
+function trashFromArchive(id){
+  const idx=state.cards.findIndex(x=>x.id===id);
+  if(idx<0)return;
+  state.cards[idx].deletedAt=Date.now();
+  delete state.cards[idx].archivedAt;
+  save();
+  toast('片付けたメモに移動しました');
+  renderArchiveScreen();
+}
+
+// 完全削除 (確認付き)
+async function purgeOneConfirm(id){
+  if(!confirm('このメモを完全に削除しますか?\nこの操作は取り消せません。'))return;
+  await purgeOne(id);
+  renderTrashScreen();
 }
 
 function togglePin(){
@@ -6399,7 +6767,7 @@ function doSearch(){
 
   let results=[];
   if(scope==='all'||scope==='mine'||scope==='photo'||scope==='note'||scope==='list'){
-    state.cards.forEach(c=>{
+    getActiveCards().forEach(c=>{
       if(scope==='photo' && c.type!=='photo' && c.type!=='photonote')return;
       if(scope==='note' && c.type!=='note')return;
       if(scope==='list' && c.type!=='list')return;
@@ -6469,10 +6837,10 @@ function doSearch(){
 
 // ═══ TAG ═══
 
-// カード全体からタグ一覧を収集
+// カード全体からタグ一覧を収集 (アクティブなカードのみ)
 function getAllTags(){
   const set=new Set();
-  state.cards.forEach(c=>(c.tags||[]).forEach(t=>set.add(t)));
+  getActiveCards().forEach(c=>(c.tags||[]).forEach(t=>set.add(t)));
   return Array.from(set).sort();
 }
 
@@ -6574,7 +6942,7 @@ function renderColorFilterBar(){
 function renderSearchIdle(){
   const idle=$('search-idle');
   if(!idle)return;
-  const pinned=state.cards.filter(c=>c.pinned);
+  const pinned=getActiveCards().filter(c=>c.pinned);
   let html='';
   if(pinned.length>0){
     const pinHtml=pinned.slice(0,12).map(c=>{
@@ -6597,6 +6965,30 @@ function renderSearchIdle(){
       <div class="pin-strip">${pinHtml}</div>
     </div>`;
   }
+
+  // 控えめな入口: しまったメモ と 片付けたメモ (件数表示付き)
+  const archivedCount=state.cards.filter(isArchivedCard).length;
+  const trashedCount=state.cards.filter(isTrashedCard).length;
+  html+=`<div class="search-extras">
+    <button class="search-extra-row" data-action="open-archive">
+      <span class="search-extra-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+      </span>
+      <span class="search-extra-label">しまったメモ</span>
+      <span class="search-extra-count">${archivedCount?archivedCount:''}</span>
+      <svg class="search-extra-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="search-extra-row" data-action="open-trash">
+      <span class="search-extra-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      </span>
+      <span class="search-extra-label">片付けたメモ</span>
+      <span class="search-extra-count">${trashedCount?trashedCount:''}</span>
+      <svg class="search-extra-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="search-extras-note">片付けたメモは7日間ここに残ります</div>
+  </div>`;
+
   idle.innerHTML=html;
   idle.querySelectorAll('.pin-card').forEach(el=>{
     el.addEventListener('click',()=>{
@@ -6612,7 +7004,7 @@ const REVIEW_INTERVALS=[1,3,7,14,30,60];
 function getDueCards(){
   const now=Date.now();
   const DAY=86400000;
-  return state.cards.filter(c=>{
+  return getActiveCards().filter(c=>{
     if(c.type==='list')return false;
     if(!c.text && !c.image)return false;
     const stage=c.stage||0;
@@ -6857,7 +7249,7 @@ document.addEventListener('click',e=>{
   const a=t.dataset.action;
 
   // 詳細画面を離れる前に滞在時間を記録
-  const isLeavingDetail=['back','nav-home','nav-library','nav-search','close-review','toggle-menu','edit-card','delete-card'].indexOf(a)>=0;
+  const isLeavingDetail=['back','nav-home','nav-library','nav-search','close-review','toggle-menu','edit-card','delete-card','archive-card'].indexOf(a)>=0;
   if(isLeavingDetail && document.getElementById('screen-detail').classList.contains('active')){
     if(a!=='toggle-menu')recordViewExit();
   }
@@ -6894,6 +7286,10 @@ document.addEventListener('click',e=>{
     case 'toggle-menu':$('detail-menu').classList.toggle('on');e.stopPropagation();break;
     case 'edit-card':editCard();break;
     case 'delete-card':deleteCard();break;
+    case 'archive-card':archiveCard();break;
+    case 'open-archive':goto('screen-archive');break;
+    case 'open-trash':goto('screen-trash');break;
+    case 'empty-trash':emptyTrash();break;
     case 'toggle-pin':togglePin();break;
     case 'copy-to-shelf':copyToShelf();break;
     case 'open-color-picker':openColorPicker();break;
@@ -6924,6 +7320,29 @@ document.addEventListener('click',e=>{
   const c=e.target.closest('.scope-chip');
   if(!c)return;
   setScope(c.dataset.scope);
+});
+
+// しまったメモ・片付けたメモ画面の行内ボタン処理
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-bin-action]');
+  if(!btn)return;
+  const row=btn.closest('.bin-row');
+  if(!row)return;
+  const id=row.dataset.cardId;
+  if(!id)return;
+  const action=btn.dataset.binAction;
+  e.stopPropagation();
+  if(action==='unarchive'){
+    unarchiveCard(id);
+    renderArchiveScreen();
+  }else if(action==='trash-from-archive'){
+    trashFromArchive(id);
+  }else if(action==='restore'){
+    restoreFromTrash(id);
+    renderTrashScreen();
+  }else if(action==='purge-one'){
+    purgeOneConfirm(id);
+  }
 });
 
 // 入力ハンドラ
@@ -7212,6 +7631,8 @@ if(load() && state.user){
   goto('screen-home',false);
   // 起動時に塾生情報を最新化 (force=true、スロットリング無視)
   refreshMe(true);
+  // 起動時に古いゴミ箱を整理 (7日経過したカードは完全削除)
+  purgeOldTrash().catch(e=>console.warn('purgeOldTrash failed:',e));
   // 起動時に IndexedDB から画像を復元 (非同期、画像のあるカードだけ後から表示更新)
   hydrateCardImages().then(()=>{
     // 画像復元後、ホーム画面が表示中なら再描画して画像を表示
