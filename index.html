@@ -1189,6 +1189,54 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   margin:8px 20px;
 }
 
+/* ─── ライブラリ並べ替え (ドラッグ) ─── */
+/* 並べ替え可能なアイテム: 長押しで持ち上がる */
+.lib-item.reorderable{
+  touch-action:pan-y; /* 縦スクロールは通常通り。長押しで並べ替えに切り替える */
+  -webkit-touch-callout:none; /* iOS: 長押しのコールアウトを抑制 */
+  -webkit-user-select:none;
+  user-select:none;
+}
+/* 長押し中のホバー予感: ほんの少しスケール */
+.lib-item.press-hold{
+  transition:transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+  transform:scale(0.985);
+  background:var(--bg);
+}
+/* ドラッグ中の「持ち上がった」状態 */
+.lib-item.dragging{
+  position:relative;
+  z-index:50;
+  background:var(--surface);
+  box-shadow:0 10px 28px rgba(0,0,0,.14), 0 2px 6px rgba(0,0,0,.06);
+  transform:scale(1.015);
+  transition:transform .12s ease, box-shadow .12s ease;
+  /* border は他とつながっているので、ドラッグ中だけ自分の上下に枠を出す */
+  border-top:0.5px solid var(--line);
+  border-bottom:0.5px solid var(--line);
+  /* ドラッグ中はタップを完全に止める */
+  pointer-events:none;
+  cursor:grabbing;
+}
+/* ドラッグ中の周囲: スライドで席を譲る */
+.lib-item.shifting{
+  transition:transform .22s cubic-bezier(.2,.7,.2,1);
+}
+/* 並べ替えモード中: 他のアイテムを少しだけ薄く */
+#lib-list.reordering .lib-item:not(.dragging){
+  opacity:.92;
+}
+/* 並べ替えモード中はリスト全体のスクロールを止める (誤操作防止) */
+#lib-list.reordering{
+  user-select:none;
+  -webkit-user-select:none;
+}
+/* スクロール側もブロック (ドラッグ中) */
+#lib-scroll.lock-scroll{
+  overflow:hidden;
+  touch-action:none;
+}
+
 /* 公式の新着セクション */
 .lib-new-block{
   padding:14px 20px 18px;
@@ -2404,6 +2452,7 @@ const state={
   selectedIds:new Set(),
   pastMoreOpen:false,  // 今日タブの「もっと前の保存を見る」展開状態
   shelfLastSeen:{},    // 公式棚ごとに最後に開いた時刻 (新着判定用)
+  libraryOrder:{},     // 公式ライブラリ一覧の手動並び順 { distributed:[id...], subbed:[id...], avail:[id...] }
   searchColor:null,    // 探すページの色フィルター
   searchTag:null,      // 探すページのタグフィルター
   // ─── JUKEN CAMP 塾生認証 ───
@@ -2417,6 +2466,7 @@ function save(){
     cards:state.cards,
     subscribed:state.subscribed,
     shelfLastSeen:state.shelfLastSeen,
+    libraryOrder:state.libraryOrder,
     auth:state.auth,
     deviceId:state.deviceId,
   }));
@@ -2430,6 +2480,7 @@ function load(){
     state.cards=d.cards||[];
     state.subscribed=d.subscribed||[];
     state.shelfLastSeen=d.shelfLastSeen||{};
+    state.libraryOrder=d.libraryOrder||{};
     state.auth=d.auth||null;
     state.deviceId=d.deviceId||null;
     return true;
@@ -4786,29 +4837,339 @@ function renderLibrary(){
   const subbed=subscribable.filter(s=>state.subscribed.includes(s.id));
   const avail=subscribable.filter(s=>!state.subscribed.includes(s.id));
 
+  // 保存された手動並び順を適用 (各グループ内で)
+  const ordered=(group,key)=>{
+    const order=(state.libraryOrder&&state.libraryOrder[key])||[];
+    const byId=new Map(group.map(s=>[s.id,s]));
+    const out=[];
+    // 保存順にあるものを先に
+    for(const id of order){
+      if(byId.has(id)){ out.push(byId.get(id)); byId.delete(id); }
+    }
+    // まだ入っていない（新規追加された棚）は末尾に
+    for(const s of group){ if(byId.has(s.id)) out.push(s); }
+    return out;
+  };
+  const distOrdered=ordered(distributed,'distributed');
+  const subOrdered=ordered(subbed,'subbed');
+  const availOrdered=ordered(avail,'avail');
+
   // 「新着メモ」セクションを描画 (配布型 + 登録ずみ購読型)
   if(isStudent()){
-    const seenShelves=[...distributed,...subbed];
+    const seenShelves=[...distOrdered,...subOrdered];
     renderLibNewSection(seenShelves);
   }
 
   const list=$('lib-list');
   list.innerHTML='';
   // 配布型を先に表示（登録ボタンなし）
-  distributed.forEach(s=>list.appendChild(libItem(s,true)));
+  distOrdered.forEach(s=>list.appendChild(libItem(s,true,'distributed')));
   // 購読型（登録ずみ → 未登録の順）
-  if(distributed.length>0 && (subbed.length>0||avail.length>0)){
+  if(distOrdered.length>0 && (subOrdered.length>0||availOrdered.length>0)){
     const divider=document.createElement('div');
     divider.className='lib-divider';
     list.appendChild(divider);
   }
-  subbed.forEach(s=>list.appendChild(libItem(s,true)));
-  if(subbed.length>0 && avail.length>0){
+  subOrdered.forEach(s=>list.appendChild(libItem(s,true,'subbed')));
+  if(subOrdered.length>0 && availOrdered.length>0){
     const divider=document.createElement('div');
     divider.className='lib-divider';
     list.appendChild(divider);
   }
-  avail.forEach(s=>list.appendChild(libItem(s,false)));
+  availOrdered.forEach(s=>list.appendChild(libItem(s,false,'avail')));
+
+  // ドラッグ並べ替えをセットアップ
+  setupLibraryReorder();
+}
+
+// ═══ 公式ライブラリの並べ替え (ドラッグ&ドロップ) ═══
+// 長押しで持ち上がり、上下にドラッグして並び順を変更できる。
+// グループ (配布型 / 登録ずみ / 登録可能) を越えての移動は不可。
+// タッチ (モバイル) とマウス (デスクトップ) の両方に対応。
+function setupLibraryReorder(){
+  const list=$('lib-list');
+  const scroll=$('lib-scroll');
+  if(!list)return;
+
+  const HOLD_MS=380;          // 長押し判定 (ms)
+  const MOVE_TOLERANCE=8;     // 長押し中にこのpxを超えたらキャンセル (スクロール優先)
+
+  let pressTimer=null;
+  let pressItem=null;          // 長押し中の候補
+  let pressStartY=0, pressStartX=0;
+  let pressEvent=null;         // 長押し開始時のpointerEvent
+  let suppressClickUntil=0;    // この時刻まで .lib-item のクリックを抑制 (ドラッグ後の誤発火防止)
+
+  let drag=null;               // ドラッグ中の状態オブジェクト
+  // drag = {
+  //   item: HTMLElement,            // 持ち上げた要素
+  //   group: string,                 // 'distributed'|'subbed'|'avail'
+  //   groupItems: HTMLElement[],     // 同グループの全アイテム (DOM順 = 表示順)
+  //   originalIndex: number,         // groupItems における元の位置
+  //   currentIndex: number,          // 現在いる位置
+  //   offsetWithinItem: number,      // 指/カーソルが要素のtopから何pxの位置を掴んでいるか
+  //   itemHeight: number,            // アイテムの高さ
+  //   shifts: Map<HTMLElement,number>, // 各アイテムの現在のtranslateY量
+  // }
+
+  function clearPress(){
+    if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}
+    if(pressItem){pressItem.classList.remove('press-hold');pressItem=null;}
+    pressEvent=null;
+  }
+
+  function onPointerDown(e){
+    // 既にドラッグ中、またはマウスの左ボタン以外は無視
+    if(drag)return;
+    if(e.pointerType==='mouse' && e.button!==0)return;
+
+    const item=e.target.closest('.lib-item.reorderable');
+    if(!item)return;
+    // 「登録」ボタン上の押し下げはドラッグ対象外 (ボタンを優先)
+    if(e.target.closest('.lib-action'))return;
+
+    pressItem=item;
+    pressStartY=e.clientY;
+    pressStartX=e.clientX;
+    pressEvent=e;
+    item.classList.add('press-hold');
+
+    pressTimer=setTimeout(()=>{
+      pressTimer=null;
+      // 長押し成立 → ドラッグ開始
+      startDrag(item, pressStartY, pressStartX);
+      if(navigator.vibrate)navigator.vibrate(15);
+    }, HOLD_MS);
+  }
+
+  function onPointerMove(e){
+    if(drag){
+      e.preventDefault();
+      updateDrag(e.clientY);
+      return;
+    }
+    // 長押し待機中: 動きが大きければキャンセルしてスクロール優先
+    if(pressTimer){
+      const dy=Math.abs(e.clientY-pressStartY);
+      const dx=Math.abs(e.clientX-pressStartX);
+      if(dy>MOVE_TOLERANCE || dx>MOVE_TOLERANCE){
+        clearPress();
+      }
+    }
+  }
+
+  function onPointerUp(){
+    if(drag){endDrag();return;}
+    clearPress();
+  }
+
+  function onPointerCancel(){
+    if(drag){endDrag();return;}
+    clearPress();
+  }
+
+  function startDrag(item, clientY, clientX){
+    const group=item.dataset.group;
+    if(!group)return;
+    // 同じグループのDOM順アイテムを集める
+    const all=Array.from(list.querySelectorAll('.lib-item.reorderable'));
+    const groupItems=all.filter(el=>el.dataset.group===group);
+    if(groupItems.length<2){
+      // 1個しかないなら並べ替え不可
+      clearPress();
+      return;
+    }
+    // ★ transform適用前の rect を測る (scaleが入ると微妙にずれるので)
+    const rect=item.getBoundingClientRect();
+    const offsetWithinItem=clientY-rect.top;
+    const itemHeight=rect.height;
+    const originalTop=rect.top;
+    const originalIndex=groupItems.indexOf(item);
+
+    drag={
+      item,
+      group,
+      groupItems,
+      originalIndex,
+      currentIndex:originalIndex,
+      offsetWithinItem,
+      itemHeight,
+      originalTop,
+      lastClientY:clientY,
+      shifts:new Map(),
+    };
+
+    // 視覚状態を切り替え
+    item.classList.remove('press-hold');
+    item.classList.add('dragging');
+    list.classList.add('reordering');
+    if(scroll)scroll.classList.add('lock-scroll');
+
+    // shifting クラス (transition用) を同グループ全員に付ける
+    for(const el of groupItems){
+      if(el===item)continue;
+      el.classList.add('shifting');
+      drag.shifts.set(el,0);
+    }
+
+    // 最初の位置 (まだ動いていないが translateY=0 を明示)
+    item.style.transform='translateY(0px) scale(1.015)';
+  }
+
+  function updateDrag(clientY){
+    if(!drag)return;
+    drag.lastClientY=clientY;
+    const item=drag.item;
+
+    // ポインタY位置から item の translateY を決める。
+    // 原位置からのオフセットがそのまま translateY。
+    const desiredItemTop=clientY-drag.offsetWithinItem;
+    let translateY=desiredItemTop-drag.originalTop;
+
+    // ドラッグ中の item の中心が、他アイテムの「元位置中心」を越えたかで挿入位置を決める。
+    // アイテムは全て同じ高さなので、index と itemHeight だけで他の元位置を計算可能。
+    const itemCenter=desiredItemTop+drag.itemHeight/2;
+
+    // 新しい currentIndex を計算
+    let newIndex=drag.originalIndex;
+    for(let i=0;i<drag.groupItems.length;i++){
+      if(i===drag.originalIndex)continue;
+      const otherOriginalTop=drag.originalTop+(i-drag.originalIndex)*drag.itemHeight;
+      const otherCenter=otherOriginalTop+drag.itemHeight/2;
+      // 下方向: 自分より下のアイテムの中心を越えたら、自分はそのアイテムの位置に進む
+      if(i>drag.originalIndex && itemCenter>otherCenter){
+        newIndex=Math.max(newIndex,i);
+      }
+      // 上方向: 自分より上のアイテムの中心を越えたら、自分はそのアイテムの位置に戻る
+      if(i<drag.originalIndex && itemCenter<otherCenter){
+        newIndex=Math.min(newIndex,i);
+      }
+    }
+
+    // 上下端の制限 (translateの最小・最大、わずかにバウンス余地あり)
+    const minTranslate=-drag.originalIndex*drag.itemHeight - drag.itemHeight*0.4;
+    const maxTranslate=(drag.groupItems.length-1-drag.originalIndex)*drag.itemHeight + drag.itemHeight*0.4;
+    if(translateY<minTranslate)translateY=minTranslate;
+    if(translateY>maxTranslate)translateY=maxTranslate;
+
+    // ドラッグ中アイテムを移動
+    item.style.transform=`translateY(${translateY}px) scale(1.015)`;
+
+    // currentIndexが変わったときだけ他アイテムの shift を更新
+    if(newIndex!==drag.currentIndex){
+      drag.currentIndex=newIndex;
+      applyShifts();
+    }
+  }
+
+  function applyShifts(){
+    if(!drag)return;
+    const {groupItems,originalIndex,currentIndex,itemHeight}=drag;
+    // 各他アイテムについて: そのアイテムは元位置 i にいたが、
+    //   - i が [originalIndex+1, currentIndex] に入る ならば、上に1つずれる (translateY = -itemHeight)
+    //   - i が [currentIndex, originalIndex-1] に入る ならば、下に1つずれる (translateY = +itemHeight)
+    //   - それ以外は元位置 (translateY = 0)
+    for(let i=0;i<groupItems.length;i++){
+      const el=groupItems[i];
+      if(el===drag.item)continue;
+      let shift=0;
+      if(currentIndex>originalIndex){
+        if(i>originalIndex && i<=currentIndex)shift=-itemHeight;
+      }else if(currentIndex<originalIndex){
+        if(i<originalIndex && i>=currentIndex)shift=itemHeight;
+      }
+      const prev=drag.shifts.get(el)||0;
+      if(prev!==shift){
+        drag.shifts.set(el,shift);
+        el.style.transform=shift===0?'':`translateY(${shift}px)`;
+      }
+    }
+  }
+
+  function endDrag(){
+    if(!drag)return;
+    // この後 click が発火する可能性があるため、しばらく抑制する
+    suppressClickUntil=Date.now()+500;
+    const {item,group,groupItems,originalIndex,currentIndex,itemHeight}=drag;
+
+    // 着地アニメーション: ドラッグ中アイテムを新しい位置 (translateY=(currentIndex-originalIndex)*itemHeight)
+    // にスナップ → その後 DOM を並べ替えて transform をクリア
+    const finalTranslate=(currentIndex-originalIndex)*itemHeight;
+    item.style.transition='transform .22s cubic-bezier(.2,.7,.2,1)';
+    item.style.transform=`translateY(${finalTranslate}px) scale(1)`;
+
+    // アニメーション完了後にDOM並べ替えと状態保存
+    const cleanup=()=>{
+      // DOM を実際に並べ替える
+      if(currentIndex!==originalIndex){
+        // currentIndex の位置にあるアイテムの前に挿入 (下方向移動) または後ろに挿入 (上方向)
+        if(currentIndex>originalIndex){
+          // 下に移動: groupItems[currentIndex] の後ろに置く
+          const ref=groupItems[currentIndex];
+          if(ref.nextSibling){
+            list.insertBefore(item,ref.nextSibling);
+          }else{
+            list.appendChild(item);
+          }
+        }else{
+          // 上に移動: groupItems[currentIndex] の前に置く
+          const ref=groupItems[currentIndex];
+          list.insertBefore(item,ref);
+        }
+        // 状態に保存
+        saveGroupOrder(group);
+      }
+
+      // 全アイテムの状態をクリア
+      item.classList.remove('dragging');
+      item.style.transition='';
+      item.style.transform='';
+      list.classList.remove('reordering');
+      if(scroll)scroll.classList.remove('lock-scroll');
+      for(const el of groupItems){
+        if(el===item)continue;
+        el.classList.remove('shifting');
+        el.style.transform='';
+      }
+      drag=null;
+    };
+
+    // transitionend を使うが、念のためタイムアウトでもクリーンアップ
+    let cleaned=false;
+    const safeCleanup=()=>{ if(!cleaned){cleaned=true;cleanup();} };
+    item.addEventListener('transitionend',safeCleanup,{once:true});
+    setTimeout(safeCleanup,300);
+  }
+
+  function saveGroupOrder(group){
+    // DOM内の現在の順 (このグループの) を読み取って state に保存
+    const all=Array.from(list.querySelectorAll(`.lib-item.reorderable[data-group="${group}"]`));
+    const ids=all.map(el=>el.dataset.shelfId);
+    if(!state.libraryOrder)state.libraryOrder={};
+    state.libraryOrder[group]=ids;
+    save();
+  }
+
+  // 既存のリスナーを上書きしないよう、初回のみ登録
+  if(!list._reorderInit){
+    list._reorderInit=true;
+    list.addEventListener('pointerdown',onPointerDown);
+    // move/up/cancel は document に付けて、要素外に出ても追える
+    document.addEventListener('pointermove',onPointerMove,{passive:false});
+    document.addEventListener('pointerup',onPointerUp);
+    document.addEventListener('pointercancel',onPointerCancel);
+    // ドラッグ直後の意図しない click (棚を開く) を抑制
+    list.addEventListener('click',e=>{
+      if(Date.now()<suppressClickUntil){
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    },true);
+    // 長押し中の右クリックメニュー / 長押しコールアウトを抑制
+    list.addEventListener('contextmenu',e=>{
+      if(pressItem || drag){e.preventDefault();}
+    });
+  }
 }
 
 // 配布型 + 登録ずみ購読型の棚で「新着」(lastSeen 以降に追加) を横スクロールで表示
@@ -4870,10 +5231,12 @@ function renderLibNewSection(seenShelves){
   });
 }
 
-function libItem(s,subbed){
+function libItem(s,subbed,group){
   const el=document.createElement('div');
   const locked=!canSeeShelfId(s.id); // 塾生でない or shelfIds に含まれない
-  el.className='lib-item'+(locked?' locked':'');
+  el.className='lib-item'+(locked?' locked':'')+(group?' reorderable':'');
+  el.dataset.shelfId=s.id;
+  if(group)el.dataset.group=group;
   const newN=subbed?newCountForShelf(s):0;
   const badge=newN>0?`<span class="lib-new-badge">${newN>99?'99+':newN}</span>`:'';
   const avatar=s.icon
@@ -5567,6 +5930,8 @@ $('file-input-any').addEventListener('change',onFilePick);
     if(state.selectMode)return;
     if($('add-sheet') && $('add-sheet').classList.contains('on'))return;
     if($('color-sheet') && $('color-sheet').classList.contains('on'))return;
+    // ライブラリの並べ替えドラッグ中はPTRしない
+    if(document.querySelector('.lib-item.dragging'))return;
     const sc=activeScrollEl();
     if(!sc)return;
     // 詳細画面 / アップロード画面では更新の必要がないのでスキップ
