@@ -201,6 +201,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   overflow-y:auto;
   overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:auto; /* iOSネイティブの上下バウンドを有効化 */
   min-height:0;
   padding-bottom:24px;
 }
@@ -1247,6 +1248,32 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   35%{transform:scale(1.18) rotate(-12deg);}
   70%{transform:scale(0.96) rotate(6deg);}
   100%{transform:scale(1) rotate(0deg);}
+}
+
+/* 更新進捗バー: 画面最上端を横断する細い緑のバー
+   (普通のSNSアプリやブラウザの更新バーと同じパターン) */
+#refresh-bar{
+  position:fixed;
+  top:0;
+  left:0;
+  height:2.5px;
+  width:0%;
+  background:linear-gradient(90deg, var(--g) 0%, #4dc499 100%);
+  z-index:9999;
+  opacity:0;
+  pointer-events:none;
+  border-radius:0 2px 2px 0;
+  box-shadow:0 0 6px rgba(29,158,117,.45);
+}
+#refresh-bar.on{
+  opacity:1;
+  width:75%;
+  transition:width 1.2s cubic-bezier(.2,.7,.3,.95), opacity .15s;
+}
+#refresh-bar.on.done{
+  width:100%;
+  transition:width .25s ease-out, opacity .3s ease-out .15s;
+  opacity:0;
 }
 /* 日付セパレーター(中央に半透明丸タブ) */
 .chat-date-sep{
@@ -8060,98 +8087,52 @@ async function refreshActiveScreen(){
   }
 }
 
-// SnapInロゴをタップしたときの更新フィードバック (短いバイブ + ロゴ自体に軽い演出)
+// SnapInロゴをタップしたときの更新フィードバック
+// 普通のSNSアプリと同じパターン:
+// ① 画面を最上部にスクロール
+// ② 画面上端に細い進捗バー(完了したらフェードアウト)
+// ③ ロゴ自体に軽いポップ演出
 async function refreshFromLogo(logoEl){
   if(navigator.vibrate)navigator.vibrate(10);
+  // ロゴのポップ演出
   if(logoEl){
     logoEl.classList.add('logo-refreshing');
     setTimeout(()=>logoEl.classList.remove('logo-refreshing'),600);
   }
+  // 現在画面を最上部にスクロール
+  const sc=document.querySelector('.screen.active .scroll');
+  if(sc){
+    try{sc.scrollTo({top:0,behavior:'smooth'});}
+    catch(_){sc.scrollTop=0;}
+  }
+  // 進捗バーを表示
+  let bar=document.getElementById('refresh-bar');
+  if(!bar){
+    bar=document.createElement('div');
+    bar.id='refresh-bar';
+    document.body.appendChild(bar);
+  }
+  bar.classList.remove('done');
+  bar.classList.add('on');
   try{
     await refreshActiveScreen();
+    // 完了演出: バーを100%まで伸ばしてからフェードアウト
+    bar.classList.add('done');
+    setTimeout(()=>{
+      bar.classList.remove('on');
+      bar.classList.remove('done');
+    },400);
   }catch(e){
     console.warn('refresh failed',e);
+    bar.classList.remove('on');
   }
 }
 
-// ═══ プルダウン (バウンドのみ・更新なし・スピナーなし) ═══
-// SNS風のバウンド感だけ残し、更新は SnapIn ロゴタップに集約。
-// これにより「途中で固まる」現象が原理的に起きない (更新も画像同期処理もしないので)。
-(function setupPullBounce(){
-  const MAX_PULL=120;     // 最大変位
-  let startY=0, pulling=false, target=null;
-
-  function activeScrollEl(){
-    const screen=document.querySelector('.screen.active');
-    if(!screen)return null;
-    return screen.querySelector('.scroll');
-  }
-
-  // 引くほど抵抗が増すラバーバンド (iOS風)
-  function rubberBand(dy){
-    if(dy<=0)return 0;
-    // 対数的に減衰、上限 MAX_PULL
-    return MAX_PULL*(1-Math.exp(-dy/90));
-  }
-
-  function onStart(e){
-    if(state.selectMode)return;
-    if($('add-sheet') && $('add-sheet').classList.contains('on'))return;
-    if($('color-sheet') && $('color-sheet').classList.contains('on'))return;
-    if(document.querySelector('.lib-item.dragging'))return;
-    const sc=activeScrollEl();
-    if(!sc)return;
-    const screen=document.querySelector('.screen.active');
-    if(screen && (screen.id==='screen-detail' || screen.id==='screen-upload' || screen.id==='screen-login' || screen.id==='screen-claim' || screen.id==='screen-review'))return;
-    if(sc.scrollTop>0)return;
-    target=sc;
-    startY=e.touches[0].clientY;
-    pulling=false;
-  }
-
-  function onMove(e){
-    if(!target)return;
-    const y=e.touches[0].clientY;
-    const dy=y-startY;
-    if(dy<=0){
-      if(pulling){reset();pulling=false;}
-      return;
-    }
-    if(dy>3 && !pulling){
-      pulling=true;
-      target.classList.remove('ptr-snap');
-    }
-    if(!pulling)return;
-    const pull=rubberBand(dy);
-    target.style.transform=`translate3d(0, ${pull}px, 0)`;
-    if(e.cancelable)e.preventDefault();
-  }
-
-  function onEnd(){
-    if(!target){return;}
-    if(!pulling){target=null;return;}
-    // スナップで戻すだけ。更新は走らせない。
-    target.classList.add('ptr-snap');
-    pulling=false;
-    reset();
-  }
-
-  function reset(){
-    const tgt=target;
-    if(tgt){
-      tgt.style.transform='';
-      setTimeout(()=>{
-        if(tgt)tgt.classList.remove('ptr-snap');
-        if(target===tgt && !pulling) target=null;
-      }, 300);
-    }
-  }
-
-  document.addEventListener('touchstart',onStart,{passive:true});
-  document.addEventListener('touchmove',onMove,{passive:false});
-  document.addEventListener('touchend',onEnd);
-  document.addEventListener('touchcancel',onEnd);
-})();
+// ═══ プルダウン: 一切何もしない ═══
+// iOS Safari は overflow:auto なスクロール領域で標準的に上下両方のバウンドを行う。
+// 自前で JS の transform を入れると、上方向(ネイティブ)と下方向(自前)で
+// バウンド質感が違って不自然になる。ネイティブに完全に任せる方が一貫性がある。
+// 更新は SnapIn ロゴタップに集約 (途中で止まる/カクつく問題を構造的に回避)。
 
 
 // 起動
