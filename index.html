@@ -6776,10 +6776,14 @@ function openDetail(c,origin){
 
   // 出典タグ (公式メモからコピーしたものに表示。編集不可で消えない)
   if(!isOfficial && c.sourceShelf){
+    // 表示は教室名 (name) を優先。古いデータで name が無い場合は handle にフォールバック。
+    // さらに最新の公式棚情報があればそちらの name を優先 (教室名が改名された場合に追従)。
+    const fresh=OFFICIAL_SHELVES.find(x=>x.id===c.sourceShelf.id);
+    const label=(fresh&&fresh.name) || c.sourceShelf.name || c.sourceShelf.handle;
     contentHtml+=`
       <div class="source-tag">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        <span>${esc(c.sourceShelf.handle)} の公式ライブラリより</span>
+        <span>${esc(label)} の公式ライブラリより</span>
       </div>
     `;
   }
