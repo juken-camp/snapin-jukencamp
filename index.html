@@ -6135,8 +6135,17 @@ function splitAiReplyToBubbles(text){
 // 簡易 sleep ヘルパ (新着AI返信を1バブルずつ時間差で出すときに使う)
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
+// 現在「時間差マルチバブル表示」中のメッセージ ({cardId, msgIdx})
+// renderChatLog がこのメッセージを通常描画しないようにするため。
+let _animatingAiMsg=null;
+
 function renderChatLog(c){
   const log=$('detail-chat-log');
+  // 時間差マルチバブル表示中は、この関数を呼ばれても DOM を上書きしない。
+  // animateNewAiReply が独自にバブルを順番に追加しているので、ここで innerHTML='' すると全部消える。
+  if(_animatingAiMsg && _animatingAiMsg.cardId===c.id){
+    return;
+  }
   // 再描画でDOMが消えると _partialCopyBubble の参照が宙に浮くので、念のためモード解除
   if(_partialCopyBubble){
     closePartialCopy();
@@ -6958,12 +6967,12 @@ async function animateNewAiReply(card,placeholderIdx){
   // 1バブルしか出ないなら従来通り
   if(bubbles.length<=1){renderChatLog(card);return;}
 
-  // 一度全体を再描画してから、対象のメッセージ要素だけ「最初のバブル+ドット」に
-  // 差し替える方式だとチラつきが出るので、placeholder の DOM を直接書き換える。
-  // まずは念のため最新の chat を反映させた renderChatLog をしないとリプライ等の
-  // 表示が遅れる可能性があるが、ここでは差分更新を優先する。
+  // placeholder の DOM 要素を取得 (typing-dots だけが入っている pending 状態のはず)
   const msgEl=log.querySelector(`.msg[data-midx="${placeholderIdx}"]`);
   if(!msgEl){renderChatLog(card);return;}
+
+  // アニメーション開始: フラグを立てて、この間 renderChatLog が割り込まないようにする。
+  _animatingAiMsg={cardId:card.id, msgIdx:placeholderIdx};
 
   // pending 状態の単一バブルから、マルチバブル構造に書き換え。
   // 最初のバブルを即座に表示、末尾にドットバブルを置いて「続きを書いている感」を出す。
@@ -6986,35 +6995,45 @@ async function animateNewAiReply(card,placeholderIdx){
   // 表示中に画面が離れたら中断 (DOMから切り離されるか、card.id が変わる)
   const stillVisible=()=>document.body.contains(msgEl) && state.current && state.current.id===card.id;
 
-  for(let i=1;i<bubbles.length;i++){
-    const prev=bubbles[i-1];
-    const charCost=prev.length*38;
-    const lineCost=(prev.match(/\n/g)||[]).length*150;
-    const wait=Math.max(700, Math.min(4500, charCost+lineCost+500));
-    await sleep(wait);
-    if(!stillVisible()){renderChatLog(card);return;}
-    // 末尾のドットバブルを取り除いてから新バブルを追加、その後再度ドットバブルを末尾に。
-    // ただし最後のバブルを追加するときはドットバブルは付け直さない。
-    const dots=bubblesEl.querySelector('.bubble.dots');
-    if(dots)dots.remove();
-    const next=document.createElement('div');
-    next.className='bubble anim';
-    next.innerHTML=linkify(bubbles[i]);
-    bubblesEl.appendChild(next);
-    attachBubbleLongPress(msgEl,card.id,placeholderIdx,next);
-    if(i<bubbles.length-1){
-      const d=document.createElement('div');
-      d.className='bubble dots';
-      d.setAttribute('aria-label','続きを書いています');
-      d.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
-      bubblesEl.appendChild(d);
+  try{
+    for(let i=1;i<bubbles.length;i++){
+      const prev=bubbles[i-1];
+      const charCost=prev.length*38;
+      const lineCost=(prev.match(/\n/g)||[]).length*150;
+      const wait=Math.max(700, Math.min(4500, charCost+lineCost+500));
+      await sleep(wait);
+      if(!stillVisible()){
+        // 中断時はフラグを消して、最新状態で再描画
+        _animatingAiMsg=null;
+        renderChatLog(card);
+        return;
+      }
+      // 末尾のドットバブルを取り除いてから新バブルを追加、その後再度ドットバブルを末尾に。
+      // ただし最後のバブルを追加するときはドットバブルは付け直さない。
+      const dots=bubblesEl.querySelector('.bubble.dots');
+      if(dots)dots.remove();
+      const next=document.createElement('div');
+      next.className='bubble anim';
+      next.innerHTML=linkify(bubbles[i]);
+      bubblesEl.appendChild(next);
+      attachBubbleLongPress(msgEl,card.id,placeholderIdx,next);
+      if(i<bubbles.length-1){
+        const d=document.createElement('div');
+        d.className='bubble dots';
+        d.setAttribute('aria-label','続きを書いています');
+        d.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
+        bubblesEl.appendChild(d);
+      }
+      scroller.scrollTop=scroller.scrollHeight;
     }
-    scroller.scrollTop=scroller.scrollHeight;
-  }
-  // 全バブル表示完了後、時刻を出す (renderChatLog と一致させるため)
-  if(timeEl){
-    const t=(card.chat[placeholderIdx] && card.chat[placeholderIdx].t)||Date.now();
-    timeEl.textContent=chatTimeLabel(t);
+    // 全バブル表示完了後、時刻を出す (renderChatLog と一致させるため)
+    if(timeEl){
+      const t=(card.chat[placeholderIdx] && card.chat[placeholderIdx].t)||Date.now();
+      timeEl.textContent=chatTimeLabel(t);
+    }
+  }finally{
+    // どんな終わり方をしてもフラグは必ずクリアする
+    _animatingAiMsg=null;
   }
 }
 
