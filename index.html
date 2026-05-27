@@ -2565,7 +2565,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <!-- HOME -->
 <div class="screen" id="screen-home">
   <div class="hdr">
-    <div class="logo">Snap<em>In</em><span class="logo-by">by JUKEN CAMP</span></div>
+    <div class="logo">Snap<em>In</em><span class="page-sub">おぼえたいメモ</span></div>
     <div class="hdr-icons">
       <div class="view-tog view-tog-hdr">
         <button id="vt-grid" class="on" data-action="view-grid" aria-label="グリッド">
@@ -6096,7 +6096,7 @@ function editCard(){
 function deleteCard(){
   $('detail-menu').classList.remove('on');
   if(state.current._origin==='official'){toast('公式メモは削除できません');return;}
-  if(!confirm('このメモを捨てますか?\n\n7日間は探すページの「捨てたメモ」から戻せます。\nその後、完全に消えます。'))return;
+  if(!confirm('このメモを捨てますか?\n\n7日間は探すページの「捨てたメモ」から戻せます。\nその後、完全に削除されます。'))return;
   const id=state.current.id;
   const idx=state.cards.findIndex(x=>x.id===id);
   if(idx<0)return;
@@ -6154,7 +6154,7 @@ async function purgeOne(id){
 async function emptyTrash(){
   const trashed=state.cards.filter(isTrashedCard);
   if(trashed.length===0)return;
-  if(!confirm(`捨てたメモ ${trashed.length}件 を完全に削除しますか?\nこの操作は取り消せません。`))return;
+  if(!confirm(`捨てたメモ ${trashed.length}件 をすべて削除しますか?\nこの操作は取り消せません。`))return;
   for(const c of trashed){
     if(c.id){try{await imgDB.delete(c.id);}catch(e){/* ignore */}}
   }
