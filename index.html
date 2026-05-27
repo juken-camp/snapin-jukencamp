@@ -6621,6 +6621,37 @@ function renderLibrary(){
 
   // ドラッグ並べ替えをセットアップ
   setupLibraryReorder();
+
+  // ★ アバター画像を事前にデコードしておく (PTRやスクロール中のメインスレッドブロックを防ぐ)
+  // ブラウザに任せると、画像が画面に入ってきた瞬間に同期デコードが走り、
+  // PTRの transform アニメーションが「写メのところで一瞬止まる」原因になる。
+  // ここで先にデコードを完了させておけば、表示時のコストはほぼゼロ。
+  decodeAvatarsAsync(list);
+}
+
+// アバター(リスト内 <img>)を非同期に事前デコードする。
+// 失敗しても無視 (画像なし状態をブラウザの自動デコードに任せるだけ)。
+function decodeAvatarsAsync(container){
+  if(!container)return;
+  const imgs=container.querySelectorAll('.lib-avatar img');
+  imgs.forEach(img=>{
+    // 既にデコード済みなら何もしない
+    if(img.complete && img.naturalWidth>0){
+      // それでも decode() を呼んでおくとブラウザがキャッシュを準備する
+      if(img.decode)img.decode().catch(()=>{});
+      return;
+    }
+    // ロード完了を待ってからデコード
+    const tryDecode=()=>{
+      if(img.decode)img.decode().catch(()=>{});
+    };
+    if(img.complete){
+      tryDecode();
+    }else{
+      img.addEventListener('load',tryDecode,{once:true});
+      img.addEventListener('error',()=>{},{once:true});
+    }
+  });
 }
 
 // ═══ 公式ライブラリの並べ替え (ドラッグ&ドロップ) ═══
@@ -6989,7 +7020,7 @@ function libItem(s,subbed,group){
   const newN=subbed?newCountForShelf(s):0;
   const badge=newN>0?`<span class="lib-new-badge">${newN>99?'99+':newN}</span>`:'';
   const avatar=s.icon
-    ? `<div class="lib-avatar has-icon"><img src="${esc(s.icon)}" alt=""></div>`
+    ? `<div class="lib-avatar has-icon"><img src="${esc(s.icon)}" alt="" width="44" height="44" decoding="async" loading="eager" fetchpriority="low"></div>`
     : `<div class="lib-avatar">${esc((s.name||'?').slice(0,1))}</div>`;
   // 配布型（管理画面からアクセス権が付与されている）かどうか
   const isDistributed=!locked; // canSeeShelfId=true === 配布型
