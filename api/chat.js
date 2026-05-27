@@ -67,6 +67,32 @@ async function authorize(req) {
   return { ok: false, reason: 'unknown_role', status: 401 };
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// システムプロンプト (フォールバック用)
+// フロント側から system が送られて来なかった場合の保険。
+// フロント側 (index.html の callAI) と内容を揃えておく。
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const FALLBACK_SYSTEM_PROMPT = [
+  'あなたは学習支援のアシスタントです。生徒が保存したメモやノート(写真・テキスト・リスト)について、生徒が理解できるよう丁寧に答えてください。',
+  '',
+  '【回答の姿勢】',
+  '・必要な背景や理由も含めて、しっかり説明してください。短すぎると不親切に感じられます。',
+  '・かといって冗長にする必要はありません。質問に対して必要な情報を、過不足なく丁寧に伝えるのが目標です。',
+  '・数学・理科などの解説では、考え方の筋道、途中式、用語の意味、なぜそうなるかの理由まで含めて答えてください。',
+  '・暗記事項の質問なら、答えだけでなく覚え方のヒントや関連事項も添えると親切です。',
+  '・説教調や上から目線は避け、対等な学習パートナーとして話してください。',
+  '',
+  '【書式のルール】',
+  '・返信はプレーンテキストで書いてください。Markdown 記法 (# 見出し、**強調**、*斜体*、`コード`、- 箇条書きなど) は一切使わないでください。',
+  '・箇条書きが必要な時は行頭に「・」を使ってください。',
+  '・話題の区切りでは空行(\\n\\n)を入れてください。これは表示側で段落ごとに別の吹き出しに分割するために重要です。',
+  '・たとえば「結論」→空行→「理由の説明」→空行→「補足や例」のような構成にしてください。1つの吹き出しは概ね 3〜6 文程度を目安にしてください。',
+  '',
+  '【避けること】',
+  '・「いかがでしたか?」のような閉じの定型文。',
+  '・「〜について解説します」「ご質問にお答えします」のような前置き。本題から入ってください。',
+].join('\n');
+
 export default async function handler(req, res) {
   setCors(res);
 
@@ -92,7 +118,7 @@ export default async function handler(req, res) {
     if (ocrImage) {
       const result = await client.messages.create({
         model: 'claude-haiku-4-5-20251001', // OCRは高速・低コストのHaikuで十分
-        max_tokens: 1024,
+        max_tokens: 2048, // 表や長文画像でも切れないように余裕を持たせる
         messages: [
           {
             role: 'user',
@@ -129,7 +155,8 @@ export default async function handler(req, res) {
     // ─── モデル自動選択 ───
     // 1. 画像が含まれていたら Sonnet (Vision精度重視)
     // 2. 計算・解説系のキーワードがあれば Sonnet (推論力が必要)
-    // 3. それ以外は Haiku (安く速く、雑談・確認には十分)
+    // 3. 長文の解説を求めるキーワードがあれば Sonnet (より自然な日本語と構成力)
+    // 4. それ以外は Haiku (安く速く、雑談・確認には十分)
     const hasImage = messages.some(m =>
       Array.isArray(m.content) && m.content.some(c => c && c.type === 'image')
     );
@@ -147,14 +174,24 @@ export default async function handler(req, res) {
           lastText = lastUser.content.map(c => (c && c.type === 'text') ? c.text : '').join(' ');
         }
       }
+      // 推論・計算系のキーワード
       const sonnetKeywords = /計算|解いて|解説|なぜ|理由|証明|求めて|どうして|=|\+|\-|×|÷|公式|証明して|プログラム|コード|微分|積分|方程式|論理|なぜなら|理屈|仕組み/;
-      model = sonnetKeywords.test(lastText) ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
+      // 長文回答を期待するキーワード (「まとめて」「全部」「最初から最後まで」など)
+      const longAnswerKeywords = /まとめて|全部|すべて|一覧|最初から最後|最後まで|くわしく|詳しく|順番に|それぞれ|どんな/;
+      if (sonnetKeywords.test(lastText) || longAnswerKeywords.test(lastText)) {
+        model = 'claude-sonnet-4-6';
+      } else {
+        model = 'claude-haiku-4-5-20251001';
+      }
     }
 
+    // max_tokens: 旧 1024 だと長い解説で途中で切れていた (例: 教科書15項目を順に解説)。
+    // Haiku 4.5 / Sonnet 4.6 はいずれも 64K 出力に対応しているので、4096 まで余裕を持って許容する。
+    // コスト面では、画像入力1リクエストあたり総額の差は数円以下なので影響は軽微。
     const result = await client.messages.create({
       model,
-      max_tokens: 1024,
-      system: system || 'あなたは学習支援のアシスタントです。生徒が保存したメモについて、わかりやすく端的に答えてください。説教はせず、必要な情報を簡潔に伝えます。日本語で答えます。',
+      max_tokens: 4096,
+      system: system || FALLBACK_SYSTEM_PROMPT,
       messages: messages.map((m) => ({
         role: m.role || 'user',
         content: m.content || '',
@@ -167,7 +204,16 @@ export default async function handler(req, res) {
       .join('\n')
       .trim();
 
-    return res.status(200).json({ content: text });
+    // stop_reason が max_tokens の場合は念のためログを残す (Vercel 側で気づけるように)
+    if (result.stop_reason === 'max_tokens') {
+      console.warn('AI response was cut by max_tokens limit. Consider raising max_tokens further.');
+    }
+
+    return res.status(200).json({
+      content: text,
+      // デバッグ用 (フロントには使わないが、必要に応じて参照できる)
+      stop_reason: result.stop_reason,
+    });
   } catch (err) {
     console.error('AI error:', err);
     return res.status(500).json({
