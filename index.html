@@ -1692,6 +1692,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .bin-row-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
 .bin-row-main{flex:1;min-width:0;}
+.bin-row-title-line{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  min-width:0;
+}
 .bin-row-title{
   font-size:13px;
   color:var(--ink);
@@ -1699,13 +1705,25 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   overflow:hidden;
   text-overflow:ellipsis;
   line-height:1.4;
+  min-width:0;
+}
+.bin-row-title-sub{
+  font-size:11px;
+  color:var(--ink3);
+  flex-shrink:0;
+  white-space:nowrap;
 }
 .bin-row-meta{
   font-size:11px;
   color:var(--ink3);
   margin-top:3px;
 }
-.bin-row-meta .bin-days-left{color:var(--rose);}
+.bin-row-meta-left{
+  font-size:11px;
+  margin-top:2px;
+}
+.bin-row-meta .bin-days-left,
+.bin-row-meta-left .bin-days-left{color:var(--rose);}
 .bin-row-actions{
   display:flex;
   gap:4px;
@@ -6170,24 +6188,29 @@ function binRowHtml(c,kind){
     thumb='<div style="background:var(--bg);width:100%;height:100%;"></div>';
   }
 
-  // タイトル (一行で要約)
+  // タイトル (一行で要約)、リストなら項目数を付ける
   let title='';
+  let titleSub='';
   if(c.type==='note')title=(c.text||'').replace(/\s+/g,' ').trim()||'(空のメモ)';
-  else if(c.type==='list')title=c.title||'リスト';
+  else if(c.type==='list'){
+    title=c.title||'リスト';
+    titleSub=`${(c.items||[]).length}項目`;
+  }
   else if(c.type==='photo'||c.type==='photonote')title=(c.text||'').replace(/\s+/g,' ').trim()||'(写真メモ)';
 
-  // メタ (日付 + 残り日数 or 外した日)、リストなら項目数も併記
-  let meta='';
-  const itemsPart=(c.type==='list')?`${(c.items||[]).length}項目 ・ `:'';
+  // メタ (2行: 1行目=日付, 2行目=残日数 ※ゴミ箱のみ)
+  let metaWhen='';
+  let metaLeft='';
   if(kind==='trash'){
     const elapsed=Date.now()-(c.deletedAt||0);
     const left=Math.max(0,Math.ceil((TRASH_RETENTION_MS-elapsed)/(24*60*60*1000)));
     const ago=Math.floor(elapsed/(24*60*60*1000));
-    meta=`${itemsPart}${ago===0?'今日':ago+'日前に'}捨てた<span class="bin-days-left"> ・ あと${left}日</span>`;
+    metaWhen=`${ago===0?'今日':ago+'日前に'}捨てた`;
+    metaLeft=`<span class="bin-days-left">あと${left}日で完全削除</span>`;
   }else{
     const elapsed=Date.now()-(c.archivedAt||0);
     const ago=Math.floor(elapsed/(24*60*60*1000));
-    meta=`${itemsPart}${ago===0?'今日':ago+'日前に'}リストから外した`;
+    metaWhen=`${ago===0?'今日':ago+'日前に'}リストから外した`;
   }
 
   // 操作ボタン
@@ -6198,8 +6221,12 @@ function binRowHtml(c,kind){
   return `<div class="bin-row" data-card-id="${esc(c.id)}">
     <div class="bin-row-thumb">${thumb}</div>
     <div class="bin-row-main">
-      <div class="bin-row-title">${esc(title)}</div>
-      <div class="bin-row-meta">${meta}</div>
+      <div class="bin-row-title-line">
+        <span class="bin-row-title">${esc(title)}</span>
+        ${titleSub?`<span class="bin-row-title-sub">${esc(titleSub)}</span>`:''}
+      </div>
+      <div class="bin-row-meta">${metaWhen}</div>
+      ${metaLeft?`<div class="bin-row-meta-left">${metaLeft}</div>`:''}
     </div>
     <div class="bin-row-actions">
       <button class="bin-row-btn primary" data-bin-action="${kind==='trash'?'restore':'unarchive'}">${restoreLabel}</button>
