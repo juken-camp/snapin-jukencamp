@@ -2778,6 +2778,189 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 
 .hide{display:none !important;}
+
+/* ═══ CROP MODAL (カメラ撮影直後のトリミング画面) ═══ */
+.crop-modal{
+  position:fixed;
+  inset:0;
+  background:#0a0a0a;
+  z-index:1000;
+  display:none;
+  flex-direction:column;
+  color:#fff;
+  font-family:var(--font-jp);
+}
+.crop-modal.on{display:flex;}
+.crop-hdr{
+  padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-shrink:0;
+  background:#0a0a0a;
+}
+.crop-hdr-title{
+  font-size:15px;
+  font-weight:600;
+  color:#fff;
+}
+.crop-hdr-btn{
+  font-size:14px;
+  font-weight:500;
+  color:#fff;
+  padding:8px 14px;
+  border-radius:18px;
+  background:transparent;
+  transition:background .1s,transform .1s;
+}
+.crop-hdr-btn:active{background:rgba(255,255,255,.12);transform:scale(0.94);}
+.crop-hdr-btn.primary{
+  background:var(--g);
+  color:#fff;
+  font-weight:600;
+}
+.crop-hdr-btn.primary:active{background:var(--gd);}
+
+.crop-stage{
+  flex:1;
+  position:relative;
+  overflow:hidden;
+  background:#000;
+  min-height:0;
+  /* タッチでスクロールしないように */
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.crop-canvas-wrap{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.crop-canvas-wrap canvas{
+  max-width:100%;
+  max-height:100%;
+  display:block;
+  /* 画像自体はピクセル等倍ベース、CSSサイズで縮小表示 */
+}
+/* 暗いオーバーレイ + 切り抜き枠 */
+.crop-box{
+  position:absolute;
+  border:1.5px solid #fff;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.55);
+  box-sizing:border-box;
+  touch-action:none;
+}
+/* 3x3 グリッドライン */
+.crop-box::before,
+.crop-box::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.crop-box::before{
+  /* 縦2本 */
+  background:
+    linear-gradient(to right,transparent 33.333%,rgba(255,255,255,.5) 33.333%,rgba(255,255,255,.5) calc(33.333% + 1px),transparent calc(33.333% + 1px)),
+    linear-gradient(to right,transparent 66.666%,rgba(255,255,255,.5) 66.666%,rgba(255,255,255,.5) calc(66.666% + 1px),transparent calc(66.666% + 1px));
+}
+.crop-box::after{
+  /* 横2本 */
+  background:
+    linear-gradient(to bottom,transparent 33.333%,rgba(255,255,255,.5) 33.333%,rgba(255,255,255,.5) calc(33.333% + 1px),transparent calc(33.333% + 1px)),
+    linear-gradient(to bottom,transparent 66.666%,rgba(255,255,255,.5) 66.666%,rgba(255,255,255,.5) calc(66.666% + 1px),transparent calc(66.666% + 1px));
+}
+/* 8つのハンドル */
+.crop-handle{
+  position:absolute;
+  width:22px;
+  height:22px;
+  background:transparent;
+  z-index:2;
+  touch-action:none;
+}
+.crop-handle::after{
+  content:'';
+  position:absolute;
+  background:#fff;
+  border-radius:1px;
+}
+/* 角ハンドル: 太いL字 */
+.crop-handle.tl,.crop-handle.tr,.crop-handle.bl,.crop-handle.br{width:26px;height:26px;}
+.crop-handle.tl{top:-4px;left:-4px;cursor:nwse-resize;}
+.crop-handle.tr{top:-4px;right:-4px;cursor:nesw-resize;}
+.crop-handle.bl{bottom:-4px;left:-4px;cursor:nesw-resize;}
+.crop-handle.br{bottom:-4px;right:-4px;cursor:nwse-resize;}
+.crop-handle.tl::after{top:0;left:0;width:14px;height:3px;box-shadow:0 0 0 0 #fff,0 0 0 0 transparent;}
+.crop-handle.tl::before{content:'';position:absolute;top:0;left:0;width:3px;height:14px;background:#fff;}
+.crop-handle.tr::after{top:0;right:0;width:14px;height:3px;}
+.crop-handle.tr::before{content:'';position:absolute;top:0;right:0;width:3px;height:14px;background:#fff;}
+.crop-handle.bl::after{bottom:0;left:0;width:14px;height:3px;}
+.crop-handle.bl::before{content:'';position:absolute;bottom:0;left:0;width:3px;height:14px;background:#fff;}
+.crop-handle.br::after{bottom:0;right:0;width:14px;height:3px;}
+.crop-handle.br::before{content:'';position:absolute;bottom:0;right:0;width:3px;height:14px;background:#fff;}
+/* 辺ハンドル: 短い線 */
+.crop-handle.t{top:-4px;left:50%;transform:translateX(-50%);width:30px;height:10px;cursor:ns-resize;}
+.crop-handle.b{bottom:-4px;left:50%;transform:translateX(-50%);width:30px;height:10px;cursor:ns-resize;}
+.crop-handle.l{left:-4px;top:50%;transform:translateY(-50%);width:10px;height:30px;cursor:ew-resize;}
+.crop-handle.r{right:-4px;top:50%;transform:translateY(-50%);width:10px;height:30px;cursor:ew-resize;}
+.crop-handle.t::after{top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:3px;}
+.crop-handle.b::after{top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:3px;}
+.crop-handle.l::after{top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:20px;}
+.crop-handle.r::after{top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:20px;}
+
+.crop-tools{
+  flex-shrink:0;
+  background:#0a0a0a;
+  padding:10px 0 calc(env(safe-area-inset-bottom) + 14px);
+  border-top:0.5px solid rgba(255,255,255,.08);
+}
+.crop-ratios{
+  display:flex;
+  gap:6px;
+  overflow-x:auto;
+  scrollbar-width:none;
+  padding:4px 14px 10px;
+}
+.crop-ratios::-webkit-scrollbar{display:none;}
+.crop-ratio{
+  flex-shrink:0;
+  font-size:13px;
+  color:rgba(255,255,255,.7);
+  padding:7px 14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.08);
+  border:0.5px solid transparent;
+  transition:all .15s;
+}
+.crop-ratio.on{
+  color:#fff;
+  background:rgba(255,255,255,.18);
+  border-color:rgba(255,255,255,.3);
+  font-weight:600;
+}
+.crop-ratio:active{transform:scale(0.94);}
+.crop-actions{
+  display:flex;
+  justify-content:center;
+  gap:24px;
+  padding:6px 14px 0;
+}
+.crop-action{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  color:rgba(255,255,255,.85);
+  font-size:11px;
+  padding:6px 12px;
+  border-radius:10px;
+  transition:background .15s,transform .15s;
+}
+.crop-action:active{background:rgba(255,255,255,.1);transform:scale(0.94);}
 </style>
 </head>
 <body>
@@ -3146,6 +3329,36 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
 </div>
 
+<!-- 写真ソース選択シート (create-photo時に表示。撮影かライブラリ/ファイルかをユーザーに選ばせる) -->
+<div class="sheet-mask" id="photo-src-mask" data-action="close-photo-src"></div>
+<div class="sheet" id="photo-source-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">写真を追加</div>
+  <div class="sheet-options">
+    <button class="sheet-opt" data-action="photo-src-camera">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+      <div class="sheet-opt-title">撮影する</div>
+      <div class="sheet-opt-desc">カメラで撮ってトリミング</div>
+    </button>
+    <button class="sheet-opt" data-action="photo-src-library">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      </div>
+      <div class="sheet-opt-title">写真から選ぶ</div>
+      <div class="sheet-opt-desc">カメラロール</div>
+    </button>
+    <button class="sheet-opt" data-action="photo-src-file">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div class="sheet-opt-title">ファイルから選ぶ</div>
+      <div class="sheet-opt-desc">Files アプリ</div>
+    </button>
+  </div>
+</div>
+
 <div class="toast" id="toast">保存しました</div>
 <div class="save-ok" id="save-ok" aria-hidden="true">
   <div class="save-ok-circle">
@@ -3153,8 +3366,42 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
 </div>
 <input type="file" id="file-input" accept="image/*" style="display:none;">
+<input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none;">
 <input type="file" id="file-input-any" accept=".png,.jpg,.jpeg,.gif,.webp,.heic,.heif" style="display:none;">
 <input type="file" id="restore-input" accept="application/json,.json" style="display:none;">
+
+<!-- トリミング画面 (カメラ撮影時に表示。フルスクリーンモーダル) -->
+<div class="crop-modal" id="crop-modal" aria-hidden="true">
+  <div class="crop-hdr">
+    <button class="crop-hdr-btn" id="crop-cancel">キャンセル</button>
+    <div class="crop-hdr-title">写真を編集</div>
+    <button class="crop-hdr-btn primary" id="crop-done">完了</button>
+  </div>
+  <div class="crop-stage" id="crop-stage">
+    <!-- ここに canvas/img と切り抜き枠が動的に挿入される -->
+  </div>
+  <div class="crop-tools">
+    <div class="crop-ratios" id="crop-ratios">
+      <button class="crop-ratio on" data-ratio="free">自由</button>
+      <button class="crop-ratio" data-ratio="orig">元画像</button>
+      <button class="crop-ratio" data-ratio="1:1">1:1</button>
+      <button class="crop-ratio" data-ratio="4:3">4:3</button>
+      <button class="crop-ratio" data-ratio="3:4">3:4</button>
+      <button class="crop-ratio" data-ratio="16:9">16:9</button>
+      <button class="crop-ratio" data-ratio="9:16">9:16</button>
+    </div>
+    <div class="crop-actions">
+      <button class="crop-action" id="crop-rotate" aria-label="90度回転">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><polyline points="21 3 21 8 16 8"/></svg>
+        <span>回転</span>
+      </button>
+      <button class="crop-action" id="crop-reset" aria-label="リセット">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 10 9 10"/></svg>
+        <span>リセット</span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- 設定シート (バックアップ/復元) -->
 <div class="settings-backdrop" id="settings-backdrop" data-action="close-settings"></div>
@@ -5036,10 +5283,11 @@ function startCreate(type){
     text:'',
   };
   if(type==='photo' || type==='photonote'){
-    // 「写真」を選んだら直接ファイルピッカーを開く
-    // iOS Safari は accept="image/*" で標準シート(ライブラリ/撮影/ファイル)を出す
+    // 「写真」を選んだら、撮影 / カメラロール / ファイルを選ばせる独自シートを開く。
+    // 以前は accept="image/*" の iOS 標準シートに任せていたが、撮影とライブラリ選択を
+    // アプリ側で区別できるようにするためにシートを分けた (撮影時のみトリミング画面を出す)。
     state.photoMode=type;
-    $('file-input').click();
+    openPhotoSourceSheet();
   }else if(type==='file'){
     // 「ファイル」: Files アプリから画像を選ぶ(カメラロール以外の画像)
     // 拡張子指定にすることで iOS は写真ライブラリ経由ではなく Files を直接開く
@@ -5064,11 +5312,43 @@ function startCreate(type){
   }
 }
 
+function openPhotoSourceSheet(){
+  $('photo-src-mask').classList.add('on');
+  $('photo-source-sheet').classList.add('on');
+}
+function closePhotoSourceSheet(){
+  $('photo-src-mask').classList.remove('on');
+  $('photo-source-sheet').classList.remove('on');
+}
+// 写真ソースシートからの選択ハンドラ。
+// state.photoMode (photo / photonote) は startCreate で既にセット済み。
+function pickPhotoSource(src){
+  closePhotoSourceSheet();
+  if(src==='camera'){
+    // カメラ撮影: 撮影専用 input (capture="environment") を開き、撮影後にトリミング画面を出す
+    state.cameraCapture=true;
+    $('file-input-camera').click();
+  }else if(src==='library'){
+    // カメラロールから選ぶ。
+    // accept="image/*" だけだと iOS は撮影オプションも一緒に出してしまうので、
+    // 独自シートで「写真から選ぶ」を選んだ意図に沿うよう、file-input を流用しつつ
+    // cameraCapture フラグは立てない (トリミングは行わない)。
+    state.cameraCapture=false;
+    $('file-input').click();
+  }else if(src==='file'){
+    state.cameraCapture=false;
+    $('file-input-any').click();
+  }
+}
+
 function onFilePick(e){
   const file=e.target.files[0];
+  // 撮影由来かどうかは input の id で確実に判定する (state.cameraCapture は念のための保険)
+  const fromCamera=(e.target && e.target.id==='file-input-camera');
   if(!file){
     state.current=null;
     state.photoMode=null;
+    state.cameraCapture=false;
     return;
   }
   // 画像ファイルでなければ弾く (Filesアプリから非画像を選んだ場合の保険)
@@ -5076,23 +5356,443 @@ function onFilePick(e){
     toast('画像ファイルを選んでください');
     state.current=null;
     state.photoMode=null;
+    state.cameraCapture=false;
     e.target.value='';
     return;
   }
-  // 画像を圧縮 (長辺1280px、JPEG 0.85品質、サイズ超過なら自動で品質下げて再試行)
+  e.target.value='';
+  // 撮影由来ならトリミング画面を経由。それ以外は従来通り直接圧縮→アップロード画面へ。
+  if(fromCamera){
+    // ファイルを dataURL 化してトリミング画面に渡す。
+    // ここでは圧縮しない (トリミング画面で切り抜き後にまとめて圧縮するため)。
+    const reader=new FileReader();
+    reader.onload=()=>{
+      openCropModal(reader.result,(croppedDataUrl)=>{
+        // 切り抜き結果を圧縮してから state にセット
+        smartCompressDataUrl(croppedDataUrl).then(compressed=>{
+          if(!state.current)state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:new Date().toISOString().slice(0,10),_new:true,text:''};
+          state.current.image=compressed;
+          state.photoMode=null;
+          state.cameraCapture=false;
+          renderUpload();
+          goto('screen-upload');
+        }).catch(()=>{
+          toast('画像の処理に失敗しました');
+          state.current=null;
+          state.photoMode=null;
+          state.cameraCapture=false;
+        });
+      },()=>{
+        // キャンセル: 何もせず初期化
+        state.current=null;
+        state.photoMode=null;
+        state.cameraCapture=false;
+      });
+    };
+    reader.onerror=()=>{
+      toast('画像の読み込みに失敗しました');
+      state.current=null;
+      state.photoMode=null;
+      state.cameraCapture=false;
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+  // 通常フロー (カメラロール/ファイル選択): 従来通り
   smartCompressImage(file).then(compressed=>{
     if(!state.current)state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:new Date().toISOString().slice(0,10),_new:true,text:''};
     state.current.image=compressed;
     state.photoMode=null;
+    state.cameraCapture=false;
     renderUpload();
     goto('screen-upload');
   }).catch(err=>{
     toast('画像の読み込みに失敗しました');
     state.current=null;
     state.photoMode=null;
+    state.cameraCapture=false;
   });
-  e.target.value='';
 }
+
+// dataURL を直接受け取って smartCompressImage と同じロジックで圧縮するヘルパ。
+// (smartCompressImage は File 経由で readAsDataURL するので、既に dataURL がある場合の近道)
+async function smartCompressDataUrl(dataUrl){
+  const TARGET_BYTES=400*1024;
+  const HARD_LIMIT=600*1024;
+  let side=1280, q=0.78;
+  for(let i=0;i<6;i++){
+    try{
+      const out=await compressOnce(dataUrl,side,q);
+      const bytes=dataUrlBytes(out);
+      if(bytes<=TARGET_BYTES)return out;
+      if(i>=4 && bytes<=HARD_LIMIT)return out;
+      q-=0.12;
+      if(q<0.45){q=0.5;side=Math.floor(side*0.75);}
+      if(side<480){side=480;}
+    }catch(e){return dataUrl;}
+  }
+  try{return await compressOnce(dataUrl,1000,0.55);}
+  catch(e){return dataUrl;}
+}
+
+// ═══ CROP MODAL ═══
+// カメラ撮影直後に呼ぶフルスクリーンのトリミング画面。
+// 引数: srcDataUrl (元画像 dataURL), onDone(croppedDataUrl), onCancel()
+// 内部状態は IIFE スコープに閉じ、開いた瞬間に都度初期化する。
+const _cropState={
+  src:null,         // 元画像 dataURL (回転前)
+  img:null,         // HTMLImageElement (現在のソース・回転反映済み)
+  rotation:0,       // 0/90/180/270
+  ratio:'free',     // free / orig / 1:1 / 4:3 / 3:4 / 16:9 / 9:16
+  box:null,         // 切り抜き枠 { x, y, w, h } 画像ピクセル座標
+  displayScale:1,   // 画像ピクセル → CSS px の倍率
+  imgDispW:0,
+  imgDispH:0,
+  imgDispLeft:0,    // crop-stage の左端からの画像表示位置
+  imgDispTop:0,
+  onDone:null,
+  onCancel:null,
+};
+
+function openCropModal(srcDataUrl,onDone,onCancel){
+  _cropState.src=srcDataUrl;
+  _cropState.rotation=0;
+  _cropState.ratio='free';
+  _cropState.onDone=onDone;
+  _cropState.onCancel=onCancel;
+  // 比率ボタンの初期状態
+  document.querySelectorAll('#crop-ratios .crop-ratio').forEach(b=>{
+    b.classList.toggle('on',b.dataset.ratio==='free');
+  });
+  $('crop-modal').classList.add('on');
+  $('crop-modal').setAttribute('aria-hidden','false');
+  // 画像読み込み → ステージサイズ確定後に枠を初期化
+  loadImage(srcDataUrl).then(img=>{
+    _cropState.img=img;
+    // 1フレーム待ってからレイアウト計算 (モーダル表示直後はサイズが取れない場合があるため)
+    requestAnimationFrame(()=>{
+      layoutCropStage();
+      resetCropBox();
+      renderCropBox();
+    });
+  }).catch(()=>{
+    toast('画像を読み込めませんでした');
+    closeCropModal(true);
+  });
+}
+
+function closeCropModal(cancelled){
+  $('crop-modal').classList.remove('on');
+  $('crop-modal').setAttribute('aria-hidden','true');
+  const onCancel=_cropState.onCancel;
+  // 状態クリア
+  _cropState.src=null;
+  _cropState.img=null;
+  _cropState.box=null;
+  _cropState.onDone=null;
+  _cropState.onCancel=null;
+  $('crop-stage').innerHTML='';
+  if(cancelled && typeof onCancel==='function')onCancel();
+}
+
+// crop-stage に画像を配置する (CSSサイズ計算)。回転は描画時にcanvasで反映するので
+// ここでは _cropState.img のサイズに rotation を適用した実効サイズで計算する。
+function effectiveImgSize(){
+  const img=_cropState.img;
+  if(!img)return {w:0,h:0};
+  const rot=_cropState.rotation;
+  if(rot===90||rot===270)return {w:img.naturalHeight,h:img.naturalWidth};
+  return {w:img.naturalWidth,h:img.naturalHeight};
+}
+
+function layoutCropStage(){
+  const stage=$('crop-stage');
+  const sw=stage.clientWidth;
+  const sh=stage.clientHeight;
+  const {w:iw,h:ih}=effectiveImgSize();
+  if(!iw||!ih||!sw||!sh)return;
+  // contain フィット
+  const scale=Math.min(sw/iw,sh/ih);
+  const dw=Math.round(iw*scale);
+  const dh=Math.round(ih*scale);
+  const left=Math.round((sw-dw)/2);
+  const top=Math.round((sh-dh)/2);
+  _cropState.displayScale=scale;
+  _cropState.imgDispW=dw;
+  _cropState.imgDispH=dh;
+  _cropState.imgDispLeft=left;
+  _cropState.imgDispTop=top;
+  // ステージ DOM を組み直す (画像 + 枠 + ハンドル)
+  // 画像本体は canvas に回転反映して描画
+  stage.innerHTML='';
+  const canvas=document.createElement('canvas');
+  canvas.width=iw;
+  canvas.height=ih;
+  canvas.style.position='absolute';
+  canvas.style.left=left+'px';
+  canvas.style.top=top+'px';
+  canvas.style.width=dw+'px';
+  canvas.style.height=dh+'px';
+  const ctx=canvas.getContext('2d');
+  drawRotatedImageToCtx(ctx,_cropState.img,_cropState.rotation,iw,ih);
+  stage.appendChild(canvas);
+  // 切り抜き枠
+  const box=document.createElement('div');
+  box.className='crop-box';
+  box.id='crop-box';
+  // ハンドル
+  ['tl','tr','bl','br','t','b','l','r'].forEach(pos=>{
+    const h=document.createElement('div');
+    h.className='crop-handle '+pos;
+    h.dataset.handle=pos;
+    box.appendChild(h);
+  });
+  stage.appendChild(box);
+  attachCropInteractions(box,stage);
+}
+
+function drawRotatedImageToCtx(ctx,img,rotation,outW,outH){
+  ctx.save();
+  ctx.fillStyle='#000';
+  ctx.fillRect(0,0,outW,outH);
+  ctx.translate(outW/2,outH/2);
+  ctx.rotate(rotation*Math.PI/180);
+  // 回転後の中心に原点があるので、画像は -naturalW/2, -naturalH/2 から描画
+  ctx.drawImage(img,-img.naturalWidth/2,-img.naturalHeight/2);
+  ctx.restore();
+}
+
+// 比率を適用した初期枠を画像ピクセル座標で作る
+function resetCropBox(){
+  const {w:iw,h:ih}=effectiveImgSize();
+  if(!iw||!ih)return;
+  const ratio=_cropState.ratio;
+  let r=null;
+  if(ratio==='1:1')r=1;
+  else if(ratio==='4:3')r=4/3;
+  else if(ratio==='3:4')r=3/4;
+  else if(ratio==='16:9')r=16/9;
+  else if(ratio==='9:16')r=9/16;
+  else if(ratio==='orig')r=iw/ih;
+  // 自由は r=null。画像の 90% を初期枠とする (orig時は画像いっぱい)。
+  if(ratio==='orig'){
+    _cropState.box={x:0,y:0,w:iw,h:ih};
+    return;
+  }
+  if(ratio==='free' || r===null){
+    const w=Math.round(iw*0.9), h=Math.round(ih*0.9);
+    _cropState.box={x:Math.round((iw-w)/2),y:Math.round((ih-h)/2),w,h};
+    return;
+  }
+  // 比率指定: 画像の80%相当を内接させる
+  const maxW=iw*0.92, maxH=ih*0.92;
+  let bw=maxW, bh=bw/r;
+  if(bh>maxH){bh=maxH;bw=bh*r;}
+  bw=Math.round(bw); bh=Math.round(bh);
+  _cropState.box={x:Math.round((iw-bw)/2),y:Math.round((ih-bh)/2),w:bw,h:bh};
+}
+
+// 枠を画面に反映 (CSS座標)
+function renderCropBox(){
+  const box=document.getElementById('crop-box');
+  if(!box||!_cropState.box)return;
+  const s=_cropState.displayScale;
+  const x=_cropState.imgDispLeft+_cropState.box.x*s;
+  const y=_cropState.imgDispTop+_cropState.box.y*s;
+  const w=_cropState.box.w*s;
+  const h=_cropState.box.h*s;
+  box.style.left=x+'px';
+  box.style.top=y+'px';
+  box.style.width=w+'px';
+  box.style.height=h+'px';
+}
+
+// ドラッグ操作: 枠本体の移動と、各ハンドルでのリサイズ
+function attachCropInteractions(box,stage){
+  let mode=null;       // 'move' | 'resize-tl' | etc
+  let startX=0,startY=0;
+  let startBox=null;   // ドラッグ開始時の box 値
+  const getXY=ev=>{
+    const t=ev.touches?ev.touches[0]:ev;
+    return {x:t.clientX,y:t.clientY};
+  };
+  const onDown=ev=>{
+    const target=ev.target;
+    if(target.classList.contains('crop-handle')){
+      mode='resize-'+target.dataset.handle;
+    }else{
+      mode='move';
+    }
+    const p=getXY(ev);
+    startX=p.x; startY=p.y;
+    startBox=Object.assign({},_cropState.box);
+    ev.preventDefault();
+  };
+  const onMove=ev=>{
+    if(!mode||!startBox)return;
+    const p=getXY(ev);
+    const s=_cropState.displayScale;
+    // CSS px の差分を画像ピクセル空間に変換
+    const dx=(p.x-startX)/s;
+    const dy=(p.y-startY)/s;
+    const {w:iw,h:ih}=effectiveImgSize();
+    const MIN=24; // 最小枠サイズ (画像ピクセル)
+    const ratio=_cropState.ratio;
+    let r=null;
+    if(ratio==='1:1')r=1;
+    else if(ratio==='4:3')r=4/3;
+    else if(ratio==='3:4')r=3/4;
+    else if(ratio==='16:9')r=16/9;
+    else if(ratio==='9:16')r=9/16;
+    else if(ratio==='orig')r=iw/ih;
+    // 'free' のみ r=null (アスペクト自由)
+    let nb=Object.assign({},startBox);
+    if(mode==='move'){
+      nb.x=clamp(startBox.x+dx,0,iw-startBox.w);
+      nb.y=clamp(startBox.y+dy,0,ih-startBox.h);
+    }else{
+      // リサイズ: 各方向に対して新しい right/bottom を計算してから幅高を決める
+      let l=startBox.x, t=startBox.y, rr=startBox.x+startBox.w, bb=startBox.y+startBox.h;
+      const h=mode.replace('resize-','');
+      if(h.includes('l'))l=clamp(startBox.x+dx,0,rr-MIN);
+      if(h.includes('r'))rr=clamp(startBox.x+startBox.w+dx,l+MIN,iw);
+      if(h.includes('t'))t=clamp(startBox.y+dy,0,bb-MIN);
+      if(h.includes('b'))bb=clamp(startBox.y+startBox.h+dy,t+MIN,ih);
+      nb={x:l,y:t,w:rr-l,h:bb-t};
+      // アスペクト比固定 (free 以外)
+      if(r!==null){
+        // 主軸を決める: 角ハンドルは大きい変化量に合わせる、辺ハンドルはその軸を主に
+        const isCorner=(h.length===2);
+        let mainAxis=isCorner ? (Math.abs(dx)>=Math.abs(dy)?'x':'y') : (h==='l'||h==='r'?'x':'y');
+        if(mainAxis==='x'){
+          nb.h=nb.w/r;
+          // 縦方向のアンカー (t を動かしているか b を動かしているか) に合わせて y を調整
+          if(h.includes('t'))nb.y=bb-nb.h;
+          else nb.y=startBox.y; // それ以外は上端固定でリサイズ
+          // 範囲調整: はみ出たら逆軸を縮める
+          if(nb.y<0){nb.h+=nb.y;nb.w=nb.h*r;nb.y=0;
+            if(h.includes('l'))nb.x=rr-nb.w; else nb.x=startBox.x;
+          }
+          if(nb.y+nb.h>ih){nb.h=ih-nb.y;nb.w=nb.h*r;
+            if(h.includes('l'))nb.x=rr-nb.w; else nb.x=startBox.x;
+          }
+        }else{
+          nb.w=nb.h*r;
+          if(h.includes('l'))nb.x=rr-nb.w;
+          else nb.x=startBox.x;
+          if(nb.x<0){nb.w+=nb.x;nb.h=nb.w/r;nb.x=0;
+            if(h.includes('t'))nb.y=bb-nb.h; else nb.y=startBox.y;
+          }
+          if(nb.x+nb.w>iw){nb.w=iw-nb.x;nb.h=nb.w/r;
+            if(h.includes('t'))nb.y=bb-nb.h; else nb.y=startBox.y;
+          }
+        }
+      }
+    }
+    _cropState.box=nb;
+    renderCropBox();
+    ev.preventDefault();
+  };
+  const onUp=()=>{mode=null;startBox=null;};
+  box.addEventListener('touchstart',onDown,{passive:false});
+  box.addEventListener('touchmove',onMove,{passive:false});
+  box.addEventListener('touchend',onUp);
+  box.addEventListener('touchcancel',onUp);
+  box.addEventListener('mousedown',onDown);
+  // mousemove / mouseup は document に貼って枠外でも追従するように
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+}
+
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+
+function setCropRatio(ratio){
+  _cropState.ratio=ratio;
+  document.querySelectorAll('#crop-ratios .crop-ratio').forEach(b=>{
+    b.classList.toggle('on',b.dataset.ratio===ratio);
+  });
+  resetCropBox();
+  renderCropBox();
+}
+
+function rotateCrop90(){
+  _cropState.rotation=(_cropState.rotation+90)%360;
+  // 回転すると画像の縦横が入れ替わるので、レイアウトと枠を作り直す
+  layoutCropStage();
+  resetCropBox();
+  renderCropBox();
+}
+
+function resetCrop(){
+  _cropState.rotation=0;
+  _cropState.ratio='free';
+  document.querySelectorAll('#crop-ratios .crop-ratio').forEach(b=>{
+    b.classList.toggle('on',b.dataset.ratio==='free');
+  });
+  layoutCropStage();
+  resetCropBox();
+  renderCropBox();
+}
+
+function applyCropAndDone(){
+  if(!_cropState.img||!_cropState.box){closeCropModal(true);return;}
+  const {w:iw,h:ih}=effectiveImgSize();
+  // 元画像を回転反映して off-screen に描画した上で、枠の範囲だけを切り出す
+  const full=document.createElement('canvas');
+  full.width=iw; full.height=ih;
+  drawRotatedImageToCtx(full.getContext('2d'),_cropState.img,_cropState.rotation,iw,ih);
+  const b=_cropState.box;
+  const out=document.createElement('canvas');
+  out.width=Math.max(1,Math.round(b.w));
+  out.height=Math.max(1,Math.round(b.h));
+  const octx=out.getContext('2d');
+  octx.imageSmoothingEnabled=true;
+  octx.imageSmoothingQuality='high';
+  octx.drawImage(full,b.x,b.y,b.w,b.h,0,0,out.width,out.height);
+  const dataUrl=out.toDataURL('image/jpeg',0.92);
+  const onDone=_cropState.onDone;
+  closeCropModal(false);
+  if(typeof onDone==='function')onDone(dataUrl);
+}
+
+// 比率チップのクリック・回転・キャンセル・完了
+document.addEventListener('click',e=>{
+  const ratioBtn=e.target.closest('#crop-ratios .crop-ratio');
+  if(ratioBtn){setCropRatio(ratioBtn.dataset.ratio);return;}
+  if(e.target.closest('#crop-rotate')){rotateCrop90();return;}
+  if(e.target.closest('#crop-reset')){resetCrop();return;}
+  if(e.target.closest('#crop-cancel')){closeCropModal(true);return;}
+  if(e.target.closest('#crop-done')){applyCropAndDone();return;}
+});
+
+// 画面回転 / リサイズ時の追従
+window.addEventListener('resize',()=>{
+  if($('crop-modal').classList.contains('on') && _cropState.img){
+    // 表示倍率の更新と枠の再配置
+    requestAnimationFrame(()=>{
+      // 枠サイズは画像ピクセル空間で持っているので、レイアウトだけ更新すれば追従する
+      const stage=$('crop-stage');
+      const sw=stage.clientWidth, sh=stage.clientHeight;
+      const {w:iw,h:ih}=effectiveImgSize();
+      if(!iw||!ih||!sw||!sh)return;
+      const scale=Math.min(sw/iw,sh/ih);
+      _cropState.displayScale=scale;
+      _cropState.imgDispW=Math.round(iw*scale);
+      _cropState.imgDispH=Math.round(ih*scale);
+      _cropState.imgDispLeft=Math.round((sw-_cropState.imgDispW)/2);
+      _cropState.imgDispTop=Math.round((sh-_cropState.imgDispH)/2);
+      // canvas の表示サイズと位置も更新
+      const canvas=stage.querySelector('canvas');
+      if(canvas){
+        canvas.style.left=_cropState.imgDispLeft+'px';
+        canvas.style.top=_cropState.imgDispTop+'px';
+        canvas.style.width=_cropState.imgDispW+'px';
+        canvas.style.height=_cropState.imgDispH+'px';
+      }
+      renderCropBox();
+    });
+  }
+});
 
 // data URL のおおよそのバイト数
 function dataUrlBytes(dataUrl){
@@ -8604,6 +9304,10 @@ document.addEventListener('click',e=>{
     case 'create-note':startCreate('note');break;
     case 'create-file':startCreate('file');break;
     case 'create-list':startCreate('list');break;
+    case 'photo-src-camera':pickPhotoSource('camera');break;
+    case 'photo-src-library':pickPhotoSource('library');break;
+    case 'photo-src-file':pickPhotoSource('file');break;
+    case 'close-photo-src':closePhotoSourceSheet();break;
     case 'save-card':saveCard();break;
     case 'cancel-upload':cancelUpload();break;
     case 'goto-search':goto('screen-search');break;
@@ -8753,6 +9457,7 @@ $('detail-input').addEventListener('keydown',e=>{
 })();
 
 $('file-input').addEventListener('change',onFilePick);
+$('file-input-camera').addEventListener('change',onFilePick);
 $('file-input-any').addEventListener('change',onFilePick);
 $('restore-input').addEventListener('change',handleRestoreFile);
 
