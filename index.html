@@ -658,6 +658,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   grid-template-columns:1fr 1fr 1fr;
   gap:8px;
 }
+/* add-sheet は 4 項目を横 1 列で表示する。
+   モバイル幅では文字が狭くなるので、内側パディングを少し詰める。 */
+#add-sheet .sheet-options{
+  grid-template-columns:repeat(4,1fr);
+  gap:6px;
+}
+#add-sheet .sheet-opt{
+  padding:14px 6px;
+  align-items:center;
+  text-align:center;
+  gap:8px;
+}
+#add-sheet .sheet-opt-title{font-size:12px;}
 .sheet-opt{
   background:var(--bg);
   border-radius:14px;
@@ -3303,35 +3316,30 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <div class="sheet-mask" id="add-mask" data-action="close-add"></div>
 <div class="sheet" id="add-sheet">
   <div class="sheet-handle"></div>
-  <div class="sheet-title">保存する</div>
   <div class="sheet-options">
     <button class="sheet-opt" data-action="create-camera">
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </div>
       <div class="sheet-opt-title">撮影する</div>
-      <div class="sheet-opt-desc">カメラ・トリミング</div>
     </button>
     <button class="sheet-opt" data-action="create-photo">
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
       </div>
-      <div class="sheet-opt-title">写真・ファイル</div>
-      <div class="sheet-opt-desc">ライブラリ・ファイル</div>
+      <div class="sheet-opt-title">写真</div>
     </button>
     <button class="sheet-opt" data-action="create-note">
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </div>
       <div class="sheet-opt-title">メモ</div>
-      <div class="sheet-opt-desc">テキストだけ</div>
     </button>
     <button class="sheet-opt" data-action="create-list">
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       </div>
       <div class="sheet-opt-title">リスト</div>
-      <div class="sheet-opt-desc">宿題、暗記</div>
     </button>
   </div>
 </div>
@@ -4120,55 +4128,6 @@ function setupNavs(){
   document.querySelectorAll('.bnav[data-bnav]').forEach(nav=>{
     nav.innerHTML=navHtml(nav.dataset.bnav);
   });
-  // 「+」ボタン: 長押しで即カメラ起動 (タップは通常通り open-add)
-  document.querySelectorAll('.bnav-add').forEach(btn=>attachAddLongPress(btn));
-}
-
-// 「+」ボタン長押し → 撮影を直接起動。
-// タップは既存の data-action="open-add" がそのまま動く。
-// 長押し閾値 500ms。動きがあればキャンセル。
-function attachAddLongPress(btn){
-  let timer=null, fired=false, startX=0, startY=0, moved=false;
-  const xy=ev=>ev.touches?[ev.touches[0].clientX,ev.touches[0].clientY]:[ev.clientX,ev.clientY];
-  const onStart=ev=>{
-    [startX,startY]=xy(ev);
-    moved=false; fired=false;
-    timer=setTimeout(()=>{
-      if(moved)return;
-      fired=true;
-      if(navigator.vibrate)navigator.vibrate(25);
-      // 念のためシートが開いていたら閉じる
-      closeAddSheet();
-      startCreate('camera');
-    },500);
-  };
-  const onMove=ev=>{
-    const [x,y]=xy(ev);
-    if(Math.abs(x-startX)>8 || Math.abs(y-startY)>8){
-      moved=true;
-      clearTimeout(timer);
-    }
-  };
-  const onEnd=ev=>{
-    clearTimeout(timer);
-    // 長押し発火後の通常クリック (open-add) を抑止
-    if(fired){
-      if(ev&&ev.preventDefault)ev.preventDefault();
-      // click イベントが続けて飛ぶ場合に備えて 1 回キャプチャで止める
-      const stopClick=e=>{e.stopPropagation();e.preventDefault();};
-      btn.addEventListener('click',stopClick,{capture:true,once:true});
-      // 念のため少ししたら解除 (もしclickが飛んで来なかったときに次回のclickを殺さないため)
-      setTimeout(()=>{btn.removeEventListener('click',stopClick,{capture:true});},400);
-    }
-  };
-  btn.addEventListener('touchstart',onStart,{passive:true});
-  btn.addEventListener('touchmove',onMove,{passive:true});
-  btn.addEventListener('touchend',onEnd);
-  btn.addEventListener('touchcancel',onEnd);
-  btn.addEventListener('mousedown',onStart);
-  btn.addEventListener('mousemove',onMove);
-  btn.addEventListener('mouseup',onEnd);
-  btn.addEventListener('mouseleave',()=>{clearTimeout(timer);});
 }
 
 // 塾生情報を最新化 (admin で shelfIds や aiEnabled が変わった時に反映)
@@ -5960,8 +5919,9 @@ function quickSave(){
 }
 
 function quickPhoto(){
+  // 「今すぐメモする」のカメラアイコンは即カメラ起動 → トリミング。
+  // テキストが入力済みなら photonote (写真+テキスト)、空なら photo として扱う。
   state.current=null;
-  state.photoMode='photonote';
   const v=$('quick-input').value.trim();
   state.current={
     id:'c_'+Date.now(),
@@ -5970,10 +5930,11 @@ function quickPhoto(){
     date:new Date().toISOString().slice(0,10),
     _new:true,
   };
-  if(!v)state.photoMode='photo';
+  state.photoMode=v?'photonote':'photo';
+  state.cameraCapture=true;
   $('quick-input').value='';
   onQuickInput();
-  $('file-input').click();
+  $('file-input-camera').click();
 }
 
 function quickList(){
