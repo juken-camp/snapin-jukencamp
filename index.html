@@ -1112,23 +1112,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 
 /* ─── 部分コピーモード ─────────────────────────
-   バブル内のテキストを直接選択させ、選択中バブルの真上に小さな「コピー」ボタンだけを浮かべる。
-   LINE 同様、シンプル極まりない見た目。下の入力バーには一切干渉しない。 */
-.partial-copy-pill{
-  position:fixed;
-  z-index:80;
-  background:var(--ink);
-  color:white;
-  padding:8px 18px;
-  border-radius:18px;
-  font-size:13px;
-  font-weight:600;
-  box-shadow:0 4px 14px rgba(0,0,0,.25);
-  display:none;
-  white-space:nowrap;
-}
-.partial-copy-pill.on{display:inline-block;}
-.partial-copy-pill:active{transform:scale(0.95);}
+   バブルを選択モードにすると、iOSネイティブの選択ハンドル + コピー/調べる/翻訳の
+   ポップオーバーがそのまま出る。自前のコピーボタンは不要 (iOSが既に提供しているため)。 */
 
 /* ─── リプライプレビュー (入力欄の上) ─── */
 .reply-preview{
@@ -1246,19 +1231,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   -webkit-touch-callout:none;
 }
 /* 部分コピー対象に指定されたバブルだけ、その間だけテキスト選択を許可する。
-   青いハンドルで好きな範囲を選べる「LINEの部分コピー」と同じ体験。
-   選択中であることが視覚的にわかるように、薄い枠を付ける。
-   ※ -webkit-touch-callout は default にせず、iOSネイティブのコピーメニューは抑止する。
-     これにより「ハンドルでの範囲選択」だけ可能で、ユーザーは下のツールバーで操作する。 */
+   iOSネイティブの青ハンドル + 「コピー/調べる/翻訳」ポップオーバーがそのまま出るので、
+   選択範囲のハイライト自体が視覚フィードバックになる (緑枠は不要)。 */
 .bubble.selecting,
 .bubble.selecting *{
   -webkit-user-select:text !important;
   user-select:text !important;
+  -webkit-touch-callout:default !important;
   cursor:text;
-}
-.bubble.selecting{
-  outline:2px solid var(--g);
-  outline-offset:2px;
 }
 .msg.u .bubble{
   background:#1D9E75;
@@ -3197,7 +3177,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 </div>
 
 <!-- 部分コピー: バブル選択モード中だけ、選択中バブルの真上に小さな「コピー」ボタンが出る -->
-<button class="partial-copy-pill" id="partial-copy-pill" data-action="do-partial-copy">コピー</button>
+<!-- 部分コピーは iOSネイティブの選択ハンドル + コピーメニューに完全に任せるため、
+     自前の UI 要素は不要 -->
+
 
 </div><!-- .app -->
 
@@ -6342,9 +6324,13 @@ function closeBubbleMenu(force){
 async function bubbleCopy(){
   const t=_bubbleMenuTarget;
   if(!t)return;
-  await copyToClipboard(t.text);
-  toast('コピーしました');
   closeBubbleMenu(true);
+  // iOSはメニュータップの余韻でバブルのテキストを選択状態にしてしまうことがあるので、
+  // コピー実行の前後で選択状態を明示的にクリアする (全文が青くハイライトされる現象の防止)
+  try{window.getSelection().removeAllRanges();}catch(_){}
+  await copyToClipboard(t.text);
+  try{window.getSelection().removeAllRanges();}catch(_){}
+  toast('コピーしました');
 }
 
 function bubbleReply(){
@@ -6398,10 +6384,10 @@ function openPartialCopy(bubbleEl){
   }
   _partialCopyBubble=bubbleEl;
   bubbleEl.classList.add('selecting');
-  // ピルを描画して、バブル直上の中央に置く。画面外にはみ出るなら直下に回す。
-  positionPartialCopyPill(bubbleEl);
-  // 少しだけ待ってから全選択をかけて、青いハンドルが即出るようにする。
-  // iOS では Range API での選択で同じハンドルが出る。
+  // バブル全体を初期選択範囲にする。iOSはこの選択範囲を見て自動で
+  // 「コピー/調べる/翻訳」のネイティブポップオーバーを出し、青いハンドルでの
+  // 範囲調整も可能にする。ユーザーは LINE と同じ感覚で範囲を選んでコピーできる。
+  // 自前の「コピー」ボタンは iOS が既に提供しているので不要。
   setTimeout(()=>{
     try{
       const range=document.createRange();
@@ -6413,53 +6399,12 @@ function openPartialCopy(bubbleEl){
   },50);
 }
 
-function positionPartialCopyPill(bubbleEl){
-  const pill=$('partial-copy-pill');
-  if(!pill||!bubbleEl)return;
-  pill.classList.add('on');
-  // 描画後にサイズ取得
-  const br=bubbleEl.getBoundingClientRect();
-  const pw=pill.offsetWidth;
-  const ph=pill.offsetHeight;
-  const vw=window.innerWidth;
-  const vh=window.innerHeight;
-  const gap=8;
-  let left=br.left + br.width/2 - pw/2;
-  left=Math.max(8,Math.min(vw-pw-8,left));
-  let top=br.top - ph - gap;
-  if(top<8){
-    top=br.bottom + gap;
-    if(top+ph>vh-8)top=Math.max(8,vh-ph-8);
-  }
-  pill.style.left=left+'px';
-  pill.style.top=top+'px';
-}
-
 function closePartialCopy(){
-  const pill=$('partial-copy-pill');
-  if(pill)pill.classList.remove('on');
   // 防御的に、DOM内の全ての .bubble.selecting をクリーンアップする。
   // 参照だけ消えて class が残るケースを防ぐ。
   document.querySelectorAll('.bubble.selecting').forEach(b=>b.classList.remove('selecting'));
   _partialCopyBubble=null;
   try{window.getSelection().removeAllRanges();}catch(_){}
-}
-
-async function doPartialCopy(){
-  // 現在の選択範囲のテキストを取得 (空なら何もしない)
-  let text='';
-  try{
-    const sel=window.getSelection();
-    if(sel && sel.toString())text=sel.toString();
-  }catch(_){}
-  // フォールバック: 何も選択されていなければ対象バブル全体をコピー
-  if(!text && _partialCopyBubble){
-    text=_partialCopyBubble.innerText||_partialCopyBubble.textContent||'';
-  }
-  if(!text){closePartialCopy();return;}
-  await copyToClipboard(text);
-  toast('コピーしました');
-  closePartialCopy();
 }
 
 // ─── リプライ ─────────────────────────
@@ -8642,7 +8587,6 @@ document.addEventListener('click',e=>{
     case 'close-bubble-menu':closeBubbleMenu();break;
     case 'clear-reply':clearReplyTo();break;
     case 'close-partial-copy':closePartialCopy();break;
-    case 'do-partial-copy':doPartialCopy();break;
   }
 });
 
@@ -8658,10 +8602,9 @@ document.addEventListener('click',e=>{
   else if(op==='delete')bubbleDelete();
 });
 
-// 部分コピー中の外側タップで解除。コピーピル自身と選択中バブル自身は除外。
+// 部分コピー中の外側タップで解除。選択中バブル自身は除外 (選択範囲の調整中なので)。
 document.addEventListener('click',e=>{
   if(!_partialCopyBubble)return;
-  if(e.target.closest('#partial-copy-pill'))return;
   if(e.target.closest('.bubble.selecting'))return;
   closePartialCopy();
 },true); // capture: メニュー閉じる処理より先に判定したい
