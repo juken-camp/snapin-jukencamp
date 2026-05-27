@@ -7856,11 +7856,8 @@ $('restore-input').addEventListener('change',handleRestoreFile);
   const SPINNER_H=26;      // スピナーの高さ。隙間の中央に出すために使う
   let startY=0, lastY=0, pulling=false, target=null, indicator=null, refreshing=false;
   let spinnerEl=null;      // .ptr-spinner をキャッシュ (querySelectorを毎フレーム避ける)
+  let wasReady=false;      // ready クラスの状態キャッシュ (classList変更を最小化)
   let refreshGuard=null;   // 万一 doRefresh が完了しなかった場合のフェイルセーフ
-  // rAF スロットリング用
-  let rafId=0;
-  let pendingPull=0;       // 最新の pull 値 (rAF内で読む)
-  let pendingDy=0;         // 最新の dy 値 (opacity計算用)
 
   function makeIndicator(){
     const el=document.createElement('div');
@@ -7879,8 +7876,6 @@ $('restore-input').addEventListener('change',handleRestoreFile);
   }
 
   // スピナーを「引っ張って開いた隙間の中央」に置くための Y 座標を返す。
-  // 隙間の高さは pull。スピナーの高さは SPINNER_H。
-  // スクロール領域の top を 0 として、(pull - SPINNER_H)/2 が中央。
   function spinnerY(pull){
     return Math.max(0, (pull - SPINNER_H) / 2);
   }
@@ -7889,27 +7884,6 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     const screen=document.querySelector('.screen.active');
     if(!screen)return null;
     return screen.querySelector('.scroll');
-  }
-
-  // rAFでまとめてDOMを更新 (1フレームに1回だけ書き込む)
-  function flushFrame(){
-    rafId=0;
-    if(!pulling || !target || !indicator) return;
-    const pull=pendingPull;
-    const dy=pendingDy;
-    const ratio=pull/THRESHOLD; // 1.0で閾値到達
-    // スピナー: 引っ張って開いた隙間の中央
-    indicator.style.transform=`translate3d(0, ${spinnerY(pull)}px, 0)`;
-    // フェードイン (dy/30 で1.0に到達)
-    indicator.style.opacity=dy<30?(dy/30).toFixed(2):'1';
-    if(spinnerEl) spinnerEl.style.transform=`rotate(${ratio*270}deg)`;
-    // ready クラスはトグルだが、状態が変わるときだけ実際にDOMが触られる
-    const isReady=pull>=THRESHOLD;
-    if(isReady !== indicator.classList.contains('ready')){
-      indicator.classList.toggle('ready', isReady);
-    }
-    // スクロール領域はインジケータと同じ動き (一体感を出す)
-    target.style.transform=`translate3d(0, ${pull}px, 0)`;
   }
 
   function onStart(e){
@@ -7930,10 +7904,13 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     startY=e.touches[0].clientY;
     lastY=startY;
     pulling=false;
+    wasReady=false;
   }
 
   function onMove(e){
     if(!target||refreshing)return;
+    // iOS で複数指の操作や特殊状況で touches が空になることがある
+    if(!e.touches || e.touches.length===0)return;
     const y=e.touches[0].clientY;
     const dy=y-startY;
     lastY=y;
@@ -7947,9 +7924,8 @@ $('restore-input').addEventListener('change',handleRestoreFile);
       if(!pulling){
         pulling=true;
         // スピナーはスクロール領域の親(.screen)直下に挿入する。
-        // スクロール領域そのものに transform をかけるので、その内側に置くと
-        // スピナーも一緒に動いてしまうから、外側に置く。
         const host=target.parentElement;
+        if(!host){pulling=false;target=null;return;}
         if(!indicator){
           indicator=makeIndicator();
           spinnerEl=indicator.querySelector('.ptr-spinner');
@@ -7958,29 +7934,43 @@ $('restore-input').addEventListener('change',handleRestoreFile);
           host.appendChild(indicator);
           spinnerEl=indicator.querySelector('.ptr-spinner');
         }
-        // スクロール領域の上端の位置に合わせる。ヘッダーがある画面でも正しい場所に出る。
+        // スクロール領域の上端の位置に合わせる
         indicator.style.top=target.offsetTop+'px';
         indicator.style.display='flex';
         // ドラッグ中はトランジションを切る (指追従)
         indicator.classList.remove('snap');
         target.classList.remove('ptr-snap');
-        // GPUレイヤー化のヒント (引っ張ってる間だけ)
+        // GPUレイヤー化のヒント
         indicator.classList.add('pulling');
         target.classList.add('ptr-pulling');
+        wasReady=false;
       }
     }
     if(!pulling)return;
-    // 最新の値だけ保持し、書き込みは rAF にまとめる (60Hz以上のイベントを間引く)
-    pendingPull=rubberBand(dy);
-    pendingDy=dy;
-    if(!rafId) rafId=requestAnimationFrame(flushFrame);
-    // 引っ張り中はネイティブスクロールを抑える
-    if(e.cancelable)e.preventDefault();
+    if(!indicator)return; // 防御: 何らかの理由で indicator が消えてたら諦める
+    try{
+      const pull=rubberBand(dy);
+      const ratio=pull/THRESHOLD;
+      indicator.style.transform=`translate3d(0, ${spinnerY(pull)}px, 0)`;
+      indicator.style.opacity=dy<30?(dy/30).toFixed(2):'1';
+      if(spinnerEl) spinnerEl.style.transform=`rotate(${ratio*270}deg)`;
+      const isReady=pull>=THRESHOLD;
+      if(isReady !== wasReady){
+        indicator.classList.toggle('ready', isReady);
+        wasReady=isReady;
+      }
+      target.style.transform=`translate3d(0, ${pull}px, 0)`;
+    }catch(err){
+      // 例外が起きても止まらない (固まり症状の最後の防御線)
+      console.warn('PTR onMove error:',err);
+    }
+    // ★ preventDefault は必ず同期で。これがないと iOS が普通のスクロールを発動する
+    if(e.cancelable){
+      try{e.preventDefault();}catch(_){}
+    }
   }
 
   function onEnd(){
-    // 保留中の rAF があればキャンセル (古いフレームが後から流れて固まりに見える原因)
-    if(rafId){cancelAnimationFrame(rafId);rafId=0;}
     if(!target){
       // 念のため: pulling だけ残っていてもクリーンに戻す
       if(pulling){pulling=false;resetIndicator();}
