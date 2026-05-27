@@ -4837,15 +4837,22 @@ function renderUpload(){
     body.appendChild(ta);
   }else if(c.type==='note'){
     // contenteditable な div を使う (textarea は縦揃えが効かないため)。
-    // 編集 wrap を「グリッドカードを大きくスケールしたプレビュー」にする。
-    // グリッドのカードは画面幅 ÷ 3 ≒ 140px の正方形。編集画面では画面幅まるごとを
-    // 使えるので、その比率(おおむね 3倍)でフォントサイズもスケールする。
-    // → 結果: グリッドに表示された時と「同じ位置で改行」「同じ行数」が編集中に確認できる。
-    // 横幅と内寸のpaddingもグリッドカードと同じ比率にする。
+    // 編集 wrap を「グリッドカードを実寸で作って transform:scale で拡大表示する」方式にする。
+    // 計算ロジックでフォントサイズを scale 倍するアプローチだと、padding比やフォントメトリクスの
+    // 微妙な差で改行位置が1文字ズレることがあった。
+    // → 実寸カード(width:140px相当, padding:10px, fontSize:gridFz)をそのまま生成し、それを
+    //    CSS transform:scale で見た目だけ拡大すれば、改行位置は実カードのままなのでグリッドと完全一致する。
     const wrap=document.createElement('div');
     wrap.id='up-note-wrap';
-    // 正方形にして、padding は applyStyle 内でグリッドカード(10px)を scale 倍した px 値で動的設定
-    wrap.style.cssText='width:100%;aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;line-height:1.5;cursor:text;box-sizing:border-box;overflow:hidden;';
+    // 外側の正方形(画面に見える領域)。中の inner を中央配置する。
+    wrap.style.cssText='width:100%;aspect-ratio:1;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:text;box-sizing:border-box;overflow:hidden;';
+
+    // 実寸カード(グリッドカードと同寸): scale で拡大される対象
+    const inner=document.createElement('div');
+    inner.id='up-note-inner';
+    // グリッドカード相当の寸法。box-sizing は border-box で padding 含めて指定幅。
+    // padding: 10px (グリッド .ctxt と同じ)。display:flex で揃え制御。
+    inner.style.cssText='width:140px;height:140px;padding:10px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;transform-origin:center center;';
 
     const editor=document.createElement('div');
     editor.id='up-note-area';
@@ -4854,6 +4861,7 @@ function renderUpload(){
     editor.setAttribute('autocapitalize','sentences');
     editor.setAttribute('spellcheck','false');
     editor.setAttribute('data-placeholder','メモを書く…');
+    // editor は inner 内で width:100% (= padding控除後の120px)
     editor.style.cssText='outline:none;width:100%;white-space:pre-wrap;word-break:break-word;-webkit-user-select:text;user-select:text;min-height:1.5em;';
     // 初期値設定: textContent では改行が表示されないので、innerHTML に変換する。
     // ただし XSS を避けるため、HTML エスケープしてから改行を <br> に変える。
@@ -4864,11 +4872,13 @@ function renderUpload(){
       editor.textContent='';
     }
 
-    wrap.appendChild(editor);
+    inner.appendChild(editor);
+    wrap.appendChild(inner);
 
     // 親 wrap をクリックしたら editor にフォーカス (タップしやすく)
     wrap.addEventListener('click',e=>{
-      if(e.target===wrap){
+      // wrap または inner をクリックしたら editor にフォーカス (editor自体は除外)
+      if(e.target===wrap || e.target===inner){
         editor.focus();
         // 末尾にキャレットを置く
         const range=document.createRange();
@@ -4881,21 +4891,15 @@ function renderUpload(){
     });
 
     // 揃え/色/フォントサイズを反映する関数。
-    // フォントサイズはグリッドカードと同じロジック (noteCardStyle) を使い、
-    // 編集領域がグリッドの何倍かを掛けてスケールする。これにより
-    // 「グリッド表示時と同じ位置で改行する」のが編集中に WYSIWYG で見える。
-    //
-    // ポイント: wrap の外寸 × padding比率 と、グリッドカード(140px × padding 10px)の
-    // 比率を完全一致させる。具体的には:
-    //   scale = wrap外寸 / 140
-    //   padding = 10 * scale px (← %ではなくpx固定。内寸/外寸の比率がグリッドと同一に)
-    //   fontSize = gridFz * scale
-    // この3つが「同じ scale で」掛かるので、内寸 vs フォントサイズの比率も完全一致 →
-    // ブラウザが計算する改行位置がグリッドと一致する。
+    // 実寸カード(inner: 140×140px, padding:10px)にグリッドカードと完全に同じ値を設定し、
+    // transform:scale で見た目だけ拡大する。改行位置はブラウザが実寸140pxの中で計算するため、
+    // グリッドカードに表示されたときと「ピクセル単位で同じ位置」で改行する。
     const applyStyle=()=>{
       const col=colorById(c.color);
+      // 外側(wrap)も同じ色にしておく(transform で覆いきれない場合の保険)
       wrap.style.background=col.bg;
-      wrap.style.color=col.fg;
+      inner.style.background=col.bg;
+      inner.style.color=col.fg;
       const txt=editor.innerText;
 
       // グリッドカードと同じサイズ計算 (文字数 + 改行数で fz, lh を決定)
@@ -4908,24 +4912,21 @@ function renderUpload(){
       }
       const gridFz=NOTE_CARD_SIZES[idx].fz;
       const lh=NOTE_CARD_SIZES[idx].lh;
+      // 実寸カードにはグリッドと同じ生の値を設定(scaleで拡大される)
+      inner.style.fontSize=gridFz+'px';
+      inner.style.lineHeight=lh;
 
-      // スケール = wrap の外寸 ÷ グリッドカードの外寸(140px)
+      // スケール = 表示領域(wrap外寸) / 実寸カード幅(140px)
       const wrapW=wrap.clientWidth||300;
-      const gridCardW=140;
-      const scale=wrapW/gridCardW;
-      // padding もグリッド(10px)を同じscaleで拡大 → 内寸/外寸の比率が一致 → 改行位置一致
-      const previewFz=gridFz*scale;
-      const previewPad=10*scale;
-      wrap.style.fontSize=previewFz+'px';
-      wrap.style.padding=previewPad+'px';
-      wrap.style.lineHeight=lh;
+      const scale=wrapW/140;
+      inner.style.transform='scale('+scale+')';
 
       const align=resolveAlign({text:txt,alignH:c.alignH,alignV:c.alignV});
-      // 横揃え: flex 親の align-items + 子の text-align
-      wrap.style.alignItems=align.h==='center'?'center':'flex-start';
+      // 横揃え: inner の align-items + editor の text-align
+      inner.style.alignItems=align.h==='center'?'center':'flex-start';
       editor.style.textAlign=align.h==='center'?'center':'left';
-      // 縦揃え: flex 親の justify-content
-      wrap.style.justifyContent=align.v==='center'?'center':'flex-start';
+      // 縦揃え: inner の justify-content
+      inner.style.justifyContent=align.v==='center'?'center':'flex-start';
     };
     applyStyle();
     // wrap の幅は初回 layout 後に確定するため、次フレームで再計算 (初期表示のズレ対策)
