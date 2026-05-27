@@ -1111,80 +1111,57 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   transition:transform .12s ease, filter .12s ease;
 }
 
-/* ─── 部分コピー (テキスト選択シート) ─── */
-.partial-copy-overlay{
+/* ─── 部分コピーモード ─────────────────────────
+   バブル内のテキストを直接選択させ、画面下の入力バーの上に細いツールバーを出す。
+   下から大きなシートを開くのではなく、選択 → 即コピーの最短動線。
+   ヒント (「コピーしたい部分を選択」) と「選択範囲をコピー」「キャンセル」のみ。 */
+.partial-copy-bar{
   position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.45);
-  z-index:100;
-  display:none;
-  align-items:flex-end;
-  justify-content:center;
-}
-.partial-copy-overlay.on{display:flex;}
-.partial-copy-sheet{
-  width:100%;
+  left:0;right:0;
+  /* 入力バーの上に出すため、bottom は概算 (入力バー高さ + safe-area)。
+     画面サイズに依存しないように JS で固定値ではなく fixed bottom を使う。 */
+  bottom:calc(58px + env(safe-area-inset-bottom));
+  z-index:80;
+  margin:0 auto;
   max-width:430px;
   background:var(--surface);
-  border-top-left-radius:16px;
-  border-top-right-radius:16px;
-  padding:14px 16px calc(16px + env(safe-area-inset-bottom));
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  max-height:70vh;
-  box-shadow:0 -8px 24px rgba(0,0,0,.15);
-}
-.partial-copy-head{
-  display:flex;
+  border-top:0.5px solid var(--line);
+  border-bottom:0.5px solid var(--line);
+  padding:8px 14px;
+  display:none;
   align-items:center;
   justify-content:space-between;
-  font-size:13px;
-  color:var(--ink2);
+  gap:10px;
+  box-shadow:0 -4px 14px rgba(0,0,0,.08);
 }
-.partial-copy-head .pc-hint{font-size:11px;color:var(--ink3);}
-.partial-copy-cancel{
-  padding:6px 10px;
+.partial-copy-bar.on{display:flex;}
+.partial-copy-bar .pc-hint{
+  font-size:12px;
+  color:var(--ink3);
+  flex:1;
+  min-width:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.partial-copy-bar-cancel{
+  padding:6px 12px;
   font-size:13px;
   color:var(--ink2);
   border-radius:14px;
+  flex-shrink:0;
 }
-.partial-copy-cancel:active{background:var(--bg);color:var(--g);}
-.partial-copy-text{
-  flex:1;
-  min-height:120px;
-  max-height:48vh;
-  border:0.5px solid var(--line);
-  border-radius:10px;
-  padding:12px 14px;
-  font-size:14px;
-  line-height:1.6;
-  color:var(--ink);
-  background:var(--bg);
-  resize:none;
-  -webkit-user-select:text;
-  user-select:text;
-  overflow-y:auto;
-  white-space:pre-wrap;
-  word-break:break-word;
-  font-family:inherit;
-}
-.partial-copy-text:focus{outline:none;border-color:var(--g);}
-.partial-copy-actions{
-  display:flex;
-  gap:8px;
-  justify-content:flex-end;
-}
-.partial-copy-btn{
-  padding:9px 18px;
+.partial-copy-bar-cancel:active{background:var(--bg);color:var(--g);}
+.partial-copy-bar-btn{
+  padding:8px 16px;
   font-size:13px;
   font-weight:600;
-  border-radius:18px;
+  border-radius:16px;
   background:var(--g);
   color:white;
+  flex-shrink:0;
 }
-.partial-copy-btn:active{background:var(--gd);transform:scale(0.96);}
-.partial-copy-btn.disabled{background:var(--ink3);opacity:0.5;pointer-events:none;}
+.partial-copy-bar-btn:active{background:var(--gd);transform:scale(0.96);}
 
 /* ─── リプライプレビュー (入力欄の上) ─── */
 .reply-preview{
@@ -1289,6 +1266,20 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   word-break:break-word;
   -webkit-user-select:none;
   user-select:none;
+  /* iOS Safari の長押しで出る「コピー/調べる/翻訳」ポップオーバーを完全に抑止する。
+     user-select:none だけだと iOS 16+ で出てしまうことがあるので callout も切る。 */
+  -webkit-touch-callout:none;
+}
+/* 部分コピー対象に指定されたバブルだけ、その間だけテキスト選択を許可する。
+   青いハンドルで好きな範囲を選べる「LINEの部分コピー」と同じ体験。
+   選択中であることが視覚的にわかるように、薄い枠を付ける。 */
+.bubble.selecting{
+  -webkit-user-select:text !important;
+  user-select:text !important;
+  -webkit-touch-callout:default !important;
+  cursor:text;
+  outline:2px solid var(--g);
+  outline-offset:2px;
 }
 .msg.u .bubble{
   background:#1D9E75;
@@ -3226,18 +3217,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </button>
 </div>
 
-<!-- 部分コピー: テキスト選択シート -->
-<div class="partial-copy-overlay" id="partial-copy-overlay" data-action="close-partial-copy-outside">
-  <div class="partial-copy-sheet" role="dialog" aria-label="部分コピー" data-stop-partial-close="1">
-    <div class="partial-copy-head">
-      <span class="pc-hint">コピーしたい部分を選択</span>
-      <button class="partial-copy-cancel" data-action="close-partial-copy">キャンセル</button>
-    </div>
-    <textarea class="partial-copy-text" id="partial-copy-text" readonly spellcheck="false"></textarea>
-    <div class="partial-copy-actions">
-      <button class="partial-copy-btn" id="partial-copy-btn" data-action="do-partial-copy">選択範囲をコピー</button>
-    </div>
-  </div>
+<!-- 部分コピー: バブル内テキスト選択モードのツールバー (画面下の入力バーの上に出る) -->
+<div class="partial-copy-bar" id="partial-copy-bar" role="toolbar">
+  <span class="pc-hint">コピーしたい部分を選択</span>
+  <button class="partial-copy-bar-cancel" data-action="close-partial-copy">キャンセル</button>
+  <button class="partial-copy-bar-btn" data-action="do-partial-copy">選択範囲をコピー</button>
 </div>
 
 </div><!-- .app -->
@@ -6268,6 +6252,8 @@ function attachBubbleLongPress(msgEl,cardId,msgIdx,bubbleEl){
   const target=bubble || msgEl;
   const onStart=ev=>{
     if(ev.target.closest('a'))return; // バブル内リンクは普通に開きたい
+    // 部分コピー中のバブルは、長押しではなくテキスト選択が目的なのでメニューを出さない
+    if(bubble && bubble.classList.contains('selecting'))return;
     [startX,startY]=xy(ev);
     moved=false;fired=false;
     pressTimer=setTimeout(()=>{
@@ -6396,33 +6382,59 @@ function bubbleDelete(){
 function bubblePartialCopy(){
   const t=_bubbleMenuTarget;
   if(!t)return;
-  openPartialCopy(t.text);
+  // バブル要素を参照しておく必要があるので、メニューを閉じる前に取得
+  const bubbleEl=t.bubbleEl;
   closeBubbleMenu();
+  openPartialCopy(bubbleEl);
 }
 
-// ─── 部分コピー (テキスト選択シート) ─────────────────────────
-function openPartialCopy(text){
-  const ovr=$('partial-copy-overlay');
-  const ta=$('partial-copy-text');
-  ta.value=text||'';
-  ovr.classList.add('on');
-  // 少し遅延させてフォーカス & 全選択 (これで青いハンドルがすぐ出せる)
+// ─── 部分コピー (バブル内テキスト選択) ─────────────────────────
+// LINE と同じ感覚で、対象バブルそのものに iOS のテキスト選択ハンドルを出す。
+// 別シートにテキストをコピーするのではなく、画面に表示されている文字列の上を
+// そのまま指でなぞって範囲を選ぶ。下の細いバーで「選択範囲をコピー」「キャンセル」を出す。
+let _partialCopyBubble=null; // 現在選択モード中のバブル
+function openPartialCopy(bubbleEl){
+  if(!bubbleEl)return;
+  // 既に別バブルを選択モードにしていたら、まず解除
+  if(_partialCopyBubble && _partialCopyBubble!==bubbleEl){
+    _partialCopyBubble.classList.remove('selecting');
+  }
+  _partialCopyBubble=bubbleEl;
+  bubbleEl.classList.add('selecting');
+  $('partial-copy-bar').classList.add('on');
+  // 少しだけ待ってから全選択をかけて、青いハンドルが即出るようにする。
+  // iOS では Range API での選択で同じハンドルが出る。
   setTimeout(()=>{
-    ta.focus();
-    try{ta.setSelectionRange(0,ta.value.length);}catch(_){}
+    try{
+      const range=document.createRange();
+      range.selectNodeContents(bubbleEl);
+      const sel=window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }catch(_){}
   },50);
 }
 
 function closePartialCopy(){
-  $('partial-copy-overlay').classList.remove('on');
+  $('partial-copy-bar').classList.remove('on');
+  if(_partialCopyBubble){
+    _partialCopyBubble.classList.remove('selecting');
+    _partialCopyBubble=null;
+  }
+  try{window.getSelection().removeAllRanges();}catch(_){}
 }
 
 async function doPartialCopy(){
-  const ta=$('partial-copy-text');
-  const s=ta.selectionStart||0;
-  const e=ta.selectionEnd||0;
-  // 何も選択されていなければ全文をコピー
-  const text=(s===e)?ta.value:ta.value.substring(s,e);
+  // 現在の選択範囲のテキストを取得 (空なら何もしない)
+  let text='';
+  try{
+    const sel=window.getSelection();
+    if(sel && sel.toString())text=sel.toString();
+  }catch(_){}
+  // フォールバック: 何も選択されていなければ対象バブル全体をコピー
+  if(!text && _partialCopyBubble){
+    text=_partialCopyBubble.innerText||_partialCopyBubble.textContent||'';
+  }
   if(!text){closePartialCopy();return;}
   await copyToClipboard(text);
   toast('コピーしました');
@@ -6651,8 +6663,9 @@ function setupImageZoom(container){
 function openDetail(c,origin){
   state.current=Object.assign({},c,{_origin:origin});
   state.detailAiMode=false;
-  // 別のカードを開いたらリプライ状態は持ち越さない
+  // 別のカードを開いたらリプライ・部分コピー状態は持ち越さない
   clearReplyTo();
+  closePartialCopy();
   const isOfficial=origin==='official';
 
   $('detail-img').classList.add('hide');
@@ -8581,10 +8594,6 @@ document.addEventListener('click',e=>{
     case 'close-bubble-menu':closeBubbleMenu();break;
     case 'clear-reply':clearReplyTo();break;
     case 'close-partial-copy':closePartialCopy();break;
-    case 'close-partial-copy-outside':
-      // オーバーレイの外周 (シート外) をタップしたときだけ閉じる
-      if(e.target===$('partial-copy-overlay'))closePartialCopy();
-      break;
     case 'do-partial-copy':doPartialCopy();break;
   }
 });
