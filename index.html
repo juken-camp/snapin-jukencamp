@@ -1211,18 +1211,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink3);
   z-index:50;
   pointer-events:none;
-  opacity:0;
-  /* 最初から3Dレイヤーに乗せる (引っ張る前にGPU合成を準備) */
-  transform:translate3d(0,0,0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
-}
-/* 引っ張り中はGPUレイヤーをヒント */
-.ptr-indicator.pulling{will-change:transform, opacity;}
-.ptr-indicator.snap{
   will-change:transform, opacity;
-  transition:transform .28s cubic-bezier(.16,1,.3,1), opacity .18s ease-out;
+  opacity:0;
 }
+.ptr-indicator.snap{transition:transform .28s cubic-bezier(.16,1,.3,1), opacity .18s ease-out;}
 .ptr-indicator.ready{color:var(--g);}
 /* スピナー本体 */
 .ptr-spinner{
@@ -1232,19 +1224,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border:2px solid currentColor;
   border-top-color:transparent;
   transition:transform .12s ease-out;
-  transform:translateZ(0);
 }
-.ptr-indicator.ready .ptr-spinner{transform:scale(1.1) translateZ(0);}
+.ptr-indicator.ready .ptr-spinner{transform:scale(1.1);}
 .ptr-indicator.spinning .ptr-spinner{animation:ptr-spin 0.7s linear infinite;}
-@keyframes ptr-spin{to{transform:rotate(360deg) translateZ(0);}}
-/* スクロール領域: 引っ張り中はGPUレイヤー化、スナップ時のみtransition */
-.scroll.ptr-pulling{
-  will-change:transform;
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
-  /* 引っ張り中は遅延読込画像の高さ変化で再レイアウトが走らないように */
-  contain:layout paint;
-}
+@keyframes ptr-spin{to{transform:rotate(360deg);}}
 .scroll.ptr-snap{
   will-change:transform;
   transition:transform .28s cubic-bezier(.16,1,.3,1);
@@ -6621,37 +6604,6 @@ function renderLibrary(){
 
   // ドラッグ並べ替えをセットアップ
   setupLibraryReorder();
-
-  // ★ アバター画像を事前にデコードしておく (PTRやスクロール中のメインスレッドブロックを防ぐ)
-  // ブラウザに任せると、画像が画面に入ってきた瞬間に同期デコードが走り、
-  // PTRの transform アニメーションが「写メのところで一瞬止まる」原因になる。
-  // ここで先にデコードを完了させておけば、表示時のコストはほぼゼロ。
-  decodeAvatarsAsync(list);
-}
-
-// アバター(リスト内 <img>)を非同期に事前デコードする。
-// 失敗しても無視 (画像なし状態をブラウザの自動デコードに任せるだけ)。
-function decodeAvatarsAsync(container){
-  if(!container)return;
-  const imgs=container.querySelectorAll('.lib-avatar img');
-  imgs.forEach(img=>{
-    // 既にデコード済みなら何もしない
-    if(img.complete && img.naturalWidth>0){
-      // それでも decode() を呼んでおくとブラウザがキャッシュを準備する
-      if(img.decode)img.decode().catch(()=>{});
-      return;
-    }
-    // ロード完了を待ってからデコード
-    const tryDecode=()=>{
-      if(img.decode)img.decode().catch(()=>{});
-    };
-    if(img.complete){
-      tryDecode();
-    }else{
-      img.addEventListener('load',tryDecode,{once:true});
-      img.addEventListener('error',()=>{},{once:true});
-    }
-  });
 }
 
 // ═══ 公式ライブラリの並べ替え (ドラッグ&ドロップ) ═══
@@ -7020,7 +6972,7 @@ function libItem(s,subbed,group){
   const newN=subbed?newCountForShelf(s):0;
   const badge=newN>0?`<span class="lib-new-badge">${newN>99?'99+':newN}</span>`:'';
   const avatar=s.icon
-    ? `<div class="lib-avatar has-icon"><img src="${esc(s.icon)}" alt="" width="44" height="44" decoding="async" loading="eager" fetchpriority="low"></div>`
+    ? `<div class="lib-avatar has-icon"><img src="${esc(s.icon)}" alt=""></div>`
     : `<div class="lib-avatar">${esc((s.name||'?').slice(0,1))}</div>`;
   // 配布型（管理画面からアクセス権が付与されている）かどうか
   const isDistributed=!locked; // canSeeShelfId=true === 配布型
@@ -7850,14 +7802,46 @@ $('restore-input').addEventListener('change',handleRestoreFile);
 
 // ═══ PULL TO REFRESH ═══
 // 各 .scroll コンテナで、頂部から下に引っ張ると更新する
+
+// ★★★ デバッグ用: 画面右下にログを表示するオーバーレイ ★★★
+// iPhone実機でPTR挙動を確認するため。原因切り分けが終わったら削除する。
+(function setupDebugLog(){
+  const panel=document.createElement('div');
+  panel.id='dbg-panel';
+  panel.style.cssText='position:fixed;right:4px;bottom:80px;width:170px;max-height:240px;background:rgba(0,0,0,.78);color:#0f0;font:10px/1.25 monospace;padding:4px 5px;z-index:99999;border-radius:6px;overflow:hidden;pointer-events:auto;white-space:pre;';
+  panel.textContent='[dbg]\n';
+  // タップでクリア
+  panel.addEventListener('click',()=>{panel.textContent='[dbg]\n';});
+  document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(panel),{once:true});
+  // 既にDOM準備済みなら即追加
+  if(document.body)document.body.appendChild(panel);
+  const MAX_LINES=18;
+  window.dbg=function(msg){
+    if(!panel.parentNode && document.body)document.body.appendChild(panel);
+    const t=new Date();
+    const ts=String(t.getSeconds()).padStart(2,'0')+'.'+String(t.getMilliseconds()).padStart(3,'0');
+    const lines=panel.textContent.split('\n');
+    lines.push(ts+' '+msg);
+    while(lines.length>MAX_LINES+1)lines.splice(1,1); // [dbg]ヘッダは残す
+    panel.textContent=lines.join('\n');
+  };
+  // JSエラーが起きていたら必ず画面に出す (PTR中の例外で固まる症状を即座に発見できる)
+  window.addEventListener('error',ev=>{
+    window.dbg && window.dbg('ERR: '+(ev.message||'?')+' @'+(ev.filename||'').split('/').pop()+':'+(ev.lineno||'?'));
+  });
+  window.addEventListener('unhandledrejection',ev=>{
+    window.dbg && window.dbg('REJ: '+(ev.reason && ev.reason.message?ev.reason.message:String(ev.reason).slice(0,60)));
+  });
+})();
+
 (function setupPullToRefresh(){
   const THRESHOLD=70;      // この距離以上引いたら更新
   const MAX_PULL=130;      // 最大変位
   const SPINNER_H=26;      // スピナーの高さ。隙間の中央に出すために使う
   let startY=0, lastY=0, pulling=false, target=null, indicator=null, refreshing=false;
-  let spinnerEl=null;      // .ptr-spinner をキャッシュ (querySelectorを毎フレーム避ける)
-  let wasReady=false;      // ready クラスの状態キャッシュ (classList変更を最小化)
   let refreshGuard=null;   // 万一 doRefresh が完了しなかった場合のフェイルセーフ
+  let moveCount=0;         // dbg: touchmove発火回数
+  let lastDy=0;            // dbg: 最後のdy値
 
   function makeIndicator(){
     const el=document.createElement('div');
@@ -7876,6 +7860,8 @@ $('restore-input').addEventListener('change',handleRestoreFile);
   }
 
   // スピナーを「引っ張って開いた隙間の中央」に置くための Y 座標を返す。
+  // 隙間の高さは pull。スピナーの高さは SPINNER_H。
+  // スクロール領域の top を 0 として、(pull - SPINNER_H)/2 が中央。
   function spinnerY(pull){
     return Math.max(0, (pull - SPINNER_H) / 2);
   }
@@ -7887,36 +7873,38 @@ $('restore-input').addEventListener('change',handleRestoreFile);
   }
 
   function onStart(e){
-    if(refreshing)return;
+    if(refreshing){dbg('start: refreshing中なので無視');return;}
     // 選択モード中・モーダル中・追加シート中はPTRしない
-    if(state.selectMode)return;
+    if(state.selectMode){return;}
     if($('add-sheet') && $('add-sheet').classList.contains('on'))return;
     if($('color-sheet') && $('color-sheet').classList.contains('on'))return;
     // ライブラリの並べ替えドラッグ中はPTRしない
     if(document.querySelector('.lib-item.dragging'))return;
     const sc=activeScrollEl();
-    if(!sc)return;
+    if(!sc){dbg('start: scrollEl無し');return;}
     // 詳細画面 / アップロード画面では更新の必要がないのでスキップ
     const screen=document.querySelector('.screen.active');
     if(screen && (screen.id==='screen-detail' || screen.id==='screen-upload' || screen.id==='screen-login' || screen.id==='screen-claim' || screen.id==='screen-review'))return;
-    if(sc.scrollTop>0)return; // 頂部でないと開始しない
+    if(sc.scrollTop>0){return;} // 頂部でないと開始しない
     target=sc;
     startY=e.touches[0].clientY;
     lastY=startY;
     pulling=false;
-    wasReady=false;
+    moveCount=0;
+    lastDy=0;
+    dbg('START y='+Math.round(startY)+' tgt='+sc.parentElement.id);
   }
 
   function onMove(e){
     if(!target||refreshing)return;
-    // iOS で複数指の操作や特殊状況で touches が空になることがある
-    if(!e.touches || e.touches.length===0)return;
+    moveCount++;
     const y=e.touches[0].clientY;
     const dy=y-startY;
     lastY=y;
+    lastDy=dy;
     if(dy<=0){
       // 上方向は無視 (普通のスクロール)
-      if(pulling){resetIndicator();pulling=false;}
+      if(pulling){resetIndicator();pulling=false;dbg('move: 上方向→reset');}
       return;
     }
     // 下方向に少し動いたら pulling 開始 (反応を早く)
@@ -7924,53 +7912,58 @@ $('restore-input').addEventListener('change',handleRestoreFile);
       if(!pulling){
         pulling=true;
         // スピナーはスクロール領域の親(.screen)直下に挿入する。
+        // スクロール領域そのものに transform をかけるので、その内側に置くと
+        // スピナーも一緒に動いてしまうから、外側に置く。
         const host=target.parentElement;
-        if(!host){pulling=false;target=null;return;}
         if(!indicator){
           indicator=makeIndicator();
-          spinnerEl=indicator.querySelector('.ptr-spinner');
         }
         if(indicator.parentNode!==host){
           host.appendChild(indicator);
-          spinnerEl=indicator.querySelector('.ptr-spinner');
         }
-        // スクロール領域の上端の位置に合わせる
+        // スクロール領域の上端の位置に合わせる。ヘッダーがある画面でも正しい場所に出る。
         indicator.style.top=target.offsetTop+'px';
         indicator.style.display='flex';
         // ドラッグ中はトランジションを切る (指追従)
         indicator.classList.remove('snap');
         target.classList.remove('ptr-snap');
-        // GPUレイヤー化のヒント
-        indicator.classList.add('pulling');
-        target.classList.add('ptr-pulling');
-        wasReady=false;
+        // dbg: どの要素にタッチが当たってるか (passive登録の有無を切り分けるため)
+        let tagInfo='?';
+        const tg=e.target;
+        if(tg){
+          tagInfo=tg.tagName||'?';
+          if(typeof tg.className==='string' && tg.className){
+            tagInfo+='.'+tg.className.split(' ')[0];
+          }
+        }
+        dbg('PULL開始 dy='+Math.round(dy)+' on '+tagInfo);
       }
     }
     if(!pulling)return;
-    if(!indicator)return; // 防御: 何らかの理由で indicator が消えてたら諦める
-    try{
-      const pull=rubberBand(dy);
-      const ratio=pull/THRESHOLD;
-      indicator.style.transform=`translate3d(0, ${spinnerY(pull)}px, 0)`;
-      indicator.style.opacity=dy<30?(dy/30).toFixed(2):'1';
-      if(spinnerEl) spinnerEl.style.transform=`rotate(${ratio*270}deg)`;
-      const isReady=pull>=THRESHOLD;
-      if(isReady !== wasReady){
-        indicator.classList.toggle('ready', isReady);
-        wasReady=isReady;
-      }
-      target.style.transform=`translate3d(0, ${pull}px, 0)`;
-    }catch(err){
-      // 例外が起きても止まらない (固まり症状の最後の防御線)
-      console.warn('PTR onMove error:',err);
-    }
-    // ★ preventDefault は必ず同期で。これがないと iOS が普通のスクロールを発動する
+    // iOS風のラバーバンド減衰 + 進度で回転 (回転はスピナー側に当てる)
+    const pull=rubberBand(dy);
+    const ratio=Math.min(1,pull/THRESHOLD);
+    // スピナーは引っ張って開いた隙間の中央に。スクロール領域は丸ごと pull 分だけ下げる。
+    indicator.style.transform=`translate3d(0, ${spinnerY(pull)}px, 0)`;
+    const sp=indicator.querySelector('.ptr-spinner');
+    // スピナーは引きながらフェードイン
+    indicator.style.opacity=Math.min(1, dy/30).toFixed(2);
+    if(sp)sp.style.transform=`rotate(${ratio*270}deg)`;
+    indicator.classList.toggle('ready',pull>=THRESHOLD);
+    // スクロール領域はインジケータと同じ動き (一体感を出す)
+    target.style.transform=`translate3d(0, ${pull}px, 0)`;
+    // 引っ張り中はネイティブスクロールを抑える
+    let prevented=false;
     if(e.cancelable){
-      try{e.preventDefault();}catch(_){}
+      try{e.preventDefault();prevented=true;}catch(_){}
+    }
+    // dbg: 10回ごとにログ (毎回出すと量が多すぎる)
+    if(moveCount%10===0){
+      dbg('move#'+moveCount+' dy='+Math.round(dy)+' pull='+Math.round(pull)+' cancel='+e.cancelable+' pd='+prevented);
     }
   }
 
-  function onEnd(){
+  function onEnd(e){
     if(!target){
       // 念のため: pulling だけ残っていてもクリーンに戻す
       if(pulling){pulling=false;resetIndicator();}
@@ -7981,12 +7974,9 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     const tr=target.style.transform||'';
     const m=tr.match(/translate3d\(0(?:px)?,\s*(-?\d+(?:\.\d+)?)px/);
     const pulled=m?parseFloat(m[1]):0;
-    // スナップアニメーションをON (pullingヒントは外す)
-    if(indicator){
-      indicator.classList.remove('pulling');
-      indicator.classList.add('snap');
-    }
-    target.classList.remove('ptr-pulling');
+    dbg('END type='+(e&&e.type)+' moves='+moveCount+' lastDy='+Math.round(lastDy)+' pulled='+Math.round(pulled));
+    // スナップアニメーションをON
+    indicator.classList.add('snap');
     target.classList.add('ptr-snap');
     pulling=false;
     if(pulled>=THRESHOLD){
@@ -8001,7 +7991,6 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     const ind=indicator; // ローカルに掴んでおく
     const tgt=target;
     if(ind){
-      ind.classList.remove('pulling');
       ind.style.transform='translate3d(0, 0, 0)';
       ind.style.opacity='0';
       ind.classList.remove('ready');
@@ -8009,14 +7998,10 @@ $('restore-input').addEventListener('change',handleRestoreFile);
       if(sp)sp.style.transform='';
       setTimeout(()=>{
         // この間に新しい pulling が始まっていたら display は触らない
-        if(!pulling && !refreshing && ind){
-          ind.style.display='none';
-          ind.classList.remove('snap'); // will-change を解放
-        }
+        if(!pulling && !refreshing && ind)ind.style.display='none';
       }, 300);
     }
     if(tgt){
-      tgt.classList.remove('ptr-pulling');
       tgt.style.transform='';
       setTimeout(()=>{
         if(tgt)tgt.classList.remove('ptr-snap');
@@ -8087,16 +8072,10 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     }
   }
 
-  // ★ capture フェーズで登録する。
-  // 理由: アプリ内のカード要素や吹き出し要素には別途 touchmove リスナー(passive:true)が
-  // 付いており、それらが先に発火すると iOS Safari が「これはスクロール対象」と判定して
-  // PTR の preventDefault を無視してしまう (= 引っ張った位置で固まる症状の原因)。
-  // capture: true にすると document レベルのこのリスナーが子要素のリスナーより先に発火し、
-  // preventDefault が確実に効く。
-  document.addEventListener('touchstart',onStart,{passive:true,capture:true});
-  document.addEventListener('touchmove',onMove,{passive:false,capture:true});
-  document.addEventListener('touchend',onEnd,{capture:true});
-  document.addEventListener('touchcancel',onEnd,{capture:true});
+  document.addEventListener('touchstart',onStart,{passive:true});
+  document.addEventListener('touchmove',onMove,{passive:false});
+  document.addEventListener('touchend',onEnd);
+  document.addEventListener('touchcancel',onEnd);
 })();
 
 // 起動
