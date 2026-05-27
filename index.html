@@ -1273,14 +1273,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   max-width:max-content;
   padding:9px 14px;
 }
-/* 連続バブルの形を LINE 風に: 最初のバブルは下角を直角寄り、最後だけ尻尾(下左角を小さく)。
-   間のバブルは両下角とも小さめにする。1個だけのときは元の .bubble の定義がそのまま効く。 */
-.msg.a .msg-bubbles .bubble:not(:last-child){border-bottom-left-radius:14px;border-bottom-right-radius:14px;}
+/* 連続バブルの形を LINE 風に: 全てのバブルの左下が尖る(返信側) / 右下が尖る(送信側)。
+   LINEと同じく、連続メッセージでも各吹き出しの「とんがり側」は維持する。
+   2つ目以降のバブルの上角(同じ側)は少しだけ丸みを残してまとまり感を出す。 */
+.msg.a .msg-bubbles .bubble{border-bottom-left-radius:5px;}
 .msg.a .msg-bubbles .bubble:not(:first-child){border-top-left-radius:14px;}
-.msg.a .msg-bubbles .bubble:last-child{border-bottom-left-radius:5px;}
+.msg.u .msg-bubbles .bubble{border-bottom-right-radius:5px;}
+.msg.u .msg-bubbles .bubble:not(:first-child){border-top-right-radius:14px;}
 /* ドットバブルは「次のバブルが来る位置」を示す仮の表示なので、
-   最後にいても尻尾はつけずに丸めたままにする (見た目を「書き中」の独立した小バブルに保つ)。 */
-.msg.a .msg-bubbles .bubble.dots:last-child{border-bottom-left-radius:14px;}
+   尖らせずに丸めたままにする (見た目を「書き中」の独立した小バブルに保つ)。 */
+.msg.a .msg-bubbles .bubble.dots{border-bottom-left-radius:14px;}
 /* 新着バブルがふわっと出るアニメーション (時間差表示時のみ .anim を付ける) */
 .bubble.anim{
   animation:bubble-in 0.25s ease-out;
