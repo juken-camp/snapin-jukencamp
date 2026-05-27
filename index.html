@@ -1060,6 +1060,189 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .menu-item:active{background:var(--bg);}
 .menu-item.danger{color:var(--rose);}
 
+/* ─── バブル長押しメニュー (LINE風) ─── */
+/* 暗いオーバーレイ + バブル上に小さなアクションシート */
+.bubble-menu-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.32);
+  z-index:90;
+  display:none;
+  opacity:0;
+  transition:opacity .12s ease;
+}
+.bubble-menu-overlay.on{display:block;opacity:1;}
+.bubble-menu{
+  position:fixed;
+  z-index:91;
+  background:var(--surface);
+  border-radius:14px;
+  box-shadow:0 6px 24px rgba(0,0,0,.18);
+  padding:6px;
+  display:none;
+  grid-template-columns:repeat(4,1fr);
+  gap:2px;
+  min-width:260px;
+  /* セーフエリア内に収まるように余白を確保 */
+  max-width:calc(100vw - 24px);
+}
+.bubble-menu.on{display:grid;}
+.bubble-menu-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  padding:10px 6px;
+  border-radius:10px;
+  font-size:11px;
+  color:var(--ink);
+  background:transparent;
+  min-width:60px;
+}
+.bubble-menu-item:active{background:var(--bg);}
+.bubble-menu-item svg{color:var(--ink2);}
+.bubble-menu-item.danger{color:var(--rose);}
+.bubble-menu-item.danger svg{color:var(--rose);}
+/* 長押しで選ばれたバブルを少しだけ強調 */
+.bubble.bubble-active{
+  filter:brightness(0.95);
+  transform:scale(0.98);
+  transition:transform .12s ease, filter .12s ease;
+}
+
+/* ─── 部分コピー (テキスト選択シート) ─── */
+.partial-copy-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  z-index:100;
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+}
+.partial-copy-overlay.on{display:flex;}
+.partial-copy-sheet{
+  width:100%;
+  max-width:430px;
+  background:var(--surface);
+  border-top-left-radius:16px;
+  border-top-right-radius:16px;
+  padding:14px 16px calc(16px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  max-height:70vh;
+  box-shadow:0 -8px 24px rgba(0,0,0,.15);
+}
+.partial-copy-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  font-size:13px;
+  color:var(--ink2);
+}
+.partial-copy-head .pc-hint{font-size:11px;color:var(--ink3);}
+.partial-copy-cancel{
+  padding:6px 10px;
+  font-size:13px;
+  color:var(--ink2);
+  border-radius:14px;
+}
+.partial-copy-cancel:active{background:var(--bg);color:var(--g);}
+.partial-copy-text{
+  flex:1;
+  min-height:120px;
+  max-height:48vh;
+  border:0.5px solid var(--line);
+  border-radius:10px;
+  padding:12px 14px;
+  font-size:14px;
+  line-height:1.6;
+  color:var(--ink);
+  background:var(--bg);
+  resize:none;
+  -webkit-user-select:text;
+  user-select:text;
+  overflow-y:auto;
+  white-space:pre-wrap;
+  word-break:break-word;
+  font-family:inherit;
+}
+.partial-copy-text:focus{outline:none;border-color:var(--g);}
+.partial-copy-actions{
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+}
+.partial-copy-btn{
+  padding:9px 18px;
+  font-size:13px;
+  font-weight:600;
+  border-radius:18px;
+  background:var(--g);
+  color:white;
+}
+.partial-copy-btn:active{background:var(--gd);transform:scale(0.96);}
+.partial-copy-btn.disabled{background:var(--ink3);opacity:0.5;pointer-events:none;}
+
+/* ─── リプライプレビュー (入力欄の上) ─── */
+.reply-preview{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  background:var(--bg);
+  border-top:0.5px solid var(--line);
+  border-left:3px solid var(--g);
+  padding:8px 12px 8px 10px;
+  font-size:12px;
+}
+.reply-preview-body{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.reply-preview-label{
+  color:var(--g);
+  font-size:11px;
+  font-weight:600;
+}
+.reply-preview-text{
+  color:var(--ink2);
+  line-height:1.4;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  word-break:break-word;
+}
+.reply-preview-close{
+  width:24px;height:24px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ink3);
+  flex-shrink:0;
+}
+.reply-preview-close:active{color:var(--g);background:var(--surface);}
+
+/* バブル内のリプライ引用 (送信済みメッセージに表示する小さな引用ブロック) */
+.bubble-quote{
+  border-left:3px solid currentColor;
+  padding:4px 8px;
+  margin-bottom:6px;
+  font-size:12px;
+  line-height:1.4;
+  opacity:0.7;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  word-break:break-word;
+  border-radius:2px;
+}
+
 /* CHAT */
 .chat-body{
   flex:1;
@@ -1117,6 +1300,32 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink);
   border-bottom-left-radius:5px;
   box-shadow:0 1px 2px rgba(0,0,0,.06);
+}
+/* AI返信のマルチバブル: 1つのAI返信を意味のある単位で複数バブルに分けて表示する。
+   1バブル時は従来構造のまま、2バブル以上のときだけ .multi が付き、
+   バブルを縦に積んで時刻は末尾バブルの右下に1個だけ出す。 */
+.msg-bubbles{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  max-width:74%;
+  min-width:0;
+}
+.msg-bubbles .bubble{
+  max-width:100%; /* 親(.msg-bubbles)で幅を制御するのでバブル自体は親いっぱい */
+}
+/* 連続バブルの形を LINE 風に: 最初のバブルは下角を直角寄り、最後だけ尻尾(下左角を小さく)。
+   間のバブルは両下角とも小さめにする。1個だけのときは元の .bubble の定義がそのまま効く。 */
+.msg.a .msg-bubbles .bubble:not(:last-child){border-bottom-left-radius:14px;border-bottom-right-radius:14px;}
+.msg.a .msg-bubbles .bubble:not(:first-child){border-top-left-radius:14px;}
+.msg.a .msg-bubbles .bubble:last-child{border-bottom-left-radius:5px;}
+/* 新着バブルがふわっと出るアニメーション (時間差表示時のみ .anim を付ける) */
+.bubble.anim{
+  animation:bubble-in 0.25s ease-out;
+}
+@keyframes bubble-in{
+  from{opacity:0;transform:translateY(6px);}
+  to{opacity:1;transform:translateY(0);}
 }
 .bubble-link{
   color:inherit;
@@ -2886,6 +3095,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div id="detail-chat-log"></div>
     </div>
   </div>
+  <!-- リプライプレビュー (リプライ対象選択時のみ表示) -->
+  <div class="reply-preview" id="reply-preview" style="display:none;">
+    <div class="reply-preview-body">
+      <div class="reply-preview-label" id="reply-preview-label">返信</div>
+      <div class="reply-preview-text" id="reply-preview-text"></div>
+    </div>
+    <button class="reply-preview-close" data-action="clear-reply" aria-label="返信をやめる">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
   <div class="detail-input" id="detail-input-bar">
     <button class="detail-input-ai" id="detail-ai-toggle" data-action="toggle-ai-mode" aria-label="AIに送る">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
@@ -2986,6 +3205,41 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="settings-note">バックアップは公式ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
 </div>
 
+<!-- バブル長押しメニュー (コピー/部分コピー/リプライ/削除) -->
+<div class="bubble-menu-overlay" id="bubble-menu-overlay" data-action="close-bubble-menu"></div>
+<div class="bubble-menu" id="bubble-menu" role="menu">
+  <button class="bubble-menu-item" data-bubble-menu="copy">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    <span>コピー</span>
+  </button>
+  <button class="bubble-menu-item" data-bubble-menu="partial-copy">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M4 16v2a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M16 20h2a2 2 0 0 0 2-2v-2"/><path d="M8 12h8"/></svg>
+    <span>部分コピー</span>
+  </button>
+  <button class="bubble-menu-item" data-bubble-menu="reply">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+    <span>リプライ</span>
+  </button>
+  <button class="bubble-menu-item danger" data-bubble-menu="delete">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+    <span>削除</span>
+  </button>
+</div>
+
+<!-- 部分コピー: テキスト選択シート -->
+<div class="partial-copy-overlay" id="partial-copy-overlay" data-action="close-partial-copy-outside">
+  <div class="partial-copy-sheet" role="dialog" aria-label="部分コピー" data-stop-partial-close="1">
+    <div class="partial-copy-head">
+      <span class="pc-hint">コピーしたい部分を選択</span>
+      <button class="partial-copy-cancel" data-action="close-partial-copy">キャンセル</button>
+    </div>
+    <textarea class="partial-copy-text" id="partial-copy-text" readonly spellcheck="false"></textarea>
+    <div class="partial-copy-actions">
+      <button class="partial-copy-btn" id="partial-copy-btn" data-action="do-partial-copy">選択範囲をコピー</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- .app -->
 
 <script>
@@ -3007,6 +3261,7 @@ const state={
   currentOfficial:null,
   mosaicMode:false,
   detailAiMode:false,  // 詳細画面でAI送信モードか
+  replyTo:null,        // 現在リプライ中の対象 {cardId, msgIdx, text, role} | null
   photoMode:null,      // クイック写真撮影中 'photo' | 'photonote' | null
   selectMode:false,    // グリッドの複数選択モード
   selectedIds:new Set(),
@@ -5857,6 +6112,70 @@ function chatTimeLabel(ts){
   return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
 }
 
+// ───────── AI返答のマルチバブル分割 ─────────
+// LINE風チャットは1バブルが縦長になると読みづらいので、AI返答を意味のある単位で
+// 複数のバブルに分けて表示する。データは1つの text フィールドのまま保存し、
+// 表示時にここで分割するので、過去メッセージにも自動で適用される。
+//
+// 方針:
+//   1. まず空行 (\n\n+) で大段落分割。AIが意図的に区切った場所を尊重する。
+//   2. 長すぎる段落 (>200字) はさらに「。」「？」「！」のあとの単一改行で分割。
+//   3. ごく短いバブル同士 (両方25字未満) は結合する。「はい。」「そうです。」が
+//      連続するような細切れだけ統合し、AIが意図的に空行で分けた段落は尊重する。
+//   4. 結果が1つだけならそのまま返す (現状と同じ見た目)。
+// 宿題の長い解説でも、自然な区切りで読める単位になるはず。
+function splitAiReplyToBubbles(text){
+  if(!text)return [''];
+  const s=String(text).trim();
+  if(!s)return [''];
+
+  // Step 1: 空行で大段落に分割
+  let parts=s.split(/\n{2,}/).map(x=>x.trim()).filter(x=>x.length>0);
+
+  // Step 2: 長すぎる段落は文末記号での単一改行を境にさらに分割
+  // (例: 解説のあとの計算過程が改行で連なっているケース)
+  const SOFT_MAX=200;
+  const refined=[];
+  for(const p of parts){
+    if(p.length<=SOFT_MAX){ refined.push(p); continue; }
+    // 「。」「？」「！」直後の改行を分割点に
+    const subs=p.split(/(?<=[。？！\?\!])\n/).map(x=>x.trim()).filter(x=>x.length>0);
+    if(subs.length<=1){
+      // 文末改行で分けられなかったら、そのまま入れる (式の連なりなどはそのままが自然)
+      refined.push(p);
+    }else{
+      // 分割後も短すぎないように、隣接で SOFT_MAX を超えない範囲でまとめ直す
+      let buf='';
+      for(const x of subs){
+        if(buf.length===0){ buf=x; }
+        else if(buf.length+x.length+1<=SOFT_MAX){ buf=buf+'\n'+x; }
+        else{ refined.push(buf); buf=x; }
+      }
+      if(buf)refined.push(buf);
+    }
+  }
+
+  // Step 3: ごく短いバブル同士だけ結合する (両方 25字未満のとき)。
+  // AIが意図して空行で分けた段落は基本そのまま尊重し、「はい」「そうです」のような
+  // 極端に短い吹き出しが連続するときだけ統合する。
+  const MIN_MERGE=25;
+  const merged=[];
+  for(const p of refined){
+    if(merged.length>0){
+      const last=merged[merged.length-1];
+      if(last.length<MIN_MERGE && p.length<MIN_MERGE){
+        merged[merged.length-1]=last+'\n\n'+p;
+        continue;
+      }
+    }
+    merged.push(p);
+  }
+  return merged.length>0?merged:[s];
+}
+
+// 簡易 sleep ヘルパ (新着AI返信を1バブルずつ時間差で出すときに使う)
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
 function renderChatLog(c){
   const log=$('detail-chat-log');
   log.innerHTML='';
@@ -5880,47 +6199,277 @@ function renderChatLog(c){
     const isUser=(m.role==='user' || m.role==='memo');
     div.className='msg '+(isUser?'u':'a');
     div.dataset.midx=idx;
-    // pending (AI待ち) のメッセージは、ただの「…」ではなく動くドットで表示する。
-    // 反応している実感がないと不安になるため。
-    const bubbleHtml=m.pending
-      ? `<div class="bubble"><div class="typing-dots" aria-label="返信を考えています"><span></span><span></span><span></span></div></div>`
-      : `<div class="bubble">${linkify(cleanAIText(m.text,m.role))}</div>`;
-    div.innerHTML=`
-      <div class="msg-time">${chatTimeLabel(t)}</div>
-      ${bubbleHtml}
-    `;
+    // リプライ引用: そのメッセージが何かに返信したものなら、本文の上に小さな引用ブロックを置く
+    const quoteHtml=m.replyTo
+      ? `<div class="bubble-quote">${esc(truncateForQuote(m.replyTo.text))}</div>`
+      : '';
+
+    if(m.pending){
+      // AI待ちプレースホルダー: 動くドットだけ出す
+      div.innerHTML=`
+        <div class="msg-time">${chatTimeLabel(t)}</div>
+        <div class="bubble"><div class="typing-dots" aria-label="返信を考えています"><span></span><span></span><span></span></div></div>
+      `;
+    }else if(isUser){
+      // ユーザー側 (user/memo) は分割せず1バブル。リプライ引用があれば本文の上に出す。
+      div.innerHTML=`
+        <div class="msg-time">${chatTimeLabel(t)}</div>
+        <div class="bubble">${quoteHtml}${linkify(cleanAIText(m.text,m.role))}</div>
+      `;
+    }else{
+      // AI側: 長文なら複数バブルに分割。1バブルなら従来構造を維持。
+      const cleaned=cleanAIText(m.text,m.role);
+      const bubbles=splitAiReplyToBubbles(cleaned);
+      if(bubbles.length<=1){
+        div.innerHTML=`
+          <div class="msg-time">${chatTimeLabel(t)}</div>
+          <div class="bubble">${quoteHtml}${linkify(cleaned)}</div>
+        `;
+      }else{
+        div.classList.add('multi');
+        // 最初のバブルにだけ引用ブロックを乗せる (引用元はその返信全体に対する文脈のため)
+        const bubblesHtml=bubbles.map((b,i)=>{
+          const inner=(i===0?quoteHtml:'')+linkify(b);
+          return `<div class="bubble">${inner}</div>`;
+        }).join('');
+        div.innerHTML=`
+          <div class="msg-bubbles">${bubblesHtml}</div>
+          <div class="msg-time">${chatTimeLabel(t)}</div>
+        `;
+      }
+    }
     log.appendChild(div);
 
-    // ユーザー側(自分が送ったもの)は長押しで取り消し
-    if(isUser)attachBubbleLongPress(div,c.id,idx);
+    // pending 中のメッセージにはメニューを出さない。
+    // それ以外 (ユーザー / AI 両方) は長押しでアクションメニューを出す。
+    // 各バブル単位で付ける (マルチバブルでも対象を確実に特定できるように)。
+    if(!m.pending){
+      div.querySelectorAll('.bubble').forEach(bub=>attachBubbleLongPress(div,c.id,idx,bub));
+    }
   });
 }
 
-// バブル長押しで「取り消し」メニューを出す
-function attachBubbleLongPress(msgEl,cardId,msgIdx){
-  let pressTimer=null,startX=0,startY=0,moved=false;
+// 引用に詰めるテキストを短く整形 (改行を空白に潰し、長すぎる場合は省略)
+function truncateForQuote(s){
+  if(!s)return '';
+  const oneLine=String(s).replace(/\s+/g,' ').trim();
+  return oneLine.length>60 ? oneLine.slice(0,60)+'…' : oneLine;
+}
+
+// バブル長押しで「コピー / 部分コピー / リプライ / 削除」メニューを出す
+// 用途は LINE と同じで、対象は自分の送信・AI返信・メモの全てに対して同じ4つを並べる。
+// マルチバブルの場合は bubbleEl を渡して個別のバブルに紐付ける。省略時は msgEl 内の最初のバブル。
+function attachBubbleLongPress(msgEl,cardId,msgIdx,bubbleEl){
+  let pressTimer=null,startX=0,startY=0,moved=false,fired=false;
   const xy=ev=>ev.touches?[ev.touches[0].clientX,ev.touches[0].clientY]:[ev.clientX,ev.clientY];
+  const bubble=bubbleEl || msgEl.querySelector('.bubble');
+  // リスナーは bubble 自体に付ける。マルチバブル時にどのバブルが長押しされたかが
+  // タッチ座標ではなく要素自身で確定できる。1バブル時も問題なく動く。
+  const target=bubble || msgEl;
   const onStart=ev=>{
+    if(ev.target.closest('a'))return; // バブル内リンクは普通に開きたい
     [startX,startY]=xy(ev);
-    moved=false;
+    moved=false;fired=false;
     pressTimer=setTimeout(()=>{
       if(moved)return;
+      fired=true;
       if(navigator.vibrate)navigator.vibrate(20);
-      showUnsendConfirm(cardId,msgIdx);
-    },550);
+      showBubbleMenu(msgEl,bubble,cardId,msgIdx);
+    },480);
   };
   const onMove=ev=>{
     const [x,y]=xy(ev);
     if(Math.abs(x-startX)>8 || Math.abs(y-startY)>8){moved=true;clearTimeout(pressTimer);}
   };
-  const onEnd=()=>{clearTimeout(pressTimer);};
-  msgEl.addEventListener('touchstart',onStart,{passive:true});
-  msgEl.addEventListener('touchmove',onMove,{passive:true});
-  msgEl.addEventListener('touchend',onEnd);
-  msgEl.addEventListener('touchcancel',onEnd);
-  msgEl.addEventListener('mousedown',onStart);
-  msgEl.addEventListener('mousemove',onMove);
-  msgEl.addEventListener('mouseup',onEnd);
+  const onEnd=ev=>{
+    clearTimeout(pressTimer);
+    // 長押しメニューが出た直後の touchend は、リンクのクリック等を発火させたくない
+    if(fired){ev.preventDefault&&ev.preventDefault();}
+  };
+  target.addEventListener('touchstart',onStart,{passive:true});
+  target.addEventListener('touchmove',onMove,{passive:true});
+  target.addEventListener('touchend',onEnd);
+  target.addEventListener('touchcancel',onEnd);
+  target.addEventListener('mousedown',onStart);
+  target.addEventListener('mousemove',onMove);
+  target.addEventListener('mouseup',onEnd);
+  // バブル本体は iOS 標準のテキスト選択ポップオーバーが出ないように select 不可。
+  // (元から .bubble は user-select:none を CSS で指定済み。念のため contextmenu も抑止)
+  if(bubble){
+    bubble.addEventListener('contextmenu',e=>e.preventDefault());
+  }
+}
+
+// バブル上にアクションメニューを表示する。
+// バブルの直上に出して、はみ出る場合は直下に回す。
+let _bubbleMenuTarget=null; // {cardId, msgIdx, text, role}
+function showBubbleMenu(msgEl,bubbleEl,cardId,msgIdx){
+  const c=state.cards.find(x=>x.id===cardId);
+  if(!c)return;
+  const msgs=getChatMessages(c);
+  const m=msgs[msgIdx];
+  if(!m)return;
+  // クリーンなテキスト (AIメッセージの場合は装飾を落とす)
+  const text=cleanAIText(m.text||'',m.role);
+  _bubbleMenuTarget={cardId,msgIdx,text,role:m.role,bubbleEl};
+
+  const overlay=$('bubble-menu-overlay');
+  const menu=$('bubble-menu');
+  overlay.classList.add('on');
+  menu.classList.add('on');
+  // バブル強調
+  if(bubbleEl)bubbleEl.classList.add('bubble-active');
+
+  // 位置調整: バブルの上に出す。画面外にはみ出るときは下へ。
+  // 一度描画させてサイズを取る (display:grid に切り替わった直後の getBoundingClientRect)
+  const br=bubbleEl.getBoundingClientRect();
+  const mw=menu.offsetWidth;
+  const mh=menu.offsetHeight;
+  const vw=window.innerWidth;
+  const vh=window.innerHeight;
+  const gap=8;
+  // バブルの中央に揃える
+  let left=br.left + br.width/2 - mw/2;
+  // 左右はみ出し対策 (画面端から 8px 内側に収める)
+  left=Math.max(8,Math.min(vw-mw-8,left));
+  // 上に置く (はみ出るなら下)
+  let top=br.top - mh - gap;
+  if(top<8){
+    top=br.bottom + gap;
+    // それでも画面下からはみ出す場合は、下端に寄せる
+    if(top+mh>vh-8)top=Math.max(8,vh-mh-8);
+  }
+  menu.style.left=left+'px';
+  menu.style.top=top+'px';
+}
+
+function closeBubbleMenu(){
+  const overlay=$('bubble-menu-overlay');
+  const menu=$('bubble-menu');
+  overlay.classList.remove('on');
+  menu.classList.remove('on');
+  if(_bubbleMenuTarget && _bubbleMenuTarget.bubbleEl){
+    _bubbleMenuTarget.bubbleEl.classList.remove('bubble-active');
+  }
+  _bubbleMenuTarget=null;
+}
+
+// メニュー項目の実装
+async function bubbleCopy(){
+  const t=_bubbleMenuTarget;
+  if(!t)return;
+  await copyToClipboard(t.text);
+  toast('コピーしました');
+  closeBubbleMenu();
+}
+
+function bubbleReply(){
+  const t=_bubbleMenuTarget;
+  if(!t)return;
+  setReplyTo({cardId:t.cardId,msgIdx:t.msgIdx,text:t.text,role:t.role});
+  closeBubbleMenu();
+  // 入力欄にフォーカス
+  const inp=$('detail-input');
+  if(inp)inp.focus();
+}
+
+function bubbleDelete(){
+  const t=_bubbleMenuTarget;
+  if(!t)return;
+  if(!confirm('このメッセージを削除しますか?')){closeBubbleMenu();return;}
+  const cIdx=state.cards.findIndex(x=>x.id===t.cardId);
+  if(cIdx<0){closeBubbleMenu();return;}
+  const c=state.cards[cIdx];
+  if(!c.chat){c.chat=getChatMessages(c);delete c.aiLog;}
+  if(!c.chat[t.msgIdx]){closeBubbleMenu();return;}
+  c.chat[t.msgIdx].deleted=true;
+  // 削除したメッセージを今リプライ対象にしていたら解除
+  if(state.replyTo && state.replyTo.cardId===t.cardId && state.replyTo.msgIdx===t.msgIdx){
+    clearReplyTo();
+  }
+  save();
+  state.current=Object.assign({},c,{_origin:state.current._origin});
+  closeBubbleMenu();
+  renderChatLog(c);
+}
+
+function bubblePartialCopy(){
+  const t=_bubbleMenuTarget;
+  if(!t)return;
+  openPartialCopy(t.text);
+  closeBubbleMenu();
+}
+
+// ─── 部分コピー (テキスト選択シート) ─────────────────────────
+function openPartialCopy(text){
+  const ovr=$('partial-copy-overlay');
+  const ta=$('partial-copy-text');
+  ta.value=text||'';
+  ovr.classList.add('on');
+  // 少し遅延させてフォーカス & 全選択 (これで青いハンドルがすぐ出せる)
+  setTimeout(()=>{
+    ta.focus();
+    try{ta.setSelectionRange(0,ta.value.length);}catch(_){}
+  },50);
+}
+
+function closePartialCopy(){
+  $('partial-copy-overlay').classList.remove('on');
+}
+
+async function doPartialCopy(){
+  const ta=$('partial-copy-text');
+  const s=ta.selectionStart||0;
+  const e=ta.selectionEnd||0;
+  // 何も選択されていなければ全文をコピー
+  const text=(s===e)?ta.value:ta.value.substring(s,e);
+  if(!text){closePartialCopy();return;}
+  await copyToClipboard(text);
+  toast('コピーしました');
+  closePartialCopy();
+}
+
+// ─── リプライ ─────────────────────────
+function setReplyTo(ref){
+  state.replyTo=ref;
+  const pv=$('reply-preview');
+  const tx=$('reply-preview-text');
+  const lb=$('reply-preview-label');
+  if(!pv||!tx||!lb)return;
+  // ラベル: 自分のメッセージ宛なら「メモへの返信」、AI なら「AIへの返信」のように分かりやすく
+  let label='返信';
+  if(ref.role==='user'||ref.role==='memo')label='自分のメッセージへの返信';
+  else if(ref.role==='ai')label='AIへの返信';
+  lb.textContent=label;
+  tx.textContent=truncateForQuote(ref.text);
+  pv.style.display='flex';
+}
+
+function clearReplyTo(){
+  state.replyTo=null;
+  const pv=$('reply-preview');
+  if(pv)pv.style.display='none';
+}
+
+// クリップボードへコピー (Clipboard API → 旧 execCommand のフォールバック)
+async function copyToClipboard(text){
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(_){}
+  // フォールバック
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=text;
+    ta.style.position='fixed';ta.style.left='-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    return true;
+  }catch(_){return false;}
 }
 
 // ═══ 画像ピンチズーム ═══
@@ -6099,23 +6648,11 @@ function setupImageZoom(container){
   reset();
 }
 
-function showUnsendConfirm(cardId,msgIdx){
-  if(!confirm('このメッセージを取り消しますか?'))return;
-  const cIdx=state.cards.findIndex(x=>x.id===cardId);
-  if(cIdx<0)return;
-  const c=state.cards[cIdx];
-  // 旧aiLog形式を新chat形式に変換
-  if(!c.chat){c.chat=getChatMessages(c);delete c.aiLog;}
-  if(!c.chat[msgIdx])return;
-  c.chat[msgIdx].deleted=true;
-  save();
-  state.current=Object.assign({},c,{_origin:state.current._origin});
-  renderChatLog(c);
-}
-
 function openDetail(c,origin){
   state.current=Object.assign({},c,{_origin:origin});
   state.detailAiMode=false;
+  // 別のカードを開いたらリプライ状態は持ち越さない
+  clearReplyTo();
   const isOfficial=origin==='official';
 
   $('detail-img').classList.add('hide');
@@ -6374,27 +6911,99 @@ function toggleAiMode(){
   inp.focus();
 }
 
-async function detailSend(){
-  const inp=$('detail-input');
-  const v=inp.value.trim();
-  if(!v)return;
-  const cIdx=state.cards.findIndex(x=>x.id===state.current.id);
-  if(cIdx<0)return;
-  const c=state.cards[cIdx];
+// 新着AI返答を1バブルずつ時間差で出すアニメーション。
+// データは既に c.chat[placeholderIdx].text に最終回答が入っている前提。
+// 1バブルしか出ない場合は普通に renderChatLog にフォールバックする。
+// 設計の意図:
+//   - 最初のバブルはすぐ出す (反応の即時性)
+//   - 2バブル目以降は前バブルを「ある程度読んだ」タイミングで足す
+//   - 中学生の日本語黙読は 1秒あたり 8字くらい → 1字 125ms。
+//     その30%相当 = 1字 38ms を採用 (全文読み終える前に次が出ると視線が自然に流れる)
+//   - 改行ごとに視線移動コスト 150ms、ベースのドット表示時間 500ms
+//   - 下限 700ms (短文)、上限 4500ms (極端な長文で待たせ過ぎない)
+async function animateNewAiReply(card,placeholderIdx){
+  const log=$('detail-chat-log');
+  const scroller=$('detail-scroll');
+  if(!log){renderChatLog(card);return;}
+  const msg=card.chat && card.chat[placeholderIdx];
+  if(!msg){renderChatLog(card);return;}
+  const cleaned=cleanAIText(msg.text,msg.role);
+  const bubbles=splitAiReplyToBubbles(cleaned);
 
-  // c.chat 配列を初期化(旧 aiLog があれば取り込んでマイグレーション)
-  if(!c.chat){
-    c.chat=getChatMessages(c);
-    delete c.aiLog;
+  // 1バブルしか出ないなら従来通り
+  if(bubbles.length<=1){renderChatLog(card);return;}
+
+  // 一度全体を再描画してから、対象のメッセージ要素だけ「最初のバブル+ドット」に
+  // 差し替える方式だとチラつきが出るので、placeholder の DOM を直接書き換える。
+  // まずは念のため最新の chat を反映させた renderChatLog をしないとリプライ等の
+  // 表示が遅れる可能性があるが、ここでは差分更新を優先する。
+  const msgEl=log.querySelector(`.msg[data-midx="${placeholderIdx}"]`);
+  if(!msgEl){renderChatLog(card);return;}
+
+  // pending 状態の単一バブルから、マルチバブル構造に書き換え。
+  // 最初のバブルを即座に表示、末尾にドットバブルを置いて「続きを書いている感」を出す。
+  msgEl.className='msg a multi';
+  msgEl.innerHTML=`
+    <div class="msg-bubbles">
+      <div class="bubble anim">${linkify(bubbles[0])}</div>
+      <div class="bubble dots" aria-label="続きを書いています"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+    </div>
+    <div class="msg-time"></div>
+  `;
+  scroller.scrollTop=scroller.scrollHeight;
+
+  const bubblesEl=msgEl.querySelector('.msg-bubbles');
+  const timeEl=msgEl.querySelector('.msg-time');
+  // 最初のバブルに長押しメニュー
+  const firstBubEl=bubblesEl.querySelector('.bubble:not(.dots)');
+  if(firstBubEl)attachBubbleLongPress(msgEl,card.id,placeholderIdx,firstBubEl);
+
+  // 表示中に画面が離れたら中断 (DOMから切り離されるか、card.id が変わる)
+  const stillVisible=()=>document.body.contains(msgEl) && state.current && state.current.id===card.id;
+
+  for(let i=1;i<bubbles.length;i++){
+    const prev=bubbles[i-1];
+    const charCost=prev.length*38;
+    const lineCost=(prev.match(/\n/g)||[]).length*150;
+    const wait=Math.max(700, Math.min(4500, charCost+lineCost+500));
+    await sleep(wait);
+    if(!stillVisible()){renderChatLog(card);return;}
+    // 末尾のドットバブルを取り除いてから新バブルを追加、その後再度ドットバブルを末尾に。
+    // ただし最後のバブルを追加するときはドットバブルは付け直さない。
+    const dots=bubblesEl.querySelector('.bubble.dots');
+    if(dots)dots.remove();
+    const next=document.createElement('div');
+    next.className='bubble anim';
+    next.innerHTML=linkify(bubbles[i]);
+    bubblesEl.appendChild(next);
+    attachBubbleLongPress(msgEl,card.id,placeholderIdx,next);
+    if(i<bubbles.length-1){
+      const d=document.createElement('div');
+      d.className='bubble dots';
+      d.setAttribute('aria-label','続きを書いています');
+      d.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
+      bubblesEl.appendChild(d);
+    }
+    scroller.scrollTop=scroller.scrollHeight;
   }
+  // 全バブル表示完了後、時刻を出す (renderChatLog と一致させるため)
+  if(timeEl){
+    const t=(card.chat[placeholderIdx] && card.chat[placeholderIdx].t)||Date.now();
+    timeEl.textContent=chatTimeLabel(t);
+  }
+}
+
+async function detailSend(){
 
   if(state.detailAiMode){
     // AIに質問
     const userMsg={role:'user',text:v,t:Date.now()};
+    if(replyRef)userMsg.replyTo=replyRef;
     c.chat.push(userMsg);
     save();
     inp.value='';
     inp.style.height='auto';
+    clearReplyTo();
     renderChatLog(c);
 
     // 「…」のプレースホルダーを追加
@@ -6414,7 +7023,9 @@ async function detailSend(){
           c2.chat.push({role:'ai',text:answer,t:Date.now()});
         }
         save();
-        renderChatLog(c2);
+        // 受け取った直後だけ「時間差マルチバブル」アニメーション。
+        // 1バブルしかない場合は内部で renderChatLog にフォールバック。
+        await animateNewAiReply(c2,placeholderIdx);
       }
       $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
     }catch(e){
@@ -6430,10 +7041,13 @@ async function detailSend(){
     }
   }else{
     // メモとして追記 (LINEで自分が投稿するイメージ)
-    c.chat.push({role:'memo',text:v,t:Date.now()});
+    const memoMsg={role:'memo',text:v,t:Date.now()};
+    if(replyRef)memoMsg.replyTo=replyRef;
+    c.chat.push(memoMsg);
     save();
     inp.value='';
     inp.style.height='auto';
+    clearReplyTo();
     renderChatLog(c);
     $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
   }
@@ -7964,7 +8578,27 @@ document.addEventListener('click',e=>{
     case 'archive-selected':archiveSelected();break;
     case 'toggle-past-more':state.pastMoreOpen=!state.pastMoreOpen;renderToday();break;
     case 'goto-library-from-home':goto('screen-library');break;
+    case 'close-bubble-menu':closeBubbleMenu();break;
+    case 'clear-reply':clearReplyTo();break;
+    case 'close-partial-copy':closePartialCopy();break;
+    case 'close-partial-copy-outside':
+      // オーバーレイの外周 (シート外) をタップしたときだけ閉じる
+      if(e.target===$('partial-copy-overlay'))closePartialCopy();
+      break;
+    case 'do-partial-copy':doPartialCopy();break;
   }
+});
+
+// バブルメニュー (data-bubble-menu="copy|partial-copy|reply|delete") の処理
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-bubble-menu]');
+  if(!btn)return;
+  e.stopPropagation();
+  const op=btn.dataset.bubbleMenu;
+  if(op==='copy')bubbleCopy();
+  else if(op==='partial-copy')bubblePartialCopy();
+  else if(op==='reply')bubbleReply();
+  else if(op==='delete')bubbleDelete();
 });
 
 document.addEventListener('click',e=>{
