@@ -4837,10 +4837,15 @@ function renderUpload(){
     body.appendChild(ta);
   }else if(c.type==='note'){
     // contenteditable な div を使う (textarea は縦揃えが効かないため)。
-    // 編集中の入力体験を保ちつつ、横揃え/縦揃えの両方をその場でプレビューできる。
+    // 編集 wrap を「グリッドカードを大きくスケールしたプレビュー」にする。
+    // グリッドのカードは画面幅 ÷ 3 ≒ 140px の正方形。編集画面では画面幅まるごとを
+    // 使えるので、その比率(おおむね 3倍)でフォントサイズもスケールする。
+    // → 結果: グリッドに表示された時と「同じ位置で改行」「同じ行数」が編集中に確認できる。
+    // 横幅と内寸のpaddingもグリッドカードと同じ比率にする。
     const wrap=document.createElement('div');
     wrap.id='up-note-wrap';
-    wrap.style.cssText='min-height:240px;padding:20px;border-radius:12px;display:flex;flex-direction:column;line-height:1.5;cursor:text;';
+    // 正方形にして、padding は内寸の 7% (グリッドの padding:10px / 140px ≒ 7%)
+    wrap.style.cssText='width:100%;aspect-ratio:1;padding:7%;border-radius:12px;display:flex;flex-direction:column;line-height:1.5;cursor:text;box-sizing:border-box;overflow:hidden;';
 
     const editor=document.createElement('div');
     editor.id='up-note-area';
