@@ -1211,10 +1211,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink3);
   z-index:50;
   pointer-events:none;
-  will-change:transform, opacity;
   opacity:0;
+  /* 最初から3Dレイヤーに乗せる (引っ張る前にGPU合成を準備) */
+  transform:translate3d(0,0,0);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
 }
-.ptr-indicator.snap{transition:transform .28s cubic-bezier(.16,1,.3,1), opacity .18s ease-out;}
+/* 引っ張り中はGPUレイヤーをヒント */
+.ptr-indicator.pulling{will-change:transform, opacity;}
+.ptr-indicator.snap{
+  will-change:transform, opacity;
+  transition:transform .28s cubic-bezier(.16,1,.3,1), opacity .18s ease-out;
+}
 .ptr-indicator.ready{color:var(--g);}
 /* スピナー本体 */
 .ptr-spinner{
@@ -1224,10 +1232,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border:2px solid currentColor;
   border-top-color:transparent;
   transition:transform .12s ease-out;
+  transform:translateZ(0);
 }
-.ptr-indicator.ready .ptr-spinner{transform:scale(1.1);}
+.ptr-indicator.ready .ptr-spinner{transform:scale(1.1) translateZ(0);}
 .ptr-indicator.spinning .ptr-spinner{animation:ptr-spin 0.7s linear infinite;}
-@keyframes ptr-spin{to{transform:rotate(360deg);}}
+@keyframes ptr-spin{to{transform:rotate(360deg) translateZ(0);}}
+/* スクロール領域: 引っ張り中はGPUレイヤー化、スナップ時のみtransition */
+.scroll.ptr-pulling{
+  will-change:transform;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  /* 引っ張り中は遅延読込画像の高さ変化で再レイアウトが走らないように */
+  contain:layout paint;
+}
 .scroll.ptr-snap{
   will-change:transform;
   transition:transform .28s cubic-bezier(.16,1,.3,1);
@@ -7807,7 +7824,12 @@ $('restore-input').addEventListener('change',handleRestoreFile);
   const MAX_PULL=130;      // 最大変位
   const SPINNER_H=26;      // スピナーの高さ。隙間の中央に出すために使う
   let startY=0, lastY=0, pulling=false, target=null, indicator=null, refreshing=false;
+  let spinnerEl=null;      // .ptr-spinner をキャッシュ (querySelectorを毎フレーム避ける)
   let refreshGuard=null;   // 万一 doRefresh が完了しなかった場合のフェイルセーフ
+  // rAF スロットリング用
+  let rafId=0;
+  let pendingPull=0;       // 最新の pull 値 (rAF内で読む)
+  let pendingDy=0;         // 最新の dy 値 (opacity計算用)
 
   function makeIndicator(){
     const el=document.createElement('div');
@@ -7836,6 +7858,27 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     const screen=document.querySelector('.screen.active');
     if(!screen)return null;
     return screen.querySelector('.scroll');
+  }
+
+  // rAFでまとめてDOMを更新 (1フレームに1回だけ書き込む)
+  function flushFrame(){
+    rafId=0;
+    if(!pulling || !target || !indicator) return;
+    const pull=pendingPull;
+    const dy=pendingDy;
+    const ratio=pull/THRESHOLD; // 1.0で閾値到達
+    // スピナー: 引っ張って開いた隙間の中央
+    indicator.style.transform=`translate3d(0, ${spinnerY(pull)}px, 0)`;
+    // フェードイン (dy/30 で1.0に到達)
+    indicator.style.opacity=dy<30?(dy/30).toFixed(2):'1';
+    if(spinnerEl) spinnerEl.style.transform=`rotate(${ratio*270}deg)`;
+    // ready クラスはトグルだが、状態が変わるときだけ実際にDOMが触られる
+    const isReady=pull>=THRESHOLD;
+    if(isReady !== indicator.classList.contains('ready')){
+      indicator.classList.toggle('ready', isReady);
+    }
+    // スクロール領域はインジケータと同じ動き (一体感を出す)
+    target.style.transform=`translate3d(0, ${pull}px, 0)`;
   }
 
   function onStart(e){
@@ -7878,9 +7921,11 @@ $('restore-input').addEventListener('change',handleRestoreFile);
         const host=target.parentElement;
         if(!indicator){
           indicator=makeIndicator();
+          spinnerEl=indicator.querySelector('.ptr-spinner');
         }
         if(indicator.parentNode!==host){
           host.appendChild(indicator);
+          spinnerEl=indicator.querySelector('.ptr-spinner');
         }
         // スクロール領域の上端の位置に合わせる。ヘッダーがある画面でも正しい場所に出る。
         indicator.style.top=target.offsetTop+'px';
@@ -7888,26 +7933,23 @@ $('restore-input').addEventListener('change',handleRestoreFile);
         // ドラッグ中はトランジションを切る (指追従)
         indicator.classList.remove('snap');
         target.classList.remove('ptr-snap');
+        // GPUレイヤー化のヒント (引っ張ってる間だけ)
+        indicator.classList.add('pulling');
+        target.classList.add('ptr-pulling');
       }
     }
     if(!pulling)return;
-    // iOS風のラバーバンド減衰 + 進度で回転 (回転はスピナー側に当てる)
-    const pull=rubberBand(dy);
-    const ratio=Math.min(1,pull/THRESHOLD);
-    // スピナーは引っ張って開いた隙間の中央に。スクロール領域は丸ごと pull 分だけ下げる。
-    indicator.style.transform=`translate3d(0, ${spinnerY(pull)}px, 0)`;
-    const sp=indicator.querySelector('.ptr-spinner');
-    // スピナーは引きながらフェードイン
-    indicator.style.opacity=Math.min(1, dy/30).toFixed(2);
-    if(sp)sp.style.transform=`rotate(${ratio*270}deg)`;
-    indicator.classList.toggle('ready',pull>=THRESHOLD);
-    // スクロール領域はインジケータと同じ動き (一体感を出す)
-    target.style.transform=`translate3d(0, ${pull}px, 0)`;
+    // 最新の値だけ保持し、書き込みは rAF にまとめる (60Hz以上のイベントを間引く)
+    pendingPull=rubberBand(dy);
+    pendingDy=dy;
+    if(!rafId) rafId=requestAnimationFrame(flushFrame);
     // 引っ張り中はネイティブスクロールを抑える
     if(e.cancelable)e.preventDefault();
   }
 
   function onEnd(){
+    // 保留中の rAF があればキャンセル (古いフレームが後から流れて固まりに見える原因)
+    if(rafId){cancelAnimationFrame(rafId);rafId=0;}
     if(!target){
       // 念のため: pulling だけ残っていてもクリーンに戻す
       if(pulling){pulling=false;resetIndicator();}
@@ -7918,8 +7960,12 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     const tr=target.style.transform||'';
     const m=tr.match(/translate3d\(0(?:px)?,\s*(-?\d+(?:\.\d+)?)px/);
     const pulled=m?parseFloat(m[1]):0;
-    // スナップアニメーションをON
-    indicator.classList.add('snap');
+    // スナップアニメーションをON (pullingヒントは外す)
+    if(indicator){
+      indicator.classList.remove('pulling');
+      indicator.classList.add('snap');
+    }
+    target.classList.remove('ptr-pulling');
     target.classList.add('ptr-snap');
     pulling=false;
     if(pulled>=THRESHOLD){
@@ -7934,6 +7980,7 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     const ind=indicator; // ローカルに掴んでおく
     const tgt=target;
     if(ind){
+      ind.classList.remove('pulling');
       ind.style.transform='translate3d(0, 0, 0)';
       ind.style.opacity='0';
       ind.classList.remove('ready');
@@ -7941,10 +7988,14 @@ $('restore-input').addEventListener('change',handleRestoreFile);
       if(sp)sp.style.transform='';
       setTimeout(()=>{
         // この間に新しい pulling が始まっていたら display は触らない
-        if(!pulling && !refreshing && ind)ind.style.display='none';
+        if(!pulling && !refreshing && ind){
+          ind.style.display='none';
+          ind.classList.remove('snap'); // will-change を解放
+        }
       }, 300);
     }
     if(tgt){
+      tgt.classList.remove('ptr-pulling');
       tgt.style.transform='';
       setTimeout(()=>{
         if(tgt)tgt.classList.remove('ptr-snap');
