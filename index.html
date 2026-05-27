@@ -4844,8 +4844,8 @@ function renderUpload(){
     // 横幅と内寸のpaddingもグリッドカードと同じ比率にする。
     const wrap=document.createElement('div');
     wrap.id='up-note-wrap';
-    // 正方形にして、padding は内寸の 7% (グリッドの padding:10px / 140px ≒ 7%)
-    wrap.style.cssText='width:100%;aspect-ratio:1;padding:7%;border-radius:12px;display:flex;flex-direction:column;line-height:1.5;cursor:text;box-sizing:border-box;overflow:hidden;';
+    // 正方形にして、padding は applyStyle 内でグリッドカード(10px)を scale 倍した px 値で動的設定
+    wrap.style.cssText='width:100%;aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;line-height:1.5;cursor:text;box-sizing:border-box;overflow:hidden;';
 
     const editor=document.createElement('div');
     editor.id='up-note-area';
@@ -4884,6 +4884,14 @@ function renderUpload(){
     // フォントサイズはグリッドカードと同じロジック (noteCardStyle) を使い、
     // 編集領域がグリッドの何倍かを掛けてスケールする。これにより
     // 「グリッド表示時と同じ位置で改行する」のが編集中に WYSIWYG で見える。
+    //
+    // ポイント: wrap の外寸 × padding比率 と、グリッドカード(140px × padding 10px)の
+    // 比率を完全一致させる。具体的には:
+    //   scale = wrap外寸 / 140
+    //   padding = 10 * scale px (← %ではなくpx固定。内寸/外寸の比率がグリッドと同一に)
+    //   fontSize = gridFz * scale
+    // この3つが「同じ scale で」掛かるので、内寸 vs フォントサイズの比率も完全一致 →
+    // ブラウザが計算する改行位置がグリッドと一致する。
     const applyStyle=()=>{
       const col=colorById(c.color);
       wrap.style.background=col.bg;
@@ -4901,13 +4909,15 @@ function renderUpload(){
       const gridFz=NOTE_CARD_SIZES[idx].fz;
       const lh=NOTE_CARD_SIZES[idx].lh;
 
-      // 編集領域はグリッドカード幅(画面幅÷3 ≒ 140px)に対して、画面幅まるごと使う(約430px)
-      // → 約 3倍のスケール。実測ベースで wrap の実寸から動的に倍率を計算する。
+      // スケール = wrap の外寸 ÷ グリッドカードの外寸(140px)
       const wrapW=wrap.clientWidth||300;
-      const gridCardW=140; // グリッドの1セル幅の想定値
+      const gridCardW=140;
       const scale=wrapW/gridCardW;
-      const previewFz=Math.max(12, Math.round(gridFz*scale));
+      // padding もグリッド(10px)を同じscaleで拡大 → 内寸/外寸の比率が一致 → 改行位置一致
+      const previewFz=gridFz*scale;
+      const previewPad=10*scale;
       wrap.style.fontSize=previewFz+'px';
+      wrap.style.padding=previewPad+'px';
       wrap.style.lineHeight=lh;
 
       const align=resolveAlign({text:txt,alignH:c.alignH,alignV:c.alignV});
