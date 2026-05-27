@@ -3346,15 +3346,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
       </div>
-      <div class="sheet-opt-title">写真から選ぶ</div>
-      <div class="sheet-opt-desc">カメラロール</div>
-    </button>
-    <button class="sheet-opt" data-action="photo-src-file">
-      <div class="sheet-opt-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      </div>
-      <div class="sheet-opt-title">ファイルから選ぶ</div>
-      <div class="sheet-opt-desc">Files アプリ</div>
+      <div class="sheet-opt-title">写真・ファイル</div>
+      <div class="sheet-opt-desc">写真ライブラリやファイルから選ぶ</div>
     </button>
   </div>
 </div>
@@ -5329,15 +5322,11 @@ function pickPhotoSource(src){
     state.cameraCapture=true;
     $('file-input-camera').click();
   }else if(src==='library'){
-    // カメラロールから選ぶ。
-    // accept="image/*" だけだと iOS は撮影オプションも一緒に出してしまうので、
-    // 独自シートで「写真から選ぶ」を選んだ意図に沿うよう、file-input を流用しつつ
-    // cameraCapture フラグは立てない (トリミングは行わない)。
+    // 「写真・ファイル」: 元仕様どおり accept="image/*" の input を開いて iOS 標準シートに任せる。
+    // iOS のシート(写真ライブラリ / 写真を撮る / ファイルを選択) はユーザーに馴染みがあるので、
+    // ここではアプリ側で分岐させずそのまま使う。トリミングは行わない。
     state.cameraCapture=false;
     $('file-input').click();
-  }else if(src==='file'){
-    state.cameraCapture=false;
-    $('file-input-any').click();
   }
 }
 
@@ -9306,7 +9295,6 @@ document.addEventListener('click',e=>{
     case 'create-list':startCreate('list');break;
     case 'photo-src-camera':pickPhotoSource('camera');break;
     case 'photo-src-library':pickPhotoSource('library');break;
-    case 'photo-src-file':pickPhotoSource('file');break;
     case 'close-photo-src':closePhotoSourceSheet();break;
     case 'save-card':saveCard();break;
     case 'cancel-upload':cancelUpload();break;
