@@ -1272,11 +1272,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 /* 部分コピー対象に指定されたバブルだけ、その間だけテキスト選択を許可する。
    青いハンドルで好きな範囲を選べる「LINEの部分コピー」と同じ体験。
-   選択中であることが視覚的にわかるように、薄い枠を付ける。 */
+   選択中であることが視覚的にわかるように、薄い枠を付ける。
+   ※ -webkit-touch-callout は default にせず、iOSネイティブのコピーメニューは抑止する。
+     これにより「ハンドルでの範囲選択」だけ可能で、ユーザーは下のツールバーで操作する。 */
 .bubble.selecting{
   -webkit-user-select:text !important;
   user-select:text !important;
-  -webkit-touch-callout:default !important;
   cursor:text;
   outline:2px solid var(--g);
   outline-offset:2px;
@@ -6162,6 +6163,10 @@ function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 function renderChatLog(c){
   const log=$('detail-chat-log');
+  // 再描画でDOMが消えると _partialCopyBubble の参照が宙に浮くので、念のためモード解除
+  if($('partial-copy-bar') && $('partial-copy-bar').classList.contains('on')){
+    closePartialCopy();
+  }
   log.innerHTML='';
   const msgs=getChatMessages(c);
   if(msgs.length===0)return;
@@ -6289,6 +6294,7 @@ function attachBubbleLongPress(msgEl,cardId,msgIdx,bubbleEl){
 // バブル上にアクションメニューを表示する。
 // バブルの直上に出して、はみ出る場合は直下に回す。
 let _bubbleMenuTarget=null; // {cardId, msgIdx, text, role}
+let _bubbleMenuOpenedAt=0; // メニューを開いた時刻。直後のtouchend由来クリックで閉じないため
 function showBubbleMenu(msgEl,bubbleEl,cardId,msgIdx){
   const c=state.cards.find(x=>x.id===cardId);
   if(!c)return;
@@ -6298,6 +6304,7 @@ function showBubbleMenu(msgEl,bubbleEl,cardId,msgIdx){
   // クリーンなテキスト (AIメッセージの場合は装飾を落とす)
   const text=cleanAIText(m.text||'',m.role);
   _bubbleMenuTarget={cardId,msgIdx,text,role:m.role,bubbleEl};
+  _bubbleMenuOpenedAt=Date.now();
 
   const overlay=$('bubble-menu-overlay');
   const menu=$('bubble-menu');
@@ -6329,7 +6336,11 @@ function showBubbleMenu(msgEl,bubbleEl,cardId,msgIdx){
   menu.style.top=top+'px';
 }
 
-function closeBubbleMenu(){
+function closeBubbleMenu(force){
+  // 長押し直後のtouchend由来の合成clickで即閉じてしまう問題を防ぐためのガード。
+  // メニューを開いた直後の 350ms はオーバーレイ起因のクローズを無視する。
+  // ただし force=true (メニュー項目からの明示的なクローズ) はいつでも閉じる。
+  if(!force && _bubbleMenuOpenedAt && (Date.now()-_bubbleMenuOpenedAt)<350)return;
   const overlay=$('bubble-menu-overlay');
   const menu=$('bubble-menu');
   overlay.classList.remove('on');
@@ -6338,6 +6349,7 @@ function closeBubbleMenu(){
     _bubbleMenuTarget.bubbleEl.classList.remove('bubble-active');
   }
   _bubbleMenuTarget=null;
+  _bubbleMenuOpenedAt=0;
 }
 
 // メニュー項目の実装
@@ -6346,14 +6358,14 @@ async function bubbleCopy(){
   if(!t)return;
   await copyToClipboard(t.text);
   toast('コピーしました');
-  closeBubbleMenu();
+  closeBubbleMenu(true);
 }
 
 function bubbleReply(){
   const t=_bubbleMenuTarget;
   if(!t)return;
   setReplyTo({cardId:t.cardId,msgIdx:t.msgIdx,text:t.text,role:t.role});
-  closeBubbleMenu();
+  closeBubbleMenu(true);
   // 入力欄にフォーカス
   const inp=$('detail-input');
   if(inp)inp.focus();
@@ -6362,12 +6374,12 @@ function bubbleReply(){
 function bubbleDelete(){
   const t=_bubbleMenuTarget;
   if(!t)return;
-  if(!confirm('このメッセージを削除しますか?')){closeBubbleMenu();return;}
+  if(!confirm('このメッセージを削除しますか?')){closeBubbleMenu(true);return;}
   const cIdx=state.cards.findIndex(x=>x.id===t.cardId);
-  if(cIdx<0){closeBubbleMenu();return;}
+  if(cIdx<0){closeBubbleMenu(true);return;}
   const c=state.cards[cIdx];
   if(!c.chat){c.chat=getChatMessages(c);delete c.aiLog;}
-  if(!c.chat[t.msgIdx]){closeBubbleMenu();return;}
+  if(!c.chat[t.msgIdx]){closeBubbleMenu(true);return;}
   c.chat[t.msgIdx].deleted=true;
   // 削除したメッセージを今リプライ対象にしていたら解除
   if(state.replyTo && state.replyTo.cardId===t.cardId && state.replyTo.msgIdx===t.msgIdx){
@@ -6375,7 +6387,7 @@ function bubbleDelete(){
   }
   save();
   state.current=Object.assign({},c,{_origin:state.current._origin});
-  closeBubbleMenu();
+  closeBubbleMenu(true);
   renderChatLog(c);
 }
 
@@ -6384,7 +6396,7 @@ function bubblePartialCopy(){
   if(!t)return;
   // バブル要素を参照しておく必要があるので、メニューを閉じる前に取得
   const bubbleEl=t.bubbleEl;
-  closeBubbleMenu();
+  closeBubbleMenu(true);
   openPartialCopy(bubbleEl);
 }
 
@@ -6417,10 +6429,10 @@ function openPartialCopy(bubbleEl){
 
 function closePartialCopy(){
   $('partial-copy-bar').classList.remove('on');
-  if(_partialCopyBubble){
-    _partialCopyBubble.classList.remove('selecting');
-    _partialCopyBubble=null;
-  }
+  // 防御的に、DOM内の全ての .bubble.selecting をクリーンアップする。
+  // 参照だけ消えて class が残るケースを防ぐ。
+  document.querySelectorAll('.bubble.selecting').forEach(b=>b.classList.remove('selecting'));
+  _partialCopyBubble=null;
   try{window.getSelection().removeAllRanges();}catch(_){}
 }
 
