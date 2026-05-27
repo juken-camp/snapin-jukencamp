@@ -1223,41 +1223,30 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   box-sizing:border-box;
 }
 
-/* プルダウン更新インジケーター (細いスピナー、円なし)
-   スピナーはスクロール領域の頂部内側に置き、引っ張って開いた隙間の中央に出てくるようにする */
-.ptr-indicator{
-  position:absolute;
-  top:0;
-  left:50%;
-  margin-left:-13px;
-  width:26px;
-  height:26px;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  color:var(--ink3);
-  z-index:50;
-  pointer-events:none;
-  will-change:transform, opacity;
-  opacity:0;
-}
-.ptr-indicator.snap{transition:transform .28s cubic-bezier(.16,1,.3,1), opacity .18s ease-out;}
-.ptr-indicator.ready{color:var(--g);}
-/* スピナー本体 */
-.ptr-spinner{
-  width:22px;
-  height:22px;
-  border-radius:50%;
-  border:2px solid currentColor;
-  border-top-color:transparent;
-  transition:transform .12s ease-out;
-}
-.ptr-indicator.ready .ptr-spinner{transform:scale(1.1);}
-.ptr-indicator.spinning .ptr-spinner{animation:ptr-spin 0.7s linear infinite;}
-@keyframes ptr-spin{to{transform:rotate(360deg);}}
+/* プルダウン バウンド戻り用 */
 .scroll.ptr-snap{
   will-change:transform;
-  transition:transform .28s cubic-bezier(.16,1,.3,1);
+  transition:transform .32s cubic-bezier(.16,1,.3,1);
+}
+
+/* SnapInロゴ: タップで更新できる。タップ時の演出 */
+.logo{
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.logo:active{opacity:0.6;}
+.logo em{
+  display:inline-block;
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+.logo-refreshing em{
+  animation:logo-pop .55s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes logo-pop{
+  0%{transform:scale(1) rotate(0deg);}
+  35%{transform:scale(1.18) rotate(-12deg);}
+  70%{transform:scale(0.96) rotate(6deg);}
+  100%{transform:scale(1) rotate(0deg);}
 }
 /* 日付セパレーター(中央に半透明丸タブ) */
 .chat-date-sep{
@@ -8046,38 +8035,51 @@ $('file-input').addEventListener('change',onFilePick);
 $('file-input-any').addEventListener('change',onFilePick);
 $('restore-input').addEventListener('change',handleRestoreFile);
 
-// ═══ PULL TO REFRESH ═══
-// 各 .scroll コンテナで、頂部から下に引っ張ると更新する
-
-(function setupPullToRefresh(){
-  const THRESHOLD=70;
-  const MAX_PULL=130;
-  const SPINNER_H=26;
-  let startY=0, lastY=0, pulling=false, target=null, indicator=null, refreshing=false;
-  let refreshGuard=null;
-
-  function makeIndicator(){
-    const el=document.createElement('div');
-    el.className='ptr-indicator';
-    el.innerHTML=`<div class="ptr-spinner"></div>`;
-    return el;
+// ═══ 画面の更新処理 (SnapInロゴタップで呼ばれる) ═══
+async function refreshActiveScreen(){
+  const screen=document.querySelector('.screen.active');
+  if(!screen)return;
+  const id=screen.id;
+  if(id==='screen-home'){
+    await loadOfficialShelves();
+    renderHome();
+    updateHomeNewBadge();
+  }else if(id==='screen-today'){
+    renderToday();
+  }else if(id==='screen-library'){
+    await loadOfficialShelves();
+    renderLibrary();
+  }else if(id==='screen-official'){
+    await loadOfficialShelves();
+    if(state.currentOfficial){
+      const fresh=OFFICIAL_SHELVES.find(x=>x.id===state.currentOfficial.id);
+      if(fresh)openOfficial(fresh);
+    }
+  }else if(id==='screen-search'){
+    doSearch();
   }
+}
 
-  // iOS風のラバーバンド: 引くほど抵抗が増す
-  // 0〜THRESHOLDまではほぼ1:1、それ以降は急速に抵抗増
-  function rubberBand(dy){
-    if(dy<=THRESHOLD)return dy*0.95;
-    const excess=dy-THRESHOLD;
-    // 超過分は対数的に減衰
-    return THRESHOLD*0.95 + (MAX_PULL-THRESHOLD*0.95)*(1-Math.exp(-excess/80));
+// SnapInロゴをタップしたときの更新フィードバック (短いバイブ + ロゴ自体に軽い演出)
+async function refreshFromLogo(logoEl){
+  if(navigator.vibrate)navigator.vibrate(10);
+  if(logoEl){
+    logoEl.classList.add('logo-refreshing');
+    setTimeout(()=>logoEl.classList.remove('logo-refreshing'),600);
   }
+  try{
+    await refreshActiveScreen();
+  }catch(e){
+    console.warn('refresh failed',e);
+  }
+}
 
-  // スピナーを「引っ張って開いた隙間の中央」に置くための Y 座標を返す。
-  // 隙間の高さは pull。スピナーの高さは SPINNER_H。
-  // スクロール領域の top を 0 として、(pull - SPINNER_H)/2 が中央。
-  function spinnerY(pull){
-    return Math.max(0, (pull - SPINNER_H) / 2);
-  }
+// ═══ プルダウン (バウンドのみ・更新なし・スピナーなし) ═══
+// SNS風のバウンド感だけ残し、更新は SnapIn ロゴタップに集約。
+// これにより「途中で固まる」現象が原理的に起きない (更新も画像同期処理もしないので)。
+(function setupPullBounce(){
+  const MAX_PULL=120;     // 最大変位
+  let startY=0, pulling=false, target=null;
 
   function activeScrollEl(){
     const screen=document.querySelector('.screen.active');
@@ -8085,8 +8087,14 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     return screen.querySelector('.scroll');
   }
 
+  // 引くほど抵抗が増すラバーバンド (iOS風)
+  function rubberBand(dy){
+    if(dy<=0)return 0;
+    // 対数的に減衰、上限 MAX_PULL
+    return MAX_PULL*(1-Math.exp(-dy/90));
+  }
+
   function onStart(e){
-    if(refreshing)return;
     if(state.selectMode)return;
     if($('add-sheet') && $('add-sheet').classList.contains('on'))return;
     if($('color-sheet') && $('color-sheet').classList.contains('on'))return;
@@ -8098,149 +8106,44 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     if(sc.scrollTop>0)return;
     target=sc;
     startY=e.touches[0].clientY;
-    lastY=startY;
     pulling=false;
   }
 
   function onMove(e){
-    if(!target||refreshing)return;
+    if(!target)return;
     const y=e.touches[0].clientY;
     const dy=y-startY;
-    lastY=y;
     if(dy<=0){
-      if(pulling){resetIndicator();pulling=false;}
+      if(pulling){reset();pulling=false;}
       return;
     }
-    if(dy>3){
-      if(!pulling){
-        pulling=true;
-        const host=target.parentElement;
-        if(!indicator){
-          indicator=makeIndicator();
-        }
-        if(indicator.parentNode!==host){
-          host.appendChild(indicator);
-        }
-        indicator.style.top=target.offsetTop+'px';
-        indicator.style.display='flex';
-        indicator.classList.remove('snap');
-        target.classList.remove('ptr-snap');
-      }
+    if(dy>3 && !pulling){
+      pulling=true;
+      target.classList.remove('ptr-snap');
     }
     if(!pulling)return;
     const pull=rubberBand(dy);
-    const ratio=Math.min(1,pull/THRESHOLD);
-    indicator.style.transform=`translate3d(0, ${spinnerY(pull)}px, 0)`;
-    const sp=indicator.querySelector('.ptr-spinner');
-    indicator.style.opacity=Math.min(1, dy/30).toFixed(2);
-    if(sp)sp.style.transform=`rotate(${ratio*270}deg)`;
-    indicator.classList.toggle('ready',pull>=THRESHOLD);
     target.style.transform=`translate3d(0, ${pull}px, 0)`;
     if(e.cancelable)e.preventDefault();
   }
 
-  function onEnd(e){
-    if(!target){
-      if(pulling){pulling=false;resetIndicator();}
-      return;
-    }
+  function onEnd(){
+    if(!target){return;}
     if(!pulling){target=null;return;}
-    const tr=target.style.transform||'';
-    const m=tr.match(/translate3d\(0(?:px)?,\s*(-?\d+(?:\.\d+)?)px/);
-    const pulled=m?parseFloat(m[1]):0;
-    indicator.classList.add('snap');
+    // スナップで戻すだけ。更新は走らせない。
     target.classList.add('ptr-snap');
     pulling=false;
-    if(pulled>=THRESHOLD){
-      doRefresh();
-    }else{
-      resetIndicator();
-    }
+    reset();
   }
 
-  function resetIndicator(){
-    // 既に出ているスピナーとスクロール領域を頂部に戻す。多重呼び出しに耐える。
-    const ind=indicator; // ローカルに掴んでおく
+  function reset(){
     const tgt=target;
-    if(ind){
-      ind.style.transform='translate3d(0, 0, 0)';
-      ind.style.opacity='0';
-      ind.classList.remove('ready');
-      const sp=ind.querySelector('.ptr-spinner');
-      if(sp)sp.style.transform='';
-      setTimeout(()=>{
-        // この間に新しい pulling が始まっていたら display は触らない
-        if(!pulling && !refreshing && ind)ind.style.display='none';
-      }, 300);
-    }
     if(tgt){
       tgt.style.transform='';
       setTimeout(()=>{
         if(tgt)tgt.classList.remove('ptr-snap');
-        // 新しい引っ張りが始まっていなければ target を null に
         if(target===tgt && !pulling) target=null;
       }, 300);
-    }
-  }
-
-  async function doRefresh(){
-    refreshing=true;
-    // フェイルセーフ: 何があっても 8秒後には強制リセット (固まり防止)
-    if(refreshGuard)clearTimeout(refreshGuard);
-    refreshGuard=setTimeout(()=>{
-      console.warn('PTR: refresh timeout, forcing reset');
-      refreshing=false;
-      if(indicator)indicator.classList.remove('spinning');
-      resetIndicator();
-    }, 8000);
-    // インラインの rotate をクリアして CSS アニメーションに任せる
-    const sp=indicator.querySelector('.ptr-spinner');
-    if(sp)sp.style.transform='';
-    indicator.classList.add('spinning');
-    indicator.style.opacity='1';
-    // スピナーを隙間の中央に固定、スクロール領域を THRESHOLD 押し下げる
-    indicator.style.transform=`translate3d(0, ${spinnerY(THRESHOLD)}px, 0)`;
-    if(target)target.style.transform=`translate3d(0, ${THRESHOLD}px, 0)`;
-    if(navigator.vibrate)navigator.vibrate(10);
-    try{
-      await refreshActiveScreen();
-    }catch(err){
-      console.warn('refresh failed',err);
-    }finally{
-      // try の中の例外があっても必ずここを通る
-      if(refreshGuard){clearTimeout(refreshGuard);refreshGuard=null;}
-      // 少し見せてから戻す
-      setTimeout(()=>{
-        if(indicator)indicator.classList.remove('spinning');
-        resetIndicator();
-        refreshing=false;
-      },350);
-    }
-  }
-
-  // 画面ごとの「更新」処理
-  async function refreshActiveScreen(){
-    const screen=document.querySelector('.screen.active');
-    if(!screen)return;
-    const id=screen.id;
-    if(id==='screen-home'){
-      await loadOfficialShelves();
-      renderHome();
-      updateHomeNewBadge();
-    }else if(id==='screen-today'){
-      renderToday();
-    }else if(id==='screen-library'){
-      await loadOfficialShelves();
-      renderLibrary();
-    }else if(id==='screen-official'){
-      await loadOfficialShelves();
-      // 同じIDの最新棚で再描画
-      if(state.currentOfficial){
-        const fresh=OFFICIAL_SHELVES.find(x=>x.id===state.currentOfficial.id);
-        if(fresh)openOfficial(fresh);
-      }
-    }else if(id==='screen-search'){
-      doSearch();
     }
   }
 
@@ -8250,9 +8153,16 @@ $('restore-input').addEventListener('change',handleRestoreFile);
   document.addEventListener('touchcancel',onEnd);
 })();
 
+
 // 起動
 setupNavs();
 loadOfficialShelves(); // 公式棚をサーバーから取得 (非同期、UIブロックしない)
+
+// 各画面のSnapInロゴをタップで現在画面を更新できるようにする
+// (プルダウンでは更新しない代わりに、明示的な更新手段として用意)
+document.querySelectorAll('.hdr .logo').forEach(logo=>{
+  logo.addEventListener('click',()=>refreshFromLogo(logo));
+});
 
 // 古い Service Worker (過去のデプロイで残ったもの) を解除する。
 // 現在この HTML 自体は SW を register していないが、過去に登録された SW が
