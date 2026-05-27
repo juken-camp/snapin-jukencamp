@@ -6811,35 +6811,122 @@ function splitAiReplyToBubbles(text){
   // Step 1: 空行で大段落に分割
   let parts=s.split(/\n{2,}/).map(x=>x.trim()).filter(x=>x.length>0);
 
-  // Step 2: 長すぎる段落は文末記号での単一改行を境にさらに分割
-  // (例: 解説のあとの計算過程が改行で連なっているケース)
-  const SOFT_MAX=200;
+  // Step 2: 長すぎる段落をさらに細かく分ける。
+  // 分割の優先度:
+  //   (a) 文末記号「。？！」直後の改行
+  //   (b) 箇条書き行 (・/-/数字.) の連続をひとかたまりとして切り出す
+  //   (c) それでも長すぎる場合は文末記号「。？！」での強制分割 (改行が無くても)
+  const SOFT_MAX=240;
+  const HARD_MAX=420;
   const refined=[];
+
+  function pushSplit(p){
+    // 箇条書き連続行のグループと、それ以外の散文を切り分ける。
+    // 行頭「・」「-」「数字+. 」「数字+) 」を箇条書き行とみなす。
+    const lines=p.split('\n');
+    const isBullet=ln=>/^\s*(?:[・\-]|\d+[.\)])\s*/.test(ln);
+    let buf=[]; // 現在組み立て中の散文行群
+    let bullets=[]; // 現在組み立て中の箇条書き行群
+    const flushBuf=()=>{ if(buf.length){refined.push(buf.join('\n').trim()); buf=[];} };
+    const flushBullets=()=>{ if(bullets.length){refined.push(bullets.join('\n').trim()); bullets=[];} };
+    for(const ln of lines){
+      if(isBullet(ln)){
+        flushBuf();
+        bullets.push(ln);
+      }else{
+        flushBullets();
+        buf.push(ln);
+      }
+    }
+    flushBuf();
+    flushBullets();
+  }
+
   for(const p of parts){
     if(p.length<=SOFT_MAX){ refined.push(p); continue; }
-    // 「。」「？」「！」直後の改行を分割点に
+
+    // (a) 文末記号 + 改行 で分割
     const subs=p.split(/(?<=[。？！\?\!])\n/).map(x=>x.trim()).filter(x=>x.length>0);
-    if(subs.length<=1){
-      // 文末改行で分けられなかったら、そのまま入れる (式の連なりなどはそのままが自然)
-      refined.push(p);
-    }else{
-      // 分割後も短すぎないように、隣接で SOFT_MAX を超えない範囲でまとめ直す
+    if(subs.length>1){
+      // SOFT_MAX を超えない範囲でまとめ直す
       let buf='';
       for(const x of subs){
         if(buf.length===0){ buf=x; }
         else if(buf.length+x.length+1<=SOFT_MAX){ buf=buf+'\n'+x; }
+        else{ pushSplit(buf); buf=x; }
+      }
+      if(buf)pushSplit(buf);
+      continue;
+    }
+
+    // (b) 箇条書き行が含まれる場合は、箇条書きブロックと散文を別バブルに分ける
+    if(/\n/.test(p) && /^\s*(?:[・\-]|\d+[.\)])\s*/m.test(p)){
+      pushSplit(p);
+      // pushSplit が結果を細分化したので、各バブルが SOFT_MAX を超えていれば
+      // さらに HARD_MAX で強制分割
+      const last=refined.length-1;
+      // 直前に追加されたバブル群を取り出して長すぎるものを処理する
+      // (実装簡略化のため、ここでは強制分割は (c) 側に任せる)
+      // refined の末尾要素が単独で長すぎる場合に備えて、後段の処理で再評価する。
+      continue;
+    }
+
+    // (c) 文末記号で強制分割 (改行が無いケース)
+    const forced=p.split(/(?<=[。？！\?\!])/).map(x=>x.trim()).filter(x=>x.length>0);
+    if(forced.length>1){
+      let buf='';
+      for(const x of forced){
+        if(buf.length===0){ buf=x; }
+        else if(buf.length+x.length<=SOFT_MAX){ buf=buf+x; }
         else{ refined.push(buf); buf=x; }
       }
       if(buf)refined.push(buf);
+    }else{
+      refined.push(p);
     }
   }
 
-  // Step 3: ごく短いバブル同士だけ結合する (両方 25字未満のとき)。
+  // Step 3: 仕上げの強制分割。SOFT_MAX を大きく超えるバブルが残っていたら細分化する。
+  // 箇条書きブロック (全行が・/-/数字)の場合は行数ベースで分割し、
+  // それ以外は文末記号で機械的に切り直す (会話のリズム優先)。
+  const final=[];
+  for(const p of refined){
+    if(p.length<=HARD_MAX){ final.push(p); continue; }
+    // 箇条書きブロック判定: 全行が箇条書き行か?
+    const lines=p.split('\n');
+    const isBullet=ln=>/^\s*(?:[・\-]|\d+[.\)])\s*/.test(ln);
+    const allBullets=lines.length>=2 && lines.every(ln=>isBullet(ln)||ln.trim()==='');
+    if(allBullets){
+      // 1バブルに SOFT_MAX 以内で収まる行数まで詰めて、超えたら切る
+      let buf=[];
+      let bufLen=0;
+      for(const ln of lines){
+        if(!ln.trim())continue;
+        if(buf.length===0){ buf.push(ln); bufLen=ln.length; continue; }
+        if(bufLen+ln.length+1<=SOFT_MAX){ buf.push(ln); bufLen+=ln.length+1; }
+        else{ final.push(buf.join('\n')); buf=[ln]; bufLen=ln.length; }
+      }
+      if(buf.length)final.push(buf.join('\n'));
+      continue;
+    }
+    // 散文 (または混在): 文末記号で強制分割
+    const sents=p.split(/(?<=[。？！\?\!])/).map(x=>x.trim()).filter(x=>x.length>0);
+    if(sents.length<=1){ final.push(p); continue; }
+    let buf='';
+    for(const x of sents){
+      if(buf.length===0){ buf=x; }
+      else if(buf.length+x.length<=SOFT_MAX){ buf=buf+x; }
+      else{ final.push(buf); buf=x; }
+    }
+    if(buf)final.push(buf);
+  }
+
+  // Step 4: ごく短いバブル同士だけ結合する (両方 25字未満のとき)。
   // AIが意図して空行で分けた段落は基本そのまま尊重し、「はい」「そうです」のような
   // 極端に短い吹き出しが連続するときだけ統合する。
   const MIN_MERGE=25;
   const merged=[];
-  for(const p of refined){
+  for(const p of final){
     if(merged.length>0){
       const last=merged[merged.length-1];
       if(last.length<MIN_MERGE && p.length<MIN_MERGE){
@@ -7836,7 +7923,26 @@ async function callAI(userMessage,cardContext){
     if(cardContext.title)contextStr+='タイトル: '+cardContext.title+'\n';
     if(cardContext.items)contextStr+='リスト項目: '+cardContext.items.map(i=>i.t).join(', ')+'\n';
   }
-  const systemPrompt='あなたは学習支援のアシスタントです。生徒が保存したメモについて、わかりやすく端的に答えてください。説教はせず、必要な情報を簡潔に伝えます。返信はプレーンテキストで書いてください。Markdown 記法 (# 見出し、**強調**、*斜体*、`コード`、- 箇条書きなど) は使わず、装飾なしの普通の文章で答えてください。箇条書きが必要な時は行頭に「・」を使ってください。';
+  const systemPrompt=[
+    'あなたは学習支援のアシスタントです。生徒が保存したメモやノート(写真・テキスト・リスト)について、生徒が理解できるよう丁寧に答えてください。',
+    '',
+    '【回答の姿勢】',
+    '・必要な背景や理由も含めて、しっかり説明してください。短すぎると不親切に感じられます。',
+    '・かといって冗長にする必要はありません。質問に対して必要な情報を、過不足なく丁寧に伝えるのが目標です。',
+    '・数学・理科などの解説では、考え方の筋道、途中式、用語の意味、なぜそうなるかの理由まで含めて答えてください。',
+    '・暗記事項の質問なら、答えだけでなく覚え方のヒントや関連事項も添えると親切です。',
+    '・説教調や上から目線は避け、対等な学習パートナーとして話してください。',
+    '',
+    '【書式のルール】',
+    '・返信はプレーンテキストで書いてください。Markdown 記法 (# 見出し、**強調**、*斜体*、`コード`、- 箇条書きなど) は一切使わないでください。',
+    '・箇条書きが必要な時は行頭に「・」を使ってください。',
+    '・話題の区切りでは空行(\\n\\n)を入れてください。これは表示側で段落ごとに別の吹き出しに分割するために重要です。',
+    '・たとえば「結論」→空行→「理由の説明」→空行→「補足や例」のような構成にしてください。1つの吹き出しは概ね 3〜6 文程度を目安にしてください。',
+    '',
+    '【避けること】',
+    '・「いかがでしたか?」のような閉じの定型文。',
+    '・「〜について解説します」「ご質問にお答えします」のような前置き。本題から入ってください。',
+  ].join('\n');
 
   // user メッセージの content を組み立てる
   let userContent;
