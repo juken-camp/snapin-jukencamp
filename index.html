@@ -348,7 +348,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   -webkit-user-select:none;
 }
 .card:active{transform:scale(0.96);}
-.card img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
+.card img{
+  width:100%;height:100%;
+  object-fit:cover;
+  display:block;
+  pointer-events:none;
+  /* GPUレイヤーに乗せる: スクロールやPTRのtransform時に画像のラスタライズが
+     メインスレッドで走るのを防ぐ。これがないと、特に複数枚並ぶグリッドで
+     PTRが画面上のあるポイントで数秒固まる症状が出る (iOS Safari/PWA) */
+  transform:translateZ(0);
+  -webkit-transform:translateZ(0);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
 .card .ctxt{
   padding:10px;
   color:var(--ink);
@@ -4201,7 +4213,7 @@ function renderToday(){
       const el=document.createElement('div');
       el.className='today-newcard '+c.type;
       if(c.type==='photo'||c.type==='photonote'){
-        el.innerHTML=`<img src="${c.image||''}">`;
+        el.innerHTML=`<img src="${c.image||''}" decoding="async" loading="eager">`;
       }else if(c.type==='note'){
         const col=colorById(c.color);
         const style=noteCardStyle(c,col);
@@ -4246,7 +4258,7 @@ function renderToday(){
       const el=document.createElement('div');
       el.className='today-newcard '+c.type;
       if(c.type==='photo'||c.type==='photonote'){
-        el.innerHTML=`<img src="${c.image||''}">`;
+        el.innerHTML=`<img src="${c.image||''}" decoding="async" loading="eager">`;
       }else if(c.type==='note'){
         const col=colorById(c.color);
         const style=noteCardStyle(c,col);
@@ -4264,6 +4276,8 @@ function renderToday(){
   const todayScreen=$('screen-today');
   applyGridNoteScale(todayScreen);
   requestAnimationFrame(()=>applyGridNoteScale(todayScreen));
+  // 画像を事前デコード (PTRやスクロール時のメインスレッドブロック防止)
+  precacheCardImages(todayScreen);
 }
 
 function getForgottenCards(){
@@ -4330,7 +4344,7 @@ function renderPastDaySection(daysAgo){
     const el=document.createElement('div');
     el.className='today-newcard '+c.type;
     if(c.type==='photo'||c.type==='photonote'){
-      el.innerHTML=`<img src="${c.image||''}">`;
+      el.innerHTML=`<img src="${c.image||''}" decoding="async" loading="eager">`;
     }else if(c.type==='note'){
       const col=colorById(c.color);
       const style=noteCardStyle(c,col);
@@ -4390,7 +4404,7 @@ function renderPastMoreSection(){
     const cardsHtml=g.cards.map(c=>{
       let body='';
       if(c.type==='photo'||c.type==='photonote'){
-        body=`<img src="${c.image||''}">`;
+        body=`<img src="${c.image||''}" decoding="async" loading="eager">`;
       }else if(c.type==='note'){
         const col=colorById(c.color);
         const style=noteCardStyle(c,col);
@@ -4489,7 +4503,7 @@ function renderGrid(el,cards,origin){
     if(c.type==='photo' || c.type==='photonote'){
       const col=colorById(c.color);
       card.style.background=col.bg;
-      inner=`<img src="${c.image||''}" alt="">`;
+      inner=`<img src="${c.image||''}" alt="" decoding="async" loading="eager">`;
       if(c.text)inner+=`<div class="card-source">${esc(c.text.slice(0,30))}</div>`;
     }else if(c.type==='note'){
       const col=colorById(c.color);
@@ -4552,6 +4566,39 @@ function renderGrid(el,cards,origin){
   // note カードの transform:scale を適用 (実寸140px → 親カード幅にフィット)
   applyGridNoteScale(el);
   requestAnimationFrame(()=>applyGridNoteScale(el));
+  // ★ カード画像を事前にデコード (PTRやスクロール中のメインスレッドブロックを防ぐ重要処理)
+  // これがないと、未デコードの画像がスクロール/transform時にメインスレッドを
+  // 数百ms〜2秒以上ブロックして「引っ張った位置で固まる」症状を引き起こす。
+  precacheCardImages(el);
+}
+
+// カード画像 (<img>) を事前にデコードして、表示時のメインスレッド占有を回避する。
+// img.decode() は別スレッドでデコードを行い、Promise で完了通知する。
+// 失敗しても無視 (画像なしで表示されるだけ)。
+function precacheCardImages(container){
+  if(!container)return;
+  // スクロール領域内のすべての <img> を対象
+  const imgs=container.querySelectorAll('img');
+  imgs.forEach(img=>{
+    if(!img.src)return;
+    // 既にデコード完了済みなら何もしない
+    if(img.complete && img.naturalWidth>0){
+      if(img.decode){
+        // 念のため decode() を呼んでブラウザにキャッシュを準備させる
+        img.decode().catch(()=>{});
+      }
+      return;
+    }
+    const tryDecode=()=>{
+      if(img.decode)img.decode().catch(()=>{});
+    };
+    if(img.complete){
+      tryDecode();
+    }else{
+      img.addEventListener('load',tryDecode,{once:true});
+      img.addEventListener('error',()=>{},{once:true});
+    }
+  });
 }
 
 // 長押しで選択モード入り (グリッドのみ)
@@ -4680,7 +4727,7 @@ function renderFeed(el,cards){
     item.className='feed-item';
     let inner='';
     if(c.type==='photo' || c.type==='photonote'){
-      inner=`<img src="${c.image||''}" alt="">`;
+      inner=`<img src="${c.image||''}" alt="" decoding="async" loading="eager">`;
       const txt=c.text?esc(c.text.slice(0,80)):'';
       inner+=`<div class="feed-meta">${txt}　${fmtDate(c.date)}</div>`;
     }else if(c.type==='note'){
@@ -6925,7 +6972,7 @@ function renderLibNewSection(seenShelves){
   const cardsHtml=top.map(({card:c,shelf:s})=>{
     let thumb='';
     if(c.type==='photo'||c.type==='photonote'){
-      thumb=`<img src="${c.image||''}" alt="">`;
+      thumb=`<img src="${c.image||''}" alt="" decoding="async" loading="eager">`;
     }else if(c.type==='note'){
       thumb=esc((c.text||'').slice(0,40));
     }else if(c.type==='list'){
@@ -7156,7 +7203,7 @@ function doSearch(){
       const card=document.createElement('div');
       card.className='card '+c.type;
       let inner='';
-      if(c.type==='photo'||c.type==='photonote')inner=`<img src="${c.image||''}">`;
+      if(c.type==='photo'||c.type==='photonote')inner=`<img src="${c.image||''}" decoding="async" loading="eager">`;
       else if(c.type==='note'){
         const col=colorById(c.color);
         const style=noteCardStyle(c,col);
@@ -7802,46 +7849,12 @@ $('restore-input').addEventListener('change',handleRestoreFile);
 
 // ═══ PULL TO REFRESH ═══
 // 各 .scroll コンテナで、頂部から下に引っ張ると更新する
-
-// ★★★ デバッグ用: 画面右下にログを表示するオーバーレイ ★★★
-// iPhone実機でPTR挙動を確認するため。原因切り分けが終わったら削除する。
-(function setupDebugLog(){
-  const panel=document.createElement('div');
-  panel.id='dbg-panel';
-  panel.style.cssText='position:fixed;right:4px;bottom:80px;width:170px;max-height:240px;background:rgba(0,0,0,.78);color:#0f0;font:10px/1.25 monospace;padding:4px 5px;z-index:99999;border-radius:6px;overflow:hidden;pointer-events:auto;white-space:pre;';
-  panel.textContent='[dbg]\n';
-  // タップでクリア
-  panel.addEventListener('click',()=>{panel.textContent='[dbg]\n';});
-  document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(panel),{once:true});
-  // 既にDOM準備済みなら即追加
-  if(document.body)document.body.appendChild(panel);
-  const MAX_LINES=18;
-  window.dbg=function(msg){
-    if(!panel.parentNode && document.body)document.body.appendChild(panel);
-    const t=new Date();
-    const ts=String(t.getSeconds()).padStart(2,'0')+'.'+String(t.getMilliseconds()).padStart(3,'0');
-    const lines=panel.textContent.split('\n');
-    lines.push(ts+' '+msg);
-    while(lines.length>MAX_LINES+1)lines.splice(1,1); // [dbg]ヘッダは残す
-    panel.textContent=lines.join('\n');
-  };
-  // JSエラーが起きていたら必ず画面に出す (PTR中の例外で固まる症状を即座に発見できる)
-  window.addEventListener('error',ev=>{
-    window.dbg && window.dbg('ERR: '+(ev.message||'?')+' @'+(ev.filename||'').split('/').pop()+':'+(ev.lineno||'?'));
-  });
-  window.addEventListener('unhandledrejection',ev=>{
-    window.dbg && window.dbg('REJ: '+(ev.reason && ev.reason.message?ev.reason.message:String(ev.reason).slice(0,60)));
-  });
-})();
-
 (function setupPullToRefresh(){
   const THRESHOLD=70;      // この距離以上引いたら更新
   const MAX_PULL=130;      // 最大変位
   const SPINNER_H=26;      // スピナーの高さ。隙間の中央に出すために使う
   let startY=0, lastY=0, pulling=false, target=null, indicator=null, refreshing=false;
   let refreshGuard=null;   // 万一 doRefresh が完了しなかった場合のフェイルセーフ
-  let moveCount=0;         // dbg: touchmove発火回数
-  let lastDy=0;            // dbg: 最後のdy値
 
   function makeIndicator(){
     const el=document.createElement('div');
@@ -7873,38 +7886,33 @@ $('restore-input').addEventListener('change',handleRestoreFile);
   }
 
   function onStart(e){
-    if(refreshing){dbg('start: refreshing中なので無視');return;}
+    if(refreshing)return;
     // 選択モード中・モーダル中・追加シート中はPTRしない
-    if(state.selectMode){return;}
+    if(state.selectMode)return;
     if($('add-sheet') && $('add-sheet').classList.contains('on'))return;
     if($('color-sheet') && $('color-sheet').classList.contains('on'))return;
     // ライブラリの並べ替えドラッグ中はPTRしない
     if(document.querySelector('.lib-item.dragging'))return;
     const sc=activeScrollEl();
-    if(!sc){dbg('start: scrollEl無し');return;}
+    if(!sc)return;
     // 詳細画面 / アップロード画面では更新の必要がないのでスキップ
     const screen=document.querySelector('.screen.active');
     if(screen && (screen.id==='screen-detail' || screen.id==='screen-upload' || screen.id==='screen-login' || screen.id==='screen-claim' || screen.id==='screen-review'))return;
-    if(sc.scrollTop>0){return;} // 頂部でないと開始しない
+    if(sc.scrollTop>0)return; // 頂部でないと開始しない
     target=sc;
     startY=e.touches[0].clientY;
     lastY=startY;
     pulling=false;
-    moveCount=0;
-    lastDy=0;
-    dbg('START y='+Math.round(startY)+' tgt='+sc.parentElement.id);
   }
 
   function onMove(e){
     if(!target||refreshing)return;
-    moveCount++;
     const y=e.touches[0].clientY;
     const dy=y-startY;
     lastY=y;
-    lastDy=dy;
     if(dy<=0){
       // 上方向は無視 (普通のスクロール)
-      if(pulling){resetIndicator();pulling=false;dbg('move: 上方向→reset');}
+      if(pulling){resetIndicator();pulling=false;}
       return;
     }
     // 下方向に少し動いたら pulling 開始 (反応を早く)
@@ -7927,16 +7935,6 @@ $('restore-input').addEventListener('change',handleRestoreFile);
         // ドラッグ中はトランジションを切る (指追従)
         indicator.classList.remove('snap');
         target.classList.remove('ptr-snap');
-        // dbg: どの要素にタッチが当たってるか (passive登録の有無を切り分けるため)
-        let tagInfo='?';
-        const tg=e.target;
-        if(tg){
-          tagInfo=tg.tagName||'?';
-          if(typeof tg.className==='string' && tg.className){
-            tagInfo+='.'+tg.className.split(' ')[0];
-          }
-        }
-        dbg('PULL開始 dy='+Math.round(dy)+' on '+tagInfo);
       }
     }
     if(!pulling)return;
@@ -7953,17 +7951,10 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     // スクロール領域はインジケータと同じ動き (一体感を出す)
     target.style.transform=`translate3d(0, ${pull}px, 0)`;
     // 引っ張り中はネイティブスクロールを抑える
-    let prevented=false;
-    if(e.cancelable){
-      try{e.preventDefault();prevented=true;}catch(_){}
-    }
-    // dbg: 10回ごとにログ (毎回出すと量が多すぎる)
-    if(moveCount%10===0){
-      dbg('move#'+moveCount+' dy='+Math.round(dy)+' pull='+Math.round(pull)+' cancel='+e.cancelable+' pd='+prevented);
-    }
+    if(e.cancelable)e.preventDefault();
   }
 
-  function onEnd(e){
+  function onEnd(){
     if(!target){
       // 念のため: pulling だけ残っていてもクリーンに戻す
       if(pulling){pulling=false;resetIndicator();}
@@ -7974,7 +7965,6 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     const tr=target.style.transform||'';
     const m=tr.match(/translate3d\(0(?:px)?,\s*(-?\d+(?:\.\d+)?)px/);
     const pulled=m?parseFloat(m[1]):0;
-    dbg('END type='+(e&&e.type)+' moves='+moveCount+' lastDy='+Math.round(lastDy)+' pulled='+Math.round(pulled));
     // スナップアニメーションをON
     indicator.classList.add('snap');
     target.classList.add('ptr-snap');
