@@ -1264,11 +1264,23 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .msg-bubbles .bubble{
   max-width:100%; /* 親(.msg-bubbles)で幅を制御するのでバブル自体は親いっぱい */
 }
+/* 続きを書き中のドットバブルは、3つの点だけが入る小さなサイズで止める。
+   親の .msg-bubbles は max-width:74% の枠を持っているが、ドットバブル自体は
+   中身ぶんだけの幅にして、左から右に伸びないようにする。 */
+.msg-bubbles .bubble.dots{
+  align-self:flex-start;
+  width:auto;
+  max-width:max-content;
+  padding:9px 14px;
+}
 /* 連続バブルの形を LINE 風に: 最初のバブルは下角を直角寄り、最後だけ尻尾(下左角を小さく)。
    間のバブルは両下角とも小さめにする。1個だけのときは元の .bubble の定義がそのまま効く。 */
 .msg.a .msg-bubbles .bubble:not(:last-child){border-bottom-left-radius:14px;border-bottom-right-radius:14px;}
 .msg.a .msg-bubbles .bubble:not(:first-child){border-top-left-radius:14px;}
 .msg.a .msg-bubbles .bubble:last-child{border-bottom-left-radius:5px;}
+/* ドットバブルは「次のバブルが来る位置」を示す仮の表示なので、
+   最後にいても尻尾はつけずに丸めたままにする (見た目を「書き中」の独立した小バブルに保つ)。 */
+.msg.a .msg-bubbles .bubble.dots:last-child{border-bottom-left-radius:14px;}
 /* 新着バブルがふわっと出るアニメーション (時間差表示時のみ .anim を付ける) */
 .bubble.anim{
   animation:bubble-in 0.25s ease-out;
@@ -6224,6 +6236,11 @@ function attachBubbleLongPress(msgEl,cardId,msgIdx,bubbleEl){
     if(ev.target.closest('a'))return; // バブル内リンクは普通に開きたい
     // 部分コピー中のバブルは、長押しではなくテキスト選択が目的なのでメニューを出さない
     if(bubble && bubble.classList.contains('selecting'))return;
+    // iOSが長押しでネイティブの「コピー/調べる/翻訳」ポップを出す動作を抑止する。
+    // touchstart で preventDefault を呼ぶと、iOS のデフォルト長押し選択が始まらない。
+    // ※ scroll は touchmove の preventDefault でしか止まらないので、ここでは無害。
+    // ※ passive:false で登録しないと preventDefault が効かないので、リスナー登録側で設定。
+    if(ev.cancelable && ev.preventDefault)ev.preventDefault();
     [startX,startY]=xy(ev);
     moved=false;fired=false;
     pressTimer=setTimeout(()=>{
@@ -6242,7 +6259,9 @@ function attachBubbleLongPress(msgEl,cardId,msgIdx,bubbleEl){
     // 長押しメニューが出た直後の touchend は、リンクのクリック等を発火させたくない
     if(fired){ev.preventDefault&&ev.preventDefault();}
   };
-  target.addEventListener('touchstart',onStart,{passive:true});
+  // touchstart は passive:false にして preventDefault を有効化する (iOSネイティブ選択ポップ抑止のため)。
+  // touchmove は passive:true のまま (スクロールを妨げない)。
+  target.addEventListener('touchstart',onStart,{passive:false});
   target.addEventListener('touchmove',onMove,{passive:true});
   target.addEventListener('touchend',onEnd);
   target.addEventListener('touchcancel',onEnd);
@@ -6267,8 +6286,10 @@ function showBubbleMenu(msgEl,bubbleEl,cardId,msgIdx){
   const m=msgs[msgIdx];
   if(!m)return;
   // iOSの長押し検出中にネイティブが自動でテキスト選択を始めてしまうことがある。
-  // メニュー表示前に強制的に選択を解除し、ネイティブの「コピー/調べる/翻訳」ポップを抑止する。
-  try{window.getSelection().removeAllRanges();}catch(_){}
+  // メニュー表示前後に何度か選択を解除し、ネイティブの「コピー/調べる/翻訳」ポップを抑止する。
+  // iOSは touchend 後にも遅延で選択ポップを出すことがあるので、短時間ループでガード。
+  const clearSel=()=>{try{window.getSelection().removeAllRanges();}catch(_){}};
+  clearSel();
   // クリーンなテキスト (AIメッセージの場合は装飾を落とす)
   const text=cleanAIText(m.text||'',m.role);
   _bubbleMenuTarget={cardId,msgIdx,text,role:m.role,bubbleEl};
@@ -6280,6 +6301,11 @@ function showBubbleMenu(msgEl,bubbleEl,cardId,msgIdx){
   menu.classList.add('on');
   // バブル強調
   if(bubbleEl)bubbleEl.classList.add('bubble-active');
+
+  // メニュー表示後の遅延選択ポップ対策 (iOSの内部タイマーが遅れて発火することがある)
+  setTimeout(clearSel,30);
+  setTimeout(clearSel,120);
+  setTimeout(clearSel,300);
 
   // 位置調整: バブルの上に出す。画面外にはみ出るときは下へ。
   // 一度描画させてサイズを取る (display:grid に切り替わった直後の getBoundingClientRect)
