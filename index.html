@@ -1112,56 +1112,23 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 
 /* ─── 部分コピーモード ─────────────────────────
-   バブル内のテキストを直接選択させ、画面下の入力バーの上に細いツールバーを出す。
-   下から大きなシートを開くのではなく、選択 → 即コピーの最短動線。
-   ヒント (「コピーしたい部分を選択」) と「選択範囲をコピー」「キャンセル」のみ。 */
-.partial-copy-bar{
+   バブル内のテキストを直接選択させ、選択中バブルの真上に小さな「コピー」ボタンだけを浮かべる。
+   LINE 同様、シンプル極まりない見た目。下の入力バーには一切干渉しない。 */
+.partial-copy-pill{
   position:fixed;
-  left:0;right:0;
-  /* 入力バーの上に出すため、bottom は概算 (入力バー高さ + safe-area)。
-     画面サイズに依存しないように JS で固定値ではなく fixed bottom を使う。 */
-  bottom:calc(58px + env(safe-area-inset-bottom));
   z-index:80;
-  margin:0 auto;
-  max-width:430px;
-  background:var(--surface);
-  border-top:0.5px solid var(--line);
-  border-bottom:0.5px solid var(--line);
-  padding:8px 14px;
-  display:none;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  box-shadow:0 -4px 14px rgba(0,0,0,.08);
-}
-.partial-copy-bar.on{display:flex;}
-.partial-copy-bar .pc-hint{
-  font-size:12px;
-  color:var(--ink3);
-  flex:1;
-  min-width:0;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.partial-copy-bar-cancel{
-  padding:6px 12px;
-  font-size:13px;
-  color:var(--ink2);
-  border-radius:14px;
-  flex-shrink:0;
-}
-.partial-copy-bar-cancel:active{background:var(--bg);color:var(--g);}
-.partial-copy-bar-btn{
-  padding:8px 16px;
+  background:var(--ink);
+  color:white;
+  padding:8px 18px;
+  border-radius:18px;
   font-size:13px;
   font-weight:600;
-  border-radius:16px;
-  background:var(--g);
-  color:white;
-  flex-shrink:0;
+  box-shadow:0 4px 14px rgba(0,0,0,.25);
+  display:none;
+  white-space:nowrap;
 }
-.partial-copy-bar-btn:active{background:var(--gd);transform:scale(0.96);}
+.partial-copy-pill.on{display:inline-block;}
+.partial-copy-pill:active{transform:scale(0.95);}
 
 /* ─── リプライプレビュー (入力欄の上) ─── */
 .reply-preview{
@@ -1269,16 +1236,27 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   /* iOS Safari の長押しで出る「コピー/調べる/翻訳」ポップオーバーを完全に抑止する。
      user-select:none だけだと iOS 16+ で出てしまうことがあるので callout も切る。 */
   -webkit-touch-callout:none;
+  -webkit-user-drag:none;
+}
+/* 子要素(リンクや引用ブロックなど)にも確実に user-select:none を継承させる。
+   iOS は子要素の継承が弱いので、明示的に指定する。 */
+.bubble *{
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
 }
 /* 部分コピー対象に指定されたバブルだけ、その間だけテキスト選択を許可する。
    青いハンドルで好きな範囲を選べる「LINEの部分コピー」と同じ体験。
    選択中であることが視覚的にわかるように、薄い枠を付ける。
    ※ -webkit-touch-callout は default にせず、iOSネイティブのコピーメニューは抑止する。
      これにより「ハンドルでの範囲選択」だけ可能で、ユーザーは下のツールバーで操作する。 */
-.bubble.selecting{
+.bubble.selecting,
+.bubble.selecting *{
   -webkit-user-select:text !important;
   user-select:text !important;
   cursor:text;
+}
+.bubble.selecting{
   outline:2px solid var(--g);
   outline-offset:2px;
 }
@@ -3218,12 +3196,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </button>
 </div>
 
-<!-- 部分コピー: バブル内テキスト選択モードのツールバー (画面下の入力バーの上に出る) -->
-<div class="partial-copy-bar" id="partial-copy-bar" role="toolbar">
-  <span class="pc-hint">コピーしたい部分を選択</span>
-  <button class="partial-copy-bar-cancel" data-action="close-partial-copy">キャンセル</button>
-  <button class="partial-copy-bar-btn" data-action="do-partial-copy">選択範囲をコピー</button>
-</div>
+<!-- 部分コピー: バブル選択モード中だけ、選択中バブルの真上に小さな「コピー」ボタンが出る -->
+<button class="partial-copy-pill" id="partial-copy-pill" data-action="do-partial-copy">コピー</button>
 
 </div><!-- .app -->
 
@@ -6164,7 +6138,7 @@ function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function renderChatLog(c){
   const log=$('detail-chat-log');
   // 再描画でDOMが消えると _partialCopyBubble の参照が宙に浮くので、念のためモード解除
-  if($('partial-copy-bar') && $('partial-copy-bar').classList.contains('on')){
+  if(_partialCopyBubble){
     closePartialCopy();
   }
   log.innerHTML='';
@@ -6301,6 +6275,9 @@ function showBubbleMenu(msgEl,bubbleEl,cardId,msgIdx){
   const msgs=getChatMessages(c);
   const m=msgs[msgIdx];
   if(!m)return;
+  // iOSの長押し検出中にネイティブが自動でテキスト選択を始めてしまうことがある。
+  // メニュー表示前に強制的に選択を解除し、ネイティブの「コピー/調べる/翻訳」ポップを抑止する。
+  try{window.getSelection().removeAllRanges();}catch(_){}
   // クリーンなテキスト (AIメッセージの場合は装飾を落とす)
   const text=cleanAIText(m.text||'',m.role);
   _bubbleMenuTarget={cardId,msgIdx,text,role:m.role,bubbleEl};
@@ -6402,8 +6379,7 @@ function bubblePartialCopy(){
 
 // ─── 部分コピー (バブル内テキスト選択) ─────────────────────────
 // LINE と同じ感覚で、対象バブルそのものに iOS のテキスト選択ハンドルを出す。
-// 別シートにテキストをコピーするのではなく、画面に表示されている文字列の上を
-// そのまま指でなぞって範囲を選ぶ。下の細いバーで「選択範囲をコピー」「キャンセル」を出す。
+// バブルの真上に小さな「コピー」ピルだけを浮かべる。それ以外の UI は出さない。
 let _partialCopyBubble=null; // 現在選択モード中のバブル
 function openPartialCopy(bubbleEl){
   if(!bubbleEl)return;
@@ -6413,7 +6389,8 @@ function openPartialCopy(bubbleEl){
   }
   _partialCopyBubble=bubbleEl;
   bubbleEl.classList.add('selecting');
-  $('partial-copy-bar').classList.add('on');
+  // ピルを描画して、バブル直上の中央に置く。画面外にはみ出るなら直下に回す。
+  positionPartialCopyPill(bubbleEl);
   // 少しだけ待ってから全選択をかけて、青いハンドルが即出るようにする。
   // iOS では Range API での選択で同じハンドルが出る。
   setTimeout(()=>{
@@ -6427,8 +6404,31 @@ function openPartialCopy(bubbleEl){
   },50);
 }
 
+function positionPartialCopyPill(bubbleEl){
+  const pill=$('partial-copy-pill');
+  if(!pill||!bubbleEl)return;
+  pill.classList.add('on');
+  // 描画後にサイズ取得
+  const br=bubbleEl.getBoundingClientRect();
+  const pw=pill.offsetWidth;
+  const ph=pill.offsetHeight;
+  const vw=window.innerWidth;
+  const vh=window.innerHeight;
+  const gap=8;
+  let left=br.left + br.width/2 - pw/2;
+  left=Math.max(8,Math.min(vw-pw-8,left));
+  let top=br.top - ph - gap;
+  if(top<8){
+    top=br.bottom + gap;
+    if(top+ph>vh-8)top=Math.max(8,vh-ph-8);
+  }
+  pill.style.left=left+'px';
+  pill.style.top=top+'px';
+}
+
 function closePartialCopy(){
-  $('partial-copy-bar').classList.remove('on');
+  const pill=$('partial-copy-pill');
+  if(pill)pill.classList.remove('on');
   // 防御的に、DOM内の全ての .bubble.selecting をクリーンアップする。
   // 参照だけ消えて class が残るケースを防ぐ。
   document.querySelectorAll('.bubble.selecting').forEach(b=>b.classList.remove('selecting'));
@@ -7019,6 +7019,23 @@ async function animateNewAiReply(card,placeholderIdx){
 }
 
 async function detailSend(){
+  const inp=$('detail-input');
+  const v=inp.value.trim();
+  if(!v)return;
+  const cIdx=state.cards.findIndex(x=>x.id===state.current.id);
+  if(cIdx<0)return;
+  const c=state.cards[cIdx];
+
+  // c.chat 配列を初期化(旧 aiLog があれば取り込んでマイグレーション)
+  if(!c.chat){
+    c.chat=getChatMessages(c);
+    delete c.aiLog;
+  }
+
+  // 送信時にリプライ対象があればその引用情報を添付する。送信後はリプライ状態を解除。
+  const replyRef=(state.replyTo && state.replyTo.cardId===c.id)
+    ? {text:truncateForQuote(state.replyTo.text),role:state.replyTo.role,msgIdx:state.replyTo.msgIdx}
+    : null;
 
   if(state.detailAiMode){
     // AIに質問
@@ -8621,6 +8638,14 @@ document.addEventListener('click',e=>{
   else if(op==='reply')bubbleReply();
   else if(op==='delete')bubbleDelete();
 });
+
+// 部分コピー中の外側タップで解除。コピーピル自身と選択中バブル自身は除外。
+document.addEventListener('click',e=>{
+  if(!_partialCopyBubble)return;
+  if(e.target.closest('#partial-copy-pill'))return;
+  if(e.target.closest('.bubble.selecting'))return;
+  closePartialCopy();
+},true); // capture: メニュー閉じる処理より先に判定したい
 
 document.addEventListener('click',e=>{
   if(!e.target.closest('.menu')&&!e.target.closest('[data-action="toggle-menu"]')){
