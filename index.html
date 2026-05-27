@@ -6238,11 +6238,12 @@ function attachBubbleLongPress(msgEl,cardId,msgIdx,bubbleEl){
     if(ev.target.closest('a'))return; // バブル内リンクは普通に開きたい
     // 部分コピー中のバブルは、長押しではなくテキスト選択が目的なのでメニューを出さない
     if(bubble && bubble.classList.contains('selecting'))return;
-    // iOSが長押しでネイティブの「コピー/調べる/翻訳」ポップを出す動作を抑止する。
-    // touchstart で preventDefault を呼ぶと、iOS のデフォルト長押し選択が始まらない。
-    // ※ scroll は touchmove の preventDefault でしか止まらないので、ここでは無害。
-    // ※ passive:false で登録しないと preventDefault が効かないので、リスナー登録側で設定。
-    if(ev.cancelable && ev.preventDefault)ev.preventDefault();
+    // iOSのネイティブ長押しポップ (コピー/調べる/翻訳) は CSS の
+    // user-select:none と -webkit-touch-callout:none で既に抑止済み。
+    // ※ ここで touchstart の preventDefault を呼んではいけない。iOS では
+    //   touchstart で preventDefault すると、その同じタッチ系列での
+    //   スクロールごとキャンセルされる挙動があり、「バブルの上から指を置くと
+    //   スクロールが効かない」現象の原因になる。
     [startX,startY]=xy(ev);
     moved=false;fired=false;
     pressTimer=setTimeout(()=>{
@@ -6261,9 +6262,10 @@ function attachBubbleLongPress(msgEl,cardId,msgIdx,bubbleEl){
     // 長押しメニューが出た直後の touchend は、リンクのクリック等を発火させたくない
     if(fired){ev.preventDefault&&ev.preventDefault();}
   };
-  // touchstart は passive:false にして preventDefault を有効化する (iOSネイティブ選択ポップ抑止のため)。
-  // touchmove は passive:true のまま (スクロールを妨げない)。
-  target.addEventListener('touchstart',onStart,{passive:false});
+  // touchstart は passive:true で登録する。preventDefault は呼ばないので
+  // passive で問題なく、こちらの方がスクロール性能上も望ましい。
+  // iOS のネイティブ長押し選択ポップは CSS 側 (user-select:none / -webkit-touch-callout:none) で抑止。
+  target.addEventListener('touchstart',onStart,{passive:true});
   target.addEventListener('touchmove',onMove,{passive:true});
   target.addEventListener('touchend',onEnd);
   target.addEventListener('touchcancel',onEnd);
