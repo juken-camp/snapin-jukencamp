@@ -198,12 +198,25 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 /* SCROLL */
 .scroll{
   flex:1;
-  overflow-y:auto;
+  /* auto ではなく scroll: コンテンツが画面より短くてもスクロール可能枠を保ち、
+     iOSネイティブのバウンド(プルダウン)を効かせる。
+     スクロールバーは下の ::-webkit-scrollbar で見た目を整える。 */
+  overflow-y:scroll;
   overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-y:auto; /* iOSネイティブの上下バウンドを有効化 */
   min-height:0;
   padding-bottom:24px;
+}
+/* コンテンツが画面より短い時にも overscroll が確実に効くようにする保険。
+   スクロール領域の最後に必ず 1px の透明要素を置く。
+   コンテンツが既に十分長い場合は単に下端に 1px 足されるだけで体感に影響しない。 */
+.scroll::after{
+  content:'';
+  display:block;
+  width:100%;
+  height:1px;
+  pointer-events:none;
 }
 .scroll::-webkit-scrollbar{width:6px;}
 .scroll::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px;}
@@ -8746,6 +8759,8 @@ async function refreshActiveScreen(){
     renderHome();
     updateHomeNewBadge();
   }else if(id==='screen-today'){
+    // 今日のタイムラインは公式ライブラリの新着メモなども含むため、最新を取得してから再描画
+    await loadOfficialShelves();
     renderToday();
   }else if(id==='screen-library'){
     await loadOfficialShelves();
@@ -8757,6 +8772,8 @@ async function refreshActiveScreen(){
       if(fresh)openOfficial(fresh);
     }
   }else if(id==='screen-search'){
+    // 検索結果も公式ライブラリ側の最新メモを含むため、取り直してから再検索
+    await loadOfficialShelves();
     doSearch();
   }
 }
