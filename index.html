@@ -6251,11 +6251,12 @@ function attachBubbleLongPress(msgEl,cardId,msgIdx,bubbleEl){
     if(ev.target.closest('a'))return; // バブル内リンクは普通に開きたい
     // 部分コピー中のバブルは、長押しではなくテキスト選択が目的なのでメニューを出さない
     if(bubble && bubble.classList.contains('selecting'))return;
-    // iOSが長押しでネイティブの「コピー/調べる/翻訳」ポップを出す動作を抑止する。
-    // touchstart で preventDefault を呼ぶと、iOS のデフォルト長押し選択が始まらない。
-    // ※ scroll は touchmove の preventDefault でしか止まらないので、ここでは無害。
-    // ※ passive:false で登録しないと preventDefault が効かないので、リスナー登録側で設定。
-    if(ev.cancelable && ev.preventDefault)ev.preventDefault();
+    // ※ touchstart では preventDefault しない。
+    //   iOS Safari では touchstart で preventDefault するとそのタッチから始まる
+    //   スクロールジェスチャー自体がキャンセルされることがあり、バブル領域からの
+    //   スクロールが効かなくなる原因になる。
+    //   iOSの「コピー/調べる/翻訳」ポップは CSS の -webkit-touch-callout:none と
+    //   user-select:none で既に抑止しているのでここで preventDefault する必要はない。
     [startX,startY]=xy(ev);
     moved=false;fired=false;
     pressTimer=setTimeout(()=>{
@@ -6267,16 +6268,18 @@ function attachBubbleLongPress(msgEl,cardId,msgIdx,bubbleEl){
   };
   const onMove=ev=>{
     const [x,y]=xy(ev);
-    if(Math.abs(x-startX)>8 || Math.abs(y-startY)>8){moved=true;clearTimeout(pressTimer);}
+    // スクロール開始相当の動きが出たら長押し判定を中止する。
+    // 縦の閾値はやや小さめに、横はもう少し大きく取る (誤キャンセル防止)。
+    if(Math.abs(x-startX)>10 || Math.abs(y-startY)>6){moved=true;clearTimeout(pressTimer);}
   };
   const onEnd=ev=>{
     clearTimeout(pressTimer);
     // 長押しメニューが出た直後の touchend は、リンクのクリック等を発火させたくない
     if(fired){ev.preventDefault&&ev.preventDefault();}
   };
-  // touchstart は passive:false にして preventDefault を有効化する (iOSネイティブ選択ポップ抑止のため)。
-  // touchmove は passive:true のまま (スクロールを妨げない)。
-  target.addEventListener('touchstart',onStart,{passive:false});
+  // touchstart / touchmove はいずれも passive:true (スクロールを一切妨げない)。
+  // 長押し検出は単にタイマーで行い、指が動いたら onMove でキャンセルする方式。
+  target.addEventListener('touchstart',onStart,{passive:true});
   target.addEventListener('touchmove',onMove,{passive:true});
   target.addEventListener('touchend',onEnd);
   target.addEventListener('touchcancel',onEnd);
