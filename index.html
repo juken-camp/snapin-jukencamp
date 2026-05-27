@@ -8087,10 +8087,16 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     }
   }
 
-  document.addEventListener('touchstart',onStart,{passive:true});
-  document.addEventListener('touchmove',onMove,{passive:false});
-  document.addEventListener('touchend',onEnd);
-  document.addEventListener('touchcancel',onEnd);
+  // ★ capture フェーズで登録する。
+  // 理由: アプリ内のカード要素や吹き出し要素には別途 touchmove リスナー(passive:true)が
+  // 付いており、それらが先に発火すると iOS Safari が「これはスクロール対象」と判定して
+  // PTR の preventDefault を無視してしまう (= 引っ張った位置で固まる症状の原因)。
+  // capture: true にすると document レベルのこのリスナーが子要素のリスナーより先に発火し、
+  // preventDefault が確実に効く。
+  document.addEventListener('touchstart',onStart,{passive:true,capture:true});
+  document.addEventListener('touchmove',onMove,{passive:false,capture:true});
+  document.addEventListener('touchend',onEnd,{capture:true});
+  document.addEventListener('touchcancel',onEnd,{capture:true});
 })();
 
 // 起動
