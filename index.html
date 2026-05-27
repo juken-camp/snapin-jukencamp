@@ -1689,16 +1689,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   overflow:hidden;
   flex-shrink:0;
   background:var(--surface);
-  font-size:9px;
-  color:var(--ink2);
-  padding:4px 6px;
-  word-break:break-word;
-  -webkit-line-clamp:4;
-  display:-webkit-box;
-  -webkit-box-orient:vertical;
-  line-height:1.2;
 }
-.bin-row-thumb img{width:100%;height:100%;object-fit:cover;display:block;margin:-4px -6px;}
+.bin-row-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
 .bin-row-main{flex:1;min-width:0;}
 .bin-row-title{
   font-size:13px;
@@ -6159,21 +6151,21 @@ async function emptyTrash(){
 // 各カードを1行 (サムネ + タイトル + 操作ボタン) で表示する。
 // 詳細画面に遷移はさせない (戻すアクションを優先したいため)。
 function binRowHtml(c,kind){
-  // サムネ部分
+  // サムネ部分: ビジュアル目印として使い、中身はタイトルで読ませる
   let thumb='';
   if((c.type==='photo'||c.type==='photonote') && c.image){
     thumb=`<img src="${c.image}" alt="">`;
   }else if(c.type==='note'){
     const col=colorById(c.color);
-    // 改行や空白をまとめて1行化し、12文字に切る (48pxサムネ枠に詰めると不格好な為)
-    const flat=(c.text||'').replace(/\s+/g,' ').trim();
-    const snippet=flat.length>12?flat.slice(0,12)+'…':flat;
-    thumb=`<div style="background:${col.bg};width:100%;height:100%;padding:5px 6px;color:${col.fg};font-size:10px;line-height:1.25;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;word-break:break-word;">${esc(snippet||'メモ')}</div>`;
+    // 改行・空白をすべて潰して1行化し、3文字に切る (48pxサムネで折り返さない為)
+    const flat=(c.text||'').replace(/\s+/g,'').trim();
+    const snippet=flat.length>3?flat.slice(0,3):flat;
+    thumb=`<div style="background:${col.bg};width:100%;height:100%;color:${col.fg};font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;white-space:nowrap;">${esc(snippet||'メモ')}</div>`;
   }else if(c.type==='list'){
-    // タイトルが長すぎる場合に備えて短縮
-    const t=(c.title||'リスト').replace(/\s+/g,' ').trim();
-    const title=t.length>5?t.slice(0,5)+'…':t;
-    thumb=`<div style="background:#F4F8F3;width:100%;height:100%;padding:5px 6px;font-size:10px;line-height:1.25;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;"><div style="font-weight:600;color:var(--gd);">${esc(title)}</div><div style="color:var(--ink2);font-size:9px;margin-top:1px;">${(c.items||[]).length}項目</div></div>`;
+    // タイトルの先頭3文字だけ、項目数はメタ側に出す
+    const t=(c.title||'リスト').replace(/\s+/g,'').trim();
+    const title=t.length>3?t.slice(0,3):t;
+    thumb=`<div style="background:#F4F8F3;width:100%;height:100%;color:var(--gd);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;white-space:nowrap;">${esc(title)}</div>`;
   }else{
     thumb='<div style="background:var(--bg);width:100%;height:100%;"></div>';
   }
@@ -6184,17 +6176,18 @@ function binRowHtml(c,kind){
   else if(c.type==='list')title=c.title||'リスト';
   else if(c.type==='photo'||c.type==='photonote')title=(c.text||'').replace(/\s+/g,' ').trim()||'(写真メモ)';
 
-  // メタ (日付 + 残り日数 or 外した日)
+  // メタ (日付 + 残り日数 or 外した日)、リストなら項目数も併記
   let meta='';
+  const itemsPart=(c.type==='list')?`${(c.items||[]).length}項目 ・ `:'';
   if(kind==='trash'){
     const elapsed=Date.now()-(c.deletedAt||0);
     const left=Math.max(0,Math.ceil((TRASH_RETENTION_MS-elapsed)/(24*60*60*1000)));
     const ago=Math.floor(elapsed/(24*60*60*1000));
-    meta=`${ago===0?'今日':ago+'日前に'}捨てた<span class="bin-days-left"> ・ あと${left}日</span>`;
+    meta=`${itemsPart}${ago===0?'今日':ago+'日前に'}捨てた<span class="bin-days-left"> ・ あと${left}日</span>`;
   }else{
     const elapsed=Date.now()-(c.archivedAt||0);
     const ago=Math.floor(elapsed/(24*60*60*1000));
-    meta=`${ago===0?'今日':ago+'日前に'}リストから外した`;
+    meta=`${itemsPart}${ago===0?'今日':ago+'日前に'}リストから外した`;
   }
 
   // 操作ボタン
