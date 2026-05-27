@@ -4880,14 +4880,36 @@ function renderUpload(){
       }
     });
 
-    // 揃え/色を反映する関数
+    // 揃え/色/フォントサイズを反映する関数。
+    // フォントサイズはグリッドカードと同じロジック (noteCardStyle) を使い、
+    // 編集領域がグリッドの何倍かを掛けてスケールする。これにより
+    // 「グリッド表示時と同じ位置で改行する」のが編集中に WYSIWYG で見える。
     const applyStyle=()=>{
       const col=colorById(c.color);
       wrap.style.background=col.bg;
       wrap.style.color=col.fg;
       const txt=editor.innerText;
-      const fz=autoFontSizeDetail(txt);
-      wrap.style.fontSize=fz+'px';
+
+      // グリッドカードと同じサイズ計算 (文字数 + 改行数で fz, lh を決定)
+      const tlen=txt.length;
+      let idx=noteCardInitialSizeIndex(tlen);
+      while(idx<NOTE_CARD_SIZES.length-1){
+        const s=NOTE_CARD_SIZES[idx];
+        if(estimateNoteLineCount(txt,s.fz)<=s.clamp)break;
+        idx++;
+      }
+      const gridFz=NOTE_CARD_SIZES[idx].fz;
+      const lh=NOTE_CARD_SIZES[idx].lh;
+
+      // 編集領域はグリッドカード幅(画面幅÷3 ≒ 140px)に対して、画面幅まるごと使う(約430px)
+      // → 約 3倍のスケール。実測ベースで wrap の実寸から動的に倍率を計算する。
+      const wrapW=wrap.clientWidth||300;
+      const gridCardW=140; // グリッドの1セル幅の想定値
+      const scale=wrapW/gridCardW;
+      const previewFz=Math.max(12, Math.round(gridFz*scale));
+      wrap.style.fontSize=previewFz+'px';
+      wrap.style.lineHeight=lh;
+
       const align=resolveAlign({text:txt,alignH:c.alignH,alignV:c.alignV});
       // 横揃え: flex 親の align-items + 子の text-align
       wrap.style.alignItems=align.h==='center'?'center':'flex-start';
@@ -4896,6 +4918,8 @@ function renderUpload(){
       wrap.style.justifyContent=align.v==='center'?'center':'flex-start';
     };
     applyStyle();
+    // wrap の幅は初回 layout 後に確定するため、次フレームで再計算 (初期表示のズレ対策)
+    requestAnimationFrame(applyStyle);
 
     editor.addEventListener('input',()=>{
       // innerText を使うと <br> や <div> が改行 \n に正しく変換される (textContent では失われる)
