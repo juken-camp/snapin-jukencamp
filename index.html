@@ -366,6 +366,31 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .card.note .ctxt{background:#FFFDF5;}
 .card.list .ctxt{background:#F4F8F3;font-size:10px;-webkit-line-clamp:7;}
+/* note カード用: 140×140 実寸の inner を transform:scale で拡大することで、
+   グリッド/詳細/編集の3画面で改行位置を完全一致させる。
+   -webkit-line-clamp は使わず overflow:hidden ではみ出し分を切る。 */
+.card.note .ctxt{
+  padding:0;
+  position:relative;
+  display:block;
+  -webkit-box-orient:initial;
+  overflow:hidden;
+}
+.card.note .ctxt-inner{
+  position:absolute;
+  top:0;
+  left:0;
+  width:140px;
+  height:140px;
+  padding:10px;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  transform-origin:top left;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
 /* リスト型カードのアイテム表示 (グリッドの.cardと今日の横スクロール.today-newcardで共通) */
 .card .li, .today-newcard .li{display:flex;gap:4px;margin-bottom:3px;align-items:flex-start;}
 .card .li .chk, .today-newcard .li .chk{width:9px;height:9px;border:1px solid var(--ink3);border-radius:2px;flex-shrink:0;margin-top:2px;}
@@ -2367,6 +2392,29 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .today-newcard.note .ctxt{background:#FFFDF5;}
 .today-newcard.list .ctxt{background:#F4F8F3;font-size:10px;-webkit-line-clamp:6;}
+/* note カード用: グリッドと同じく 140×140 実寸 + transform:scale 方式 */
+.today-newcard.note .ctxt{
+  padding:0;
+  position:relative;
+  display:block;
+  -webkit-box-orient:initial;
+  overflow:hidden;
+}
+.today-newcard.note .ctxt-inner{
+  position:absolute;
+  top:0;
+  left:0;
+  width:140px;
+  height:140px;
+  padding:10px;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  transform-origin:top left;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
 
 .today-empty-block{
   padding:20px;
@@ -3307,6 +3355,11 @@ function estimateNoteLineCount(text,fz){
 }
 
 function noteCardStyle(card,col){
+  // グリッド/今日カード/詳細/編集の4箇所すべてで「実寸140×140 inner + transform:scale」方式に統一。
+  // ここでは inner に当てるインラインスタイルを返す。transform:scale はレイアウト後に
+  // applyGridNoteScale() が clientWidth を測って動的に適用する。
+  // → ブラウザの折り返し計算が全箇所で同じ条件 (幅120pxの中で fz px フォント) になり、
+  //   改行位置・フォントサイズ・行数すべてが完全一致する。
   const text=card.text||'';
   const tlen=text.length;
   const align=resolveAlign(card);
@@ -3319,23 +3372,28 @@ function noteCardStyle(card,col){
     idx++;
   }
   const {fz,lh}=NOTE_CARD_SIZES[idx];
-  // clamp:null 相当 (短文中央寄せ) は -webkit-line-clamp を付けない挙動を維持するため、
-  // 文字数 <=12 かつ改行少なめのときだけ clamp を外す。それ以外は配列の値を使う。
-  const clamp=(tlen<=12 && estimateNoteLineCount(text,fz)<=3) ? null : NOTE_CARD_SIZES[idx].clamp;
   let style=`background:${col.bg};color:${col.fg};font-size:${fz}px;line-height:${lh};`;
-  // 揃え:
-  //   alignV=center または alignH=center を使うとき → flex レイアウト
-  //   両方 left/top のみ → -webkit-box のまま (line-clamp が効く)
-  if(align.h==='center' || align.v==='center'){
-    style+='display:flex;flex-direction:column;-webkit-line-clamp:initial;';
-    style+=align.h==='center'?'align-items:center;text-align:center;':'align-items:flex-start;text-align:left;';
-    style+=align.v==='center'?'justify-content:center;':'justify-content:flex-start;';
-  }else{
-    // 既定の -webkit-box レイアウト (グリッドでは line-clamp で長文を切る)
-    style+='text-align:left;';
-    if(clamp)style+=`-webkit-line-clamp:${clamp};`;
-  }
+  // 揃え
+  style+=align.h==='center'?'align-items:center;text-align:center;':'align-items:flex-start;text-align:left;';
+  style+=align.v==='center'?'justify-content:center;':'justify-content:flex-start;';
   return style;
+}
+
+// グリッドや「今日」の note カードに transform:scale を適用する。
+// 各 .card.note または .today-newcard.note の .ctxt-inner に対し、
+// 親 .ctxt (実際の表示幅) を測って scale = 親幅 / 140 を適用する。
+// 詳細・編集画面と完全に同じ折り返し条件 (140px幅 + 同 fz) でレンダリングするための要。
+function applyGridNoteScale(root){
+  const scope=root||document;
+  const nodes=scope.querySelectorAll('.card.note .ctxt-inner, .today-newcard.note .ctxt-inner');
+  nodes.forEach(inner=>{
+    const ctxt=inner.parentElement;
+    if(!ctxt)return;
+    const w=ctxt.clientWidth;
+    if(!w)return;
+    const scale=w/140;
+    inner.style.transform='scale('+scale+')';
+  });
 }
 
 // 詳細画面の .detail-note-card 内部の inner にグリッド準拠の fontSize/lineHeight を設定し、
@@ -4112,7 +4170,7 @@ function renderToday(){
       }else if(c.type==='note'){
         const col=colorById(c.color);
         const style=noteCardStyle(c,col);
-        el.innerHTML=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
+        el.innerHTML=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
       }else if(c.type==='list'){
         el.innerHTML=listCardInner(c);
       }
@@ -4157,7 +4215,7 @@ function renderToday(){
       }else if(c.type==='note'){
         const col=colorById(c.color);
         const style=noteCardStyle(c,col);
-        el.innerHTML=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
+        el.innerHTML=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
       }else if(c.type==='list'){
         el.innerHTML=listCardInner(c);
       }
@@ -4167,6 +4225,10 @@ function renderToday(){
   }else{
     forgottenSec.innerHTML='';
   }
+  // 「今日」画面の全 note カードに transform:scale を適用
+  const todayScreen=$('screen-today');
+  applyGridNoteScale(todayScreen);
+  requestAnimationFrame(()=>applyGridNoteScale(todayScreen));
 }
 
 function getForgottenCards(){
@@ -4237,7 +4299,7 @@ function renderPastDaySection(daysAgo){
     }else if(c.type==='note'){
       const col=colorById(c.color);
       const style=noteCardStyle(c,col);
-      el.innerHTML=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
+      el.innerHTML=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
     }else if(c.type==='list'){
       el.innerHTML=listCardInner(c);
     }
@@ -4297,7 +4359,7 @@ function renderPastMoreSection(){
       }else if(c.type==='note'){
         const col=colorById(c.color);
         const style=noteCardStyle(c,col);
-        body=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
+        body=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
       }else if(c.type==='list'){
         body=listCardInner(c);
       }
@@ -4398,7 +4460,7 @@ function renderGrid(el,cards,origin){
       const col=colorById(c.color);
       // テキスト量に応じてフォントサイズと行数を決める (共通関数)
       const style=noteCardStyle(c,col);
-      inner=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
+      inner=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
     }else if(c.type==='list'){
       inner=listCardInner(c);
     }
@@ -4452,6 +4514,9 @@ function renderGrid(el,cards,origin){
       });
     });
   }
+  // note カードの transform:scale を適用 (実寸140px → 親カード幅にフィット)
+  applyGridNoteScale(el);
+  requestAnimationFrame(()=>applyGridNoteScale(el));
 }
 
 // 長押しで選択モード入り (グリッドのみ)
@@ -7056,7 +7121,7 @@ function doSearch(){
       else if(c.type==='note'){
         const col=colorById(c.color);
         const style=noteCardStyle(c,col);
-        inner=`<div class="ctxt" style="${style}">${esc(c.text||'')}</div>`;
+        inner=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
       }
       else if(c.type==='list'){
         inner=listCardInner(c);
@@ -7069,6 +7134,8 @@ function doSearch(){
       });
       grid.appendChild(card);
     });
+    applyGridNoteScale(grid);
+    requestAnimationFrame(()=>applyGridNoteScale(grid));
   }
 }
 
@@ -7977,6 +8044,17 @@ if(load() && state.user){
     }
   });
 })();
+
+// 画面回転 / ウィンドウサイズ変更時に、note カードの transform:scale を再計算する。
+// (グリッド幅が変わるので、scale 値も合わせて更新する必要がある)
+let _resizeRafId=null;
+window.addEventListener('resize',()=>{
+  if(_resizeRafId)cancelAnimationFrame(_resizeRafId);
+  _resizeRafId=requestAnimationFrame(()=>{
+    applyGridNoteScale(document);
+    if(typeof applyDetailNoteStyle==='function')applyDetailNoteStyle();
+  });
+});
 
 })();
 </script>
