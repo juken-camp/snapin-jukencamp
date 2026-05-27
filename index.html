@@ -845,8 +845,23 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   align-items:center;
   justify-content:center;
   max-height:55vh;
+  overflow:hidden; /* ピンチズーム時に枠外を隠す */
+  position:relative;
+  touch-action:none; /* 自前でジェスチャー処理するためブラウザ既定を無効化 */
+  -webkit-user-select:none;
+  user-select:none;
 }
-.detail-img img{max-width:100%;max-height:55vh;object-fit:contain;}
+.detail-img img{
+  max-width:100%;
+  max-height:55vh;
+  object-fit:contain;
+  transform-origin:0 0; /* 左上原点。translate と scale の計算がシンプルになる */
+  will-change:transform;
+  -webkit-user-drag:none;
+  -webkit-touch-callout:none;
+  pointer-events:none; /* タッチは親 .detail-img で拾う */
+}
+.detail-img.zoomed img{cursor:grab;}
 .detail-body{padding:18px 18px 24px;}
 .detail-meta{
   display:flex;
@@ -5892,6 +5907,182 @@ function attachBubbleLongPress(msgEl,cardId,msgIdx){
   msgEl.addEventListener('mouseup',onEnd);
 }
 
+// ═══ 画像ピンチズーム ═══
+// 詳細画面の画像エリアで、2本指ピンチで拡大縮小、1本指ドラッグで移動、
+// ダブルタップで等倍に戻す。枠は固定で、はみ出した部分はトリミング。
+// 顕微鏡のように細かい部分を見られる。
+function setupImageZoom(container){
+  if(!container)return;
+  const img=container.querySelector('img');
+  if(!img)return;
+  // 既にハンドラがセット済みなら、画像だけ差し替えてリセット
+  if(container._zoomReady){
+    if(container._resetZoom)container._resetZoom();
+    return;
+  }
+  container._zoomReady=true;
+  let scale=1, tx=0, ty=0;
+  const MIN=1, MAX=5;
+  // ピンチ用
+  let pinching=false;
+  let startDist=0, startScale=1;
+  let pinchCenter={x:0,y:0}; // 親(container) 基準
+  let startTx=0, startTy=0;
+  // ドラッグ用
+  let dragging=false;
+  let dragStartX=0, dragStartY=0;
+  let dragStartTx=0, dragStartTy=0;
+  // ダブルタップ判定
+  let lastTapTime=0;
+
+  function getImg(){return container.querySelector('img');}
+  function apply(){
+    const im=getImg();
+    if(!im)return;
+    im.style.transform=`translate3d(${tx}px,${ty}px,0) scale(${scale})`;
+    container.classList.toggle('zoomed', scale>1.02);
+  }
+  function reset(){
+    scale=1;tx=0;ty=0;apply();
+  }
+  // 拡大時の translate を「画像が枠から離れすぎない」範囲にクランプ
+  function clampTranslate(){
+    const im=getImg();
+    if(!im)return;
+    const cw=container.clientWidth;
+    const ch=container.clientHeight;
+    // 画像の実表示サイズ (object-fit:contain時の見た目サイズ)
+    const iw=im.clientWidth*scale;
+    const ih=im.clientHeight*scale;
+    // 画像が枠より大きい時は、画像の端が枠の端より内側に来ないようにする
+    // 画像が枠より小さい時は、画像が枠内に収まるように tx/ty を 0 へ寄せる
+    if(iw<=cw){
+      // 中央に寄せる (translate原点は左上、画像の本来位置は中央なのでオフセット計算)
+      tx=(cw-iw)/2 - (im.offsetLeft);
+    }else{
+      const minTx=cw-iw-im.offsetLeft;
+      const maxTx=-im.offsetLeft;
+      if(tx<minTx)tx=minTx;
+      if(tx>maxTx)tx=maxTx;
+    }
+    if(ih<=ch){
+      ty=(ch-ih)/2 - (im.offsetTop);
+    }else{
+      const minTy=ch-ih-im.offsetTop;
+      const maxTy=-im.offsetTop;
+      if(ty<minTy)ty=minTy;
+      if(ty>maxTy)ty=maxTy;
+    }
+  }
+
+  function dist(t1,t2){
+    const dx=t1.clientX-t2.clientX, dy=t1.clientY-t2.clientY;
+    return Math.hypot(dx,dy);
+  }
+  function midpoint(t1,t2){
+    const rect=container.getBoundingClientRect();
+    return {
+      x:(t1.clientX+t2.clientX)/2 - rect.left,
+      y:(t1.clientY+t2.clientY)/2 - rect.top
+    };
+  }
+
+  container.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){
+      pinching=true;
+      dragging=false;
+      startDist=dist(e.touches[0],e.touches[1]);
+      startScale=scale;
+      pinchCenter=midpoint(e.touches[0],e.touches[1]);
+      // ピンチ中心を「画像座標系」に変換しておく (transform: translate(tx,ty) scale(s))
+      // 中心 (cx,cy) は container 基準。画像内座標は (cx - tx - imgLeft)/scale 等。
+      startTx=tx; startTy=ty;
+      if(e.cancelable)e.preventDefault();
+    }else if(e.touches.length===1){
+      // ダブルタップ判定
+      const now=performance.now();
+      if(now-lastTapTime<300){
+        // ダブルタップ → 等倍にリセット or 2倍にズーム
+        if(scale>1.02){
+          reset();
+        }else{
+          scale=2;
+          // タップ位置を中心にズームしたい
+          const rect=container.getBoundingClientRect();
+          const cx=e.touches[0].clientX-rect.left;
+          const cy=e.touches[0].clientY-rect.top;
+          // (cx - tx)/oldScale === (cx - newTx)/newScale を解く (oldScale=1, oldTx=0)
+          tx=cx-(cx)*scale;
+          ty=cy-(cy)*scale;
+          clampTranslate();
+          apply();
+        }
+        lastTapTime=0;
+        if(e.cancelable)e.preventDefault();
+        return;
+      }
+      lastTapTime=now;
+      // 拡大中だけドラッグを開始
+      if(scale>1.02){
+        dragging=true;
+        dragStartX=e.touches[0].clientX;
+        dragStartY=e.touches[0].clientY;
+        dragStartTx=tx;
+        dragStartTy=ty;
+        if(e.cancelable)e.preventDefault();
+      }
+    }
+  },{passive:false});
+
+  container.addEventListener('touchmove',e=>{
+    if(pinching && e.touches.length===2){
+      const d=dist(e.touches[0],e.touches[1]);
+      let newScale=startScale * (d/startDist);
+      if(newScale<MIN)newScale=MIN;
+      if(newScale>MAX)newScale=MAX;
+      // ピンチ中心を固定点として scale 変更時に tx,ty を補正
+      // 画像座標系の固定点: P = (center - startTx)/startScale (大体)
+      // 新 tx = center - P * newScale
+      const px=(pinchCenter.x-startTx)/startScale;
+      const py=(pinchCenter.y-startTy)/startScale;
+      tx=pinchCenter.x - px*newScale;
+      ty=pinchCenter.y - py*newScale;
+      scale=newScale;
+      clampTranslate();
+      apply();
+      if(e.cancelable)e.preventDefault();
+    }else if(dragging && e.touches.length===1){
+      const dx=e.touches[0].clientX-dragStartX;
+      const dy=e.touches[0].clientY-dragStartY;
+      tx=dragStartTx+dx;
+      ty=dragStartTy+dy;
+      clampTranslate();
+      apply();
+      if(e.cancelable)e.preventDefault();
+    }
+  },{passive:false});
+
+  container.addEventListener('touchend',e=>{
+    if(e.touches.length<2)pinching=false;
+    if(e.touches.length===0){
+      dragging=false;
+      // 等倍に戻ったらクラスを外す
+      if(scale<=1.02){
+        scale=1;tx=0;ty=0;apply();
+      }
+    }
+  });
+
+  container.addEventListener('touchcancel',()=>{
+    pinching=false;dragging=false;
+  });
+
+  // 状態リセットを公開 (新しい画像が入った時用)
+  container._resetZoom=reset;
+  // 初期化
+  reset();
+}
+
 function showUnsendConfirm(cardId,msgIdx){
   if(!confirm('このメッセージを取り消しますか?'))return;
   const cIdx=state.cards.findIndex(x=>x.id===cardId);
@@ -5929,7 +6120,9 @@ function openDetail(c,origin){
     $('detail-img').classList.remove('hide');
     const col=colorById(c.color);
     $('detail-img').style.background=col.bg;
-    $('detail-img').innerHTML=`<img src="${c.image}" alt="">`;
+    $('detail-img').innerHTML=`<img src="${c.image}" alt="" decoding="async">`;
+    // ピンチズーム機能を初期化
+    setupImageZoom($('detail-img'));
   }
   if(c.type==='note' || ((c.type==='photo'||c.type==='photonote') && c.text)){
     if(c.type==='note'){
@@ -7849,12 +8042,45 @@ $('restore-input').addEventListener('change',handleRestoreFile);
 
 // ═══ PULL TO REFRESH ═══
 // 各 .scroll コンテナで、頂部から下に引っ張ると更新する
+
+// ★★★ デバッグ用: 画面右下にログを表示するオーバーレイ ★★★
+(function setupDebugLog(){
+  const panel=document.createElement('div');
+  panel.id='dbg-panel';
+  panel.style.cssText='position:fixed;right:4px;bottom:80px;width:200px;max-height:280px;background:rgba(0,0,0,.8);color:#0f0;font:10px/1.3 monospace;padding:4px 5px;z-index:99999;border-radius:6px;overflow:hidden;pointer-events:auto;white-space:pre;';
+  panel.textContent='[dbg v2]\n';
+  panel.addEventListener('click',()=>{panel.textContent='[dbg v2]\n';});
+  if(document.body)document.body.appendChild(panel);
+  else document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(panel),{once:true});
+  const MAX_LINES=22;
+  window.dbg=function(msg){
+    if(!panel.parentNode && document.body)document.body.appendChild(panel);
+    const t=new Date();
+    const ts=String(t.getSeconds()).padStart(2,'0')+'.'+String(t.getMilliseconds()).padStart(3,'0');
+    const lines=panel.textContent.split('\n');
+    lines.push(ts+' '+msg);
+    while(lines.length>MAX_LINES+1)lines.splice(1,1);
+    panel.textContent=lines.join('\n');
+  };
+  // 画像デコード状況を起動時に集計
+  setTimeout(()=>{
+    const all=document.querySelectorAll('.card img, .lib-avatar img');
+    let total=all.length,decoded=0,pending=0;
+    all.forEach(img=>{if(img.complete && img.naturalWidth>0)decoded++;else pending++;});
+    window.dbg('img: total='+total+' decoded='+decoded+' pending='+pending);
+  },1500);
+  window.addEventListener('error',ev=>{
+    window.dbg && window.dbg('ERR: '+(ev.message||'?').slice(0,40));
+  });
+})();
+
 (function setupPullToRefresh(){
-  const THRESHOLD=70;      // この距離以上引いたら更新
-  const MAX_PULL=130;      // 最大変位
-  const SPINNER_H=26;      // スピナーの高さ。隙間の中央に出すために使う
+  const THRESHOLD=70;
+  const MAX_PULL=130;
+  const SPINNER_H=26;
   let startY=0, lastY=0, pulling=false, target=null, indicator=null, refreshing=false;
-  let refreshGuard=null;   // 万一 doRefresh が完了しなかった場合のフェイルセーフ
+  let refreshGuard=null;
+  let moveCount=0, lastMoveTime=0, maxGap=0;
 
   function makeIndicator(){
     const el=document.createElement('div');
@@ -7887,41 +8113,42 @@ $('restore-input').addEventListener('change',handleRestoreFile);
 
   function onStart(e){
     if(refreshing)return;
-    // 選択モード中・モーダル中・追加シート中はPTRしない
     if(state.selectMode)return;
     if($('add-sheet') && $('add-sheet').classList.contains('on'))return;
     if($('color-sheet') && $('color-sheet').classList.contains('on'))return;
-    // ライブラリの並べ替えドラッグ中はPTRしない
     if(document.querySelector('.lib-item.dragging'))return;
     const sc=activeScrollEl();
     if(!sc)return;
-    // 詳細画面 / アップロード画面では更新の必要がないのでスキップ
     const screen=document.querySelector('.screen.active');
     if(screen && (screen.id==='screen-detail' || screen.id==='screen-upload' || screen.id==='screen-login' || screen.id==='screen-claim' || screen.id==='screen-review'))return;
-    if(sc.scrollTop>0)return; // 頂部でないと開始しない
+    if(sc.scrollTop>0)return;
     target=sc;
     startY=e.touches[0].clientY;
     lastY=startY;
     pulling=false;
+    moveCount=0;
+    lastMoveTime=performance.now();
+    maxGap=0;
+    dbg('START scr='+(screen?screen.id:'?'));
   }
 
   function onMove(e){
     if(!target||refreshing)return;
+    const now=performance.now();
+    const gap=now-lastMoveTime;
+    lastMoveTime=now;
+    if(gap>maxGap && moveCount>2)maxGap=gap;
+    moveCount++;
     const y=e.touches[0].clientY;
     const dy=y-startY;
     lastY=y;
     if(dy<=0){
-      // 上方向は無視 (普通のスクロール)
       if(pulling){resetIndicator();pulling=false;}
       return;
     }
-    // 下方向に少し動いたら pulling 開始 (反応を早く)
     if(dy>3){
       if(!pulling){
         pulling=true;
-        // スピナーはスクロール領域の親(.screen)直下に挿入する。
-        // スクロール領域そのものに transform をかけるので、その内側に置くと
-        // スピナーも一緒に動いてしまうから、外側に置く。
         const host=target.parentElement;
         if(!indicator){
           indicator=makeIndicator();
@@ -7929,43 +8156,39 @@ $('restore-input').addEventListener('change',handleRestoreFile);
         if(indicator.parentNode!==host){
           host.appendChild(indicator);
         }
-        // スクロール領域の上端の位置に合わせる。ヘッダーがある画面でも正しい場所に出る。
         indicator.style.top=target.offsetTop+'px';
         indicator.style.display='flex';
-        // ドラッグ中はトランジションを切る (指追従)
         indicator.classList.remove('snap');
         target.classList.remove('ptr-snap');
+        dbg('PULL on '+(e.target?e.target.tagName:'?'));
       }
     }
     if(!pulling)return;
-    // iOS風のラバーバンド減衰 + 進度で回転 (回転はスピナー側に当てる)
     const pull=rubberBand(dy);
     const ratio=Math.min(1,pull/THRESHOLD);
-    // スピナーは引っ張って開いた隙間の中央に。スクロール領域は丸ごと pull 分だけ下げる。
     indicator.style.transform=`translate3d(0, ${spinnerY(pull)}px, 0)`;
     const sp=indicator.querySelector('.ptr-spinner');
-    // スピナーは引きながらフェードイン
     indicator.style.opacity=Math.min(1, dy/30).toFixed(2);
     if(sp)sp.style.transform=`rotate(${ratio*270}deg)`;
     indicator.classList.toggle('ready',pull>=THRESHOLD);
-    // スクロール領域はインジケータと同じ動き (一体感を出す)
     target.style.transform=`translate3d(0, ${pull}px, 0)`;
-    // 引っ張り中はネイティブスクロールを抑える
     if(e.cancelable)e.preventDefault();
+    // 200ms以上のギャップが出たらリアルタイムで警告
+    if(gap>200 && moveCount>3){
+      dbg('!GAP '+Math.round(gap)+'ms #'+moveCount+' dy='+Math.round(dy));
+    }
   }
 
-  function onEnd(){
+  function onEnd(e){
     if(!target){
-      // 念のため: pulling だけ残っていてもクリーンに戻す
       if(pulling){pulling=false;resetIndicator();}
       return;
     }
     if(!pulling){target=null;return;}
-    // translate3d(0, Npx, 0) から N を抽出 (target側の transform を見るほうが確実)
     const tr=target.style.transform||'';
     const m=tr.match(/translate3d\(0(?:px)?,\s*(-?\d+(?:\.\d+)?)px/);
     const pulled=m?parseFloat(m[1]):0;
-    // スナップアニメーションをON
+    dbg('END moves='+moveCount+' maxGap='+Math.round(maxGap)+'ms');
     indicator.classList.add('snap');
     target.classList.add('ptr-snap');
     pulling=false;
