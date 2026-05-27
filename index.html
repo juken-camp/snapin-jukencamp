@@ -3445,7 +3445,7 @@ function applyDetailNoteStyle(){
     }
     const baseFz=NOTE_CARD_SIZES[idx].fz;
     const lh=NOTE_CARD_SIZES[idx].lh;
-    const w=wrap.clientWidth||300;
+    const w=wrap.clientWidth||324;
     const scale=w/NOTE_BASE_WIDTH;
     inner.style.fontSize=(baseFz*scale)+'px';
     inner.style.lineHeight=lh;
@@ -5032,7 +5032,7 @@ function renderUpload(){
       const lh=NOTE_CARD_SIZES[idx].lh;
 
       // wrap の実幅に比例して fontSize を直接スケール (padding は枠幅の 5.5% で固定)
-      const wrapW=wrap.clientWidth||300;
+      const wrapW=wrap.clientWidth||324;
       const scale=wrapW/NOTE_BASE_WIDTH;
       inner.style.fontSize=(baseFz*scale)+'px';
       inner.style.lineHeight=lh;
@@ -5971,9 +5971,6 @@ function openDetail(c,origin){
   $('detail-content').innerHTML=contentHtml;
   $('detail-chat-log').innerHTML='';
 
-  // note カードのフォントサイズをグリッドの fz × scale で確定 (改行位置をグリッドと揃える)
-  applyDetailNoteStyle();
-
   // チャット(AI会話 + 追記メモ)を時系列表示
   renderChatLog(c);
 
@@ -6026,6 +6023,16 @@ function openDetail(c,origin){
 
   goto('screen-detail');
   attachDetailSwipe();
+
+  // note カードのフォントサイズを確定するのは、画面が active になって幅が確定したあと。
+  // goto() の直後だとレイアウトがまだ確定していないことがあるので、requestAnimationFrame で
+  // 次フレームに回す。さらに念のためもう一度呼んで遷移アニメ後の確定幅でも合わせる。
+  applyDetailNoteStyle();
+  requestAnimationFrame(()=>{
+    applyDetailNoteStyle();
+    // 画面遷移アニメ(~250ms)が終わった後に最終確定
+    setTimeout(applyDetailNoteStyle,300);
+  });
 }
 
 // 詳細画面のスワイプで前後カード移動
