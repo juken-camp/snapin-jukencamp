@@ -209,7 +209,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 /* HOME TOP */
 .home-top{
-  background:var(--surface);
+  background:var(--bg);
   padding:14px 16px 12px;
   border-bottom:0.5px solid var(--line);
 }
@@ -218,7 +218,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;
   align-items:center;
   gap:8px;
-  background:var(--bg);
+  background:var(--surface);
   border-radius:22px;
   padding:0 6px 0 16px;
   height:42px;
@@ -3338,6 +3338,29 @@ function noteCardStyle(card,col){
   return style;
 }
 
+// 詳細画面の .detail-note-card の font-size/line-height を、グリッドカードと同じロジックで
+// 計算した値を「外寸 ÷ 140」でスケールして適用する。
+// これにより詳細画面の表示が編集画面・グリッドと同じ位置で改行する。
+function applyDetailNoteStyle(){
+  const cards=document.querySelectorAll('.detail-note-card');
+  cards.forEach(el=>{
+    const txt=el.dataset.text||'';
+    const tlen=txt.length;
+    let idx=noteCardInitialSizeIndex(tlen);
+    while(idx<NOTE_CARD_SIZES.length-1){
+      const s=NOTE_CARD_SIZES[idx];
+      if(estimateNoteLineCount(txt,s.fz)<=s.clamp)break;
+      idx++;
+    }
+    const gridFz=NOTE_CARD_SIZES[idx].fz;
+    const lh=NOTE_CARD_SIZES[idx].lh;
+    const w=el.clientWidth||300;
+    const scale=w/140;
+    el.style.fontSize=(gridFz*scale)+'px';
+    el.style.lineHeight=lh;
+  });
+}
+
 // 公式棚デモデータ
 // 公式棚データ。起動時に /api/shelves から取得する。
 // (Vercel Redis に保存されているデータをロード)
@@ -4837,22 +4860,13 @@ function renderUpload(){
     body.appendChild(ta);
   }else if(c.type==='note'){
     // contenteditable な div を使う (textarea は縦揃えが効かないため)。
-    // 編集 wrap を「グリッドカードを実寸で作って transform:scale で拡大表示する」方式にする。
-    // 計算ロジックでフォントサイズを scale 倍するアプローチだと、padding比やフォントメトリクスの
-    // 微妙な差で改行位置が1文字ズレることがあった。
-    // → 実寸カード(width:140px相当, padding:10px, fontSize:gridFz)をそのまま生成し、それを
-    //    CSS transform:scale で見た目だけ拡大すれば、改行位置は実カードのままなのでグリッドと完全一致する。
+    // 編集 wrap を「グリッドカードを大きくスケールしたプレビュー」にする。
+    // グリッドのカードは画面幅 ÷ 3 ≒ 140px の正方形。編集画面では画面幅まるごと使うので、
+    // フォントサイズもグリッドの fz × (wrap外寸 / 140) でスケールする。
+    // padding は外寸の 7% (グリッドの 10/140 = 約7%)。
     const wrap=document.createElement('div');
     wrap.id='up-note-wrap';
-    // 外側の正方形(画面に見える領域)。中の inner を中央配置する。
-    wrap.style.cssText='width:100%;aspect-ratio:1;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:text;box-sizing:border-box;overflow:hidden;';
-
-    // 実寸カード(グリッドカードと同寸): scale で拡大される対象
-    const inner=document.createElement('div');
-    inner.id='up-note-inner';
-    // グリッドカード相当の寸法。box-sizing は border-box で padding 含めて指定幅。
-    // padding: 10px (グリッド .ctxt と同じ)。display:flex で揃え制御。
-    inner.style.cssText='width:140px;height:140px;padding:10px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;transform-origin:center center;';
+    wrap.style.cssText='width:100%;aspect-ratio:1;padding:7%;border-radius:12px;display:flex;flex-direction:column;line-height:1.5;cursor:text;box-sizing:border-box;overflow:hidden;';
 
     const editor=document.createElement('div');
     editor.id='up-note-area';
@@ -4861,7 +4875,6 @@ function renderUpload(){
     editor.setAttribute('autocapitalize','sentences');
     editor.setAttribute('spellcheck','false');
     editor.setAttribute('data-placeholder','メモを書く…');
-    // editor は inner 内で width:100% (= padding控除後の120px)
     editor.style.cssText='outline:none;width:100%;white-space:pre-wrap;word-break:break-word;-webkit-user-select:text;user-select:text;min-height:1.5em;';
     // 初期値設定: textContent では改行が表示されないので、innerHTML に変換する。
     // ただし XSS を避けるため、HTML エスケープしてから改行を <br> に変える。
@@ -4872,13 +4885,11 @@ function renderUpload(){
       editor.textContent='';
     }
 
-    inner.appendChild(editor);
-    wrap.appendChild(inner);
+    wrap.appendChild(editor);
 
     // 親 wrap をクリックしたら editor にフォーカス (タップしやすく)
     wrap.addEventListener('click',e=>{
-      // wrap または inner をクリックしたら editor にフォーカス (editor自体は除外)
-      if(e.target===wrap || e.target===inner){
+      if(e.target===wrap){
         editor.focus();
         // 末尾にキャレットを置く
         const range=document.createRange();
@@ -4891,15 +4902,12 @@ function renderUpload(){
     });
 
     // 揃え/色/フォントサイズを反映する関数。
-    // 実寸カード(inner: 140×140px, padding:10px)にグリッドカードと完全に同じ値を設定し、
-    // transform:scale で見た目だけ拡大する。改行位置はブラウザが実寸140pxの中で計算するため、
-    // グリッドカードに表示されたときと「ピクセル単位で同じ位置」で改行する。
+    // フォントサイズはグリッドカードと同じロジック (noteCardStyle) を使い、
+    // 編集領域がグリッドの何倍かを掛けてスケールする。
     const applyStyle=()=>{
       const col=colorById(c.color);
-      // 外側(wrap)も同じ色にしておく(transform で覆いきれない場合の保険)
       wrap.style.background=col.bg;
-      inner.style.background=col.bg;
-      inner.style.color=col.fg;
+      wrap.style.color=col.fg;
       const txt=editor.innerText;
 
       // グリッドカードと同じサイズ計算 (文字数 + 改行数で fz, lh を決定)
@@ -4912,24 +4920,20 @@ function renderUpload(){
       }
       const gridFz=NOTE_CARD_SIZES[idx].fz;
       const lh=NOTE_CARD_SIZES[idx].lh;
-      // 実寸カードにはグリッドと同じ生の値を設定(scaleで拡大される)
-      inner.style.fontSize=gridFz+'px';
-      inner.style.lineHeight=lh;
 
-      // スケール = 表示領域(wrap外寸) / 実寸カード幅(140px)
+      // スケール = wrap の外寸 ÷ グリッドカードの外寸(140px)
       const wrapW=wrap.clientWidth||300;
       const scale=wrapW/140;
-      inner.style.transform='scale('+scale+')';
+      const previewFz=gridFz*scale;
+      wrap.style.fontSize=previewFz+'px';
+      wrap.style.lineHeight=lh;
 
       const align=resolveAlign({text:txt,alignH:c.alignH,alignV:c.alignV});
-      // 横揃え: inner の align-items + editor の text-align
-      inner.style.alignItems=align.h==='center'?'center':'flex-start';
+      wrap.style.alignItems=align.h==='center'?'center':'flex-start';
       editor.style.textAlign=align.h==='center'?'center':'left';
-      // 縦揃え: inner の justify-content
-      inner.style.justifyContent=align.v==='center'?'center':'flex-start';
+      wrap.style.justifyContent=align.v==='center'?'center':'flex-start';
     };
     applyStyle();
-    // wrap の幅は初回 layout 後に確定するため、次フレームで再計算 (初期表示のズレ対策)
     requestAnimationFrame(applyStyle);
 
     editor.addEventListener('input',()=>{
@@ -5771,16 +5775,18 @@ function openDetail(c,origin){
   }
   if(c.type==='note' || ((c.type==='photo'||c.type==='photonote') && c.text)){
     if(c.type==='note'){
+      // 詳細画面のメモ表示も、グリッド・編集画面と「同じ正方形プレビュー」にする。
+      // - 画面幅まるごとを使う正方形 (aspect-ratio:1)
+      // - フォントサイズはグリッドカードの計算ロジックを使い、外寸/140 でスケール
+      // - 結果として、3画面 (グリッド/編集/詳細) で改行位置・行数が一致する
+      // JS でスケール計算するため、骨格だけ HTML に埋め、後で applyDetailNoteStyle で完成させる。
       const col=colorById(c.color);
-      const fz=autoFontSizeDetail(c.text||'');
       const align=resolveAlign(c);
-      // 詳細画面は十分に高さがあるので、揃え設定をストレートに反映できる。
-      // min-height を設けて、縦中央寄せが効くようにする。
-      const padding=fz>=24?'40px 24px':'24px 20px';
-      let style=`background:${col.bg};color:${col.fg};font-size:${fz}px;padding:${padding};border-radius:12px;line-height:1.5;min-height:240px;display:flex;flex-direction:column;`;
+      let style=`background:${col.bg};color:${col.fg};width:100%;aspect-ratio:1;padding:7%;border-radius:12px;line-height:1.5;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
       style+=align.h==='center'?'align-items:center;text-align:center;':'align-items:flex-start;text-align:left;';
       style+=align.v==='center'?'justify-content:center;':'justify-content:flex-start;';
-      contentHtml=`<div class="detail-text" style="${style}">${linkify(c.text||'')}</div>`;
+      // data-* に元テキストを持たせて、後で applyDetailNoteStyle がスケール計算に使う
+      contentHtml=`<div class="detail-text detail-note-card" data-text="${esc(c.text||'')}" style="${style}">${linkify(c.text||'')}</div>`;
     }else{
       contentHtml=`<div class="detail-text">${linkify(c.text||'')}</div>`;
     }
@@ -5851,6 +5857,9 @@ function openDetail(c,origin){
 
   $('detail-content').innerHTML=contentHtml;
   $('detail-chat-log').innerHTML='';
+
+  // note カードのフォントサイズをグリッドの fz × scale で確定 (改行位置をグリッドと揃える)
+  applyDetailNoteStyle();
 
   // チャット(AI会話 + 追記メモ)を時系列表示
   renderChatLog(c);
