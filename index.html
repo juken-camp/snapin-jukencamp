@@ -10,9 +10,8 @@
 <meta http-equiv="Expires" content="0">
 <meta name="theme-color" content="#FAFAF7">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SnapIn">
-<link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"SnapIn","short_name":"SnapIn","start_url":"./","display":"standalone","background_color":"%23FAFAF7","theme_color":"%231D9E75","orientation":"portrait","icons":[{"src":"data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20rx%3D%22112%22%20fill%3D%22%231D9E75%22%2F%3E%3Ctext%20x%3D%22256%22%20y%3D%22360%22%20font-family%3D%22Georgia%2Cserif%22%20font-size%3D%22300%22%20font-weight%3D%22600%22%20font-style%3D%22italic%22%20fill%3D%22white%22%20text-anchor%3D%22middle%22%3ES%3C%2Ftext%3E%3C%2Fsvg%3E","sizes":"512x512","type":"image/svg+xml"}]}'>
+<link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"SnapIn","short_name":"SnapIn","start_url":"./","display":"standalone","background_color":"%23FAFAF7","theme_color":"%231D9E75","orientation":"portrait","icons":[{"src":"data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22%3E%3Crect width=%22512%22 height=%22512%22 rx=%22112%22 fill=%22%231D9E75%22/%3E%3Ctext x=%22256%22 y=%22360%22 font-family=%22Georgia,serif%22 font-size=%22300%22 font-weight=%22600%22 font-style=%22italic%22 fill=%22white%22 text-anchor=%22middle%22%3ES%3C/text%3E%3C/svg%3E","sizes":"512x512","type":"image/svg+xml"}]}'>
 <link rel="apple-touch-icon" href='data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="%231D9E75"/><text x="256" y="360" font-family="Georgia,serif" font-size="300" font-weight="600" font-style="italic" fill="white" text-anchor="middle">S</text></svg>'>
 <style>
 :root{
@@ -628,379 +627,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;align-items:center;justify-content:center;
   color:var(--g);
 }
-/* バブルメニューシートの古いスタイル (廃止予定だが互換のため残す)。
-   実際の表示は新ポップオーバーが担当する。 */
 .sheet-opt-title{font-size:13px;font-weight:600;color:var(--ink);}
 .sheet-opt-desc{font-size:10px;color:var(--ink3);line-height:1.4;}
-
-/* 続きを書き中のドットバブル: マルチバブル送信中の次バブル予告として、
-   通常のバブルと同じ形でドットを表示する。位置は .msg-bubbles の末尾。 */
-.bubble.dots{
-  padding:10px 14px;
-  display:inline-flex;
-  align-items:center;
-  background:var(--surface);
-  box-shadow:0 1px 2px rgba(0,0,0,.06);
-  border-radius:18px;
-  border-bottom-left-radius:5px;
-  /* メニュー対象にならないように選択不可 */
-  -webkit-user-select:none;
-  user-select:none;
-  align-self:flex-start; /* AI側なので左寄せ */
-}
-.bubble.dots .typing-dots{height:1.2em;}
-
-/* バブル長押しメニュー(ポップオーバー型): LINE風にバブル付近にコンパクトに出す。
-   バブルの上 or 下に絶対配置して、その近くにメニューが浮かぶ。
-   .app の中に追加するので app の座標系で left/top を計算する。
-   visibility 制御にすることで常に display:flex を維持し、サイズ計測が確実に動く。 */
-.bubble-popover{
-  position:absolute;
-  display:flex;
-  visibility:hidden;
-  pointer-events:none;
-  background:#2A2A2A;
-  color:#fff;
-  border-radius:14px;
-  padding:6px 4px;
-  box-shadow:0 8px 24px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.18);
-  z-index:120;
-  flex-direction:row;
-  gap:0;
-  -webkit-user-select:none;
-  user-select:none;
-  /* 初期は画面外に逃がしておく。openBubbleMenuで位置が決まる */
-  left:-9999px;
-  top:-9999px;
-}
-.bubble-popover.on{
-  visibility:visible;
-  pointer-events:auto;
-  animation:popover-in 0.15s ease-out;
-}
-@keyframes popover-in{
-  from{opacity:0;transform:translateY(4px) scale(0.95);}
-  to{opacity:1;transform:translateY(0) scale(1);}
-}
-.bubble-popover-item{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:4px;
-  padding:8px 12px;
-  background:none;
-  border:none;
-  color:#fff;
-  font-size:11px;
-  border-radius:10px;
-  min-width:56px;
-}
-.bubble-popover-item:active{background:rgba(255,255,255,.12);}
-.bubble-popover-item.danger{color:#FF8B7E;}
-.bubble-popover-item.danger:active{background:rgba(255,80,80,.18);}
-.bubble-popover-item svg{
-  width:18px;height:18px;
-  stroke-width:2;
-}
-.bubble-popover-item.hide{display:none;}
-/* ポップオーバー外をタップしたら閉じるための全画面透明マスク。
-   メニューが開いた瞬間の指離し(touchend)を食わないよう、open後の短時間は無効化する。 */
-.bubble-popover-mask{
-  position:absolute;
-  inset:0;
-  z-index:119;
-  display:none;
-  background:transparent;
-}
-.bubble-popover-mask.on{display:block;}
-
-/* バブル長押しメニュー: LINE風の縦リスト型シート。
-   既存の .sheet と同じ枠組みを使い、項目を1列で並べる。 */
-.sheet-list{
-  padding:6px 8px 14px;
-  display:flex;
-  flex-direction:column;
-}
-.sheet-list .sheet-row{
-  display:flex;
-  align-items:center;
-  gap:14px;
-  padding:14px 18px;
-  background:none;
-  border:none;
-  font-size:15px;
-  color:var(--ink);
-  text-align:left;
-  border-radius:10px;
-  width:100%;
-}
-.sheet-list .sheet-row:active{background:var(--gl);}
-.sheet-list .sheet-row.danger{color:var(--rose);}
-.sheet-list .sheet-row .sheet-row-icon{
-  width:24px;height:24px;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--ink2);
-  flex-shrink:0;
-}
-.sheet-list .sheet-row.danger .sheet-row-icon{color:var(--rose);}
-
-/* 引用バー: 入力欄の上に「○○...返信中 [×]」と表示。LINEのリプライUI相当 */
-.reply-bar{
-  display:none;
-  align-items:center;
-  gap:10px;
-  padding:8px 12px;
-  background:var(--gl);
-  border-top:0.5px solid var(--line);
-  border-left:3px solid var(--g);
-}
-.reply-bar.on{display:flex;}
-.reply-bar-icon{
-  width:18px;height:18px;
-  color:var(--gd);
-  flex-shrink:0;
-}
-.reply-bar-text{
-  flex:1;
-  min-width:0;
-  font-size:12px;
-  color:var(--ink2);
-  line-height:1.4;
-  overflow:hidden;
-  display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  word-break:break-word;
-}
-.reply-bar-text b{color:var(--gd);font-weight:600;margin-right:6px;}
-.reply-bar-close{
-  width:26px;height:26px;
-  border-radius:13px;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--ink2);
-  flex-shrink:0;
-}
-.reply-bar-close:active{background:rgba(0,0,0,.05);color:var(--ink);}
-
-/* バブルの「部分コピー」(テキスト選択) モード:
-   特定のバブルにだけ .selecting を付けて、その間だけテキスト選択を許可する。
-   ハイライトは緑系で SnapIn の配色に揃える。 */
-.bubble.selecting{
-  -webkit-user-select:text !important;
-  user-select:text !important;
-  cursor:text;
-}
-.bubble.selecting::selection,
-.bubble.selecting *::selection{
-  background:rgba(29,158,117,0.30);
-}
-.bubble.selecting::-moz-selection,
-.bubble.selecting *::-moz-selection{
-  background:rgba(29,158,117,0.30);
-}
-/* 選択モード中はテキスト選択のハイライト + 範囲ハンドルが視覚フィードバックになるので、
-   バブル自体には目立つ装飾は付けない (LINEと同じ静かな見た目)。 */
-
-/* 長押し中の視覚フィードバック (ぐっと押されている感) */
-.bubble.pressing{transform:scale(0.96);transition:transform .15s;}
-
-/* 削除済み(取り消し済み)バブルのプレースホルダ表示。
-   完全に消すと履歴の流れが分かりにくいので、薄い見た目で残す。 */
-.bubble.removed{
-  background:transparent !important;
-  box-shadow:none !important;
-  color:var(--ink3) !important;
-  font-style:italic;
-  font-size:12px;
-  padding:6px 13px;
-}
-
-/* PWAインストール誘導: 初回起動時 (まだスタンドアロンで動いていない場合) に
-   下から出るカード。LINEの「友だち追加」案内に近い、押し付けがましくないトーン。 */
-.pwa-mask{
-  position:absolute;
-  inset:0;
-  background:rgba(0,0,0,0.4);
-  z-index:140;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity 0.2s;
-}
-.pwa-mask.on{opacity:1;pointer-events:auto;}
-.pwa-card{
-  position:absolute;
-  left:12px;right:12px;
-  bottom:16px;
-  background:var(--surface);
-  border-radius:18px;
-  box-shadow:0 12px 32px rgba(0,0,0,0.25), 0 4px 10px rgba(0,0,0,0.12);
-  z-index:141;
-  transform:translateY(120%);
-  transition:transform 0.32s cubic-bezier(.2,.7,.3,1);
-  padding:22px 22px 18px;
-  padding-bottom:calc(18px + env(safe-area-inset-bottom));
-}
-.pwa-card.on{transform:translateY(0);}
-.pwa-card-icon{
-  width:48px;height:48px;
-  border-radius:12px;
-  background:var(--g);
-  color:white;
-  display:flex;align-items:center;justify-content:center;
-  margin-bottom:12px;
-  font-family:Georgia,serif;
-  font-weight:700;
-  font-style:italic;
-  font-size:30px;
-}
-.pwa-card-title{
-  font-size:17px;
-  font-weight:700;
-  color:var(--ink);
-  margin-bottom:6px;
-}
-.pwa-card-sub{
-  font-size:13px;
-  color:var(--ink2);
-  line-height:1.55;
-  margin-bottom:16px;
-}
-.pwa-steps{
-  background:var(--bg);
-  border-radius:12px;
-  padding:14px 14px;
-  margin-bottom:16px;
-}
-.pwa-step{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:6px 0;
-  font-size:13px;
-  color:var(--ink);
-}
-.pwa-step-num{
-  width:22px;height:22px;
-  border-radius:50%;
-  background:var(--g);
-  color:white;
-  font-size:11px;
-  font-weight:700;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-}
-.pwa-step-icon{
-  width:22px;height:22px;
-  color:var(--ink2);
-  flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-}
-.pwa-actions{
-  display:flex;
-  gap:8px;
-}
-.pwa-btn{
-  flex:1;
-  height:42px;
-  border-radius:21px;
-  border:none;
-  font-size:14px;
-  font-weight:600;
-  background:var(--bg);
-  color:var(--ink2);
-}
-.pwa-btn:active{background:var(--gl);}
-.pwa-btn.primary{
-  background:var(--g);
-  color:white;
-}
-.pwa-btn.primary:active{background:var(--gd);}
-
-/* アプリ内確認ダイアログ:
-   ネイティブ confirm() の代わりに、SnapInの世界観に合うカードを下から出す。
-   削除など破壊的アクションは danger スタイルで赤系。Promise を返すので await できる。 */
-.confirm-mask{
-  position:absolute;
-  inset:0;
-  background:rgba(0,0,0,0.42);
-  z-index:150;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity 0.18s;
-}
-.confirm-mask.on{opacity:1;pointer-events:auto;}
-.confirm-card{
-  position:absolute;
-  left:12px;right:12px;
-  bottom:16px;
-  background:var(--surface);
-  border-radius:18px;
-  box-shadow:0 12px 32px rgba(0,0,0,0.25), 0 4px 10px rgba(0,0,0,0.12);
-  z-index:151;
-  transform:translateY(120%);
-  transition:transform 0.28s cubic-bezier(.2,.7,.3,1);
-  padding:22px 22px 18px;
-  padding-bottom:calc(18px + env(safe-area-inset-bottom));
-}
-.confirm-card.on{transform:translateY(0);}
-.confirm-title{
-  font-size:16px;
-  font-weight:700;
-  color:var(--ink);
-  margin-bottom:6px;
-  line-height:1.45;
-}
-.confirm-body{
-  font-size:13px;
-  color:var(--ink2);
-  line-height:1.6;
-  margin-bottom:18px;
-  white-space:pre-wrap;
-}
-.confirm-actions{
-  display:flex;
-  gap:8px;
-}
-.confirm-btn{
-  flex:1;
-  height:44px;
-  border-radius:22px;
-  border:none;
-  font-size:15px;
-  font-weight:600;
-  background:var(--bg);
-  color:var(--ink2);
-}
-.confirm-btn:active{background:var(--gl);color:var(--gd);}
-.confirm-btn.primary{
-  background:var(--g);
-  color:white;
-}
-.confirm-btn.primary:active{background:var(--gd);}
-.confirm-btn.danger{
-  background:var(--rose);
-  color:white;
-}
-.confirm-btn.danger:active{background:#c84a3f;}
-
-/* バブル内のリプライ引用: ユーザー発言で対象バブルの引用を上に小さく表示。
-   LINEと同じく、発言と一体感のあるブロック。色は反対側の補色に近いトーンを使う。 */
-.bubble-quote{
-  font-size:11px;
-  line-height:1.5;
-  padding:6px 10px;
-  margin:-3px -4px 8px;
-  border-left:3px solid rgba(255,255,255,0.5);
-  background:rgba(255,255,255,0.15);
-  border-radius:8px;
-  opacity:0.92;
-  white-space:pre-wrap;
-  word-break:break-word;
-  -webkit-line-clamp:3;
-  display:-webkit-box;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
 
 /* UPLOAD / EDIT */
 .upload-body{
@@ -1438,32 +1066,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink);
   border-bottom-left-radius:5px;
   box-shadow:0 1px 2px rgba(0,0,0,.06);
-}
-/* AI返信のマルチバブル: 1つのAI返信を意味のある単位で複数バブルに分けて表示する。
-   1バブル時は従来構造のまま、2バブル以上のときだけ .multi が付き、
-   バブルを縦に積んで時刻は末尾バブルの右下に1個だけ出す。 */
-.msg-bubbles{
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-  max-width:74%;
-  min-width:0;
-}
-.msg-bubbles .bubble{
-  max-width:100%; /* 親(.msg-bubbles)で幅を制御するのでバブル自体は親いっぱい */
-}
-/* 連続バブルの形を LINE 風に: 最初のバブルは下角を直角寄り、最後だけ尻尾(下左角を小さく)。
-   間のバブルは両下角とも小さめにする。1個だけのときは元の .bubble の定義がそのまま効く。 */
-.msg.a .msg-bubbles .bubble:not(:last-child){border-bottom-left-radius:14px;border-bottom-right-radius:14px;}
-.msg.a .msg-bubbles .bubble:not(:first-child){border-top-left-radius:14px;}
-.msg.a .msg-bubbles .bubble:last-child{border-bottom-left-radius:5px;}
-/* 新着バブルがふわっと出るアニメーション (時間差表示時のみ .anim を付ける) */
-.bubble.anim{
-  animation:bubble-in 0.25s ease-out;
-}
-@keyframes bubble-in{
-  from{opacity:0;transform:translateY(6px);}
-  to{opacity:1;transform:translateY(0);}
 }
 .bubble-link{
   color:inherit;
@@ -3059,7 +2661,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="os-handle" id="os-handle">―</div>
       <div class="os-desc" id="os-desc">―</div>
       <div class="os-meta">
-        <span><b id="os-count" style="color:var(--ink);font-family:var(--font-en);">0</b> 件</span>
+        <span><b id="os-count" style="color:var(--ink);font-family:var(--font-en);">0</b> CARDS</span>
         <button class="os-sub" id="os-sub" data-action="toggle-sub">登録</button>
       </div>
     </div>
@@ -3187,16 +2789,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div id="detail-chat-log"></div>
     </div>
   </div>
-  <!-- リプライ中の引用バー: 長押し→リプライで対象バブルを示し、送信時に文脈として添付。 -->
-  <div class="reply-bar" id="reply-bar">
-    <div class="reply-bar-icon">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
-    </div>
-    <div class="reply-bar-text" id="reply-bar-text"></div>
-    <button class="reply-bar-close" data-action="cancel-reply" aria-label="返信をやめる">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-  </div>
   <div class="detail-input" id="detail-input-bar">
     <button class="detail-input-ai" id="detail-ai-toggle" data-action="toggle-ai-mode" aria-label="AIに送る">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
@@ -3261,82 +2853,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
 </div>
 
-<!-- バブル長押しメニュー(ポップオーバー):
-     LINE風にバブル付近に小さく浮かぶ。マスクは外タップ閉じ用の透明全画面レイヤ。 -->
-<div class="bubble-popover-mask" id="bubble-popover-mask"></div>
-<div class="bubble-popover" id="bubble-popover">
-  <button class="bubble-popover-item" data-action="bubble-copy">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-    <span>コピー</span>
-  </button>
-  <button class="bubble-popover-item" data-action="bubble-select">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M4 16v2a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M16 20h2a2 2 0 0 0 2-2v-2"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
-    <span>部分コピー</span>
-  </button>
-  <button class="bubble-popover-item" data-action="bubble-reply" id="bubble-popover-reply">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
-    <span>リプライ</span>
-  </button>
-  <button class="bubble-popover-item danger" data-action="bubble-delete">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-    <span>削除</span>
-  </button>
-</div>
-
 <div class="toast" id="toast">保存しました</div>
 <div class="save-ok" id="save-ok" aria-hidden="true">
   <div class="save-ok-circle">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
   </div>
 </div>
-
-<!-- PWAインストール誘導カード:
-     初回起動でブラウザから開かれている場合だけ、下からカードを出す。
-     iOS は OS の制約で自動インストールできないので手順を案内、Android はネイティブのインストールプロンプトを呼び出す。
-     「あとで」を選んだら7日間出さない。 -->
-<div class="pwa-mask" id="pwa-mask" data-action="pwa-later"></div>
-<div class="pwa-card" id="pwa-card" aria-hidden="true">
-  <div class="pwa-card-icon">S</div>
-  <div class="pwa-card-title">ホーム画面に置いて使う</div>
-  <div class="pwa-card-sub">アプリのように1タップで開けます。ブックマークと違い、Safariのタブを毎回探す必要もありません。</div>
-  <!-- iOS 用手順 (Safari で開いた時に表示) -->
-  <div class="pwa-steps" id="pwa-steps-ios">
-    <div class="pwa-step">
-      <div class="pwa-step-num">1</div>
-      <span>下の</span>
-      <div class="pwa-step-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-      </div>
-      <span>共有ボタンをタップ</span>
-    </div>
-    <div class="pwa-step">
-      <div class="pwa-step-num">2</div>
-      <span>「ホーム画面に追加」を選ぶ</span>
-    </div>
-    <div class="pwa-step">
-      <div class="pwa-step-num">3</div>
-      <span>右上の「追加」をタップ</span>
-    </div>
-  </div>
-  <!-- Android 用ボタン (beforeinstallprompt が拾えた時に表示) -->
-  <div class="pwa-actions" id="pwa-actions">
-    <button class="pwa-btn" data-action="pwa-later">あとで</button>
-    <button class="pwa-btn primary" id="pwa-install-btn" data-action="pwa-install" style="display:none;">アプリとして追加</button>
-  </div>
-</div>
-
-<!-- アプリ内確認ダイアログ: ネイティブ confirm() の置き換え。
-     確認したい操作 (削除、ログアウト、上書き等) を SnapIn の世界観で問う。 -->
-<div class="confirm-mask" id="confirm-mask"></div>
-<div class="confirm-card" id="confirm-card" aria-hidden="true">
-  <div class="confirm-title" id="confirm-title"></div>
-  <div class="confirm-body" id="confirm-body"></div>
-  <div class="confirm-actions">
-    <button class="confirm-btn" id="confirm-cancel" type="button">キャンセル</button>
-    <button class="confirm-btn primary" id="confirm-ok" type="button">OK</button>
-  </div>
-</div>
-
 <input type="file" id="file-input" accept="image/*" style="display:none;">
 <input type="file" id="file-input-any" accept=".png,.jpg,.jpeg,.gif,.webp,.heic,.heif" style="display:none;">
 <input type="file" id="restore-input" accept="application/json,.json" style="display:none;">
@@ -3388,7 +2910,6 @@ const state={
   currentOfficial:null,
   mosaicMode:false,
   detailAiMode:false,  // 詳細画面でAI送信モードか
-  replyTo:null,        // 詳細画面で長押し→リプライ中の対象 {text, msgIdx} | null
   photoMode:null,      // クイック写真撮影中 'photo' | 'photonote' | null
   selectMode:false,    // グリッドの複数選択モード
   selectedIds:new Set(),
@@ -4053,10 +3574,6 @@ function goto(id,push){
 
 function back(){
   $('detail-menu')?.classList.remove('on');
-  // バブルメニュー、選択モード、引用バーも片付ける (画面遷移で状態が残らないように)
-  closeBubbleMenu();
-  if(selectingBubbleEl){selectingBubbleEl.classList.remove('selecting');selectingBubbleEl=null;}
-  hideReplyBar();
   if(state.navStack.length>1){
     state.navStack.pop();
     const prev=state.navStack[state.navStack.length-1];
@@ -4131,14 +3648,8 @@ async function doClaimSubmit(force){
         forceBtn.className='claim-submit';
         forceBtn.style.cssText='margin-top:10px;background:var(--ink2);';
         forceBtn.textContent='この端末で使う';
-        forceBtn.addEventListener('click',async()=>{
-          const ok=await confirmDialog({
-            title:'別の端末から引き継ぎますか?',
-            body:'元の端末からは使えなくなります。',
-            ok:'この端末で使う',
-            danger:true,
-          });
-          if(!ok)return;
+        forceBtn.addEventListener('click',()=>{
+          if(!confirm('別の端末からこのアカウントを引き継ぎますか?\n(元の端末からは使えなくなります)'))return;
           forceBtn.remove();
           doClaimSubmit(true);
         });
@@ -4182,14 +3693,8 @@ function gotoClaim(){
   goto('screen-claim');
 }
 
-async function logoutConfirm(){
-  const ok=await confirmDialog({
-    title:'ログアウトしますか?',
-    body:'端末のデータは残ります。再ログインすれば復元されます。',
-    ok:'ログアウト',
-    danger:true,
-  });
-  if(!ok)return;
+function logoutConfirm(){
+  if(!confirm('ログアウトしますか?\n端末のデータは残ります。'))return;
   state.user=null;
   state.auth=null; // 塾生情報もクリア (再ログインで再claim)
   save();
@@ -4306,28 +3811,31 @@ async function handleRestoreFile(e){
     let mode='merge';
     if(existingPersonal.length>0){
       // 既存メモあり: マージ(OK) か キャンセル
-      const ok=await confirmDialog({
-        title:'バックアップから復元しますか?',
-        body:`書き出し日時: ${exportedAt}\nバックアップ内のメモ: ${incoming.length}件\n現在の個人メモ: ${existingPersonal.length}件\n\n追加して復元します (端末の現在のメモは消えません)。`,
-        ok:'追加して復元',
-      });
+      const ok=confirm(
+        'バックアップから復元します。\n\n'+
+        `書き出し日時: ${exportedAt}\n`+
+        `バックアップ内のメモ: ${incoming.length}件\n`+
+        `現在の個人メモ: ${existingPersonal.length}件\n\n`+
+        '【追加して復元】します。同じIDのメモは現在の内容を優先します。\n'+
+        '(端末の現在のメモは消えません)'
+      );
       if(!ok)return;
       // 追加で「全部このバックアップで置き換える?」を聞く (任意の上書きモード)
-      const replaceAll=await confirmDialog({
-        title:'全置換しますか?',
-        body:'※特別な操作です。現在の個人メモをすべて削除して、バックアップの内容だけにします。\n\nキャンセルすれば、上の選択どおり「追加して復元」が実行されます。',
-        ok:'全置換',
-        cancel:'追加して復元のまま',
-        danger:true,
-      });
+      const replaceAll=confirm(
+        '※特別な操作: 現在の個人メモをすべて削除して、\n'+
+        'バックアップの内容だけにしますか?\n\n'+
+        '[OK]    → 全置換 (現在のメモは消えます)\n'+
+        '[キャンセル] → 追加で復元 (推奨)'
+      );
       mode=replaceAll?'replace':'merge';
     }else{
       // 既存メモなし: 確認だけ
-      const ok=await confirmDialog({
-        title:'バックアップから復元しますか?',
-        body:`書き出し日時: ${exportedAt}\nメモ: ${incoming.length}件`,
-        ok:'復元',
-      });
+      const ok=confirm(
+        'バックアップから復元します。\n\n'+
+        `書き出し日時: ${exportedAt}\n`+
+        `メモ: ${incoming.length}件\n\n`+
+        '復元してよろしいですか?'
+      );
       if(!ok)return;
     }
 
@@ -4991,16 +4499,10 @@ function updateSelectBarCount(){
   const el=$('select-bar-count');
   if(el)el.textContent=state.selectedIds.size+'件選択中';
 }
-async function deleteSelected(){
+function deleteSelected(){
   const n=state.selectedIds.size;
   if(n===0)return;
-  const ok=await confirmDialog({
-    title:`${n}件を捨てますか?`,
-    body:'7日間は「捨てたメモ」から戻せます。',
-    ok:'捨てる',
-    danger:true,
-  });
-  if(!ok)return;
+  if(!confirm(`${n}件を捨てますか?\n7日間は「捨てたメモ」から戻せます。`)){return;}
   const ids=new Set(state.selectedIds);
   const now=Date.now();
   state.cards.forEach(c=>{
@@ -5016,15 +4518,10 @@ async function deleteSelected(){
 
 // 選択した複数のメモをまとめてリストから外す (= archive)
 // 1件版の archiveCard と挙動を揃える: archivedAt を立て、ピンも外す。
-async function archiveSelected(){
+function archiveSelected(){
   const n=state.selectedIds.size;
   if(n===0)return;
-  const ok=await confirmDialog({
-    title:`${n}件をリストから外しますか?`,
-    body:'「リストから外したメモ」からいつでも戻せます。',
-    ok:'リストから外す',
-  });
-  if(!ok)return;
+  if(!confirm(`${n}件をリストから外しますか?\n「リストから外したメモ」からいつでも戻せます。`)){return;}
   const ids=new Set(state.selectedIds);
   const now=Date.now();
   state.cards.forEach(c=>{
@@ -5114,28 +4611,26 @@ function startCreate(type){
   }else if(type==='note'){
     renderUpload();
     goto('screen-upload');
-    // iOS Safari は setTimeout 内の focus() を受け付けない(キーボードが開かない)。
-    // ボタンタップのスコープと同じイベントループで同期的に focus を当てる。
-    const ta=$('up-body').querySelector('textarea');
-    if(ta)ta.focus();
+    setTimeout(()=>{
+      const ta=$('up-body').querySelector('textarea');
+      if(ta)ta.focus();
+    },100);
   }else if(type==='list'){
     state.current.title='';
     state.current.items=[{t:'',mark:'check',d:false}];
     renderUpload();
     goto('screen-upload');
-    // 同期 focus (iOS制約)
-    const inp=$('up-body').querySelector('.cl-input');
-    if(inp)inp.focus();
+    setTimeout(()=>{
+      const inp=$('up-body').querySelector('.cl-input');
+      if(inp)inp.focus();
+    },100);
   }
 }
 
 function onFilePick(e){
   const file=e.target.files[0];
   if(!file){
-    // 新規作成のキャンセル時は state.current を捨てる。編集中の差し替えキャンセルは何もしない。
-    if(state.current && state.current._new && !state.current.image){
-      state.current=null;
-    }
+    state.current=null;
     state.photoMode=null;
     return;
   }
@@ -5152,71 +4647,14 @@ function onFilePick(e){
     if(!state.current)state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:new Date().toISOString().slice(0,10),_new:true,text:''};
     state.current.image=compressed;
     state.photoMode=null;
-
-    // 「新規作成の写真」なら撮影即保存フローへ。screen-upload を経由せず、
-    // データを保存してから detail 画面を開く。バックで戻れば完了。
-    // 「編集中の写真差し替え」(既に保存されたカードの編集中) は従来通り screen-upload。
-    const isNewPhoto=state.current._new && (state.current.type==='photo' || state.current.type==='photonote');
-    if(isNewPhoto){
-      quickSaveNewPhoto();
-    }else{
-      renderUpload();
-      goto('screen-upload');
-    }
+    renderUpload();
+    goto('screen-upload');
   }).catch(err=>{
     toast('画像の読み込みに失敗しました');
     state.current=null;
     state.photoMode=null;
   });
   e.target.value='';
-}
-
-// 新規写真の撮影→即保存→detail画面遷移。
-// 「とにかく早く写メを保存したい」流れを最短にする。撮影完了からアプリ操作は不要、
-// 細かい編集は後で詳細画面の長押し/編集メニューから可能。
-// テキストはクイック入力で先に入れてあった分だけ反映 (state.current.text)。
-async function quickSaveNewPhoto(){
-  const c=state.current;
-  if(!c || !c.image)return;
-  // 復習システム用の初期値 (saveCard の _new 分岐と同じ初期化)
-  c.created=Date.now();
-  c.stage=0;
-  c.lastReview=null;
-  c.reviewCount=0;
-  delete c._new;
-
-  // 画像は IndexedDB へ。失敗時はロールバック。
-  try{
-    await imgDB.put(c.id,c.image);
-  }catch(err){
-    console.error('IndexedDB put failed:',err);
-    toast('保存に失敗しました');
-    return;
-  }
-  state.cards.unshift(c);
-  const ok=save();
-  if(!ok){
-    // localStorage 失敗 → 孤児画像を消してロールバック
-    state.cards.shift();
-    imgDB.delete(c.id).catch(()=>{});
-    toast('容量が足りません');
-    return;
-  }
-
-  // 詳細画面を開く。AIモードを自動オンに (利用権限がある人だけ) → 「写メ→即AI質問」が最短で始まる。
-  // 何もせずバックすればホームに戻るだけなので、AI質問しない人にも邪魔にならない。
-  openDetail(c,'mine');
-  if(canUseAI()){
-    setTimeout(()=>{
-      if(!state.detailAiMode){
-        state.detailAiMode=true;
-        const tgl=$('detail-ai-toggle');
-        if(tgl)tgl.classList.add('on');
-        const inp=$('detail-input');
-        if(inp)inp.placeholder='AIに質問して送信…';
-      }
-    },80);
-  }
 }
 
 // data URL のおおよそのバイト数
@@ -5388,15 +4826,11 @@ function renderUpload(){
     });
     body.appendChild(ta);
   }else if(c.type==='note'){
-    // 編集 wrap を「グリッドカードを大きくスケールしたプレビュー」にする。
-    // グリッドのカードは画面幅 ÷ 3 ≒ 140px の正方形。編集画面では画面幅まるごとを
-    // 使えるので、その比率(おおむね 3倍)でフォントサイズもスケールする。
-    // → 結果: グリッドに表示された時と「同じ位置で改行」「同じ行数」が編集中に確認できる。
-    // 横幅と内寸のpaddingもグリッドカードと同じ比率にする。
+    // contenteditable な div を使う (textarea は縦揃えが効かないため)。
+    // 編集中の入力体験を保ちつつ、横揃え/縦揃えの両方をその場でプレビューできる。
     const wrap=document.createElement('div');
     wrap.id='up-note-wrap';
-    // 正方形にして、padding は内寸の 7% (グリッドの padding:10px / 140px ≒ 7%)
-    wrap.style.cssText='width:100%;aspect-ratio:1;padding:7%;border-radius:12px;display:flex;flex-direction:column;line-height:1.5;cursor:text;box-sizing:border-box;overflow:hidden;';
+    wrap.style.cssText='min-height:240px;padding:20px;border-radius:12px;display:flex;flex-direction:column;line-height:1.5;cursor:text;';
 
     const editor=document.createElement('div');
     editor.id='up-note-area';
@@ -5431,36 +4865,14 @@ function renderUpload(){
       }
     });
 
-    // 揃え/色/フォントサイズを反映する関数。
-    // フォントサイズはグリッドカードと同じロジック (noteCardStyle) を使い、
-    // 編集領域がグリッドの何倍かを掛けてスケールする。これにより
-    // 「グリッド表示時と同じ位置で改行する」のが編集中に WYSIWYG で見える。
+    // 揃え/色を反映する関数
     const applyStyle=()=>{
       const col=colorById(c.color);
       wrap.style.background=col.bg;
       wrap.style.color=col.fg;
       const txt=editor.innerText;
-
-      // グリッドカードと同じサイズ計算 (文字数 + 改行数で fz, lh, clamp を決定)
-      const tlen=txt.length;
-      let idx=noteCardInitialSizeIndex(tlen);
-      while(idx<NOTE_CARD_SIZES.length-1){
-        const s=NOTE_CARD_SIZES[idx];
-        if(estimateNoteLineCount(txt,s.fz)<=s.clamp)break;
-        idx++;
-      }
-      const gridFz=NOTE_CARD_SIZES[idx].fz;
-      const lh=NOTE_CARD_SIZES[idx].lh;
-
-      // 編集領域はグリッドのカード幅(画面幅÷3 ≒ 140px)に対して、画面幅まるごと使う(約430px)
-      // → 約 3倍のスケール。実測ベースで wrap の実寸から動的に倍率を計算する。
-      const wrapW=wrap.clientWidth||300;
-      const gridCardW=140; // グリッドの1セル幅の想定値
-      const scale=wrapW/gridCardW;
-      const previewFz=Math.max(12, Math.round(gridFz*scale));
-      wrap.style.fontSize=previewFz+'px';
-      wrap.style.lineHeight=lh;
-
+      const fz=autoFontSizeDetail(txt);
+      wrap.style.fontSize=fz+'px';
       const align=resolveAlign({text:txt,alignH:c.alignH,alignV:c.alignV});
       // 横揃え: flex 親の align-items + 子の text-align
       wrap.style.alignItems=align.h==='center'?'center':'flex-start';
@@ -5469,8 +4881,6 @@ function renderUpload(){
       wrap.style.justifyContent=align.v==='center'?'center':'flex-start';
     };
     applyStyle();
-    // ウィンドウ幅が変わったとき (回転、PWA起動直後の確定など) にも再計算
-    window.addEventListener('resize',applyStyle);
 
     editor.addEventListener('input',()=>{
       // innerText を使うと <br> や <div> が改行 \n に正しく変換される (textContent では失われる)
@@ -5482,9 +4892,6 @@ function renderUpload(){
     // Enter で改行 (contenteditable のデフォルト挙動は <br> 挿入で OK)
 
     body.appendChild(wrap);
-    // DOM にマウントされた後に再度 applyStyle: wrap.clientWidth が確定するので、
-    // スケール計算 (gridFz × wrap幅/140) が正確になる。最初は仮の値で出ているのを上書き。
-    requestAnimationFrame(applyStyle);
 
     // ─── 揃えツールバー (横揃え / 縦揃え) ───
     // 投稿/編集中にその場で押せて、プレビュー(上のメモ本文)に即反映される。
@@ -5562,30 +4969,13 @@ function renderUpload(){
       const sw=document.createElement('button');
       sw.style.cssText=`flex-shrink:0;width:38px;height:38px;border-radius:50%;background:${col.bg};color:${col.fg};font-size:11px;font-weight:600;border:2px solid ${(c.color||'default')===col.id?'var(--g)':'transparent'};display:flex;align-items:center;justify-content:center;`;
       sw.textContent=col.name;
-      // mousedown を preventDefault することで、入力欄からフォーカスが奪われない。
-      // iOS Safari でも同様に効くので、色変更時にキーボードが閉じない。
-      sw.addEventListener('mousedown',e=>e.preventDefault());
-      sw.addEventListener('touchstart',e=>{/* passive で良い: focus は奪わない */},{passive:true});
       sw.addEventListener('click',()=>{
         state.current.color=col.id;
-        // 編集中だった入力欄を覚えておいて、再構築後に同期 focus で戻す。
-        // (キーボードを開いたまま編集 → 色だけ変える 体験のため)
-        const focused=document.activeElement;
-        const focusedTag=focused && focused.tagName;
-        const wasNoteArea=focused && focused.id==='up-note-area';
-        const selStart=focused && focused.selectionStart;
-        const selEnd=focused && focused.selectionEnd;
         renderUpload();
-        // 再構築直後、同じイベントループ内で focus を戻す (iOS は setTimeout だとダメ)
-        if(wasNoteArea){
+        setTimeout(()=>{
           const t=$('up-note-area');
-          if(t){
-            t.focus();
-            if(selStart!=null && selEnd!=null){
-              try{t.setSelectionRange(selStart,selEnd);}catch(e){}
-            }
-          }
-        }
+          if(t)t.focus();
+        },50);
       });
       colorRow.appendChild(sw);
     });
@@ -5612,10 +5002,11 @@ function renderUpload(){
       const newItem={t:'',mark:inheritMark};
       if(inheritMark==='check')newItem.d=false;
       state.current.items.push(newItem);
-      // Enter キー時と同じく差分追加方式。全体再描画は他の入力欄のフォーカスを奪うので避ける。
-      appendListItemRow(itemsWrap, state.current.items.length-1);
-      const inps=itemsWrap.querySelectorAll('.cl-input');
-      if(inps.length)inps[inps.length-1].focus();
+      renderListItems(itemsWrap);
+      setTimeout(()=>{
+        const inps=itemsWrap.querySelectorAll('.cl-input');
+        if(inps.length)inps[inps.length-1].focus();
+      },50);
     });
     body.appendChild(addBtn);
   }
@@ -5700,14 +5091,10 @@ function appendUploadTagEditor(body){
     input.value='';
     renderChips();
     if(suggestApi)suggestApi.refresh();
-    // 連続でタグを追加できるようフォーカスを保つ
-    input.focus();
   };
   addBtn.addEventListener('click',()=>commit());
   input.addEventListener('keydown',e=>{
     if(e.key==='Enter'){
-      // IME 変換中の Enter は確定操作なので除外
-      if(e.isComposing||e.keyCode===229)return;
       e.preventDefault();
       commit();
     }
@@ -5720,114 +5107,89 @@ function renderListItems(wrap){
   wrap.innerHTML='';
   const items=state.current.items;
   items.forEach((it,i)=>{
-    const row=buildListItemRow(wrap,i);
+    const row=document.createElement('div');
+    const mark=it.mark||'check';
+    const done=it.d===true;
+    row.className='cl-row'+(done && mark==='check'?' done':'');
+    row.dataset.i=i;
+
+    const handle=document.createElement('div');
+    handle.className='cl-handle';
+    handle.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>`;
+    row.appendChild(handle);
+
+    // 記号ボタン (タップで3状態を回す: □ → ☑ → 1. → □)
+    const mk=document.createElement('button');
+    if(mark==='number'){
+      // 番号: リスト内で number 項目の何番目か
+      let num=0;
+      for(let k=0;k<=i;k++){
+        if((items[k].mark||'check')==='number')num++;
+      }
+      mk.className='cl-mark num';
+      mk.textContent=num+'.';
+    }else if(done){
+      mk.className='cl-mark check on';
+      mk.innerHTML=`<span class="chk-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span>`;
+    }else{
+      mk.className='cl-mark check';
+      mk.innerHTML=`<span class="chk-box"></span>`;
+    }
+    mk.addEventListener('click',()=>{
+      const cur=state.current.items[i];
+      const curMark=cur.mark||'check';
+      const curDone=cur.d===true;
+      if(curMark==='check' && !curDone){
+        cur.d=true;
+        cur.mark='check';
+      }else if(curMark==='check' && curDone){
+        cur.mark='number';
+        delete cur.d;
+      }else{
+        cur.mark='check';
+        cur.d=false;
+      }
+      renderListItems(wrap);
+    });
+    row.appendChild(mk);
+
+    const inp=document.createElement('input');
+    inp.className='cl-input'+(done && mark==='check'?' done':'');
+    inp.value=it.t;
+    inp.placeholder='項目';
+    inp.addEventListener('input',e=>{state.current.items[i].t=e.target.value;});
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        // 直前の項目の記号を継承 (リストの見た目を作りやすくする)
+        const prev=state.current.items[state.current.items.length-1];
+        const inheritMark=(prev && prev.mark)?prev.mark:'check';
+        const newItem={t:'',mark:inheritMark};
+        if(inheritMark==='check')newItem.d=false;
+        state.current.items.push(newItem);
+        renderListItems(wrap);
+        setTimeout(()=>{
+          const inps=wrap.querySelectorAll('.cl-input');
+          if(inps.length)inps[inps.length-1].focus();
+        },50);
+      }
+    });
+    row.appendChild(inp);
+
+    const del=document.createElement('button');
+    del.className='cl-del';
+    del.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
+    del.addEventListener('click',()=>{
+      state.current.items.splice(i,1);
+      if(state.current.items.length===0)state.current.items=[{t:'',mark:'check',d:false}];
+      renderListItems(wrap);
+    });
+    row.appendChild(del);
+
     wrap.appendChild(row);
   });
   // ハンドルからのドラッグ並べ替えをセットアップ
   setupListReorder(wrap);
-}
-
-// 末尾に1行だけ追加する (renderListItems 全体を呼ばないので既存 input のフォーカスを奪わない)。
-// Enter キーで次の項目を追加するときに使い、ソフトキーボードを開いたまま新行に focus できる。
-function appendListItemRow(wrap, i){
-  const row=buildListItemRow(wrap,i);
-  wrap.appendChild(row);
-  // 並べ替えハンドラの再セットアップ (新規行のハンドルにも反応させる)
-  setupListReorder(wrap);
-}
-
-// リスト項目1行ぶんの DOM を構築。renderListItems と appendListItemRow の共通化のため分離。
-function buildListItemRow(wrap, i){
-  const items=state.current.items;
-  const it=items[i];
-  const row=document.createElement('div');
-  const mark=it.mark||'check';
-  const done=it.d===true;
-  row.className='cl-row'+(done && mark==='check'?' done':'');
-  row.dataset.i=i;
-
-  const handle=document.createElement('div');
-  handle.className='cl-handle';
-  handle.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>`;
-  row.appendChild(handle);
-
-  // 記号ボタン (タップで3状態を回す: □ → ☑ → 1. → □)
-  const mk=document.createElement('button');
-  if(mark==='number'){
-    // 番号: リスト内で number 項目の何番目か
-    let num=0;
-    for(let k=0;k<=i;k++){
-      if((items[k].mark||'check')==='number')num++;
-    }
-    mk.className='cl-mark num';
-    mk.textContent=num+'.';
-  }else if(done){
-    mk.className='cl-mark check on';
-    mk.innerHTML=`<span class="chk-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span>`;
-  }else{
-    mk.className='cl-mark check';
-    mk.innerHTML=`<span class="chk-box"></span>`;
-  }
-  mk.addEventListener('click',()=>{
-    const cur=state.current.items[i];
-    const curMark=cur.mark||'check';
-    const curDone=cur.d===true;
-    if(curMark==='check' && !curDone){
-      cur.d=true;
-      cur.mark='check';
-    }else if(curMark==='check' && curDone){
-      cur.mark='number';
-      delete cur.d;
-    }else{
-      cur.mark='check';
-      cur.d=false;
-    }
-    renderListItems(wrap);
-  });
-  row.appendChild(mk);
-
-  const inp=document.createElement('input');
-  inp.className='cl-input'+(done && mark==='check'?' done':'');
-  inp.value=it.t;
-  inp.placeholder='項目';
-  inp.addEventListener('input',e=>{state.current.items[i].t=e.target.value;});
-  inp.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){
-      // IME 変換中の Enter は確定操作。新項目を作ってしまうと変換結果を捨てることになる。
-      if(e.isComposing||e.keyCode===229)return;
-      e.preventDefault();
-      // 直前の項目の記号を継承 (リストの見た目を作りやすくする)
-      const prev=state.current.items[state.current.items.length-1];
-      const inheritMark=(prev && prev.mark)?prev.mark:'check';
-      const newItem={t:'',mark:inheritMark};
-      if(inheritMark==='check')newItem.d=false;
-      state.current.items.push(newItem);
-
-      // iOS Safari の制約: ユーザー操作 (keydown ハンドラ) と同じイベントループ内で
-      // 同期的に focus() を呼ばないと、ソフトキーボードが閉じてしまう。
-      // 以前は renderListItems(wrap) で全体を作り直したあと setTimeout で focus を当てていたが、
-      // 別タイマー内の focus は iOS では「キーボードは閉じ、ユーザーがタップするまで待機」になる。
-      //
-      // 解決: 全体再描画ではなく、末尾に新しい行 DOM を直接 append して、その input に
-      //       その場で focus() を呼ぶ。これでキーボードを開いたまま連続入力ができる。
-      appendListItemRow(wrap, state.current.items.length-1);
-      const inps=wrap.querySelectorAll('.cl-input');
-      if(inps.length)inps[inps.length-1].focus();
-    }
-  });
-  row.appendChild(inp);
-
-  const del=document.createElement('button');
-  del.className='cl-del';
-  del.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
-  del.addEventListener('click',()=>{
-    state.current.items.splice(i,1);
-    if(state.current.items.length===0)state.current.items=[{t:'',mark:'check',d:false}];
-    renderListItems(wrap);
-  });
-  row.appendChild(del);
-
-  return row;
 }
 
 // ═══ リスト項目の並べ替え (ハンドルドラッグ) ═══
@@ -6252,66 +5614,6 @@ function chatTimeLabel(ts){
   return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
 }
 
-// ───────── AI返答のマルチバブル分割 ─────────
-// LINE風チャットは1バブルが縦長になると読みづらいので、AI返答を意味のある単位で
-// 複数のバブルに分けて表示する。データは1つの text フィールドのまま保存し、
-// 表示時にここで分割するので、過去メッセージにも自動で適用される。
-//
-// 方針:
-//   1. まず空行 (\n\n+) で大段落分割。AIが意図的に区切った場所を尊重する。
-//   2. 長すぎる段落 (>200字) はさらに「。」「？」「！」のあとの単一改行で分割。
-//   3. 短すぎる隣接バブル (どちらも50字未満) は結合する。吹き出しの細切れを防ぐ。
-//   4. 結果が1つだけならそのまま返す (現状と同じ見た目)。
-// 宿題の長い解説でも、自然な区切りで読める単位になるはず。
-function splitAiReplyToBubbles(text){
-  if(!text)return [''];
-  const s=String(text).trim();
-  if(!s)return [''];
-
-  // Step 1: 空行で大段落に分割
-  let parts=s.split(/\n{2,}/).map(x=>x.trim()).filter(x=>x.length>0);
-
-  // Step 2: 長すぎる段落は文末記号での単一改行を境にさらに分割
-  // (例: 解説のあとの計算過程が改行で連なっているケース)
-  const SOFT_MAX=200;
-  const refined=[];
-  for(const p of parts){
-    if(p.length<=SOFT_MAX){ refined.push(p); continue; }
-    // 「。」「？」「！」直後の改行を分割点に
-    const subs=p.split(/(?<=[。？！\?\!])\n/).map(x=>x.trim()).filter(x=>x.length>0);
-    if(subs.length<=1){
-      // 文末改行で分けられなかったら、そのまま入れる (式の連なりなどはそのままが自然)
-      refined.push(p);
-    }else{
-      // 分割後も短すぎないように、隣接で SOFT_MAX を超えない範囲でまとめ直す
-      let buf='';
-      for(const x of subs){
-        if(buf.length===0){ buf=x; }
-        else if(buf.length+x.length+1<=SOFT_MAX){ buf=buf+'\n'+x; }
-        else{ refined.push(buf); buf=x; }
-      }
-      if(buf)refined.push(buf);
-    }
-  }
-
-  // Step 3: ごく短いバブル同士だけ結合する (両方 25字未満のとき)。
-  // AIが意図して空行で分けた段落は基本そのまま尊重し、「はい」「そうです」のような
-  // 極端に短い吹き出しが連続するときだけ統合する。
-  const MIN_MERGE=25;
-  const merged=[];
-  for(const p of refined){
-    if(merged.length>0){
-      const last=merged[merged.length-1];
-      if(last.length<MIN_MERGE && p.length<MIN_MERGE){
-        merged[merged.length-1]=last+'\n\n'+p;
-        continue;
-      }
-    }
-    merged.push(p);
-  }
-  return merged.length>0?merged:[s];
-}
-
 function renderChatLog(c){
   const log=$('detail-chat-log');
   log.innerHTML='';
@@ -6337,344 +5639,59 @@ function renderChatLog(c){
     div.dataset.midx=idx;
     // pending (AI待ち) のメッセージは、ただの「…」ではなく動くドットで表示する。
     // 反応している実感がないと不安になるため。
-    if(m.pending){
-      div.innerHTML=`
-        <div class="msg-time">${chatTimeLabel(t)}</div>
-        <div class="bubble"><div class="typing-dots" aria-label="返信を考えています"><span></span><span></span><span></span></div></div>
-      `;
-    }else if(isUser){
-      // ユーザー側はそのまま1バブル。リプライ引用があればバブル先頭に小さく挿入する。
-      const quoteHtml=m.replyTo && m.replyTo.text
-        ? `<div class="bubble-quote">${esc(m.replyTo.text.length>60?m.replyTo.text.slice(0,60)+'…':m.replyTo.text)}</div>`
-        : '';
-      div.innerHTML=`
-        <div class="msg-time">${chatTimeLabel(t)}</div>
-        <div class="bubble">${quoteHtml}${linkify(cleanAIText(m.text,m.role))}</div>
-      `;
-    }else{
-      // AI側: 長文なら複数バブルに分割。1バブルなら従来構造を維持。
-      const cleaned=cleanAIText(m.text,m.role);
-      const bubbles=splitAiReplyToBubbles(cleaned);
-      if(bubbles.length<=1){
-        div.innerHTML=`
-          <div class="msg-time">${chatTimeLabel(t)}</div>
-          <div class="bubble">${linkify(cleaned)}</div>
-        `;
-      }else{
-        div.classList.add('multi');
-        const bubblesHtml=bubbles.map(b=>`<div class="bubble">${linkify(b)}</div>`).join('');
-        div.innerHTML=`
-          <div class="msg-bubbles">${bubblesHtml}</div>
-          <div class="msg-time">${chatTimeLabel(t)}</div>
-        `;
-      }
-    }
+    const bubbleHtml=m.pending
+      ? `<div class="bubble"><div class="typing-dots" aria-label="返信を考えています"><span></span><span></span><span></span></div></div>`
+      : `<div class="bubble">${linkify(cleanAIText(m.text,m.role))}</div>`;
+    div.innerHTML=`
+      <div class="msg-time">${chatTimeLabel(t)}</div>
+      ${bubbleHtml}
+    `;
     log.appendChild(div);
 
-    // 各バブルに長押しメニューを付ける (ユーザー側もAI側も)。
-    // メニューの「削除」可否はメッセージ役割で判定 (削除はメッセージ単位)。
-    div.querySelectorAll('.bubble').forEach(bub=>attachBubbleLongPress(bub,c.id,idx,m.role));
+    // ユーザー側(自分が送ったもの)は長押しで取り消し
+    if(isUser)attachBubbleLongPress(div,c.id,idx);
   });
 }
 
-// ───────── バブル長押しメニュー ─────────
-// 対象バブル情報を一時的に保持する。シートを閉じるとクリアする。
-// shape: { cardId, msgIdx, role, text, bubbleEl } または null
-let bubbleMenuTarget=null;
-
-// バブル長押しでアクションシートを開く。
-// LINE風に: コピー / 部分コピー / リプライ / 削除 を提供。
-// 長押しは bubble 単位 (.bubble) に付ける。マルチバブルでも対象を確実に特定するため。
-function attachBubbleLongPress(bubEl,cardId,msgIdx,role){
+// バブル長押しで「取り消し」メニューを出す
+function attachBubbleLongPress(msgEl,cardId,msgIdx){
   let pressTimer=null,startX=0,startY=0,moved=false;
   const xy=ev=>ev.touches?[ev.touches[0].clientX,ev.touches[0].clientY]:[ev.clientX,ev.clientY];
   const onStart=ev=>{
-    // 部分コピー(選択モード)中のバブルでは長押しを横取りしない (テキスト選択を妨げない)
-    if(bubEl.classList.contains('selecting'))return;
     [startX,startY]=xy(ev);
     moved=false;
-    bubEl.classList.add('pressing');
     pressTimer=setTimeout(()=>{
       if(moved)return;
       if(navigator.vibrate)navigator.vibrate(20);
-      openBubbleMenu(bubEl,cardId,msgIdx,role);
-    },500);
+      showUnsendConfirm(cardId,msgIdx);
+    },550);
   };
   const onMove=ev=>{
     const [x,y]=xy(ev);
-    if(Math.abs(x-startX)>8 || Math.abs(y-startY)>8){
-      moved=true;
-      clearTimeout(pressTimer);
-      bubEl.classList.remove('pressing');
-    }
+    if(Math.abs(x-startX)>8 || Math.abs(y-startY)>8){moved=true;clearTimeout(pressTimer);}
   };
-  const onEnd=()=>{
-    clearTimeout(pressTimer);
-    bubEl.classList.remove('pressing');
-  };
-  bubEl.addEventListener('touchstart',onStart,{passive:true});
-  bubEl.addEventListener('touchmove',onMove,{passive:true});
-  bubEl.addEventListener('touchend',onEnd);
-  bubEl.addEventListener('touchcancel',onEnd);
-  bubEl.addEventListener('mousedown',onStart);
-  bubEl.addEventListener('mousemove',onMove);
-  bubEl.addEventListener('mouseup',onEnd);
-  bubEl.addEventListener('mouseleave',onEnd);
+  const onEnd=()=>{clearTimeout(pressTimer);};
+  msgEl.addEventListener('touchstart',onStart,{passive:true});
+  msgEl.addEventListener('touchmove',onMove,{passive:true});
+  msgEl.addEventListener('touchend',onEnd);
+  msgEl.addEventListener('touchcancel',onEnd);
+  msgEl.addEventListener('mousedown',onStart);
+  msgEl.addEventListener('mousemove',onMove);
+  msgEl.addEventListener('mouseup',onEnd);
 }
 
-// バブルメニュー(ポップオーバー)を開く: 対象を記録 + バブル付近に配置 + 誤クローズガード。
-// role が memo/user の自分発言ではリプライは出さない (AIへの返信ではないため)。
-function openBubbleMenu(bubEl,cardId,msgIdx,role){
-  // バブルから「表示中のテキスト」を取得 (innerText で改行も維持される)
-  // ただしリプライ引用 (.bubble-quote) があれば本文だけ抜く。
-  let text='';
-  const quoteEl=bubEl.querySelector('.bubble-quote');
-  if(quoteEl){
-    // .bubble-quote 以外のテキストを連結
-    bubEl.childNodes.forEach(n=>{
-      if(n.nodeType===3) text+=n.textContent;
-      else if(n.nodeType===1 && !n.classList.contains('bubble-quote')) text+=n.innerText||n.textContent;
-    });
-    text=text.trim();
-  }else{
-    text=bubEl.innerText||'';
-  }
-  bubbleMenuTarget={cardId,msgIdx,role,text,bubbleEl:bubEl};
-
-  // リプライ項目はAI発言だけ表示
-  const replyBtn=$('bubble-popover-reply');
-  if(replyBtn){
-    replyBtn.classList.toggle('hide', role!=='ai');
-  }
-
-  const pop=$('bubble-popover');
-  const mask=$('bubble-popover-mask');
-  if(!pop||!mask)return;
-
-  // ポップオーバーは display:flex のまま visibility:hidden で隠れている。
-  // getBoundingClientRect は正しく寸法を返すので、位置を決めてから .on を付ければ
-  // 画面に出る瞬間には既に正しい位置にいる。
-  const app=document.querySelector('.app');
-  const appRect=app.getBoundingClientRect();
-  const bubRect=bubEl.getBoundingClientRect();
-  const popRect=pop.getBoundingClientRect();
-
-  // X: バブルの中央に揃える。ただし画面端から 8px は余白を確保
-  let x = bubRect.left + bubRect.width/2 - popRect.width/2 - appRect.left;
-  const margin=8;
-  const maxX=appRect.width-popRect.width-margin;
-  if(x<margin)x=margin;
-  if(x>maxX)x=maxX;
-
-  // Y: バブルの上に置く。上側にスペースが足りなければ下に。
-  const gap=8;
-  let y = bubRect.top - popRect.height - gap - appRect.top;
-  if(y < 8){
-    // 上に入らない → バブルの下
-    y = bubRect.bottom - appRect.top + gap;
-  }
-  pop.style.left=x+'px';
-  pop.style.top=y+'px';
-  pop.classList.add('on');
-
-  // 誤クローズ防止: メニューを開いた直後に touchend → click が走ると即閉じる事故が起きる。
-  // 300ms はマスククリックでも閉じないようにロックする。
-  mask.classList.add('on');
-  bubbleMenuOpenedAt=Date.now();
-}
-
-// マスクのタップで閉じる。ただし開いた直後のロック時間内は無視する。
-function bubbleMenuMaskTap(){
-  if(Date.now()-bubbleMenuOpenedAt < 300)return;
-  closeBubbleMenu();
-}
-let bubbleMenuOpenedAt=0;
-
-function closeBubbleMenu(){
-  const pop=$('bubble-popover');
-  const mask=$('bubble-popover-mask');
-  if(pop)pop.classList.remove('on');
-  if(mask)mask.classList.remove('on');
-  // target はアクション関数で使うので、ここでは即クリアしない。
-}
-
-// コピー: バブル全体のテキストをクリップボードへ
-async function bubbleCopy(){
-  const t=bubbleMenuTarget;
-  closeBubbleMenu();
-  if(!t)return;
-  try{
-    await navigator.clipboard.writeText(t.text);
-    toast('コピーしました');
-  }catch(e){
-    // 古い環境用フォールバック
-    const ta=document.createElement('textarea');
-    ta.value=t.text;ta.style.position='fixed';ta.style.opacity='0';
-    document.body.appendChild(ta);ta.select();
-    try{document.execCommand('copy');toast('コピーしました');}
-    catch(e2){toast('コピーに失敗しました');}
-    document.body.removeChild(ta);
-  }
-}
-
-// 部分コピー: バブル全体を選択した状態にして、ネイティブの選択ハンドル+コピー
-// ツールバーを表示する。ユーザーはそこから範囲を狭めて自由にコピーできる。
-// LINEと同じ挙動: 最初は全文選択 → 必要なら手で範囲を縮める → 上のメニューでコピー。
-let selectingBubbleEl=null;
-function bubbleSelect(){
-  const t=bubbleMenuTarget;
-  closeBubbleMenu();
-  if(!t || !t.bubbleEl)return;
-  // 既に選択中のバブルがあれば解除
-  if(selectingBubbleEl && selectingBubbleEl!==t.bubbleEl){
-    selectingBubbleEl.classList.remove('selecting');
-  }
-  const bubEl=t.bubbleEl;
-  bubEl.classList.add('selecting');
-  selectingBubbleEl=bubEl;
-
-  // バブル全体を選択範囲にする。リプライ引用 (.bubble-quote) がある場合は
-  // 本文部分だけを選択範囲に含める (引用はユーザーが書いた本文ではないので)。
-  // iOS では選択直後にツールバー(コピー/共有)が自動で表示される。
-  // 即時実行だとブラウザの選択状態リセットと競合することがあるので、
-  // 短いディレイを置いて確実に選択状態を確定させる。
-  setTimeout(()=>{
-    if(!selectingBubbleEl || selectingBubbleEl!==bubEl)return;
-    try{
-      const sel=window.getSelection();
-      if(!sel)return;
-      sel.removeAllRanges();
-      const range=document.createRange();
-      const quoteEl=bubEl.querySelector('.bubble-quote');
-      if(quoteEl){
-        // 引用ブロックの後ろから、バブルの末尾までを選択
-        range.setStartAfter(quoteEl);
-        range.setEndAfter(bubEl.lastChild);
-      }else{
-        range.selectNodeContents(bubEl);
-      }
-      sel.addRange(range);
-    }catch(e){
-      // 何か失敗してもユーザー操作で選択できる状態にはあるので致命的ではない
-      console.warn('bubbleSelect: failed to set selection range',e);
-    }
-  },30);
-
-  // クリーンアップ用の自動解除リスナー: 別の場所をタップしたら選択モード抜ける。
-  // ただし上に出るネイティブの選択ツールバー(iOS の "コピー" バー) はタップ可能のままにしたいので、
-  // バブル自身に対する操作以外でも、選択範囲が空になった時にも解除するように。
-  setTimeout(()=>{
-    const onAnywhere=ev=>{
-      if(!selectingBubbleEl)return;
-      // 選択中バブル自身のタップは無視 (選択操作の邪魔をしない)
-      if(selectingBubbleEl.contains(ev.target))return;
-      selectingBubbleEl.classList.remove('selecting');
-      selectingBubbleEl=null;
-      // 選択範囲もクリア (画面に残ると気持ち悪い)
-      const sel=window.getSelection();
-      if(sel)sel.removeAllRanges();
-      document.removeEventListener('mousedown',onAnywhere,true);
-      document.removeEventListener('touchstart',onAnywhere,true);
-    };
-    document.addEventListener('mousedown',onAnywhere,true);
-    document.addEventListener('touchstart',onAnywhere,true);
-  },80);
-}
-
-// 削除: メッセージ単位で deleted フラグを立てる。マルチバブルでも一括削除 (LINEと同じ)。
-async function bubbleDelete(){
-  const t=bubbleMenuTarget;
-  closeBubbleMenu();
-  if(!t)return;
-  const ok=await confirmDialog({
-    title:'このメッセージを取り消しますか?',
-    ok:'取り消す',
-    danger:true,
-  });
-  if(!ok)return;
-  const cIdx=state.cards.findIndex(x=>x.id===t.cardId);
+function showUnsendConfirm(cardId,msgIdx){
+  if(!confirm('このメッセージを取り消しますか?'))return;
+  const cIdx=state.cards.findIndex(x=>x.id===cardId);
   if(cIdx<0)return;
   const c=state.cards[cIdx];
+  // 旧aiLog形式を新chat形式に変換
   if(!c.chat){c.chat=getChatMessages(c);delete c.aiLog;}
-  if(!c.chat[t.msgIdx])return;
-  c.chat[t.msgIdx].deleted=true;
+  if(!c.chat[msgIdx])return;
+  c.chat[msgIdx].deleted=true;
   save();
   state.current=Object.assign({},c,{_origin:state.current._origin});
   renderChatLog(c);
-}
-
-// リプライ: 入力欄上の引用バーにバブルテキストを表示し、送信時に文脈として添える。
-// state.replyTo に {text, msgIdx} を保持する。送信後にクリア。
-function bubbleReply(){
-  const t=bubbleMenuTarget;
-  closeBubbleMenu();
-  if(!t)return;
-  state.replyTo={text:t.text,msgIdx:t.msgIdx};
-  showReplyBar(t.text);
-  // リプライした瞬間に AI モードに自動切替 (リプライは AI への追加質問が主用途)
-  if(!state.detailAiMode && t.role==='ai'){
-    state.detailAiMode=true;
-    $('detail-ai-toggle').classList.add('on');
-    $('detail-input').placeholder='AIに質問して送信…';
-  }
-  $('detail-input').focus();
-}
-
-function showReplyBar(text){
-  const bar=$('reply-bar');
-  const tx=$('reply-bar-text');
-  if(!bar||!tx)return;
-  // 引用は短く表示する (頭から80字)
-  const snippet=text.length>80?text.slice(0,80)+'…':text;
-  tx.innerHTML=`<b>返信中</b>${esc(snippet)}`;
-  bar.classList.add('on');
-}
-function hideReplyBar(){
-  state.replyTo=null;
-  const bar=$('reply-bar');
-  if(bar)bar.classList.remove('on');
-}
-function cancelReply(){
-  hideReplyBar();
-}
-
-// ───────── ここまで バブル長押しメニュー ─────────
-
-// 詳細画面の note プレビュー (正方形カード) のフォントサイズを動的計算する。
-// グリッド・編集画面と完全に同じレイアウトロジックを使い、wrap の実寸でスケール。
-// requestAnimationFrame で実行することで、innerHTML 直後でも clientWidth が確定する。
-// 文字数 + 改行で fz を決め、グリッド140px → wrap実寸 の比率を掛けてスケール。
-// 詳細は「拡大表示」なので、最低フォントは 18px を下限とする (読みやすさのため)。
-let detailNoteResizeAttached=false;
-function applyDetailNoteStyle(){
-  const el=document.querySelector('.detail-note-card');
-  if(!el)return;
-  requestAnimationFrame(()=>{
-    const text=el.dataset.text||'';
-    const tlen=text.length;
-    // グリッドと同じ size 階段でフォント選定
-    let idx=noteCardInitialSizeIndex(tlen);
-    while(idx<NOTE_CARD_SIZES.length-1){
-      const s=NOTE_CARD_SIZES[idx];
-      if(estimateNoteLineCount(text,s.fz)<=s.clamp)break;
-      idx++;
-    }
-    const gridFz=NOTE_CARD_SIZES[idx].fz;
-    const lh=NOTE_CARD_SIZES[idx].lh;
-    // wrap 実寸 / グリッドカード幅 でスケール
-    const wrapW=el.clientWidth||300;
-    const gridCardW=140;
-    const scale=wrapW/gridCardW;
-    // 詳細は拡大プレビューなので最低フォントを 18px に底上げ (グリッドの fz=7 でも 18px は確保)
-    const previewFz=Math.max(18, Math.round(gridFz*scale));
-    el.style.fontSize=previewFz+'px';
-    el.style.lineHeight=lh;
-  });
-  // リサイズ時にも追従 (1回だけ登録)
-  if(!detailNoteResizeAttached){
-    detailNoteResizeAttached=true;
-    window.addEventListener('resize',applyDetailNoteStyle);
-  }
 }
 
 function openDetail(c,origin){
@@ -6704,18 +5721,16 @@ function openDetail(c,origin){
   }
   if(c.type==='note' || ((c.type==='photo'||c.type==='photonote') && c.text)){
     if(c.type==='note'){
-      // 詳細画面のメモ表示も、グリッド・編集画面と「同じ正方形プレビュー」にする。
-      // - 画面幅まるごとを使う正方形 (aspect-ratio:1)
-      // - フォントサイズはグリッドカードの計算ロジックを使い、画面幅/140 でスケール
-      // - 結果として、3画面 (グリッド/編集/詳細) で改行位置・行数が完全に一致する
-      // 詳細では JS でスケール計算するため、骨格だけ HTML に埋め、後で applyDetailNoteStyle で完成させる。
       const col=colorById(c.color);
+      const fz=autoFontSizeDetail(c.text||'');
       const align=resolveAlign(c);
-      let style=`background:${col.bg};color:${col.fg};width:100%;aspect-ratio:1;padding:7%;border-radius:12px;line-height:1.5;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;`;
+      // 詳細画面は十分に高さがあるので、揃え設定をストレートに反映できる。
+      // min-height を設けて、縦中央寄せが効くようにする。
+      const padding=fz>=24?'40px 24px':'24px 20px';
+      let style=`background:${col.bg};color:${col.fg};font-size:${fz}px;padding:${padding};border-radius:12px;line-height:1.5;min-height:240px;display:flex;flex-direction:column;`;
       style+=align.h==='center'?'align-items:center;text-align:center;':'align-items:flex-start;text-align:left;';
       style+=align.v==='center'?'justify-content:center;':'justify-content:flex-start;';
-      // data-* に元テキストを持たせて、後で applyDetailNoteStyle がスケール計算に使う
-      contentHtml=`<div class="detail-text detail-note-card" data-text="${esc(c.text||'')}" style="${style}">${linkify(c.text||'')}</div>`;
+      contentHtml=`<div class="detail-text" style="${style}">${linkify(c.text||'')}</div>`;
     }else{
       contentHtml=`<div class="detail-text">${linkify(c.text||'')}</div>`;
     }
@@ -6787,16 +5802,10 @@ function openDetail(c,origin){
   $('detail-content').innerHTML=contentHtml;
   $('detail-chat-log').innerHTML='';
 
-  // 正方形プレビューのフォントサイズ計算: マウント後に実寸が確定するので
-  // requestAnimationFrame で次フレームに測る。リサイズにも追従。
-  applyDetailNoteStyle();
-
   // チャット(AI会話 + 追記メモ)を時系列表示
   renderChatLog(c);
 
   // リスト項目クリック (自分の棚のみ、check モードの項目のみ)
-  // 全画面再描画を避け、該当行の DOM だけを書き換える。これでスクロール位置・
-  // タグ入力中のフォーカス・チャットログの状態がすべて維持される。
   if(!isOfficial){
     $('detail-content').querySelectorAll('.detail-list-item').forEach(el=>{
       el.addEventListener('click',()=>{
@@ -6805,23 +5814,13 @@ function openDetail(c,origin){
         if(!it)return;
         // 番号項目はチェック動作なし (装飾のみ)
         if((it.mark||'check')==='number')return;
-        // モデル更新
         state.current.items[idx].d=!state.current.items[idx].d;
-        const newDone=state.current.items[idx].d===true;
         const i=state.cards.findIndex(x=>x.id===state.current.id);
         if(i>=0){
           state.cards[i].items=state.current.items;
           save();
         }
-        // DOMだけ差分更新: .done クラスとチェックマークSVG
-        el.classList.toggle('done',newDone);
-        const chk=el.querySelector('.chk');
-        if(chk){
-          chk.classList.toggle('on',newDone);
-          chk.innerHTML=newDone
-            ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4L19 7"/></svg>'
-            : '';
-        }
+        openDetail(state.cards[i],'mine');
       });
     });
   }
@@ -6832,8 +5831,6 @@ function openDetail(c,origin){
   $('detail-input').style.height='auto';
   $('detail-ai-toggle').classList.remove('on');
   $('detail-input-send').style.background='var(--g)';
-  // リプライ中だったら解除 (別カードを開いた時点で引用は無効)
-  hideReplyBar();
 
   // ピン留めメニューの表示・ラベル更新
   const pinBtn=$('menu-pin-btn');
@@ -6951,18 +5948,12 @@ async function detailSend(){
   }
 
   if(state.detailAiMode){
-    // AIに質問。リプライ中なら対象テキストを引用として記録&AI入力にも添える。
-    const reply=state.replyTo;
+    // AIに質問
     const userMsg={role:'user',text:v,t:Date.now()};
-    if(reply && reply.text){
-      // 表示・将来の参照用に対象テキストを保存 (短縮はせず原文を持つ)
-      userMsg.replyTo={text:reply.text,msgIdx:reply.msgIdx};
-    }
     c.chat.push(userMsg);
     save();
     inp.value='';
     inp.style.height='auto';
-    hideReplyBar();
     renderChatLog(c);
 
     // 「…」のプレースホルダーを追加
@@ -6971,14 +5962,8 @@ async function detailSend(){
     renderChatLog(c);
     $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
 
-    // AI に渡すテキスト: リプライがあれば「対象 → 質問」の形にして文脈を明示する。
-    // LINEの引用と同じ感覚で、AI が「どこに対する質問か」を把握できるようにする。
-    const apiText=reply && reply.text
-      ? `[このメッセージへの返信]\n> ${reply.text.replace(/\n/g,'\n> ')}\n\n${v}`
-      : v;
-
     try{
-      const answer=await callAI(apiText,c);
+      const answer=await callAI(v,c);
       const cIdx2=state.cards.findIndex(x=>x.id===state.current.id);
       if(cIdx2>=0){
         const c2=state.cards[cIdx2];
@@ -6988,9 +5973,7 @@ async function detailSend(){
           c2.chat.push({role:'ai',text:answer,t:Date.now()});
         }
         save();
-        // 受け取った直後だけ「時間差マルチバブル」アニメーション。
-        // 完了後、または別画面に遷移したら最終的に renderChatLog で整合させる。
-        await animateNewAiReply(c2,placeholderIdx);
+        renderChatLog(c2);
       }
       $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
     }catch(e){
@@ -7012,110 +5995,8 @@ async function detailSend(){
     inp.style.height='auto';
     renderChatLog(c);
     $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
-    // 連続入力できるようにフォーカスを維持 (LINEで送信後も入力欄が active なのと同じ)
-    inp.focus();
   }
 }
-
-// 新着のAI返答だけ、バブルを1つずつ時間差で出す。
-// データはすでに c.chat[placeholderIdx] に1つの text として保存されているので、
-// ここでは表示だけを段階的に行い、最後に renderChatLog で確定状態に揃える。
-//
-// 設計:
-//   - バブル間の待ち時間は短め (LINEで連投される感覚に近く、待たせない)
-//   - 直前バブルの文字数で待ち時間を緩めに変える: 長いバブルの直後は少しだけ長く
-//   - バブルとバブルの間にはタイピングドットを差し込んで「次が来る」予告にする
-//   - 既存メッセージ(履歴)の再描画には適用しない (即時表示)
-//   - ユーザーが画面を離れたら途中で打ち切って一気に確定
-async function animateNewAiReply(card,placeholderIdx){
-  const scroller=$('detail-scroll');
-  const log=$('detail-chat-log');
-  if(!log)return;
-  const msg=card.chat && card.chat[placeholderIdx];
-  if(!msg){renderChatLog(card);return;}
-  const cleaned=cleanAIText(msg.text,msg.role);
-  const bubbles=splitAiReplyToBubbles(cleaned);
-
-  // バブルが1個しかないなら従来通り即時表示で十分
-  if(bubbles.length<=1){renderChatLog(card);return;}
-
-  // 詳細画面から離れていた場合は何もしない
-  if(!document.body.contains(log))return;
-  // pending(typing-dotsだけ入っていた行)を直接書き換えて、最初のバブルを即座に出す。
-  // ここで renderChatLog を呼ぶと一瞬全バブルが描画されてから上書きになるので、
-  // チラつき防止のため pending行のDOMだけをピンポイントで差し替える。
-  const msgEl=log.querySelector(`.msg[data-midx="${placeholderIdx}"]`);
-  if(!msgEl){renderChatLog(card);return;}
-
-  // msgEl の中身を「マルチ初期状態」に置き換える:
-  //   .msg-bubbles の中に [最初のバブル, ドットバブル] を入れる
-  //   .msg-time は最初は空 (時刻はバブルが全部出てから表示)
-  // ドットバブルを次のバブルの代わりに置くことで、LINE のように
-  // 「次の吹き出しが書かれている最中」感を出せる。
-  msgEl.className='msg a multi';
-  msgEl.innerHTML=`
-    <div class="msg-bubbles">
-      <div class="bubble anim">${linkify(bubbles[0])}</div>
-      <div class="bubble dots" aria-label="続きを書いています"><div class="typing-dots"><span></span><span></span><span></span></div></div>
-    </div>
-    <div class="msg-time"></div>
-  `;
-  scroller.scrollTop=scroller.scrollHeight;
-
-  const bubblesEl=msgEl.querySelector('.msg-bubbles');
-  const timeEl=msgEl.querySelector('.msg-time');
-  // 最初のバブルに長押しメニューを付ける
-  const firstBubEl=bubblesEl.querySelector('.bubble:not(.dots)');
-  if(firstBubEl)attachBubbleLongPress(firstBubEl,card.id,placeholderIdx,'ai');
-
-  // 表示中に画面が離れたら中断 (DOMから切り離されるか、card.id が変わる)
-  const stillVisible=()=>document.body.contains(msgEl) && state.current && state.current.id===card.id;
-
-  for(let i=1;i<bubbles.length;i++){
-    // 前バブルの文字数と改行数から「読みかけタイミング」を見積もって待つ。
-    // 設計の意図:
-    //   - 短いバブルでは待たせず軽快に次へ
-    //   - 長いバブルでは内容を目で追う時間を確保
-    //   - 「読み終わるまで待つ」のは長すぎる: 全文の3割程度を読んだあたりで
-    //     次のバブルが現れると、視線が自然に次へ移って結果的に全部読まれる
-    // 計算: 中学生の日本語黙読は 1秒あたり 8字くらい → 1字 125ms。
-    //       その30%相当 = 1字 38ms を採用。
-    //       改行ごとに視線移動コスト 150ms、ベースのドット表示時間 500ms。
-    //       下限 700ms (短文用)、上限 4500ms (極端な長文で待たせ過ぎない)。
-    const prev=bubbles[i-1];
-    const charCost=prev.length*38;
-    const lineCost=(prev.match(/\n/g)||[]).length*150;
-    const wait=Math.max(700, Math.min(4500, charCost+lineCost+500));
-    await sleep(wait);
-    if(!stillVisible()){renderChatLog(card);return;}
-    // ドットバブルを取り外して、新バブルを追加し、ドットを末尾に戻す。
-    // これで「ドットの位置 = 次に出るバブルの位置」が常に保たれる。
-    const dotsEl=bubblesEl.querySelector('.bubble.dots');
-    if(dotsEl)dotsEl.remove();
-    const next=document.createElement('div');
-    next.className='bubble anim';
-    next.innerHTML=linkify(bubbles[i]);
-    bubblesEl.appendChild(next);
-    // 追加バブルにも長押しメニュー
-    attachBubbleLongPress(next,card.id,placeholderIdx,'ai');
-    // まだ次のバブルがある場合だけ、ドットバブルを末尾に戻す
-    if(i<bubbles.length-1 && dotsEl){
-      bubblesEl.appendChild(dotsEl);
-    }
-    scroller.scrollTop=scroller.scrollHeight;
-  }
-
-  // 全部出し終わったら、時刻を表示する (ドットバブルはもう外している)
-  if(stillVisible() && timeEl){
-    timeEl.textContent=chatTimeLabel(msg.t||Date.now());
-  }
-  // 念のため最後に再描画して確定状態に揃える (next openDetail などとも整合)
-  // ただし anim クラスが再アニメーションすると煩いので、最後の renderChatLog は省略してOK。
-  // (次に詳細画面を開いたときに renderChatLog が呼ばれるので、そこで自然に揃う)
-}
-
-// 単純なスリープ
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 // AI API呼び出し (本番: Vercel等のサーバレス関数を経由、デモ: ローカル応答)
 const AI_ENDPOINT='/api/chat'; // 本番ではここをサーバレス関数のURLに
@@ -7202,16 +6083,10 @@ function editCard(){
   goto('screen-upload');
 }
 
-async function deleteCard(){
+function deleteCard(){
   $('detail-menu').classList.remove('on');
   if(state.current._origin==='official'){toast('公式メモは削除できません');return;}
-  const ok=await confirmDialog({
-    title:'このメモを捨てますか?',
-    body:'7日間は「探す」ページの「捨てたメモ」から戻せます。\nその後、完全に消えます。',
-    ok:'捨てる',
-    danger:true,
-  });
-  if(!ok)return;
+  if(!confirm('このメモを捨てますか?\n\n7日間は探すページの「捨てたメモ」から戻せます。\nその後、完全に消えます。'))return;
   const id=state.current.id;
   const idx=state.cards.findIndex(x=>x.id===id);
   if(idx<0)return;
@@ -7269,13 +6144,7 @@ async function purgeOne(id){
 async function emptyTrash(){
   const trashed=state.cards.filter(isTrashedCard);
   if(trashed.length===0)return;
-  const ok=await confirmDialog({
-    title:`捨てたメモ ${trashed.length}件を完全に削除しますか?`,
-    body:'この操作は取り消せません。',
-    ok:'完全に削除',
-    danger:true,
-  });
-  if(!ok)return;
+  if(!confirm(`捨てたメモ ${trashed.length}件 を完全に削除しますか?\nこの操作は取り消せません。`))return;
   for(const c of trashed){
     if(c.id){try{await imgDB.delete(c.id);}catch(e){/* ignore */}}
   }
@@ -7296,9 +6165,15 @@ function binRowHtml(c,kind){
     thumb=`<img src="${c.image}" alt="">`;
   }else if(c.type==='note'){
     const col=colorById(c.color);
-    thumb=`<div style="background:${col.bg};width:100%;height:100%;padding:4px 5px;color:${col.fg};font-size:9px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;">${esc((c.text||'').slice(0,50))}</div>`;
+    // 改行や空白をまとめて1行化し、12文字に切る (48pxサムネ枠に詰めると不格好な為)
+    const flat=(c.text||'').replace(/\s+/g,' ').trim();
+    const snippet=flat.length>12?flat.slice(0,12)+'…':flat;
+    thumb=`<div style="background:${col.bg};width:100%;height:100%;padding:5px 6px;color:${col.fg};font-size:10px;line-height:1.25;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;word-break:break-word;">${esc(snippet||'メモ')}</div>`;
   }else if(c.type==='list'){
-    thumb=`<div style="background:#F4F8F3;width:100%;height:100%;padding:5px 6px;font-size:9px;line-height:1.25;overflow:hidden;"><div style="font-weight:600;color:var(--gd);">${esc(c.title||'リスト')}</div><div style="color:var(--ink2);margin-top:2px;">${(c.items||[]).length}項目</div></div>`;
+    // タイトルが長すぎる場合に備えて短縮
+    const t=(c.title||'リスト').replace(/\s+/g,' ').trim();
+    const title=t.length>5?t.slice(0,5)+'…':t;
+    thumb=`<div style="background:#F4F8F3;width:100%;height:100%;padding:5px 6px;font-size:10px;line-height:1.25;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;"><div style="font-weight:600;color:var(--gd);">${esc(title)}</div><div style="color:var(--ink2);font-size:9px;margin-top:1px;">${(c.items||[]).length}項目</div></div>`;
   }else{
     thumb='<div style="background:var(--bg);width:100%;height:100%;"></div>';
   }
@@ -7315,11 +6190,11 @@ function binRowHtml(c,kind){
     const elapsed=Date.now()-(c.deletedAt||0);
     const left=Math.max(0,Math.ceil((TRASH_RETENTION_MS-elapsed)/(24*60*60*1000)));
     const ago=Math.floor(elapsed/(24*60*60*1000));
-    meta=`${ago===0?'今日':ago+'日前'}に捨てた<span class="bin-days-left"> ・ あと${left}日</span>`;
+    meta=`${ago===0?'今日':ago+'日前に'}捨てた<span class="bin-days-left"> ・ あと${left}日</span>`;
   }else{
     const elapsed=Date.now()-(c.archivedAt||0);
     const ago=Math.floor(elapsed/(24*60*60*1000));
-    meta=`${ago===0?'今日':ago+'日前'}にリストから外した`;
+    meta=`${ago===0?'今日':ago+'日前に'}リストから外した`;
   }
 
   // 操作ボタン
@@ -7388,13 +6263,7 @@ function trashFromArchive(id){
 
 // 完全削除 (確認付き)
 async function purgeOneConfirm(id){
-  const ok=await confirmDialog({
-    title:'このメモを完全に削除しますか?',
-    body:'この操作は取り消せません。',
-    ok:'完全に削除',
-    danger:true,
-  });
-  if(!ok)return;
+  if(!confirm('このメモを完全に削除しますか?\nこの操作は取り消せません。'))return;
   await purgeOne(id);
   renderTrashScreen();
 }
@@ -8524,62 +7393,6 @@ function toast(msg){
   toastT=setTimeout(()=>t.classList.remove('on'),1800);
 }
 
-// SnapIn 内の確認ダイアログ。ネイティブ confirm() の代わり。
-//   const ok = await confirmDialog({title, body, ok, cancel, danger});
-// title だけ必須、それ以外は省略可。danger:true で OK ボタンを赤に。
-// マスクタップ、キャンセル、Escキーで false。
-let confirmResolver=null;
-function confirmDialog(opts){
-  const o=typeof opts==='string'?{title:opts}:(opts||{});
-  return new Promise(resolve=>{
-    // 前のダイアログが残っていたら false で潰してから開く
-    if(confirmResolver){
-      try{confirmResolver(false);}catch(e){}
-      confirmResolver=null;
-    }
-    const titleEl=$('confirm-title');
-    const bodyEl=$('confirm-body');
-    const okBtn=$('confirm-ok');
-    const cancelBtn=$('confirm-cancel');
-    const mask=$('confirm-mask');
-    const card=$('confirm-card');
-    if(!titleEl||!bodyEl||!okBtn||!cancelBtn||!mask||!card){
-      // フォールバック: 何かおかしければネイティブで
-      resolve(window.confirm(o.title+(o.body?'\n\n'+o.body:'')));
-      return;
-    }
-    titleEl.textContent=o.title||'';
-    bodyEl.textContent=o.body||'';
-    bodyEl.style.display=o.body?'':'none';
-    okBtn.textContent=o.ok||'OK';
-    cancelBtn.textContent=o.cancel||'キャンセル';
-    okBtn.className='confirm-btn '+(o.danger?'danger':'primary');
-    mask.classList.add('on');
-    card.classList.add('on');
-    card.setAttribute('aria-hidden','false');
-
-    const close=(val)=>{
-      mask.classList.remove('on');
-      card.classList.remove('on');
-      card.setAttribute('aria-hidden','true');
-      okBtn.removeEventListener('click',onOk);
-      cancelBtn.removeEventListener('click',onCancel);
-      mask.removeEventListener('click',onCancel);
-      document.removeEventListener('keydown',onKey);
-      confirmResolver=null;
-      resolve(val);
-    };
-    const onOk=()=>close(true);
-    const onCancel=()=>close(false);
-    const onKey=e=>{if(e.key==='Escape')close(false); if(e.key==='Enter')close(true);};
-    okBtn.addEventListener('click',onOk);
-    cancelBtn.addEventListener('click',onCancel);
-    mask.addEventListener('click',onCancel);
-    document.addEventListener('keydown',onKey);
-    confirmResolver=close;
-  });
-}
-
 // 保存成功時の大きなチェックマーク。ボタン上の小さなチェックと併用して、
 // 「保存された感」を絶対に見落とさないようにする。
 let saveOkT=null;
@@ -8698,13 +7511,6 @@ document.addEventListener('click',e=>{
     case 'archive-selected':archiveSelected();break;
     case 'toggle-past-more':state.pastMoreOpen=!state.pastMoreOpen;renderToday();break;
     case 'goto-library-from-home':goto('screen-library');break;
-    case 'bubble-copy':bubbleCopy();break;
-    case 'bubble-select':bubbleSelect();break;
-    case 'bubble-reply':bubbleReply();break;
-    case 'bubble-delete':bubbleDelete();break;
-    case 'cancel-reply':cancelReply();break;
-    case 'pwa-later':pwaLater();break;
-    case 'pwa-install':pwaInstall();break;
   }
 });
 
@@ -8750,8 +7556,6 @@ $('search-q').addEventListener('input',doSearch);
 $('quick-input').addEventListener('input',onQuickInput);
 $('quick-input').addEventListener('keydown',e=>{
   if(e.key==='Enter' && !e.shiftKey){
-    // IME 変換中の Enter は確定操作なので除外
-    if(e.isComposing||e.keyCode===229)return;
     e.preventDefault();
     quickSave();
   }
@@ -8762,18 +7566,11 @@ $('detail-input').addEventListener('input',e=>{
   e.target.style.height=Math.min(120,e.target.scrollHeight)+'px';
 });
 $('detail-input').addEventListener('keydown',e=>{
-  // 送信ルール (LINE 風):
-  //   - Enter のみ           → 送信
-  //   - Shift + Enter        → 改行
-  //   - Cmd/Ctrl + Enter     → 送信 (PCの慣習にも対応)
-  // モバイルのソフトキーボードでも Enter キーで送れるようにすることで、
-  // LINE/iMessage と同じテンポで連投できる。
-  // ただし IME 変換中の Enter は誤送信になるので除外する (isComposing / keyCode 229)。
-  if(e.key!=='Enter')return;
-  if(e.isComposing||e.keyCode===229)return;
-  if(e.shiftKey)return; // 改行は Shift+Enter で
-  e.preventDefault();
-  detailSend();
+  if(e.key==='Enter' && !e.shiftKey && (e.metaKey || e.ctrlKey)){
+    // Cmd/Ctrl+Enter で送信
+    e.preventDefault();
+    detailSend();
+  }
 });
 
 
@@ -8791,19 +7588,10 @@ $('detail-input').addEventListener('keydown',e=>{
     addTag(v);
     inp.value='';
     if(suggestApi)suggestApi.refresh();
-    // 連続でもう1つタグを追加できるよう、入力欄にフォーカスを戻す。
-    // iOS Safari でも、これがユーザー操作 (click/keydown) のスコープ内で呼ばれているので
-    // キーボードは開いたまま。
-    inp.focus();
   }
   btn.addEventListener('click',()=>doAdd());
   inp.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){
-      // IME 変換中の Enter は確定操作
-      if(e.isComposing||e.keyCode===229)return;
-      e.preventDefault();
-      doAdd();
-    }
+    if(e.key==='Enter'){e.preventDefault();doAdd();}
   });
   // 詳細画面が開かれている間だけサジェストが意味を持つので、
   // フォーカス時に一度配線して使い回す。
@@ -9011,28 +7799,21 @@ $('restore-input').addEventListener('change',handleRestoreFile);
   }
 
   // 画面ごとの「更新」処理
-  // どの fetch も 6秒で切る (SW やネットワーク不調で permanently hang する事故を防ぐ)。
-  // doRefresh 側に 8秒の最終フェイルセーフがあるが、6秒で諦めて UI を返したほうが感触が良い。
   async function refreshActiveScreen(){
     const screen=document.querySelector('.screen.active');
     if(!screen)return;
     const id=screen.id;
-    // タイムアウト Promise
-    const withTimeout=(p,ms)=>Promise.race([
-      p,
-      new Promise((_,rej)=>setTimeout(()=>rej(new Error('refresh timeout')),ms))
-    ]);
     if(id==='screen-home'){
-      try{await withTimeout(loadOfficialShelves(),6000);}catch(e){console.warn('refresh:',e);}
+      await loadOfficialShelves();
       renderHome();
       updateHomeNewBadge();
     }else if(id==='screen-today'){
       renderToday();
     }else if(id==='screen-library'){
-      try{await withTimeout(loadOfficialShelves(),6000);}catch(e){console.warn('refresh:',e);}
+      await loadOfficialShelves();
       renderLibrary();
     }else if(id==='screen-official'){
-      try{await withTimeout(loadOfficialShelves(),6000);}catch(e){console.warn('refresh:',e);}
+      await loadOfficialShelves();
       // 同じIDの最新棚で再描画
       if(state.currentOfficial){
         const fresh=OFFICIAL_SHELVES.find(x=>x.id===state.currentOfficial.id);
@@ -9049,166 +7830,20 @@ $('restore-input').addEventListener('change',handleRestoreFile);
   document.addEventListener('touchcancel',onEnd);
 })();
 
-// ═══ PWA インストール誘導 ═══
-// ホーム画面に追加してもらうための案内。
-// - iOS: OS の仕様で自動インストールできないので、操作手順を表示
-// - Android (Chromeなど): beforeinstallprompt イベントを掴んで、自前ボタンで OS のプロンプトを出す
-// - すでにスタンドアロンで開いている (= 追加済み) なら出さない
-// - 「あとで」を選ばれた場合は 7日 出さない
-// - login 直後すぐ案内すると煩わしいので、初回起動から4秒後に出す
-let pwaDeferredPrompt=null;
-const PWA_LATER_KEY='snapin_pwa_later_until';
-const PWA_DAY=86400000;
-
-function pwaIsStandalone(){
-  if(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)return true;
-  // iOS Safari は navigator.standalone を持つ
-  if(typeof navigator.standalone==='boolean' && navigator.standalone)return true;
-  return false;
-}
-function pwaIsIOS(){
-  const ua=navigator.userAgent||'';
-  // iPad は iPadOS 13+ で macOS を名乗ることがあるので touch サポートも併用
-  const iOSish=/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
-  if(!iOSish)return false;
-  // Safari 以外のブラウザ (Chrome iOS, Line内ブラウザ等) は「ホーム画面に追加」できないので案内しない
-  const isSafari=/Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|GSA|LINE|FBAN|FBAV|Instagram|TwitterAndroid|TwitterIPhone/.test(ua);
-  return isSafari;
-}
-function pwaShouldShow(){
-  if(pwaIsStandalone())return false;
-  // 「あとで」期限内なら出さない
-  try{
-    const until=parseInt(localStorage.getItem(PWA_LATER_KEY)||'0',10);
-    if(until && Date.now()<until)return false;
-  }catch(e){}
-  // iOS Safari か、Android (beforeinstallprompt が来た) のどちらかでのみ案内
-  return pwaIsIOS() || !!pwaDeferredPrompt;
-}
-function showPwaPrompt(){
-  if(!pwaShouldShow())return;
-  const card=document.getElementById('pwa-card');
-  const mask=document.getElementById('pwa-mask');
-  const ios=document.getElementById('pwa-steps-ios');
-  const installBtn=document.getElementById('pwa-install-btn');
-  if(!card||!mask)return;
-  // iOS かどうかで手順 or ボタンを切り替える
-  if(pwaIsIOS()){
-    if(ios)ios.style.display='';
-    if(installBtn)installBtn.style.display='none';
-  }else{
-    if(ios)ios.style.display='none';
-    if(installBtn)installBtn.style.display='';
-  }
-  mask.classList.add('on');
-  card.classList.add('on');
-  card.setAttribute('aria-hidden','false');
-}
-function hidePwaPrompt(){
-  const card=document.getElementById('pwa-card');
-  const mask=document.getElementById('pwa-mask');
-  if(card){card.classList.remove('on');card.setAttribute('aria-hidden','true');}
-  if(mask)mask.classList.remove('on');
-}
-function pwaLater(){
-  try{localStorage.setItem(PWA_LATER_KEY,String(Date.now()+7*PWA_DAY));}catch(e){}
-  hidePwaPrompt();
-}
-async function pwaInstall(){
-  if(!pwaDeferredPrompt){hidePwaPrompt();return;}
-  try{
-    pwaDeferredPrompt.prompt();
-    const choice=await pwaDeferredPrompt.userChoice;
-    // 承認/拒否どちらでも、一旦は出さない
-    pwaDeferredPrompt=null;
-    if(choice && choice.outcome==='accepted'){
-      // インストール完了 → 永続的に出さない
-      try{localStorage.setItem(PWA_LATER_KEY,String(Date.now()+365*PWA_DAY));}catch(e){}
-    }else{
-      pwaLater();
-      return;
-    }
-  }catch(e){console.warn('pwa install failed',e);}
-  hidePwaPrompt();
-}
-// Android Chrome 系: インストール可能になった瞬間にイベントが飛んでくる。
-// preventDefault でブラウザ標準のミニバーを抑え、自前のタイミングで .prompt() を呼ぶ。
-window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault();
-  pwaDeferredPrompt=e;
-});
-// インストール完了通知 (Android)
-window.addEventListener('appinstalled',()=>{
-  pwaDeferredPrompt=null;
-  try{localStorage.setItem(PWA_LATER_KEY,String(Date.now()+365*PWA_DAY));}catch(e){}
-  hidePwaPrompt();
-});
-// 起動から少し経ってから案内 (初回ログイン直後に被ると煩わしい)
-function maybeShowPwaPromptDeferred(){
-  setTimeout(()=>{
-    if(pwaShouldShow())showPwaPrompt();
-  },4000);
-}
-
 // 起動
 setupNavs();
 loadOfficialShelves(); // 公式棚をサーバーから取得 (非同期、UIブロックしない)
 
-// バブル長押しメニュー(ポップオーバー)の外側タップで閉じる。
-// open直後の短時間はガード関数内で無視 (touchend由来の誤クローズ対策)。
-(function setupBubblePopoverMask(){
-  const mask=document.getElementById('bubble-popover-mask');
-  if(!mask)return;
-  // touchstart/mousedown でも閉じてしまうとボタンの click が発火しないことがあるので、
-  // click のみで閉じる。スクロールでも閉じたいので touchmove も拾う。
-  mask.addEventListener('click',bubbleMenuMaskTap);
-  // チャットログのスクロールで閉じる
-  const scroller=document.getElementById('detail-scroll');
-  if(scroller){
-    scroller.addEventListener('scroll',()=>{
-      if(document.getElementById('bubble-popover').classList.contains('on')){
-        closeBubbleMenu();
-      }
-    },{passive:true});
-  }
-})();
-
 // 古い Service Worker (過去のデプロイで残ったもの) を解除する。
 // 現在この HTML 自体は SW を register していないが、過去に登録された SW が
-// 端末に残っていることがあり、キャッシュやエラーの原因になる:
-//  - SW が fetch を横取りして応答しないとアプリ全体が止まって見える
-//  - chrome-extension:// スキームの request を SW が cache.put しようとして例外を投げる
-// 対処:
-//  1. すべての SW を unregister
-//  2. すべての Cache Storage を削除
-//  3. アクティブな SW (navigator.serviceWorker.controller) があれば、SW を通さない fresh な状態にするため
-//     セッション中に1回だけ強制リロード (リロードループ防止に sessionStorage で記録)
-(async function purgeStaleServiceWorkers(){
-  if(!('serviceWorker' in navigator))return;
-  try{
-    const regs=await navigator.serviceWorker.getRegistrations();
-    if(regs && regs.length>0){
-      await Promise.all(regs.map(r=>r.unregister().catch(()=>{})));
+// 端末に残っていることがあり、キャッシュやエラーの原因になるため。
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(regs=>{
+    for(const reg of regs){
+      reg.unregister().catch(()=>{});
     }
-  }catch(e){console.warn('SW unregister failed',e);}
-  try{
-    if('caches' in window){
-      const keys=await caches.keys();
-      if(keys && keys.length>0){
-        await Promise.all(keys.map(k=>caches.delete(k).catch(()=>{})));
-      }
-    }
-  }catch(e){console.warn('Cache delete failed',e);}
-  // アクティブな SW が今ページを掌握しているなら、SW を通さない状態に戻すため一度だけリロード。
-  // sessionStorage に印を付けて、リロードループにならないようにする。
-  try{
-    if(navigator.serviceWorker.controller && !sessionStorage.getItem('snapin_sw_purged')){
-      sessionStorage.setItem('snapin_sw_purged','1');
-      // 少し待ってからリロード (上の unregister/cache 削除が反映される時間を確保)
-      setTimeout(()=>location.reload(),100);
-    }
-  }catch(e){}
-})();
+  }).catch(()=>{});
+}
 
 if(load() && state.user){
   state.navStack=['screen-home'];
@@ -9217,8 +7852,6 @@ if(load() && state.user){
   refreshMe(true);
   // 起動時に古いゴミ箱を整理 (7日経過したカードは完全削除)
   purgeOldTrash().catch(e=>console.warn('purgeOldTrash failed:',e));
-  // PWAインストール案内 (4秒後に判定して必要なら表示)
-  maybeShowPwaPromptDeferred();
   // 起動時に IndexedDB から画像を復元 (非同期、画像のあるカードだけ後から表示更新)
   hydrateCardImages().then(()=>{
     // 画像復元後、ホーム画面が表示中なら再描画して画像を表示
@@ -9245,8 +7878,6 @@ if(load() && state.user){
   if(!nameInp || !bdInp)return;
   nameInp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){
-      // 漢字変換確定のEnterで誕生日欄に飛ばないようガード
-      if(e.isComposing||e.keyCode===229)return;
       e.preventDefault();
       bdInp.focus();
     }
@@ -9256,7 +7887,6 @@ if(load() && state.user){
   });
   bdInp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){
-      if(e.isComposing||e.keyCode===229)return;
       e.preventDefault();
       doClaimSubmit();
     }
