@@ -6287,6 +6287,12 @@ function attachDetailSwipe(){
     if(state.current?._origin==='official')return;
     // 入力中はスキップ
     if(document.activeElement && document.activeElement.tagName==='TEXTAREA')return;
+    // ★ 画像エリア内で始まったタッチはスワイプ判定対象外
+    // (ピンチズーム/ドラッグで動かしてる時に別メモへ飛ぶのを防ぐ)
+    const imgArea=$('detail-img');
+    if(imgArea && imgArea.contains(e.target))return;
+    // ★ 複数指(=ピンチ)もスワイプ対象外
+    if(e.touches.length>1)return;
     startX=e.touches[0].clientX;
     startY=e.touches[0].clientY;
     startT=Date.now();
@@ -8043,44 +8049,12 @@ $('restore-input').addEventListener('change',handleRestoreFile);
 // ═══ PULL TO REFRESH ═══
 // 各 .scroll コンテナで、頂部から下に引っ張ると更新する
 
-// ★★★ デバッグ用: 画面右下にログを表示するオーバーレイ ★★★
-(function setupDebugLog(){
-  const panel=document.createElement('div');
-  panel.id='dbg-panel';
-  panel.style.cssText='position:fixed;right:4px;bottom:80px;width:200px;max-height:280px;background:rgba(0,0,0,.8);color:#0f0;font:10px/1.3 monospace;padding:4px 5px;z-index:99999;border-radius:6px;overflow:hidden;pointer-events:auto;white-space:pre;';
-  panel.textContent='[dbg v2]\n';
-  panel.addEventListener('click',()=>{panel.textContent='[dbg v2]\n';});
-  if(document.body)document.body.appendChild(panel);
-  else document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(panel),{once:true});
-  const MAX_LINES=22;
-  window.dbg=function(msg){
-    if(!panel.parentNode && document.body)document.body.appendChild(panel);
-    const t=new Date();
-    const ts=String(t.getSeconds()).padStart(2,'0')+'.'+String(t.getMilliseconds()).padStart(3,'0');
-    const lines=panel.textContent.split('\n');
-    lines.push(ts+' '+msg);
-    while(lines.length>MAX_LINES+1)lines.splice(1,1);
-    panel.textContent=lines.join('\n');
-  };
-  // 画像デコード状況を起動時に集計
-  setTimeout(()=>{
-    const all=document.querySelectorAll('.card img, .lib-avatar img');
-    let total=all.length,decoded=0,pending=0;
-    all.forEach(img=>{if(img.complete && img.naturalWidth>0)decoded++;else pending++;});
-    window.dbg('img: total='+total+' decoded='+decoded+' pending='+pending);
-  },1500);
-  window.addEventListener('error',ev=>{
-    window.dbg && window.dbg('ERR: '+(ev.message||'?').slice(0,40));
-  });
-})();
-
 (function setupPullToRefresh(){
   const THRESHOLD=70;
   const MAX_PULL=130;
   const SPINNER_H=26;
   let startY=0, lastY=0, pulling=false, target=null, indicator=null, refreshing=false;
   let refreshGuard=null;
-  let moveCount=0, lastMoveTime=0, maxGap=0;
 
   function makeIndicator(){
     const el=document.createElement('div');
@@ -8126,19 +8100,10 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     startY=e.touches[0].clientY;
     lastY=startY;
     pulling=false;
-    moveCount=0;
-    lastMoveTime=performance.now();
-    maxGap=0;
-    dbg('START scr='+(screen?screen.id:'?'));
   }
 
   function onMove(e){
     if(!target||refreshing)return;
-    const now=performance.now();
-    const gap=now-lastMoveTime;
-    lastMoveTime=now;
-    if(gap>maxGap && moveCount>2)maxGap=gap;
-    moveCount++;
     const y=e.touches[0].clientY;
     const dy=y-startY;
     lastY=y;
@@ -8160,7 +8125,6 @@ $('restore-input').addEventListener('change',handleRestoreFile);
         indicator.style.display='flex';
         indicator.classList.remove('snap');
         target.classList.remove('ptr-snap');
-        dbg('PULL on '+(e.target?e.target.tagName:'?'));
       }
     }
     if(!pulling)return;
@@ -8173,10 +8137,6 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     indicator.classList.toggle('ready',pull>=THRESHOLD);
     target.style.transform=`translate3d(0, ${pull}px, 0)`;
     if(e.cancelable)e.preventDefault();
-    // 200ms以上のギャップが出たらリアルタイムで警告
-    if(gap>200 && moveCount>3){
-      dbg('!GAP '+Math.round(gap)+'ms #'+moveCount+' dy='+Math.round(dy));
-    }
   }
 
   function onEnd(e){
@@ -8188,7 +8148,6 @@ $('restore-input').addEventListener('change',handleRestoreFile);
     const tr=target.style.transform||'';
     const m=tr.match(/translate3d\(0(?:px)?,\s*(-?\d+(?:\.\d+)?)px/);
     const pulled=m?parseFloat(m[1]):0;
-    dbg('END moves='+moveCount+' maxGap='+Math.round(maxGap)+'ms');
     indicator.classList.add('snap');
     target.classList.add('ptr-snap');
     pulling=false;
