@@ -2713,6 +2713,44 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   line-height:1.5;
 }
 
+/* 保存容量メーター (設定シート上部) */
+.storage-meter{
+  padding:12px 12px 14px;
+  margin:0 0 6px;
+  background:var(--bg);
+  border-radius:12px;
+}
+.storage-meter-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+.storage-meter-label{font-size:13px;color:var(--ink2);font-weight:500;}
+.storage-meter-pct{font-size:13px;color:var(--ink);font-family:var(--font-en);font-weight:600;}
+.storage-meter-bar{
+  height:7px;
+  border-radius:4px;
+  background:var(--line2);
+  overflow:hidden;
+}
+.storage-meter-fill{
+  height:100%;
+  width:0%;
+  border-radius:4px;
+  background:var(--g);
+  transition:width .4s ease, background-color .3s ease;
+}
+.storage-meter.warn .storage-meter-fill{background:#E5A500;}
+.storage-meter.danger .storage-meter-fill{background:#D8513B;}
+.storage-meter-sub{
+  font-size:11px;color:var(--ink3);
+  margin-top:7px;line-height:1.5;
+  white-space:pre-line;
+}
+.storage-meter.warn .storage-meter-sub,
+.storage-meter.danger .storage-meter-sub{color:var(--ink2);}
+
 .hide{display:none !important;}
 
 /* ═══ URL MODAL ═══ */
@@ -3526,6 +3564,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <div class="settings-sheet" id="settings-sheet" aria-hidden="true">
   <div class="settings-handle"></div>
   <div class="settings-title">設定</div>
+  <div class="storage-meter hide" id="storage-meter">
+    <div class="storage-meter-head">
+      <span class="storage-meter-label">保存容量</span>
+      <span class="storage-meter-pct" id="storage-meter-pct">—</span>
+    </div>
+    <div class="storage-meter-bar"><div class="storage-meter-fill" id="storage-meter-fill"></div></div>
+    <div class="storage-meter-sub" id="storage-meter-sub"></div>
+  </div>
   <button class="settings-item" data-action="export-backup">
     <div class="settings-item-icon">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -4580,9 +4626,60 @@ function openSettings(){
     const photoCount=getActiveCards().filter(c=>(c.type==='photo'||c.type==='photonote') && !c.fromShelf).length;
     sub.textContent=`個人メモ ${personalCount} 件${photoCount?` (うち写真 ${photoCount} 件)`:''}`;
   }
+  updateStorageMeter();
   $('settings-backdrop').classList.add('on');
   $('settings-sheet').classList.add('on');
   $('settings-sheet').setAttribute('aria-hidden','false');
+}
+
+// 保存容量メーターを更新する。
+// navigator.storage.estimate() が使えればブラウザ割当に対する使用率を表示。
+// 使えない端末ではメーター行ごと隠す (シンプルさを優先)。
+async function updateStorageMeter(){
+  const box=$('storage-meter');
+  if(!box)return;
+  const pctEl=$('storage-meter-pct');
+  const fillEl=$('storage-meter-fill');
+  const subEl=$('storage-meter-sub');
+  // 対応していない環境では非表示
+  if(!(navigator.storage && typeof navigator.storage.estimate==='function')){
+    box.classList.add('hide');
+    return;
+  }
+  try{
+    const est=await navigator.storage.estimate();
+    const usage=est.usage||0;
+    const quota=est.quota||0;
+    if(!quota){ box.classList.add('hide'); return; }
+    const pct=Math.min(100, Math.round((usage/quota)*1000)/10); // 小数1桁
+    const mb=b=>{
+      if(b>=1024*1024*1024)return (b/1024/1024/1024).toFixed(1)+'GB';
+      return Math.round(b/1024/1024)+'MB';
+    };
+    box.classList.remove('hide','warn','danger');
+    pctEl.textContent=pct+'%';
+    fillEl.style.width=Math.max(2,pct)+'%';
+    // このアプリの写真メモが占める実データ量 (メモリ上の dataURL から概算)
+    let appBytes=0, appPhotos=0;
+    for(const c of state.cards){
+      if(c && c.image && typeof c.image==='string' && !c.deletedAt){
+        appBytes+=dataUrlBytes(c.image);
+        appPhotos++;
+      }
+    }
+    let note=`端末全体: 約 ${mb(usage)} / ${mb(quota)} を使用中`;
+    if(appPhotos>0)note+=`\nこのアプリの写真: 約 ${mb(appBytes)} (${appPhotos} 枚)`;
+    if(pct>=95){
+      box.classList.add('danger');
+      note+='\n空きが残りわずかです。不要な写真メモを削除するか、バックアップを書き出してから整理してください。';
+    }else if(pct>=80){
+      box.classList.add('warn');
+      note+='\n容量が増えてきました。不要な写真メモの削除をおすすめします。';
+    }
+    subEl.textContent=note;
+  }catch(e){
+    box.classList.add('hide');
+  }
 }
 function closeSettings(){
   $('settings-backdrop').classList.remove('on');
