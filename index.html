@@ -9029,6 +9029,10 @@ function openColorPicker(){
       state.current.color=c.id;
       save();
       closeColorPicker();
+      // ホームと今日の両方を再描画しておく。
+      // (goto は遷移先しか再描画しないため、裏の画面が古い色のまま残るのを防ぐ)
+      try{renderHome();}catch(_){}
+      try{renderToday();}catch(_){}
       openDetail(state.cards[idx],'mine');
     });
     picker.appendChild(sw);
