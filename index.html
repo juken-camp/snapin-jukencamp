@@ -658,19 +658,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   grid-template-columns:1fr 1fr 1fr;
   gap:8px;
 }
-/* add-sheet は 4 項目を横 1 列で表示する。
+/* add-sheet は 5 項目を横 1 列で表示する。
    モバイル幅では文字が狭くなるので、内側パディングを少し詰める。 */
 #add-sheet .sheet-options{
-  grid-template-columns:repeat(4,1fr);
-  gap:6px;
+  grid-template-columns:repeat(5,1fr);
+  gap:5px;
 }
 #add-sheet .sheet-opt{
-  padding:14px 6px;
+  padding:14px 4px;
   align-items:center;
   text-align:center;
   gap:8px;
 }
-#add-sheet .sheet-opt-title{font-size:12px;}
+#add-sheet .sheet-opt-title{font-size:11px;}
 .sheet-opt{
   background:var(--bg);
   border-radius:14px;
@@ -1306,9 +1306,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .msg.a .msg-bubbles .bubble:not(:first-child){border-top-left-radius:14px;}
 .msg.u .msg-bubbles .bubble{border-bottom-right-radius:5px;}
 .msg.u .msg-bubbles .bubble:not(:first-child){border-top-right-radius:14px;}
-/* ドットバブルは「次のバブルが来る位置」を示す仮の表示なので、
-   尖らせずに丸めたままにする (見た目を「書き中」の独立した小バブルに保つ)。 */
-.msg.a .msg-bubbles .bubble.dots{border-bottom-left-radius:14px;}
+/* ドットバブル (「…」の出力中表示) も他の AI バブルと同じく左下を尖らせ、
+   通常のメッセージバブルと見た目をそろえる。 */
 /* 新着バブルがふわっと出るアニメーション (時間差表示時のみ .anim を付ける) */
 .bubble.anim{
   animation:bubble-in 0.25s ease-out;
@@ -2792,6 +2791,179 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 .hide{display:none !important;}
 
+/* ═══ URL MODAL ═══ */
+.url-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  z-index:1100;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  font-family:var(--font-jp);
+}
+.url-modal.on{display:flex;}
+.url-modal-card{
+  background:var(--surface);
+  border-radius:18px;
+  padding:20px 18px 16px;
+  width:100%;
+  max-width:360px;
+  box-shadow:0 12px 40px rgba(0,0,0,.25);
+}
+.url-modal-title{
+  font-size:15px;
+  font-weight:600;
+  color:var(--ink);
+  margin-bottom:14px;
+}
+#url-input{
+  width:100%;
+  padding:11px 14px;
+  border:1px solid var(--line2);
+  border-radius:12px;
+  font-size:14px;
+  color:var(--ink);
+  background:var(--bg);
+  margin-bottom:6px;
+}
+#url-input:focus{border-color:var(--g);}
+.url-modal-msg{
+  font-size:11.5px;
+  color:var(--ink3);
+  min-height:18px;
+  padding:0 4px;
+  margin-bottom:10px;
+}
+.url-modal-msg.err{color:var(--rose);}
+.url-modal-msg.loading{color:var(--g);}
+.url-modal-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+}
+.url-modal-btn{
+  font-size:14px;
+  font-weight:500;
+  padding:9px 18px;
+  border-radius:14px;
+  background:transparent;
+  color:var(--ink2);
+}
+.url-modal-btn:active{background:var(--bg);transform:scale(0.96);}
+.url-modal-btn.primary{
+  background:var(--g);
+  color:white;
+  font-weight:600;
+}
+.url-modal-btn.primary:active{background:var(--gd);}
+.url-modal-btn.primary:disabled{opacity:0.5;}
+
+/* ═══ LINK CARD (一覧グリッドとフィードでの表示) ═══ */
+.link-card{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  background:var(--surface);
+  color:var(--ink);
+  overflow:hidden;
+}
+.link-card-thumb{
+  width:100%;
+  aspect-ratio:16/10;
+  background:var(--bg);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+}
+.link-card-thumb img{
+  width:100%;height:100%;
+  object-fit:cover;
+  display:block;
+}
+.link-card-thumb.no-img{
+  background:linear-gradient(135deg,#E8F5EF 0%,#F4FAF7 100%);
+  color:var(--g);
+}
+.link-card-thumb.no-img svg{width:36px;height:36px;}
+.link-card-thumb::after{
+  content:'';
+  position:absolute;
+  left:8px; bottom:8px;
+  width:22px;height:22px;
+  background:rgba(0,0,0,.55) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/><path d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/></svg>") center/14px no-repeat;
+  border-radius:50%;
+}
+.link-card-body{
+  flex:1;
+  padding:8px 10px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+.link-card-title{
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--ink);
+  line-height:1.35;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.link-card-host{
+  font-size:10.5px;
+  color:var(--ink3);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* 詳細画面のリンクカード (大きめ) */
+.link-detail{
+  display:block;
+  background:var(--surface);
+  border-radius:14px;
+  overflow:hidden;
+  border:0.5px solid var(--line);
+  margin-bottom:14px;
+}
+.link-detail-thumb{
+  width:100%;
+  aspect-ratio:16/9;
+  background:var(--bg);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.link-detail-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.link-detail-thumb.no-img{background:linear-gradient(135deg,#E8F5EF 0%,#F4FAF7 100%);color:var(--g);}
+.link-detail-thumb.no-img svg{width:48px;height:48px;}
+.link-detail-body{padding:12px 14px 14px;}
+.link-detail-host{font-size:11px;color:var(--ink3);margin-bottom:4px;}
+.link-detail-title{font-size:15px;font-weight:600;color:var(--ink);line-height:1.45;margin-bottom:6px;}
+.link-detail-desc{font-size:12.5px;color:var(--ink2);line-height:1.5;}
+.link-open-btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  width:100%;
+  padding:11px;
+  margin-top:10px;
+  background:var(--g);
+  color:white;
+  font-size:14px;
+  font-weight:600;
+  border-radius:12px;
+  transition:background .15s,transform .15s;
+}
+.link-open-btn:active{background:var(--gd);transform:scale(0.98);}
+
 /* ═══ CROP MODAL (カメラ撮影直後のトリミング画面) ═══ */
 .crop-modal{
   position:fixed;
@@ -3338,6 +3510,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       </div>
       <div class="sheet-opt-title">リスト</div>
     </button>
+    <button class="sheet-opt" data-action="create-url">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <div class="sheet-opt-title">URL</div>
+    </button>
   </div>
 </div>
 
@@ -3374,6 +3552,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none;">
 <input type="file" id="file-input-any" accept=".png,.jpg,.jpeg,.gif,.webp,.heic,.heif" style="display:none;">
 <input type="file" id="restore-input" accept="application/json,.json" style="display:none;">
+
+<!-- URL 入力モーダル (create-url で表示) -->
+<div class="url-modal" id="url-modal" aria-hidden="true">
+  <div class="url-modal-card">
+    <div class="url-modal-title">URLを保存</div>
+    <input type="url" id="url-input" placeholder="https://..." autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="url-modal-msg" id="url-modal-msg"></div>
+    <div class="url-modal-actions">
+      <button class="url-modal-btn" id="url-cancel">キャンセル</button>
+      <button class="url-modal-btn primary" id="url-fetch">取得</button>
+    </div>
+  </div>
+</div>
 
 <!-- トリミング画面 (カメラ撮影時に表示。フルスクリーンモーダル) -->
 <div class="crop-modal" id="crop-modal" aria-hidden="true">
@@ -3810,6 +4001,18 @@ function listCardInner(c){
   }).join('');
   const title=c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;color:var(--gd);">${esc(c.title)}</div>`:'';
   return `<div class="ctxt">${title}${itemsHtml}</div>`;
+}
+
+// リンクカードの一覧表示用HTML。グリッドセル・今日のメモ・フィードで共通利用。
+// サムネ画像 + タイトル + ホスト名 のシンプルな構造。
+function linkCardInner(c){
+  const link=c.link||{};
+  const thumb=link.image
+    ? `<div class="link-card-thumb"><img src="${esc(link.image)}" alt="" onerror="this.parentElement.classList.add('no-img');this.remove();this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' fill=none stroke=currentColor stroke-width=1.6><path d=\\'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\\'/><path d=\\'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\\'/></svg>';"></div>`
+    : `<div class="link-card-thumb no-img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
+  const title=esc(link.title||link.url||'(無題のリンク)');
+  const host=esc(link.siteName||link.host||'');
+  return `<div class="link-card">${thumb}<div class="link-card-body"><div class="link-card-title">${title}</div>${host?`<div class="link-card-host">${host}</div>`:''}</div></div>`;
 }
 // グリッドのテキストメモ用: 文字数に応じてフォントサイズ・行高・行数制限を決める。
 // グリッドセルと今日のメモのカード両方で同じ寸法 (内側 ~100×100px) になるが、
@@ -4726,6 +4929,8 @@ function renderToday(){
         el.innerHTML=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
       }else if(c.type==='list'){
         el.innerHTML=listCardInner(c);
+      }else if(c.type==='link'){
+        el.innerHTML=linkCardInner(c);
       }
       el.addEventListener('click',()=>openDetail(c,'mine'));
       wrap.appendChild(el);
@@ -4771,6 +4976,8 @@ function renderToday(){
         el.innerHTML=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
       }else if(c.type==='list'){
         el.innerHTML=listCardInner(c);
+      }else if(c.type==='link'){
+        el.innerHTML=linkCardInner(c);
       }
       el.addEventListener('click',()=>openDetail(c,'mine'));
       wrap.appendChild(el);
@@ -4857,6 +5064,8 @@ function renderPastDaySection(daysAgo){
       el.innerHTML=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
     }else if(c.type==='list'){
       el.innerHTML=listCardInner(c);
+    }else if(c.type==='link'){
+      el.innerHTML=linkCardInner(c);
     }
     el.addEventListener('click',()=>openDetail(c,'mine'));
     wrap.appendChild(el);
@@ -4917,6 +5126,8 @@ function renderPastMoreSection(){
         body=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
       }else if(c.type==='list'){
         body=listCardInner(c);
+      }else if(c.type==='link'){
+        body=linkCardInner(c);
       }
       return `<div class="today-newcard ${c.type}" data-card-id="${esc(c.id)}">${body}</div>`;
     }).join('');
@@ -5018,6 +5229,8 @@ function renderGrid(el,cards,origin){
       inner=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
     }else if(c.type==='list'){
       inner=listCardInner(c);
+    }else if(c.type==='link'){
+      inner=linkCardInner(c);
     }
     // ピン留めバッジ
     if(origin==='mine' && c.pinned){
@@ -5249,6 +5462,15 @@ function renderFeed(el,cards){
       inner=`<div class="feed-list" style="background:${col.bg};color:${col.fg};--feed-list-fg:${col.fg};">` +
             `<h3 style="color:${col.fg};opacity:0.7;">${esc(c.title||'リスト')}</h3>${items}</div>`;
       inner+=`<div class="feed-meta" style="color:${col.fg};opacity:0.5;">${fmtDate(c.date)}</div>`;
+    }else if(c.type==='link'){
+      const link=c.link||{};
+      const img=link.image
+        ? `<img src="${esc(link.image)}" alt="" decoding="async" loading="eager">`
+        : `<div class="feed-note" style="background:linear-gradient(135deg,#E8F5EF,#F4FAF7);color:var(--g);display:flex;align-items:center;justify-content:center;font-size:48px;">🔗</div>`;
+      inner=img;
+      const title=esc(link.title||link.url||'');
+      const host=esc(link.siteName||link.host||'');
+      inner+=`<div class="feed-meta">${title}　${host}　${fmtDate(c.date)}</div>`;
     }
     if(c.pinned){
       inner+=`<div class="pin-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
@@ -5322,7 +5544,83 @@ function startCreate(type){
       const inp=$('up-body').querySelector('.cl-input');
       if(inp)inp.focus();
     },100);
+  }else if(type==='url'){
+    // 「URL」: URL入力モーダルを開く。state.current は OGP 取得後に組み立てる。
+    state.current=null;
+    openUrlModal();
   }
+}
+
+// ═══ URL MEMO ═══
+function openUrlModal(){
+  const inp=$('url-input');
+  const msg=$('url-modal-msg');
+  inp.value='';
+  msg.textContent='URLを貼り付けてから「取得」を押してください';
+  msg.className='url-modal-msg';
+  $('url-fetch').disabled=false;
+  $('url-modal').classList.add('on');
+  $('url-modal').setAttribute('aria-hidden','false');
+  setTimeout(()=>inp.focus(),50);
+}
+function closeUrlModal(){
+  $('url-modal').classList.remove('on');
+  $('url-modal').setAttribute('aria-hidden','true');
+}
+
+async function fetchUrlAndCreate(){
+  const raw=$('url-input').value.trim();
+  if(!raw){
+    setUrlMsg('URLを入力してください','err');
+    return;
+  }
+  // 簡易バリデーション (スキーマなしでも許容、サーバ側で https を補う)
+  if(!/^(https?:\/\/)?[^\s]+\.[^\s]+/i.test(raw)){
+    setUrlMsg('URLの形式が正しくないようです','err');
+    return;
+  }
+  setUrlMsg('読み込んでいます...','loading');
+  $('url-fetch').disabled=true;
+  try{
+    const res=await fetch('/api/og-fetch',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url:raw}),
+    });
+    const data=await res.json();
+    if(!data || !data.ok){
+      throw new Error(data&&data.error?data.error:'取得に失敗しました');
+    }
+    // state.current を組み立てる
+    state.current={
+      id:'c_'+Date.now(),
+      type:'link',
+      date:new Date().toISOString().slice(0,10),
+      _new:true,
+      text:'',
+      link:{
+        url:data.finalUrl||data.url||raw,
+        originalUrl:raw,
+        title:data.title||'',
+        description:data.description||'',
+        image:data.image||null,
+        host:data.host||'',
+        siteName:data.siteName||data.host||'',
+      },
+    };
+    closeUrlModal();
+    renderUpload();
+    goto('screen-upload');
+  }catch(e){
+    setUrlMsg('読み込めませんでした。URLを確認してください','err');
+    $('url-fetch').disabled=false;
+  }
+}
+
+function setUrlMsg(text,kind){
+  const msg=$('url-modal-msg');
+  msg.textContent=text;
+  msg.className='url-modal-msg'+(kind?' '+kind:'');
 }
 
 function openPhotoSourceSheet(){
@@ -6186,6 +6484,37 @@ function renderUpload(){
       },50);
     });
     body.appendChild(addBtn);
+  }else if(c.type==='link'){
+    // リンクカードのプレビュー + メモ(任意)
+    const link=c.link||{};
+    const card=document.createElement('div');
+    card.className='link-detail';
+    const thumb=document.createElement('div');
+    if(link.image){
+      thumb.className='link-detail-thumb';
+      thumb.innerHTML=`<img src="${esc(link.image)}" alt="" onerror="this.parentElement.classList.add('no-img');this.remove();this.parentElement.innerHTML='<svg width=48 height=48 viewBox=\\'0 0 24 24\\' fill=none stroke=currentColor stroke-width=1.6><path d=\\'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\\'/><path d=\\'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\\'/></svg>';">`;
+    }else{
+      thumb.className='link-detail-thumb no-img';
+      thumb.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+    }
+    card.appendChild(thumb);
+    const cb=document.createElement('div');
+    cb.className='link-detail-body';
+    cb.innerHTML=`
+      <div class="link-detail-host">${esc(link.siteName||link.host||'')}</div>
+      <div class="link-detail-title">${esc(link.title||link.url||'')}</div>
+      ${link.description?`<div class="link-detail-desc">${esc(link.description)}</div>`:''}
+    `;
+    card.appendChild(cb);
+    body.appendChild(card);
+
+    // メモ欄 (任意の自分用コメント)
+    const ta=document.createElement('textarea');
+    ta.className='up-text';
+    ta.placeholder='メモを書く (任意)';
+    ta.value=c.text||'';
+    ta.addEventListener('input',e=>{state.current.text=e.target.value;});
+    body.appendChild(ta);
   }
 
   // ─── タグ入力エリア (投稿時に付けられる) ───
@@ -6522,6 +6851,9 @@ function saveCard(){
   if(c.type==='list'){
     c.items=(c.items||[]).filter(i=>i.t.trim()!=='');
     if(c.items.length===0){toast('項目を入れてください');return;}
+  }
+  if(c.type==='link'){
+    if(!c.link || !c.link.url){toast('URLがありません');return;}
   }
   // タグ配列の正規化: 空配列なら削除、ある場合は重複/空白除去
   if(Array.isArray(c.tags)){
@@ -7539,6 +7871,31 @@ function openDetail(c,origin){
         <span>${esc(i.t)}</span>
       </div>
     `;}).join('');
+  }else if(c.type==='link'){
+    // リンクカード詳細表示 + 「サイトを開く」ボタン + メモ(自分用コメント)
+    const link=c.link||{};
+    const safeUrl=esc(link.url||'');
+    const thumbHtml=link.image
+      ? `<div class="link-detail-thumb"><img src="${esc(link.image)}" alt=""></div>`
+      : `<div class="link-detail-thumb no-img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
+    contentHtml=`
+      <div class="link-detail">
+        ${thumbHtml}
+        <div class="link-detail-body">
+          <div class="link-detail-host">${esc(link.siteName||link.host||'')}</div>
+          <div class="link-detail-title">${esc(link.title||link.url||'')}</div>
+          ${link.description?`<div class="link-detail-desc">${esc(link.description)}</div>`:''}
+        </div>
+      </div>
+      <a class="link-open-btn" href="${safeUrl}" target="_blank" rel="noopener noreferrer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        サイトを開く
+      </a>
+    `;
+    // 自分用メモ(コメント)を下に
+    if(c.text){
+      contentHtml+=`<div class="detail-text" style="margin-top:14px;">${linkify(esc(c.text))}</div>`;
+    }
   }
 
   // 写真の場合、OCRテキストを下に表示
@@ -7922,6 +8279,15 @@ async function callAI(userMessage,cardContext){
     if(cardContext.text)contextStr+='メモ内容: '+cardContext.text+'\n';
     if(cardContext.title)contextStr+='タイトル: '+cardContext.title+'\n';
     if(cardContext.items)contextStr+='リスト項目: '+cardContext.items.map(i=>i.t).join(', ')+'\n';
+    if(cardContext.link){
+      // リンクメモ: タイトル/URL/説明を渡す。AIはサイトに直接アクセスできないので、
+      // 取得済みの OGP 情報の範囲で答える前提。
+      const lk=cardContext.link;
+      if(lk.title)contextStr+='リンクのタイトル: '+lk.title+'\n';
+      if(lk.url)contextStr+='URL: '+lk.url+'\n';
+      if(lk.siteName||lk.host)contextStr+='サイト名: '+(lk.siteName||lk.host)+'\n';
+      if(lk.description)contextStr+='ページ概要: '+lk.description+'\n';
+    }
   }
   const systemPrompt=[
     'あなたは学習支援のアシスタントです。生徒が保存したメモやノート(写真・テキスト・リスト)について、生徒が理解できるよう丁寧に答えてください。',
@@ -8100,6 +8466,13 @@ function binRowHtml(c,kind){
     const t=(c.title||'リスト').replace(/\s+/g,'').trim();
     const title=t.length>3?t.slice(0,3):t;
     thumb=`<div style="background:#F4F8F3;width:100%;height:100%;color:var(--gd);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;white-space:nowrap;">${esc(title)}</div>`;
+  }else if(c.type==='link'){
+    const link=c.link||{};
+    if(link.image){
+      thumb=`<img src="${esc(link.image)}" alt="">`;
+    }else{
+      thumb=`<div style="background:linear-gradient(135deg,#E8F5EF,#F4FAF7);width:100%;height:100%;color:var(--g);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
+    }
   }else{
     thumb='<div style="background:var(--bg);width:100%;height:100%;"></div>';
   }
@@ -8113,6 +8486,11 @@ function binRowHtml(c,kind){
     titleSub=`${(c.items||[]).length}項目`;
   }
   else if(c.type==='photo'||c.type==='photonote')title=(c.text||'').replace(/\s+/g,' ').trim()||'(写真メモ)';
+  else if(c.type==='link'){
+    const link=c.link||{};
+    title=link.title||link.url||'(リンク)';
+    titleSub=link.siteName||link.host||'';
+  }
 
   // メタ (2行: 1行目=日付, 2行目=残日数 ※ゴミ箱のみ)
   let metaWhen='';
@@ -8681,6 +9059,9 @@ function renderLibNewSection(seenShelves){
       thumb=esc((c.text||'').slice(0,40));
     }else if(c.type==='list'){
       thumb=`<b>${esc(c.title||'リスト')}</b><br>${(c.items||[]).slice(0,2).map(i=>'・'+esc(i.t)).join('<br>')}`;
+    }else if(c.type==='link'){
+      const link=c.link||{};
+      thumb=link.image?`<img src="${esc(link.image)}" alt="" decoding="async">`:esc(link.title||link.url||'(リンク)');
     }
     return `
       <div class="lib-new-card" data-shelf-id="${esc(s.id)}" data-card-id="${esc(c.id)}">
@@ -8868,7 +9249,8 @@ function doSearch(){
       if(tagFilter && !(c.tags||[]).includes(tagFilter))return;
       if(q){
         const aiText=(c.aiLog||[]).map(m=>m.text).join(' ');
-        const hay=(c.text||'')+' '+(c.title||'')+' '+((c.items||[]).map(i=>i.t).join(' '))+' '+(c.ocrText||'')+' '+aiText+' '+((c.tags||[]).map(t=>'#'+t).join(' '));
+        const linkText=c.link?[c.link.title,c.link.description,c.link.url,c.link.host,c.link.siteName].filter(Boolean).join(' '):'';
+        const hay=(c.text||'')+' '+(c.title||'')+' '+((c.items||[]).map(i=>i.t).join(' '))+' '+(c.ocrText||'')+' '+aiText+' '+linkText+' '+((c.tags||[]).map(t=>'#'+t).join(' '));
         if(!hay.toLowerCase().includes(q))return;
       }
       results.push({card:c,origin:'mine'});
@@ -8915,6 +9297,8 @@ function doSearch(){
       }
       else if(c.type==='list'){
         inner=listCardInner(c);
+      }else if(c.type==='link'){
+        inner=linkCardInner(c);
       }
       if(r.origin==='official')inner+=`<div class="card-source">${esc(r.shelf.handle)}</div>`;
       card.innerHTML=inner;
@@ -9422,6 +9806,7 @@ document.addEventListener('click',e=>{
     case 'create-note':startCreate('note');break;
     case 'create-file':startCreate('file');break;
     case 'create-list':startCreate('list');break;
+    case 'create-url':startCreate('url');break;
     case 'photo-src-camera':pickPhotoSource('camera');break;
     case 'photo-src-library':pickPhotoSource('library');break;
     case 'close-photo-src':closePhotoSourceSheet();break;
@@ -9576,6 +9961,22 @@ $('detail-input').addEventListener('keydown',e=>{
 $('file-input').addEventListener('change',onFilePick);
 $('file-input-camera').addEventListener('change',onFilePick);
 $('file-input-any').addEventListener('change',onFilePick);
+
+// URL モーダルのイベント登録
+$('url-cancel').addEventListener('click',closeUrlModal);
+$('url-fetch').addEventListener('click',fetchUrlAndCreate);
+$('url-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    fetchUrlAndCreate();
+  }else if(e.key==='Escape'){
+    closeUrlModal();
+  }
+});
+// 背景タップで閉じる
+$('url-modal').addEventListener('click',e=>{
+  if(e.target.id==='url-modal')closeUrlModal();
+});
 $('restore-input').addEventListener('change',handleRestoreFile);
 
 // ═══ 画面の更新処理 (SnapInロゴタップで呼ばれる) ═══
