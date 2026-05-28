@@ -4668,7 +4668,7 @@ async function updateStorageMeter(){
       }
     }
     let note=`端末全体: 約 ${mb(usage)} / ${mb(quota)} を使用中`;
-    if(appPhotos>0)note+=`\nこのアプリの写真: 約 ${mb(appBytes)} (${appPhotos} 枚)`;
+    if(appPhotos>0)note+=`\n保存中の画像 (全体): 約 ${mb(appBytes)} (${appPhotos} 枚)`;
     if(pct>=95){
       box.classList.add('danger');
       note+='\n空きが残りわずかです。不要な写真メモを削除するか、バックアップを書き出してから整理してください。';
@@ -9429,8 +9429,10 @@ function doSearch(){
   idle.innerHTML='';
 
   let results=[];
-  if(scope==='all'||scope==='mine'||scope==='photo'||scope==='note'||scope==='list'){
+  if(scope==='all'||scope==='mine'||scope==='photo'||scope==='note'||scope==='list'||scope==='official'){
     getActiveCards().forEach(c=>{
+      // 「公式」スコープ: 自分が公式から保存したメモ (linkカード) だけに絞る
+      if(scope==='official' && !isLinkedCard(c))return;
       // 公式由来カードは本文を最新マスターに解決して検索対象にする (個人の追記/チャットも対象)
       const dc=isLinkedCard(c)?resolveLiveCard(c):c;
       if(scope==='photo' && dc.type!=='photo' && dc.type!=='photonote')return;
@@ -9448,7 +9450,8 @@ function doSearch(){
       results.push({card:c,origin:'mine'});
     });
   }
-  if((scope==='all'||scope==='official') && !colorFilter){
+  // 公式ライブラリ本体の検索は「すべて」スコープでキーワードがある時だけ補助的に出す
+  if(scope==='all' && !colorFilter){
     OFFICIAL_SHELVES.forEach(s=>{
       if(q && (s.name+' '+s.handle+' '+s.desc).toLowerCase().includes(q))results.push({shelf:s});
       // 配布型（canSeeShelfId）または購読済みのカードを検索対象にする
