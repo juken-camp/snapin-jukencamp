@@ -3762,28 +3762,41 @@ const state={
   deviceId:null,       // この端末のID (claim時に使う、localStorage永続)
 };
 
+// localStorage に書く軽量ペイロードを組み立てる (save / 容量見積もりで共用)。
+// 画像 base64 は IndexedDB 側に持つので、c.image と _snap.image を抜いて
+// __hasImg フラグだけ残す。save と estimate でロジックがズレないよう一本化する。
+function buildLightPayload(){
+  const lightCards=state.cards.map(c=>{
+    if(!c)return c;
+    let lc=c;
+    if(lc.image){
+      const {image,...rest}=lc;
+      lc={...rest,__hasImg:true};
+    }
+    if(lc._snap && lc._snap.image){
+      const {image,...snapRest}=lc._snap;
+      lc={...lc,_snap:{...snapRest,__hasImg:true}};
+    }
+    return lc;
+  });
+  return {
+    user:state.user,
+    cards:lightCards,
+    subscribed:state.subscribed,
+    shelfLastSeen:state.shelfLastSeen,
+    cardLastSeen:state.cardLastSeen,
+    libraryOrder:state.libraryOrder,
+    auth:state.auth,
+    deviceId:state.deviceId,
+  };
+}
+
 function save(){
   // 画像なしの軽量カードのみ localStorage に書く。
-  // 画像 (c.image) は IndexedDB に別保存し、ここでは __hasImg フラグだけ立てる。
+  // 画像 (c.image / _snap.image) は IndexedDB に別保存し、ここでは __hasImg だけ立てる。
   // 失敗時 (容量オーバー等) は false を返す。
   try{
-    const lightCards=state.cards.map(c=>{
-      if(c && c.image){
-        const {image,...rest}=c;
-        return {...rest,__hasImg:true};
-      }
-      return c;
-    });
-    localStorage.setItem(STORAGE_KEY,JSON.stringify({
-      user:state.user,
-      cards:lightCards,
-      subscribed:state.subscribed,
-      shelfLastSeen:state.shelfLastSeen,
-      cardLastSeen:state.cardLastSeen,
-      libraryOrder:state.libraryOrder,
-      auth:state.auth,
-      deviceId:state.deviceId,
-    }));
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(buildLightPayload()));
     return true;
   }catch(e){
     // 容量オーバー (QuotaExceededError) など
@@ -3814,23 +3827,7 @@ async function saveWithImages(){
 // 現在の state を保存したら何バイトになるか見積もる (容量チェック用)
 function estimateSaveBytes(){
   try{
-    const lightCards=state.cards.map(c=>{
-      if(c && c.image){
-        const {image,...rest}=c;
-        return {...rest,__hasImg:true};
-      }
-      return c;
-    });
-    const s=JSON.stringify({
-      user:state.user,
-      cards:lightCards,
-      subscribed:state.subscribed,
-      shelfLastSeen:state.shelfLastSeen,
-      cardLastSeen:state.cardLastSeen,
-      libraryOrder:state.libraryOrder,
-      auth:state.auth,
-      deviceId:state.deviceId,
-    });
+    const s=JSON.stringify(buildLightPayload());
     // 1文字あたり最大2バイト(UTF-16)で見積もる
     return s.length*2;
   }catch(e){return 0;}
@@ -3928,6 +3925,13 @@ async function hydrateCardImages(){
         }
       }catch(e){console.warn('load img failed',c.id,e);}
       delete c.__hasImg;
+    }
+    // _snap.image を抜いて保存していた場合 (公式投稿の保存カード)、
+    // IndexedDB から復元した c.image を _snap 側にも戻しておく。
+    // (フォールバック本文表示 resolveLiveCard が _snap.image を参照するため)
+    if(c._snap && c._snap.__hasImg){
+      if(c.image)c._snap.image=c.image;
+      delete c._snap.__hasImg;
     }
   }
   // マイグレーション後、localStorage を軽量化して書き直す (ストレージ圧迫を解消)
@@ -4757,40 +4761,39 @@ async function updateStorageMeter(){
   const pctEl=$('storage-meter-pct');
   const fillEl=$('storage-meter-fill');
   const subEl=$('storage-meter-sub');
-  // 対応していない環境では非表示
-  if(!(navigator.storage && typeof navigator.storage.estimate==='function')){
-    box.classList.add('hide');
-    return;
-  }
+  const mb=b=>{
+    if(b>=1024*1024*1024)return (b/1024/1024/1024).toFixed(1)+'GB';
+    if(b>=1024*1024)return (b/1024/1024).toFixed(1)+'MB';
+    return Math.round(b/1024)+'KB';
+  };
   try{
-    const est=await navigator.storage.estimate();
-    const usage=est.usage||0;
-    const quota=est.quota||0;
-    if(!quota){ box.classList.add('hide'); return; }
-    const pct=Math.min(100, Math.round((usage/quota)*1000)/10); // 小数1桁
-    const mb=b=>{
-      if(b>=1024*1024*1024)return (b/1024/1024/1024).toFixed(1)+'GB';
-      return Math.round(b/1024/1024)+'MB';
-    };
+    // ── 実際に「保存できる/できない」を決めるのは localStorage の枠 (約5MB) ──
+    // ブラウザのディスク全体割当 (navigator.storage.estimate) は数十GB あるが、
+    // メモ本体は localStorage に書くため、こちらが先に枯渇する。
+    // メーターはこの 5MB 枠に対する使用率を表示する (保存失敗の予兆と一致させる)。
+    const LS_LIMIT=5*1024*1024; // localStorage の実効上限の目安
+    const used=estimateSaveBytes();
+    const pct=Math.min(100, Math.round((used/LS_LIMIT)*1000)/10);
     box.classList.remove('hide','warn','danger');
     pctEl.textContent=pct+'%';
     fillEl.style.width=Math.max(2,pct)+'%';
-    // このアプリの写真メモが占める実データ量 (メモリ上の dataURL から概算)
-    let appBytes=0, appPhotos=0;
+
+    // 参考: 写真本体は IndexedDB 側に保存されている量を別途表示
+    let imgBytes=0, imgCount=0;
     for(const c of state.cards){
       if(c && c.image && typeof c.image==='string' && !c.deletedAt){
-        appBytes+=dataUrlBytes(c.image);
-        appPhotos++;
+        imgBytes+=dataUrlBytes(c.image);
+        imgCount++;
       }
     }
-    let note=`端末全体: 約 ${mb(usage)} / ${mb(quota)} を使用中`;
-    if(appPhotos>0)note+=`\n保存中の画像 (全体): 約 ${mb(appBytes)} (${appPhotos} 枚)`;
-    if(pct>=95){
+    let note=`メモ保存枠: 約 ${mb(used)} / ${mb(LS_LIMIT)} を使用中`;
+    if(imgCount>0)note+=`\n写真の実データ (別保存): 約 ${mb(imgBytes)} (${imgCount} 枚)`;
+    if(pct>=90){
       box.classList.add('danger');
-      note+='\n空きが残りわずかです。不要な写真メモを削除するか、バックアップを書き出してから整理してください。';
-    }else if(pct>=80){
+      note+='\n保存枠が残りわずかです。古い写真メモを削除するか、バックアップを書き出してから整理してください。';
+    }else if(pct>=70){
       box.classList.add('warn');
-      note+='\n容量が増えてきました。不要な写真メモの削除をおすすめします。';
+      note+='\n保存枠が増えてきました。不要な写真メモの削除をおすすめします。';
     }
     subEl.textContent=note;
   }catch(e){
@@ -9071,15 +9074,22 @@ async function copyToShelf(){
 
   state.cards.unshift(c);
   // 写真メモはフォールバック画像も c.image としてローカル保持 (IndexedDBへ)
+  let ok;
   if(snap.image && typeof snap.image==='string' && snap.image.startsWith('data:')){
     c.image=snap.image;
-    const ok=await saveWithImages();
-    if(!ok){
-      toast('保存に失敗しました (容量不足の可能性)');
-      return;
-    }
+    ok=await saveWithImages();
   }else{
-    save();
+    ok=save();
+  }
+  if(!ok){
+    // 永続化に失敗したら、先に追加したカードを一覧から取り消す。
+    // (取り消さないと「失敗表示が出るのに一覧には残る」幽霊状態になる)
+    const idx=state.cards.findIndex(x=>x.id===c.id);
+    if(idx>=0)state.cards.splice(idx,1);
+    // IndexedDB に途中まで書けた画像も掃除しておく
+    if(c.image){imgDB.delete(c.id).catch(()=>{});}
+    toast('保存に失敗しました (容量不足の可能性)');
+    return;
   }
   toast('自分のメモに保存しました');
 }
