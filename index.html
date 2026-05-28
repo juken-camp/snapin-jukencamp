@@ -320,29 +320,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   box-shadow:none;
 }
 
-/* 復習ストリップ */
-.review-strip{
-  background:linear-gradient(135deg,#FFF8E8,#FEF3D6);
-  padding:14px 18px;
-  border-bottom:0.5px solid var(--line);
-  cursor:pointer;
-}
-.review-strip:active{background:linear-gradient(135deg,#FEF3D6,#FCE9B8);}
-.rs-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-.rs-title{font-size:13px;font-weight:600;color:#7A5A1F;display:flex;align-items:center;gap:6px;}
-.rs-count{font-family:var(--font-en);font-size:13px;color:#A57F2A;font-weight:600;}
-.rs-body{display:flex;align-items:center;gap:10px;}
-.rs-preview{display:flex;gap:5px;}
-.rs-mini{
-  width:34px;height:34px;border-radius:6px;background:white;
-  overflow:hidden;display:flex;align-items:center;justify-content:center;
-  font-size:8px;color:var(--ink2);padding:3px;
-  text-align:center;line-height:1.2;
-  box-shadow:0 1px 3px rgba(0,0,0,.06);
-}
-.rs-mini img{width:100%;height:100%;object-fit:cover;}
-.rs-cta{margin-left:auto;color:var(--gd);display:flex;align-items:center;}
-
 /* GRID */
 .grid{
   display:grid;
@@ -1739,109 +1716,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-weight:500;
 }
 
-/* REVIEW */
-.review-bg{
-  background:#0a0a0a;
-  color:white;
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  flex:1;
-}
-.review-top{
-  padding:14px 18px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  flex-shrink:0;
-}
-.review-close{
-  width:36px;height:36px;
-  border-radius:18px;
-  background:rgba(255,255,255,.1);
-  color:white;
-  display:flex;align-items:center;justify-content:center;
-}
-.review-progress{flex:1;height:3px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;}
-.review-progress-bar{height:100%;background:var(--g);width:0;transition:width .3s;}
-.review-counter{font-family:var(--font-en);font-size:12px;color:rgba(255,255,255,.7);}
-.review-stage{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  padding:0 24px;
-  text-align:center;
-  min-height:0;
-}
-.review-prompt{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:20px;}
-.review-card{
-  width:100%;
-  max-width:340px;
-  background:#1a1a1a;
-  border-radius:16px;
-  padding:24px;
-  margin-bottom:20px;
-  min-height:240px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.review-card img{max-width:100%;max-height:40vh;border-radius:8px;}
-.review-card .rv-text{font-size:18px;line-height:1.7;white-space:pre-wrap;text-align:left;width:100%;}
-.review-reveal{
-  padding:14px 32px;
-  background:var(--g);
-  color:white;
-  border-radius:24px;
-  font-size:15px;
-  font-weight:600;
-}
-.review-answer{
-  font-size:17px;
-  line-height:1.7;
-  white-space:pre-wrap;
-  padding:16px;
-  background:rgba(29,158,117,.12);
-  border-radius:10px;
-  border-left:3px solid var(--g);
-  text-align:left;
-  width:100%;
-  max-height:30vh;
-  overflow-y:auto;
-}
-.review-actions{
-  padding:14px 12px max(20px,env(safe-area-inset-bottom));
-  display:flex;
-  gap:8px;
-  flex-shrink:0;
-}
-.review-btn{
-  flex:1;
-  padding:14px 0;
-  border-radius:14px;
-  font-size:14px;
-  font-weight:600;
-  transition:transform .12s, filter .12s;
-}
-.review-btn:active{
-  transform:scale(0.96);
-  filter:brightness(1.15);
-}
-.review-btn.again{background:#3A2020;color:#FF8B7E;}
-.review-btn.good{background:#1F3A2C;color:#7AE5A8;}
-.review-done{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;}
-.review-done-icon{
-  width:80px;height:80px;
-  border-radius:40px;
-  background:linear-gradient(135deg,var(--g),var(--gd));
-  display:flex;align-items:center;justify-content:center;
-  margin-bottom:20px;
-  color:white;
-}
-.review-done h2{font-size:20px;margin-bottom:8px;font-weight:600;}
-
 /* SEARCH */
 .search-input-block{
   padding:14px 20px 10px;
@@ -1875,6 +1749,50 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-weight:500;
 }
 .scope-chip.on{background:var(--g);color:white;border-color:var(--g);}
+
+/* 未閲覧フィルタ (N日以上見ていないメモ) */
+.stale-filter-row{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:0 20px 12px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.stale-filter-row::-webkit-scrollbar{display:none;}
+.stale-filter-label{
+  font-size:11px;
+  color:var(--ink3);
+  white-space:nowrap;
+  flex-shrink:0;
+  margin-right:2px;
+}
+.stale-chip{
+  padding:6px 12px;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:14px;
+  font-size:12px;
+  color:var(--ink2);
+  white-space:nowrap;
+  flex-shrink:0;
+  font-weight:500;
+  font-family:var(--font-en);
+}
+.stale-chip.on{background:var(--amber,#E0A93B);color:white;border-color:var(--amber,#E0A93B);}
+.stale-input{
+  width:64px;
+  padding:6px 10px;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:14px;
+  font-size:12px;
+  color:var(--ink);
+  flex-shrink:0;
+  text-align:center;
+}
+.stale-input:focus{border-color:var(--g);outline:none;}
+
 .search-empty{padding:40px 30px;text-align:center;color:var(--ink3);font-size:13px;}
 
 /* 永続的な色フィルターバー (スコープ chips の下) */
@@ -2482,7 +2400,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;align-items:center;justify-content:center;
   color:white;
 }
-.today-block-icon.review{background:var(--amber);}
 .today-block-icon.tasks{background:var(--sky);}
 .today-block-icon.new{background:var(--g);}
 .today-block-icon.past{background:#7A8B9C;}
@@ -2491,53 +2408,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-family:var(--font-en);
   font-size:13px;
   color:var(--ink3);
-}
-
-/* 復習開始 大ボタン */
-.today-review-card{
-  margin:0 20px 18px;
-  background:linear-gradient(135deg,#FFF4DA,#FFE9B4);
-  border-radius:16px;
-  padding:18px 18px 16px;
-  display:flex;
-  align-items:center;
-  gap:14px;
-  cursor:pointer;
-  transition:transform .1s;
-}
-.today-review-card:active{transform:scale(0.98);}
-.today-review-icon{
-  width:52px;height:52px;
-  border-radius:14px;
-  background:white;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--amber);
-  flex-shrink:0;
-  box-shadow:0 2px 6px rgba(0,0,0,.06);
-}
-.today-review-info{flex:1;}
-.today-review-title{
-  font-size:15px;
-  font-weight:700;
-  color:#7A5A1F;
-  margin-bottom:2px;
-}
-.today-review-sub{
-  font-size:12px;
-  color:#A57F2A;
-}
-.today-review-arrow{color:#A57F2A;}
-
-.today-review-empty{
-  margin:0 20px 18px;
-  padding:18px;
-  background:var(--surface);
-  border:1px dashed var(--line2);
-  border-radius:14px;
-  text-align:center;
-  font-size:13px;
-  color:var(--ink3);
-  line-height:1.6;
 }
 
 /* 今日のタスク (リスト型カードの open items を集約) */
@@ -3278,14 +3148,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="today-sub" id="today-summary">―</div>
     </div>
 
-    <div id="today-review-section"></div>
     <div id="today-tasks-section"></div>
     <div id="today-new-section"></div>
     <div id="today-past1-section"></div>
     <div id="today-past2-section"></div>
     <div id="today-past3-section"></div>
     <div id="today-past-more-section"></div>
-    <div id="today-forgotten-section"></div>
   </div>
   <div class="bnav" data-bnav="today"></div>
 </div>
@@ -3348,6 +3216,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
     <div class="color-filter-row-wrap" id="color-filter-row"></div>
     <div class="tag-filter-row-wrap" id="tag-filter-row"></div>
+    <div class="stale-filter-row" id="stale-filter-row">
+      <span class="stale-filter-label">見ていない期間</span>
+      <button class="stale-chip" data-stale="3">3日+</button>
+      <button class="stale-chip" data-stale="5">5日+</button>
+      <button class="stale-chip" data-stale="7">7日+</button>
+      <button class="stale-chip" data-stale="10">10日+</button>
+      <button class="stale-chip" data-stale="14">14日+</button>
+      <input class="stale-input" id="stale-input" type="number" min="1" max="999" inputmode="numeric" placeholder="日数">
+    </div>
     <div id="search-idle"></div>
     <div id="search-results"></div>
   </div>
@@ -3468,19 +3345,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 </div>
 
 <!-- REVIEW -->
-<div class="screen" id="screen-review">
-  <div class="review-bg">
-    <div class="review-top">
-      <button class="review-close" data-action="close-review">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-      <div class="review-progress"><div class="review-progress-bar" id="rev-progress"></div></div>
-      <div class="review-counter"><span id="rev-cur">0</span>/<span id="rev-total">0</span></div>
-    </div>
-    <div class="review-stage" id="rev-stage"></div>
-  </div>
-</div>
-
 <!-- COLOR PICKER -->
 <div class="sheet-mask" id="color-mask" data-action="close-color"></div>
 <div class="sheet" id="color-sheet">
@@ -3689,6 +3553,7 @@ const state={
   libraryOrder:{},     // 公式ライブラリ一覧の手動並び順 { distributed:[id...], subbed:[id...], avail:[id...] }
   searchColor:null,    // 探すページの色フィルター
   searchTag:null,      // 探すページのタグフィルター
+  staleDays:null,      // 探すページの「N日以上見ていない」フィルター (null=無効)
   // ─── JUKEN CAMP 塾生認証 ───
   auth:null,           // { token, role, studentId, name, group, shelfIds, aiEnabled } または null
   deviceId:null,       // この端末のID (claim時に使う、localStorage永続)
@@ -4421,9 +4286,11 @@ function goto(id,push){
     renderLibrary();
   }
   if(id==='screen-search'){
-    // タブを開いた時は色フィルターをクリアして idle を再描画
+    // タブを開いた時は各フィルターをクリアして idle を再描画
     state.searchColor=null;
     state.searchTag=null;
+    state.staleDays=null;
+    const si=$('stale-input');if(si)si.value='';
     doSearch();
   }
   if(id==='screen-archive')renderArchiveScreen();
@@ -4899,10 +4766,6 @@ function renderToday(){
   // 以下のセクションで使うデータを取得
   const todayCards=getTodayCards();
 
-  // 復習ブロックは削除済み (機械的判定は感覚を上書きする)
-  const rv=$('today-review-section');
-  if(rv)rv.innerHTML='';
-
   // 「やること」セクションは廃止 (リスト型メモを大きく扱うと一覧の主役が変わってしまうため)。
   // やることはリストメモの中で確認できる。
   const tasksSec=$('today-tasks-section');
@@ -4954,45 +4817,6 @@ function renderToday(){
   // 4日前以降は「もっと見る」で展開
   renderPastMoreSection();
 
-  // 「久しく見ていない」メモ (14日以上)
-  const forgottenSec=$('today-forgotten-section');
-  const forgotten=getForgottenCards();
-  if(forgotten.length>0){
-    forgottenSec.innerHTML=`
-      <div class="today-block">
-        <div class="today-block-head">
-          <div class="today-block-title">
-            <div class="today-block-icon forgotten">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-            </div>
-            久しぶりのメモ
-          </div>
-          <div class="today-block-count">${forgotten.length}</div>
-        </div>
-      </div>
-      <div class="today-newcards" id="today-forgotten-cards"></div>
-    `;
-    const wrap=$('today-forgotten-cards');
-    forgotten.forEach(c=>{
-      const el=document.createElement('div');
-      el.className='today-newcard '+c.type;
-      if(c.type==='photo'||c.type==='photonote'){
-        el.innerHTML=`<img src="${c.image||''}" decoding="async" loading="eager">`;
-      }else if(c.type==='note'){
-        const col=colorById(c.color);
-        const style=noteCardStyle(c,col);
-        el.innerHTML=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
-      }else if(c.type==='list'){
-        el.innerHTML=listCardInner(c);
-      }else if(c.type==='link'){
-        el.innerHTML=linkCardInner(c);
-      }
-      el.addEventListener('click',()=>openDetail(c,'mine'));
-      wrap.appendChild(el);
-    });
-  }else{
-    forgottenSec.innerHTML='';
-  }
   // 「今日」画面の全 note カードに transform:scale を適用
   const todayScreen=$('screen-today');
   applyGridNoteScale(todayScreen);
@@ -5001,24 +4825,24 @@ function renderToday(){
   precacheCardImages(todayScreen);
 }
 
-function getForgottenCards(){
+// 「N日以上見ていないメモ」を返す ("探す"の未閲覧フィルタで使用)。
+// 基準は lastViewed (詳細を3秒以上開いた最終日時)。未閲覧なら created を起点にする。
+function getStaleCards(days){
   const now=Date.now();
   const DAY=86400000;
+  const threshold=days*DAY;
   const startOfToday=new Date();
   startOfToday.setHours(0,0,0,0);
   return getActiveCards().filter(c=>{
-    if(c.type==='list')return false; // タスクは別管理
     const created=c.created||0;
-    if(created>=startOfToday.getTime())return false; // 今日の保存は除外
-    const lastTouch=c.lastReview||created;
-    // 14日以上見ていない && 過去2回未満の復習
-    return (now-lastTouch)>=14*DAY && (c.reviewCount||0)<3;
+    if(created>=startOfToday.getTime())return false; // 今日保存したものは除外
+    const lastTouch=c.lastViewed||c.lastReview||created; // lastReviewは旧データ互換
+    return (now-lastTouch)>=threshold;
   }).sort((a,b)=>{
-    // 古いものから優先
-    const la=a.lastReview||a.created||0;
-    const lb=b.lastReview||b.created||0;
-    return la-lb;
-  }).slice(0,8);
+    const la=a.lastViewed||a.lastReview||a.created||0;
+    const lb=b.lastViewed||b.lastReview||b.created||0;
+    return la-lb; // 長く見ていないものから先に
+  });
 }
 
 function getTodayCards(){
@@ -6196,9 +6020,6 @@ function quickSave(){
     text:v,
     date:new Date().toISOString().slice(0,10),
     created:Date.now(),
-    stage:0,
-    lastReview:null,
-    reviewCount:0,
   };
   state.cards.unshift(c);
   save();
@@ -6238,10 +6059,6 @@ function quickPhoto(){
   $('quick-input').value='';
   onQuickInput();
   $('file-input-camera').click();
-}
-
-function quickList(){
-  startCreate('list');
 }
 
 // ═══ UPLOAD/EDIT ═══
@@ -6872,9 +6689,6 @@ function saveCard(){
   }
   if(c._new){
     c.created=Date.now();
-    c.stage=0;
-    c.lastReview=null;
-    c.reviewCount=0;
   }
   delete c._new;
 
@@ -7839,11 +7653,6 @@ function openDetail(c,origin){
   if(isOfficial && state.currentOfficial){
     metaHtml=`<span class="src">${esc(state.currentOfficial.handle)}</span>`+metaHtml;
   }
-  if(!isOfficial && c.type!=='list'){
-    const stage=c.stage||0;
-    const labels=['新規','学習中','学習中','定着中','定着中','ほぼ習得','習得済'];
-    metaHtml+=`<span style="margin-left:auto;color:var(--g);font-size:11px;font-family:var(--font-jp);">${labels[stage]||''}</span>`;
-  }
   $('detail-meta').innerHTML=metaHtml;
 
   let contentHtml='';
@@ -8090,7 +7899,8 @@ function attachDetailSwipe(){
   },{passive:true});
 }
 
-// 詳細画面を離れた時、滞在時間が3秒以上なら静かに stage を進める
+// 詳細画面を離れた時、滞在3秒以上なら「最後に見た日時」を記録する。
+// (「探す」の "N日以上見ていないメモ" フィルタで使用。習熟度stageの概念は廃止済み)
 function recordViewExit(){
   if(!state.current || state.current._origin==='official' || detailViewStart===0)return;
   const elapsed=Date.now()-detailViewStart;
@@ -8098,9 +7908,7 @@ function recordViewExit(){
   if(elapsed<3000)return;
   const c=state.cards.find(x=>x.id===state.current.id);
   if(!c)return;
-  // 3秒以上見たカードは「軽い接触」として復習スケジュールを少し進める
-  c.lastReview=Date.now();
-  c.reviewCount=(c.reviewCount||0)+1;
+  c.lastViewed=Date.now();
   save();
 }
 
@@ -8663,9 +8471,6 @@ async function copyToShelf(){
   c.id='c_'+Date.now();
   c.date=new Date().toISOString().slice(0,10);
   c.created=Date.now();
-  c.stage=0;
-  c.lastReview=null;
-  c.reviewCount=0;
   // 出典タグ (公式メモのコピー元を残す)
   if(state.currentOfficial){
     c.sourceShelf={
@@ -9251,18 +9056,27 @@ function doSearch(){
   const scope=state.searchScope;
   const colorFilter=state.searchColor||null;
   const tagFilter=state.searchTag||null;
+  const staleDays=state.staleDays||null;
 
   // 色フィルターバーは常に描画 (タグバーも内部で呼ばれる)
   renderColorFilterBar();
+  // 未閲覧フィルターのチップ選択状態を反映
+  renderStaleFilter();
 
-  // 空クエリ + 色フィルターなし + タグフィルターなし → 待機画面
-  if(!q && !colorFilter && !tagFilter){
+  // 空クエリ + 色なし + タグなし + 未閲覧フィルターなし → 待機画面
+  if(!q && !colorFilter && !tagFilter && !staleDays){
     out.innerHTML='';
     renderSearchIdle();
     return;
   }
   // 何か検索条件があれば idle を隠す
   idle.innerHTML='';
+
+  // 未閲覧フィルター用: N日以上見ていない自分のカードの id 集合を作る
+  let staleIdSet=null;
+  if(staleDays){
+    staleIdSet=new Set(getStaleCards(staleDays).map(c=>c.id));
+  }
 
   let results=[];
   if(scope==='all'||scope==='mine'||scope==='photo'||scope==='note'||scope==='list'){
@@ -9272,6 +9086,7 @@ function doSearch(){
       if(scope==='list' && c.type!=='list')return;
       if(colorFilter && (c.color||'default')!==colorFilter)return;
       if(tagFilter && !(c.tags||[]).includes(tagFilter))return;
+      if(staleIdSet && !staleIdSet.has(c.id))return;
       if(q){
         const aiText=(c.aiLog||[]).map(m=>m.text).join(' ');
         const linkText=c.link?[c.link.title,c.link.description,c.link.url,c.link.host,c.link.siteName].filter(Boolean).join(' '):'';
@@ -9281,7 +9096,8 @@ function doSearch(){
       results.push({card:c,origin:'mine'});
     });
   }
-  if((scope==='all'||scope==='official') && !colorFilter){
+  // 公式メモは「閲覧履歴」の概念がないので、未閲覧フィルター中は対象外にする
+  if((scope==='all'||scope==='official') && !colorFilter && !staleDays){
     OFFICIAL_SHELVES.forEach(s=>{
       if(q && (s.name+' '+s.handle+' '+s.desc).toLowerCase().includes(q))results.push({shelf:s});
       // 配布型（canSeeShelfId）または購読済みのカードを検索対象にする
@@ -9522,6 +9338,30 @@ function renderColorFilterBar(){
   renderTagFilterBar();
 }
 
+// 未閲覧フィルター: チップの選択状態と入力欄を現在の state に合わせる
+function renderStaleFilter(){
+  const row=$('stale-filter-row');
+  if(!row)return;
+  const cur=state.staleDays||null;
+  row.querySelectorAll('.stale-chip').forEach(el=>{
+    el.classList.toggle('on', cur!==null && parseInt(el.dataset.stale,10)===cur);
+  });
+  // 入力欄: プリセットに一致しない任意の数値が選ばれている時だけ値を表示
+  const inp=$('stale-input');
+  if(inp && document.activeElement!==inp){
+    const presets=[3,5,7,10,14];
+    inp.value=(cur!==null && !presets.includes(cur))?String(cur):'';
+  }
+}
+
+// 未閲覧フィルターの日数をセット (同じ値を再タップで解除)
+function setStaleDays(days){
+  const d=parseInt(days,10);
+  if(!d || d<1){ state.staleDays=null; }
+  else if(state.staleDays===d){ state.staleDays=null; } // トグル解除
+  else { state.staleDays=d; }
+  doSearch();
+}
 // 何も検索していないときの待機表示
 // (ピン留めはホームで目立つので重複表示しない。リストから外したメモ・捨てたメモへの入口だけ置く)
 function renderSearchIdle(){
@@ -9551,127 +9391,6 @@ function renderSearchIdle(){
   </div>`;
 
   idle.innerHTML=html;
-}
-
-// ═══ SPACED REPETITION ═══
-const REVIEW_INTERVALS=[1,3,7,14,30,60];
-
-function getDueCards(){
-  const now=Date.now();
-  const DAY=86400000;
-  return getActiveCards().filter(c=>{
-    if(c.type==='list')return false;
-    if(!c.text && !c.image)return false;
-    const stage=c.stage||0;
-    if(stage>=REVIEW_INTERVALS.length)return false;
-    const last=c.lastReview||c.created||now;
-    const interval=REVIEW_INTERVALS[stage]*DAY;
-    return (now-last)>=interval;
-  }).sort((a,b)=>(a.stage||0)-(b.stage||0));
-}
-
-function applyReviewGrade(card,grade){
-  const idx=state.cards.findIndex(c=>c.id===card.id);
-  if(idx<0)return;
-  const c=state.cards[idx];
-  const stage=c.stage||0;
-  if(grade==='again'){
-    c.stage=Math.max(0,stage-1);
-  }else if(grade==='good'){
-    c.stage=Math.min(REVIEW_INTERVALS.length,stage+1);
-  }
-  c.lastReview=Date.now();
-  c.reviewCount=(c.reviewCount||0)+1;
-  save();
-}
-
-// ═══ REVIEW MODE ═══
-let revQueue=[];
-let revIndex=0;
-let revRevealed=false;
-
-function startReview(){
-  revQueue=getDueCards();
-  if(revQueue.length===0){toast('見返すメモはありません');return;}
-  revIndex=0;
-  revRevealed=false;
-  goto('screen-review');
-  renderReviewCard();
-}
-
-function closeReview(){
-  back();
-  setTimeout(()=>renderHome(),50);
-}
-
-function renderReviewCard(){
-  const stage=$('rev-stage');
-  if(revIndex>=revQueue.length){
-    stage.innerHTML=`
-      <div class="review-done">
-        <div class="review-done-icon">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
-        </div>
-        <h2>おつかれさま</h2>
-        <button class="review-reveal" style="margin-top:24px;" id="rev-close-btn">メモに戻る</button>
-      </div>
-    `;
-    $('rev-progress').style.width='100%';
-    $('rev-close-btn').addEventListener('click',closeReview);
-    return;
-  }
-
-  const c=revQueue[revIndex];
-  $('rev-cur').textContent=revIndex+1;
-  $('rev-total').textContent=revQueue.length;
-  $('rev-progress').style.width=((revIndex/revQueue.length)*100)+'%';
-
-  const hasImage=!!c.image;
-  const hasText=!!c.text;
-
-  if(!revRevealed){
-    let cardHtml='';
-    let prompt='';
-    if(hasImage && hasText){
-      prompt='思い出せますか?';
-      cardHtml=`<img src="${c.image}">`;
-    }else if(hasImage){
-      prompt='なぜ保存したか思い出せますか?';
-      cardHtml=`<img src="${c.image}">`;
-    }else{
-      prompt='読んで、要約を思い浮かべて';
-      cardHtml=`<div class="rv-text">${esc(c.text)}</div>`;
-    }
-    stage.innerHTML=`
-      <div class="review-prompt">${prompt}</div>
-      <div class="review-card">${cardHtml}</div>
-      <button class="review-reveal" id="rev-reveal-btn">${hasImage&&hasText?'答えを見る':'次へ'}</button>
-    `;
-    $('rev-reveal-btn').addEventListener('click',()=>{revRevealed=true;renderReviewCard();});
-  }else{
-    let html='<div style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:340px;">';
-    if(hasImage)html+=`<img src="${c.image}" style="max-height:25vh;border-radius:8px;margin-bottom:14px;object-fit:contain;">`;
-    if(hasText)html+=`<div class="review-answer">${esc(c.text)}</div>`;
-    else if(!hasImage)html+=`<div class="review-answer">(メモなし)</div>`;
-    html+='</div>';
-    stage.innerHTML=`
-      <div class="review-prompt">思い出せましたか?</div>
-      ${html}
-      <div class="review-actions">
-        <button class="review-btn again" data-grade="again">もう一度</button>
-        <button class="review-btn good" data-grade="good">覚えた</button>
-      </div>
-    `;
-    stage.querySelectorAll('[data-grade]').forEach(b=>{
-      b.addEventListener('click',()=>{
-        if(navigator.vibrate)navigator.vibrate(12);
-        applyReviewGrade(revQueue[revIndex],b.dataset.grade);
-        revIndex++;
-        revRevealed=false;
-        renderReviewCard();
-      });
-    });
-  }
 }
 
 // ═══ UTILS ═══
@@ -9804,14 +9523,13 @@ document.addEventListener('click',e=>{
   const a=t.dataset.action;
 
   // 詳細画面を離れる前に滞在時間を記録
-  const isLeavingDetail=['back','nav-home','nav-library','nav-search','close-review','toggle-menu','edit-card','delete-card','archive-card'].indexOf(a)>=0;
+  const isLeavingDetail=['back','nav-home','nav-library','nav-search','toggle-menu','edit-card','delete-card','archive-card'].indexOf(a)>=0;
   if(isLeavingDetail && document.getElementById('screen-detail').classList.contains('active')){
     if(a!=='toggle-menu')recordViewExit();
   }
 
   switch(a){
     case 'login-personal':login('personal');break;
-    case 'login-official':login('official');break;
     case 'goto-claim':gotoClaim();break;
     case 'claim-submit':doClaimSubmit();break;
     case 'logout-confirm':logoutConfirm();break;
@@ -9829,7 +9547,6 @@ document.addEventListener('click',e=>{
     case 'create-camera':startCreate('camera');break;
     case 'create-photo':startCreate('photo');break;
     case 'create-note':startCreate('note');break;
-    case 'create-file':startCreate('file');break;
     case 'create-list':startCreate('list');break;
     case 'create-url':startCreate('url');break;
     case 'photo-src-camera':pickPhotoSource('camera');break;
@@ -9841,8 +9558,6 @@ document.addEventListener('click',e=>{
     case 'view-grid':setView('grid');break;
     case 'view-reel':setView('reel');break;
     case 'toggle-mosaic':toggleMosaic();break;
-    case 'start-review':startReview();break;
-    case 'close-review':closeReview();break;
     case 'toggle-menu':$('detail-menu').classList.toggle('on');e.stopPropagation();break;
     case 'edit-card':editCard();break;
     case 'delete-card':deleteCard();break;
@@ -9858,7 +9573,6 @@ document.addEventListener('click',e=>{
     case 'toggle-ai-mode':toggleAiMode();break;
     case 'detail-send':detailSend();break;
     case 'quick-photo':quickPhoto();break;
-    case 'quick-list':quickList();break;
     case 'quick-save':quickSave();break;
     case 'ocr-rerun':ocrRerun();break;
     case 'ocr-retake':ocrRetake();break;
@@ -9905,6 +9619,13 @@ document.addEventListener('click',e=>{
   setScope(c.dataset.scope);
 });
 
+// 未閲覧フィルターのチップ
+document.addEventListener('click',e=>{
+  const c=e.target.closest('.stale-chip');
+  if(!c)return;
+  setStaleDays(c.dataset.stale);
+});
+
 // リストから外したメモ・捨てたメモ画面の行内ボタン処理
 document.addEventListener('click',e=>{
   const btn=e.target.closest('[data-bin-action]');
@@ -9930,6 +9651,14 @@ document.addEventListener('click',e=>{
 
 // 入力ハンドラ
 $('search-q').addEventListener('input',doSearch);
+
+// 未閲覧フィルターの自由入力 (数値)。入力のたびに反映。
+$('stale-input').addEventListener('input',e=>{
+  const v=parseInt(e.target.value,10);
+  if(!v || v<1){ state.staleDays=null; }
+  else { state.staleDays=v; }
+  doSearch();
+});
 
 $('quick-input').addEventListener('input',onQuickInput);
 $('quick-input').addEventListener('keydown',e=>{
