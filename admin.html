@@ -703,6 +703,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   word-break:break-word;
 }
 .memo-card.list .ctxt{font-size:11px;}
+/* リンクカード: サムネ + テキストを縦に積む (画像で60%, ctxtは下40%) */
+.memo-card.link{display:flex;flex-direction:column;}
+.memo-card.link .ctxt{
+  height:auto;
+  flex:1;
+  -webkit-line-clamp:2;
+  line-height:1.4;
+}
 .memo-card-add{
   background:var(--gl);
   display:flex;
@@ -839,8 +847,59 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-size:15px;
   padding:6px 0;
 }
+/* テキストメモ編集エリア: 縦揃えのため flex 縦並びにする */
+.note-edit-area{
+  display:flex;
+  flex-direction:column;
+  min-height:160px;
+}
+.note-edit-area textarea{
+  flex:0 0 auto;
+  width:100%;
+  min-height:120px;
+}
+
+/* 揃えツールバー */
+.align-row{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:14px;
+}
+.align-group{
+  display:flex;
+  gap:4px;
+}
+.align-sep{
+  width:0.5px;
+  height:22px;
+  background:var(--line2);
+  margin:0 4px;
+}
+.align-btn{
+  width:38px;height:34px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:8px;
+  color:var(--ink3);
+  transition:color .12s,background .12s,border-color .12s;
+}
+.align-btn svg{width:18px;height:18px;}
+.align-btn.on{
+  color:var(--gd);
+  background:var(--gl);
+  border-color:var(--g);
+}
+.align-btn:active{transform:scale(0.94);}
 
 /* 色選択 */
+.color-label{
+  font-size:12px;
+  color:var(--ink3);
+  font-weight:500;
+  margin-bottom:8px;
+}
 .color-row{
   display:flex;
   gap:8px;
@@ -848,12 +907,104 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   flex-wrap:wrap;
 }
 .color-swatch{
+  position:relative;
   width:36px;height:36px;
   border-radius:50%;
-  border:2px solid transparent;
+  /* スウォッチの縁に、利用者端末で実際に付く枠線色 (bd) を薄く見せる */
+  border:2px solid var(--sw-bd,var(--line2));
   cursor:pointer;
+  transition:transform .1s;
 }
-.color-swatch.on{border-color:var(--g);}
+.color-swatch:active{transform:scale(0.92);}
+/* 選択中: 緑のリングを外側に出す (枠線色とは別物として明確化) */
+.color-swatch.on{
+  box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--g);
+}
+/* 「なし」スウォッチには斜線を引いて無色だと分かるようにする */
+.color-swatch.is-none::after{
+  content:'';
+  position:absolute;
+  left:50%;top:2px;bottom:2px;
+  width:2px;
+  background:var(--rose);
+  transform:translateX(-50%) rotate(45deg);
+  border-radius:1px;
+}
+
+/* リンクメモ編集 */
+.link-fetch-row{
+  display:flex;
+  gap:8px;
+  margin-bottom:6px;
+}
+.link-fetch-row input{
+  flex:1;
+  height:42px;
+  padding:0 14px;
+  background:var(--surface);
+  border:0.5px solid var(--line2);
+  border-radius:10px;
+  font-size:14px;
+}
+.link-fetch-row input:focus{border-color:var(--g);}
+.link-fetch-btn{
+  flex-shrink:0;
+  height:42px;
+  padding:0 18px;
+  background:var(--g);
+  color:#fff;
+  font-size:14px;
+  font-weight:600;
+  border-radius:10px;
+}
+.link-fetch-btn:active{background:var(--gd);transform:scale(0.97);}
+.link-fetch-btn:disabled{opacity:.5;}
+.link-fetch-msg{
+  font-size:12px;
+  min-height:16px;
+  margin-bottom:8px;
+}
+.link-fetch-msg.err{color:var(--rose);}
+.link-fetch-msg.loading{color:var(--g);}
+.link-preview{
+  display:flex;
+  gap:12px;
+  background:var(--surface);
+  border:0.5px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:4px;
+}
+.link-preview-thumb{
+  flex-shrink:0;
+  width:72px;height:72px;
+  border-radius:8px;
+  overflow:hidden;
+  background:var(--bg);
+}
+.link-preview-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.link-preview-thumb.no-img{
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#E8F5EF,#F4FAF7);
+  color:var(--g);
+}
+.link-preview-thumb.no-img svg{width:32px;height:32px;}
+.link-preview-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.link-preview-body input{
+  font-size:14px;
+  font-weight:600;
+  padding:2px 0;
+  border-bottom:0.5px solid var(--line);
+}
+.link-preview-body input:focus{border-bottom-color:var(--g);}
+.link-preview-host{font-size:11px;color:var(--ink3);}
+.link-preview-url{
+  font-size:11px;
+  color:var(--ink3);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
 
 /* クロスポスト: 共有する公式ライブラリ */
 .share-row{
@@ -1365,16 +1516,39 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 const $=id=>document.getElementById(id);
 
+// 利用者アプリ (index.html) と完全に同一の定義に揃える。
+// id・bg(背景)・fg(文字)・bd(枠線) すべて一致させないと、
+// 管理画面で付けた色が利用者端末で正しく表示されない。
 const CARD_COLORS=[
-  {id:'default',name:'白',bg:'#FFFDF5',fg:'#1A1A1A'},
-  {id:'yellow', name:'黄',bg:'#FFF6D6',fg:'#5A4818'},
-  {id:'pink',   name:'桃',bg:'#FCE6E8',fg:'#6B2030'},
-  {id:'blue',   name:'青',bg:'#E0EDF8',fg:'#1F3A5C'},
-  {id:'green',  name:'緑',bg:'#E0F1E4',fg:'#1F4E2C'},
-  {id:'purple', name:'紫',bg:'#EBE0F2',fg:'#3D2657'},
-  {id:'gray',   name:'灰',bg:'#ECEDEE',fg:'#3A3F44'},
+  {id:'none',   name:'なし',bg:'#FFFDF5',fg:'#1A1A1A',bd:'transparent'},
+  {id:'yellow', name:'黄',bg:'#FFF6D6',fg:'#5A4818',bd:'#E8C24A'},
+  {id:'orange', name:'橙',bg:'#FDE9D4',fg:'#6E3E18',bd:'#E89A4A'},
+  {id:'pink',   name:'桃',bg:'#FCE6E8',fg:'#6B2030',bd:'#E58AA0'},
+  {id:'blue',   name:'青',bg:'#E0EDF8',fg:'#1F3A5C',bd:'#5B9BD5'},
+  {id:'green',  name:'緑',bg:'#E0F1E4',fg:'#1F4E2C',bd:'#5BB371'},
+  {id:'purple', name:'紫',bg:'#EBE0F2',fg:'#3D2657',bd:'#A87FC4'},
+  {id:'gray',   name:'灰',bg:'#ECEDEE',fg:'#3A3F44',bd:'#9AA0A6'},
 ];
-const colorById=id=>CARD_COLORS.find(c=>c.id===id)||CARD_COLORS[0];
+// 旧データの 'default' は 'none' とみなす (見た目も同じクリーム色)。
+function colorById(id){
+  if(id==='default')id='none';
+  return CARD_COLORS.find(c=>c.id===id)||CARD_COLORS[0];
+}
+// 色が「指定なし」か判定 (未設定・none・旧default はすべて無色)
+function isNoColor(id){return !id || id==='none' || id==='default';}
+
+// テキストメモの揃え。利用者アプリ (index.html) と同じロジック:
+// 明示設定 (alignH/alignV) があればそれを使い、なければ文字量から自動判定。
+// 短文 (25字以下) は中央寄せ、それ以外は左上。
+function resolveAlign(c){
+  const tlen=(c.text||'').length;
+  const autoH=tlen<=25?'center':'left';
+  const autoV=tlen<=25?'center':'top';
+  return {
+    h:(c.alignH==='left'||c.alignH==='center')?c.alignH:autoH,
+    v:(c.alignV==='top'||c.alignV==='center')?c.alignV:autoV,
+  };
+}
 
 const state={
   password:null,         // ログイン後、メモリ上+localStorage で保持
@@ -2207,6 +2381,12 @@ function renderMemoGrid(){
     }else if(displayCard.type==='list'){
       const items=(displayCard.items||[]).slice(0,5).map(i=>`<div>・${esc(i.t)}</div>`).join('');
       inner=`<div class="ctxt">${displayCard.title?`<b>${esc(displayCard.title)}</b><br>`:''}${items}</div>`;
+    }else if(displayCard.type==='link'){
+      const link=displayCard.link||{};
+      const thumb=link.image
+        ? `<img src="${esc(link.image)}" alt="" style="width:100%;height:60%;object-fit:cover;display:block;">`
+        : `<div style="width:100%;height:60%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#E8F5EF,#F4FAF7);color:var(--g);"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
+      inner=`${thumb}<div class="ctxt" style="padding:6px 8px;font-size:10px;"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(link.title||link.url||'(無題のリンク)')}</b><span style="color:var(--ink3);">${esc(link.siteName||link.host||'')}</span></div>`;
     }
     // 共有バッジ
     let badge='';
@@ -2246,7 +2426,7 @@ function openMemoModal(card){
       id:'c_'+Date.now(),
       type:'note',
       text:'',
-      color:'default',
+      color:'none',
       items:[{t:'',mark:'check'}],
       created:Date.now(),
     };
@@ -2305,18 +2485,45 @@ function renderMemoModalBody(){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         リスト
       </button>
+      <button class="type-chip ${m.type==='link'?'on':''}" data-set-type="link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        リンク
+      </button>
     </div>
   `:'';
 
   let editHtml='';
   if(m.type==='note'){
     const col=colorById(m.color);
+    const al=resolveAlign(m);
+    // textarea に現在の揃えを反映 (横: text-align / 縦: flex の配置)
+    const taAlign=`text-align:${al.h};`;
+    const areaJustify=al.v==='center'?'center':'flex-start';
     editHtml=`
-      <div class="memo-edit-area" style="background:${col.bg};color:${col.fg};">
-        <textarea id="memo-text" placeholder="メモを書く…">${esc(m.text||'')}</textarea>
+      <div class="memo-edit-area note-edit-area" style="background:${col.bg};color:${col.fg};justify-content:${areaJustify};">
+        <textarea id="memo-text" placeholder="メモを書く…" style="${taAlign}">${esc(m.text||'')}</textarea>
+      </div>
+      <div class="align-row" id="align-row">
+        <div class="align-group" data-axis="h">
+          <button class="align-btn ${al.h==='left'?'on':''}" data-axis="h" data-align="left" title="左寄せ">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h12M3 18h15"/></svg>
+          </button>
+          <button class="align-btn ${al.h==='center'?'on':''}" data-axis="h" data-align="center" title="中央寄せ">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M6 12h12M5 18h14"/></svg>
+          </button>
+        </div>
+        <div class="align-sep"></div>
+        <div class="align-group" data-axis="v">
+          <button class="align-btn ${al.v==='top'?'on':''}" data-axis="v" data-align="top" title="上揃え">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h16M9 9v10M15 9v6"/></svg>
+          </button>
+          <button class="align-btn ${al.v==='center'?'on':''}" data-axis="v" data-align="center" title="中央揃え">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16M9 7v10M15 9v6"/></svg>
+          </button>
+        </div>
       </div>
       <div class="color-row">
-        ${CARD_COLORS.map(c=>`<button class="color-swatch ${m.color===c.id?'on':''}" data-set-color="${c.id}" style="background:${c.bg};"></button>`).join('')}
+        ${CARD_COLORS.map(c=>`<button class="color-swatch ${(m.color||'none')===c.id?'on':''} ${c.id==='none'?'is-none':''}" data-set-color="${c.id}" style="background:${c.bg};--sw-bd:${c.bd};" title="${c.name}"></button>`).join('')}
       </div>
     `;
   }else if(m.type==='photo' || m.type==='photonote'){
@@ -2342,6 +2549,10 @@ function renderMemoModalBody(){
       `:''}
       <div class="memo-edit-area" style="margin-top:14px;">
         <textarea id="memo-text" placeholder="一言メモ">${esc(m.text||'')}</textarea>
+      </div>
+      <div class="color-label">枠の色</div>
+      <div class="color-row">
+        ${CARD_COLORS.map(c=>`<button class="color-swatch ${(m.color||'none')===c.id?'on':''} ${c.id==='none'?'is-none':''}" data-set-color="${c.id}" style="background:${c.bg};--sw-bd:${c.bd};" title="${c.name}"></button>`).join('')}
       </div>
     `;
   }else if(m.type==='list'){
@@ -2380,6 +2591,34 @@ function renderMemoModalBody(){
           `;
         }).join('')}
         <button class="list-item-add" id="list-item-add">+ 項目を追加</button>
+      </div>
+    `;
+  }else if(m.type==='link'){
+    const link=m.link||{};
+    const hasLink=!!(link.url||link.title);
+    // プレビュー (取得済みのとき)
+    const previewHtml=hasLink?`
+      <div class="link-preview">
+        ${link.image
+          ? `<div class="link-preview-thumb"><img src="${esc(link.image)}" alt=""></div>`
+          : `<div class="link-preview-thumb no-img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`
+        }
+        <div class="link-preview-body">
+          <input id="link-title" type="text" placeholder="タイトル" value="${esc(link.title||'')}">
+          <div class="link-preview-host">${esc(link.siteName||link.host||'')}</div>
+          <div class="link-preview-url">${esc(link.url||'')}</div>
+        </div>
+      </div>
+    `:'';
+    editHtml=`
+      <div class="link-fetch-row">
+        <input id="link-url-input" type="url" inputmode="url" placeholder="https://… URLを貼り付け" value="${esc(link._inputUrl||link.originalUrl||link.url||'')}">
+        <button class="link-fetch-btn" id="link-fetch-btn">取得</button>
+      </div>
+      <div class="link-fetch-msg" id="link-fetch-msg"></div>
+      ${previewHtml}
+      <div class="memo-edit-area" style="margin-top:14px;">
+        <textarea id="memo-text" placeholder="一言メモ (任意)">${esc(m.text||'')}</textarea>
       </div>
     `;
   }
@@ -2425,6 +2664,7 @@ function renderMemoModalBody(){
       const t=btn.dataset.setType;
       state.editingMemo.type=t;
       if(t==='list' && !state.editingMemo.items)state.editingMemo.items=[{t:'',mark:'check'}];
+      if(t==='link' && !state.editingMemo.link)state.editingMemo.link={};
       renderMemoModalBody();
     });
   });
@@ -2437,6 +2677,27 @@ function renderMemoModalBody(){
       if(ta)ta.focus();
     });
   });
+  // align (テキストメモの揃え)
+  const alignRow=$('align-row');
+  if(alignRow){
+    alignRow.querySelectorAll('.align-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const axis=btn.dataset.axis;
+        const val=btn.dataset.align;
+        if(axis==='h')state.editingMemo.alignH=val;
+        else state.editingMemo.alignV=val;
+        // ボタンの選択状態を同じ軸の中で更新
+        alignRow.querySelectorAll(`.align-btn[data-axis="${axis}"]`).forEach(b=>{
+          b.classList.toggle('on',b===btn);
+        });
+        // textarea のプレビューを即時反映 (再描画しないのでフォーカス・カーソルを維持)
+        const ta=$('memo-text');
+        const area=ta?ta.closest('.note-edit-area'):null;
+        if(ta && axis==='h')ta.style.textAlign=val;
+        if(area && axis==='v')area.style.justifyContent=(val==='center')?'center':'flex-start';
+      });
+    });
+  }
   // text
   const ta=$('memo-text');
   if(ta){
@@ -2453,6 +2714,30 @@ function renderMemoModalBody(){
   if(lt){
     lt.addEventListener('input',e=>{
       state.editingMemo.title=e.target.value;
+    });
+  }
+  // link: URL入力欄 (入力値を保持しておき、取得失敗しても消えないように)
+  const linkUrlInp=$('link-url-input');
+  if(linkUrlInp){
+    linkUrlInp.addEventListener('input',e=>{
+      if(!state.editingMemo.link)state.editingMemo.link={};
+      state.editingMemo.link._inputUrl=e.target.value;
+    });
+    linkUrlInp.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();fetchLinkInModal();}
+    });
+  }
+  // link: 取得ボタン
+  const linkFetchBtn=$('link-fetch-btn');
+  if(linkFetchBtn){
+    linkFetchBtn.addEventListener('click',fetchLinkInModal);
+  }
+  // link: 取得後のタイトル手直し
+  const linkTitle=$('link-title');
+  if(linkTitle){
+    linkTitle.addEventListener('input',e=>{
+      if(!state.editingMemo.link)state.editingMemo.link={};
+      state.editingMemo.link.title=e.target.value;
     });
   }
   // list items
@@ -2913,6 +3198,57 @@ const cropEditor=(function(){
   };
 })();
 
+// ═══ リンクメモ: URL から OGP を取得 ═══
+// 利用者アプリ (index.html) と同じ /api/og-fetch エンドポイントを使い、
+// タイトル・説明・サムネ画像・サイト名を取得して link オブジェクトに格納する。
+async function fetchLinkInModal(){
+  const m=state.editingMemo;
+  if(!m)return;
+  const inp=$('link-url-input');
+  const msg=$('link-fetch-msg');
+  const btn=$('link-fetch-btn');
+  const raw=(inp?inp.value:'').trim();
+  const setMsg=(t,kind)=>{
+    if(!msg)return;
+    msg.textContent=t;
+    msg.className='link-fetch-msg'+(kind?' '+kind:'');
+  };
+  if(!raw){setMsg('URLを入力してください','err');return;}
+  // 簡易バリデーション (スキーマなしでも許容、サーバ側で https を補う)
+  if(!/^(https?:\/\/)?[^\s]+\.[^\s]+/i.test(raw)){
+    setMsg('URLの形式が正しくないようです','err');
+    return;
+  }
+  setMsg('読み込んでいます…','loading');
+  if(btn)btn.disabled=true;
+  try{
+    const res=await fetch('/api/og-fetch',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url:raw}),
+    });
+    const data=await res.json();
+    if(!data || !data.ok){
+      throw new Error(data&&data.error?data.error:'取得に失敗しました');
+    }
+    // 利用者アプリと同じ link スキーマで格納
+    m.link={
+      url:data.finalUrl||data.url||raw,
+      originalUrl:raw,
+      title:data.title||'',
+      description:data.description||'',
+      image:data.image||null,
+      host:data.host||'',
+      siteName:data.siteName||data.host||'',
+    };
+    setMsg('','');
+    renderMemoModalBody();
+  }catch(e){
+    setMsg('読み込めませんでした。URLを確認してください','err');
+    if(btn)btn.disabled=false;
+  }
+}
+
 // 公式メモの「本文系」フィールドが変わったか判定する。
 // これが true の時だけ memo.updated を更新し、利用者端末に「更新」バッジを出す。
 // type / text / title / image / items / link / ocrText / color を比較対象とする。
@@ -2923,7 +3259,7 @@ function memoBodyChanged(prev,next){
     if(typeof v==='object')return JSON.stringify(v);
     return String(v);
   };
-  const fields=['type','text','title','image','items','link','ocrText','color'];
+  const fields=['type','text','title','image','items','link','ocrText','color','alignH','alignV'];
   for(const f of fields){
     if(norm(prev[f])!==norm(next[f]))return true;
   }
@@ -2944,9 +3280,18 @@ async function saveMemoFromModal(){
     toast('写真を選択してください');
     return;
   }
+  if(m.type==='link' && !(m.link && m.link.url)){
+    toast('URLを取得してください');
+    return;
+  }
   // 保存
   const memo=Object.assign({},m);
   delete memo._new;
+  // 編集用の一時フィールド (URL入力途中の値) は保存対象から除く
+  if(memo.link && memo.link._inputUrl!==undefined){
+    memo.link=Object.assign({},memo.link);
+    delete memo.link._inputUrl;
+  }
   memo.created=memo.created||Date.now();
   // sharedWith は配列を保証 + 存在しない or 自分自身のIDは掃除
   if(!Array.isArray(memo.sharedWith))memo.sharedWith=[];
