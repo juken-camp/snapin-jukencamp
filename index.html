@@ -4011,15 +4011,22 @@ function canSeeShelfId(shelfId){
 
 // メモカードの色パレット (タグの代わりに色で分類)
 const CARD_COLORS=[
-  {id:'default',name:'白',bg:'#FFFDF5',fg:'#1A1A1A'},
-  {id:'yellow', name:'黄',bg:'#FFF6D6',fg:'#5A4818'},
-  {id:'pink',   name:'桃',bg:'#FCE6E8',fg:'#6B2030'},
-  {id:'blue',   name:'青',bg:'#E0EDF8',fg:'#1F3A5C'},
-  {id:'green',  name:'緑',bg:'#E0F1E4',fg:'#1F4E2C'},
-  {id:'purple', name:'紫',bg:'#EBE0F2',fg:'#3D2657'},
-  {id:'gray',   name:'灰',bg:'#ECEDEE',fg:'#3A3F44'},
+  {id:'none',   name:'なし',bg:'#FFFDF5',fg:'#1A1A1A',bd:'transparent'},
+  {id:'yellow', name:'黄',bg:'#FFF6D6',fg:'#5A4818',bd:'#E8C24A'},
+  {id:'orange', name:'橙',bg:'#FDE9D4',fg:'#6E3E18',bd:'#E89A4A'},
+  {id:'pink',   name:'桃',bg:'#FCE6E8',fg:'#6B2030',bd:'#E58AA0'},
+  {id:'blue',   name:'青',bg:'#E0EDF8',fg:'#1F3A5C',bd:'#5B9BD5'},
+  {id:'green',  name:'緑',bg:'#E0F1E4',fg:'#1F4E2C',bd:'#5BB371'},
+  {id:'purple', name:'紫',bg:'#EBE0F2',fg:'#3D2657',bd:'#A87FC4'},
+  {id:'gray',   name:'灰',bg:'#ECEDEE',fg:'#3A3F44',bd:'#9AA0A6'},
 ];
-function colorById(id){return CARD_COLORS.find(c=>c.id===id)||CARD_COLORS[0];}
+// 旧データの 'default' は 'none' とみなす (見た目も同じクリーム色)。
+function colorById(id){
+  if(id==='default')id='none';
+  return CARD_COLORS.find(c=>c.id===id)||CARD_COLORS[0];
+}
+// 色が「指定なし」か判定 (未設定・none・旧default はすべて無色)
+function isNoColor(id){return !id || id==='none' || id==='default';}
 
 // 文字量に応じて文字サイズを自動調整 (Facebook風)
 // グリッド用 (小さいサムネ): 短い=大、長い=小
@@ -5176,6 +5183,7 @@ function renderToday(){
       el.className='today-newcard '+c.type;
       if(c.type==='photo'||c.type==='photonote'){
         el.innerHTML=`<img src="${c.image||''}" decoding="async" loading="eager">`;
+        if(!isNoColor(c.color)){const col=colorById(c.color);el.style.border='2.5px solid '+col.bd;el.style.boxSizing='border-box';}
       }else if(c.type==='note'){
         const col=colorById(c.color);
         const style=noteCardStyle(c,col);
@@ -5283,6 +5291,7 @@ function renderPastDaySection(daysAgo){
     el.className='today-newcard '+c.type;
     if(c.type==='photo'||c.type==='photonote'){
       el.innerHTML=`<img src="${c.image||''}" decoding="async" loading="eager">`;
+      if(!isNoColor(c.color)){const col=colorById(c.color);el.style.border='2.5px solid '+col.bd;el.style.boxSizing='border-box';}
     }else if(c.type==='note'){
       const col=colorById(c.color);
       const style=noteCardStyle(c,col);
@@ -5362,7 +5371,8 @@ function renderPastMoreSection(){
         body=linkCardInner(c);
       }
       if(cardHasUpdate(c0))body+=`<div class="card-update-badge">更新</div>`;
-      return `<div class="today-newcard ${c.type}" data-card-id="${esc(c0.id)}">${body}</div>`;
+      const frameStyle=((c.type==='photo'||c.type==='photonote') && !isNoColor(c.color))?` style="border:2.5px solid ${colorById(c.color).bd};box-sizing:border-box;"`:'';
+      return `<div class="today-newcard ${c.type}" data-card-id="${esc(c0.id)}"${frameStyle}>${body}</div>`;
     }).join('');
     html+=`
       <div class="today-block">
@@ -5462,6 +5472,7 @@ function renderGrid(el,cards,origin){
     if(dc.type==='photo' || dc.type==='photonote'){
       const col=colorById(dc.color);
       card.style.background=col.bg;
+      if(!isNoColor(dc.color)){card.style.border='2.5px solid '+col.bd;card.style.boxSizing='border-box';}
       inner=`<img src="${dc.image||''}" alt="" decoding="async" loading="eager">`;
       if(dc.text)inner+=`<div class="card-source">${esc(dc.text.slice(0,30))}</div>`;
     }else if(dc.type==='note'){
@@ -5695,6 +5706,7 @@ function renderFeed(el,cards){
       inner=`<img src="${c.image||''}" alt="" decoding="async" loading="eager">`;
       const txt=c.text?esc(c.text.slice(0,80)):'';
       inner+=`<div class="feed-meta">${txt}　${fmtDate(c.date)}</div>`;
+      if(!isNoColor(c.color)){item.style.border='3px solid '+colorById(c.color).bd;item.style.boxSizing='border-box';}
     }else if(c.type==='note'){
       const col=colorById(c.color);
       const fz=autoFontSizeDetail(c.text||'');
@@ -6704,7 +6716,7 @@ function renderUpload(){
     colorRow.style.cssText='display:flex;gap:8px;overflow-x:auto;padding:14px 0 4px;scrollbar-width:none;';
     CARD_COLORS.forEach(col=>{
       const sw=document.createElement('button');
-      sw.style.cssText=`flex-shrink:0;width:38px;height:38px;border-radius:50%;background:${col.bg};color:${col.fg};font-size:11px;font-weight:600;border:2px solid ${(c.color||'default')===col.id?'var(--g)':'transparent'};display:flex;align-items:center;justify-content:center;`;
+      sw.style.cssText=`flex-shrink:0;width:38px;height:38px;border-radius:50%;background:${col.bg};color:${col.fg};font-size:11px;font-weight:600;border:2px solid ${(isNoColor(c.color)?'none':c.color)===col.id?'var(--g)':'transparent'};display:flex;align-items:center;justify-content:center;`;
       sw.textContent=col.name;
       sw.addEventListener('click',()=>{
         state.current.color=col.id;
@@ -8109,6 +8121,8 @@ function openDetail(c,origin){
     $('detail-img').classList.remove('hide');
     const col=colorById(c.color);
     $('detail-img').style.background=col.bg;
+    $('detail-img').style.border=isNoColor(c.color)?'none':('3px solid '+col.bd);
+    $('detail-img').style.boxSizing='border-box';
     $('detail-img').innerHTML=`<img src="${c.image}" alt="" decoding="async">`;
     // ピンチズーム機能を初期化
     setupImageZoom($('detail-img'));
@@ -8988,7 +9002,7 @@ function openColorPicker(){
   }
   const picker=$('color-picker');
   picker.innerHTML='';
-  const curColor=state.current.color||'default';
+  const curColor=isNoColor(state.current.color)?'none':state.current.color;
   CARD_COLORS.forEach(c=>{
     const sw=document.createElement('button');
     sw.className='color-swatch'+(c.id===curColor?' selected':'');
@@ -9646,7 +9660,7 @@ function doSearch(){
       if(scope==='photo' && dc.type!=='photo' && dc.type!=='photonote')return;
       if(scope==='note' && dc.type!=='note')return;
       if(scope==='list' && dc.type!=='list')return;
-      if(colorFilter && (dc.color||'default')!==colorFilter)return;
+      if(colorFilter && (isNoColor(dc.color)?'none':dc.color)!==colorFilter)return;
       if(tagFilter && !(c.tags||[]).includes(tagFilter))return;
       if(q){
         const chatText=(c.chat||[]).map(m=>m.text).join(' ');
@@ -9954,7 +9968,7 @@ function setTagFilter(tag){
 function renderColorFilterBar(){
   const bar=$('color-filter-row');
   if(!bar)return;
-  const colors=CARD_COLORS;
+  const colors=CARD_COLORS.filter(c=>c.id!=='none'); // 「なし」は色検索の対象外
   const html=colors.map(c=>`
     <button class="color-filter-chip ${state.searchColor===c.id?'on':''}" data-color-filter="${c.id}">
       <span class="swatch" style="background:${c.bg};"></span>
