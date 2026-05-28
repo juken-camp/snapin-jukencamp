@@ -3218,7 +3218,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       </div>
     </div>
     <div class="search-scope" id="search-scope-bar">
-      <button class="scope-chip on" data-scope="all">すべて</button>
       <button class="scope-chip" data-scope="mine">自分</button>
       <button class="scope-chip" data-scope="official">公式</button>
       <button class="scope-chip" data-scope="photo">写真</button>
@@ -4304,9 +4303,11 @@ function goto(id,push){
   }
   if(id==='screen-search'){
     // タブを開いた時は各フィルターをクリアして idle を再描画
+    state.searchScope='all';
     state.searchColor=null;
     state.searchTag=null;
     state.tagEditMode=false;
+    document.querySelectorAll('.scope-chip').forEach(c=>c.classList.remove('on'));
     doSearch();
   }
   if(id==='screen-archive')renderArchiveScreen();
@@ -9123,8 +9124,10 @@ function updateOfficialSubBtn(){
 
 // ═══ SEARCH ═══
 function setScope(s){
-  state.searchScope=s;
-  document.querySelectorAll('.scope-chip').forEach(c=>c.classList.toggle('on',c.dataset.scope===s));
+  // 同じチップを再タップしたら絞り込み解除 (all = 全件、どのチップも非選択)
+  state.searchScope=(state.searchScope===s)?'all':s;
+  const cur=state.searchScope;
+  document.querySelectorAll('.scope-chip').forEach(c=>c.classList.toggle('on',c.dataset.scope===cur));
   doSearch();
 }
 
@@ -9144,8 +9147,9 @@ function doSearch(){
   // 色フィルターバーは常に描画 (タグバーも内部で呼ばれる)
   renderColorFilterBar();
 
-  // 空クエリ + 色なし + タグなし → 待機画面
-  if(!q && !colorFilter && !tagFilter){
+  // キーワード・色・タグ・絞り込みチップ いずれもなし → 待機画面
+  // (scope!=='all' は「自分/公式/写真/メモ/リスト」で絞っている状態なので結果を出す)
+  if(!q && !colorFilter && !tagFilter && scope==='all'){
     out.innerHTML='';
     renderSearchIdle();
     return;
