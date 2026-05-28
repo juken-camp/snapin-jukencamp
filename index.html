@@ -7334,14 +7334,16 @@ function renderChatLog(c){
       if(bubbles.length<=1){
         div.innerHTML=`
           <div class="msg-time">${chatTimeLabel(t)}</div>
-          <div class="bubble">${quoteHtml}${linkify(cleaned)}</div>
+          <div class="bubble" data-bubble-idx="0">${quoteHtml}${linkify(cleaned)}</div>
         `;
       }else{
         div.classList.add('multi');
         // 最初のバブルにだけ引用ブロックを乗せる (引用元はその返信全体に対する文脈のため)
+        // 各バブルに data-bubble-idx を付け、長押しメニューで「そのバブルだけ」を対象に
+        // リプライ・コピーできるようにする。
         const bubblesHtml=bubbles.map((b,i)=>{
           const inner=(i===0?quoteHtml:'')+linkify(b);
-          return `<div class="bubble">${inner}</div>`;
+          return `<div class="bubble" data-bubble-idx="${i}">${inner}</div>`;
         }).join('');
         div.innerHTML=`
           <div class="msg-bubbles">${bubblesHtml}</div>
@@ -7439,8 +7441,23 @@ function showBubbleMenu(msgEl,bubbleEl,cardId,msgIdx){
   const clearSel=()=>{try{window.getSelection().removeAllRanges();}catch(_){}};
   clearSel();
   // クリーンなテキスト (AIメッセージの場合は装飾を落とす)
-  const text=cleanAIText(m.text||'',m.role);
-  _bubbleMenuTarget={cardId,msgIdx,text,role:m.role,bubbleEl};
+  const fullText=cleanAIText(m.text||'',m.role);
+  // マルチバブル分割されたAI返信の場合、長押し対象のバブル本文だけを抽出して
+  // リプライ・コピーの対象にする。これで「そのバブルだけ」をリプライ引用できる。
+  // 取得方法: 分割前のテキストを同じロジックで分割し、data-bubble-idx に対応する片を取る。
+  let text=fullText;
+  let bubbleIdx=-1;
+  if(m.role!=='user' && m.role!=='memo' && bubbleEl){
+    const idxAttr=bubbleEl.getAttribute('data-bubble-idx');
+    if(idxAttr!==null && idxAttr!==''){
+      bubbleIdx=parseInt(idxAttr,10);
+      const parts=splitAiReplyToBubbles(fullText);
+      if(parts && parts[bubbleIdx]){
+        text=parts[bubbleIdx];
+      }
+    }
+  }
+  _bubbleMenuTarget={cardId,msgIdx,text,role:m.role,bubbleEl,bubbleIdx};
   _bubbleMenuOpenedAt=Date.now();
 
   const overlay=$('bubble-menu-overlay');
