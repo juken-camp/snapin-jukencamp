@@ -123,6 +123,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--gl);
   transform:scale(0.94);
 }
+/* アイコンのみの bhdr ボタン (思い出す目・メニュー…) は、メモページ右上と同じ詰まった距離感に */
+.bhdr-action.bhdr-icon{
+  width:34px;height:34px;
+  padding:0;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ink2);
+}
+.bhdr-action.bhdr-icon:active{color:var(--g);}
+#detail-mosaic-btn.on{color:var(--g);background:transparent;}
 .bhdr-action.primary{
   background:var(--g);
   color:white;
@@ -3448,11 +3458,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
     <div class="bhdr-title">メモ</div>
-    <button class="bhdr-action" data-action="toggle-detail-mosaic" id="detail-mosaic-btn" aria-label="思い出す">
+    <button class="bhdr-action bhdr-icon" data-action="toggle-detail-mosaic" id="detail-mosaic-btn" aria-label="思い出す">
       <svg class="eye-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
       <svg class="eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" stroke-linecap="round"/></svg>
     </button>
-    <button class="bhdr-action" data-action="toggle-menu">
+    <button class="bhdr-action bhdr-icon" data-action="toggle-menu">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
     </button>
     <div class="menu" id="detail-menu">
@@ -5079,7 +5089,7 @@ function pickTodayMessage(band,now){
 // data-today-eye にセクションキー、data-eye-target に対象 today-newcards の id を持たせる。
 function todayEyeBtnHtml(sectionKey, targetId){
   const on=!!state.todayMosaic[sectionKey];
-  return `<button class="today-block-eye${on?' on':''}" data-today-eye="${esc(sectionKey)}" data-eye-target="${esc(targetId)}" aria-label="思い出す" style="margin-left:auto;">
+  return `<button class="today-block-eye${on?' on':''}" data-today-eye="${esc(sectionKey)}" data-eye-target="${esc(targetId)}" aria-label="思い出す">
     <svg class="eye-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
     <svg class="eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" stroke-linecap="round"/></svg>
   </button>`;
