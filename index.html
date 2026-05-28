@@ -952,9 +952,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   max-height:55vh;
   overflow:hidden; /* ピンチズーム時に枠外を隠す */
   position:relative;
-  touch-action:none; /* 自前でジェスチャー処理するためブラウザ既定を無効化 */
+  /* 通常(等倍)時は縦スクロールをブラウザに任せる。
+     これがないと画像の上に指を置いたとき上方向にスクロールできなくなる。
+     ピンチ/拡大時だけ .zoomed が付き、touch-action:none でジェスチャーを奪う。 */
+  touch-action:pan-y;
   -webkit-user-select:none;
   user-select:none;
+}
+.detail-img.zoomed{
+  touch-action:none; /* 拡大中は自前でパン/ピンチ処理するためブラウザ既定を無効化 */
 }
 .detail-img img{
   max-width:100%;
@@ -7998,6 +8004,9 @@ function setupImageZoom(container){
     if(e.touches.length===2){
       pinching=true;
       dragging=false;
+      // 2本指を置いた瞬間に touch-action:none へ切り替え、
+      // ピンチ開始時の最初の移動をブラウザのスクロールに奪われないようにする。
+      container.classList.add('zoomed');
       startDist=dist(e.touches[0],e.touches[1]);
       startScale=scale;
       pinchCenter=midpoint(e.touches[0],e.touches[1]);
