@@ -6683,7 +6683,7 @@ function renderUpload(){
       });
       const hint=$('up-align-hint');
       if(hint){
-        hint.textContent=(isAutoH&&isAutoV)?'自動':'';
+        hint.textContent=''; // 「自動」ヒントは非表示 (揃えボタンの機能は維持)
       }
     }
     refreshAlignToolbar();
