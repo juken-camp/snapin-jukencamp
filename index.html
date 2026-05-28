@@ -1348,6 +1348,41 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .source-tag svg{flex-shrink:0;}
 
+/* 公式メモが取得できない時の注意書き (削除/オフライン時) */
+.link-stale-note{
+  margin-top:10px;
+  padding:10px 14px;
+  background:#FFF6E5;
+  color:#9A6B00;
+  border-radius:10px;
+  font-size:12px;
+  line-height:1.6;
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  border-left:3px solid #E5A500;
+}
+.link-stale-note svg{flex-shrink:0;margin-top:2px;}
+
+/* 公式更新バッジ (グリッドのカード左上) */
+.card-update-badge{
+  position:absolute;
+  top:6px;
+  left:6px;
+  background:var(--g);
+  color:#fff;
+  font-size:10px;
+  font-weight:700;
+  line-height:1;
+  padding:3px 6px;
+  border-radius:7px;
+  letter-spacing:.04em;
+  box-shadow:0 1px 3px rgba(0,0,0,.18);
+  z-index:2;
+  pointer-events:none;
+}
+.feed-item .card-update-badge{top:14px;left:14px;}
+
 /* 新着バッジ (ホームヘッダーの公式アイコン) */
 /* アイコン(SVG)を包む小さなラッパー。バッジはこの中で絶対配置するので、アイコンの右上に正確に乗る */
 .bnav-icon-wrap{
@@ -3565,6 +3600,7 @@ const state={
   selectedIds:new Set(),
   pastMoreOpen:false,  // 今日タブの「もっと前の保存を見る」展開状態
   shelfLastSeen:{},    // 公式棚ごとに最後に開いた時刻 (新着判定用)
+  cardLastSeen:{},     // 公式由来カードごとに「公式更新を最後に見た updated 時刻」(更新バッジ判定用)
   libraryOrder:{},     // 公式ライブラリ一覧の手動並び順 { distributed:[id...], subbed:[id...], avail:[id...] }
   searchColor:null,    // 探すページの色フィルター
   searchTag:null,      // 探すページのタグフィルター
@@ -3592,6 +3628,7 @@ function save(){
       cards:lightCards,
       subscribed:state.subscribed,
       shelfLastSeen:state.shelfLastSeen,
+      cardLastSeen:state.cardLastSeen,
       libraryOrder:state.libraryOrder,
       auth:state.auth,
       deviceId:state.deviceId,
@@ -3638,6 +3675,7 @@ function estimateSaveBytes(){
       cards:lightCards,
       subscribed:state.subscribed,
       shelfLastSeen:state.shelfLastSeen,
+      cardLastSeen:state.cardLastSeen,
       libraryOrder:state.libraryOrder,
       auth:state.auth,
       deviceId:state.deviceId,
@@ -3754,6 +3792,7 @@ function load(){
     state.cards=d.cards||[];
     state.subscribed=d.subscribed||[];
     state.shelfLastSeen=d.shelfLastSeen||{};
+    state.cardLastSeen=d.cardLastSeen||{};
     state.libraryOrder=d.libraryOrder||{};
     state.auth=d.auth||null;
     state.deviceId=d.deviceId||null;
@@ -3875,6 +3914,7 @@ function resolveAlign(c){
 // グリッド/横スクロールのリスト型カード用: チェックボックス付きの統一見た目を返す。
 // today-newcard でも card でも同じ HTML を使うことで、見た目が一貫する。
 function listCardInner(c){
+  if(typeof isLinkedCard==='function' && isLinkedCard(c))c=resolveLiveCard(c);
   const itemsArr=(c.items||[]).slice(0,5);
   const itemsHtml=itemsArr.map((i,idx)=>{
     const m=i.mark||'check';
@@ -3895,6 +3935,7 @@ function listCardInner(c){
 // リンクカードの一覧表示用HTML。グリッドセル・今日のメモ・フィードで共通利用。
 // サムネ画像 + タイトル + ホスト名 のシンプルな構造。
 function linkCardInner(c){
+  if(typeof isLinkedCard==='function' && isLinkedCard(c))c=resolveLiveCard(c);
   const link=c.link||{};
   const thumb=link.image
     ? `<div class="link-card-thumb"><img src="${esc(link.image)}" alt="" onerror="this.parentElement.classList.add('no-img');this.remove();this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' fill=none stroke=currentColor stroke-width=1.6><path d=\\'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\\'/><path d=\\'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\\'/></svg>';"></div>`
@@ -4018,6 +4059,7 @@ function applyGridNoteScale(root){
     let c=null;
     if(cardId){
       c=(state.cards||[]).find(x=>x.id===cardId);
+      if(c && isLinkedCard(c))c=resolveLiveCard(c);
       if(!c){
         // 公式棚など
         for(const s of (OFFICIAL_SHELVES||[])){
@@ -4119,6 +4161,84 @@ async function loadOfficialShelves(){
   }catch(err){
     console.warn('公式棚の取得に失敗:',err);
   }
+  refreshLinkedCardsUI();
+}
+
+function isLinkedCard(c){
+  return !!(c && c.sourceShelf && c.sourceShelf.originCardId);
+}
+
+const LIVE_BODY_FIELDS=['type','text','title','image','items','link','ocrText','color'];
+
+function findOfficialMaster(c){
+  if(!isLinkedCard(c))return null;
+  const shelfId=c.sourceShelf.id;
+  const cardId=c.sourceShelf.originCardId;
+  const shelf=OFFICIAL_SHELVES.find(x=>x.id===shelfId);
+  if(!shelf||!Array.isArray(shelf.cards))return null;
+  return shelf.cards.find(x=>x && x.id===cardId) || null;
+}
+
+function resolveLiveCard(c){
+  if(!isLinkedCard(c))return c;
+  const master=findOfficialMaster(c);
+  const body=master || c._snap || null;
+  if(!body)return c;
+  const merged=Object.assign({},c);
+  for(const k of LIVE_BODY_FIELDS){
+    if(k==='color'){
+      if(c._userColor)merged.color=c.color;
+      else if(body.color!==undefined)merged.color=body.color;
+    }else if(body[k]!==undefined){
+      merged[k]=body[k];
+    }
+  }
+  merged._linkStale=!master;
+  return merged;
+}
+
+function cardHasUpdate(c){
+  if(!isLinkedCard(c))return false;
+  const master=findOfficialMaster(c);
+  if(!master)return false;
+  const upd=master.updated||0;
+  if(!upd)return false;
+  const seen=(state.cardLastSeen && state.cardLastSeen[c.id])||0;
+  return upd>seen;
+}
+
+function markCardSeen(c){
+  if(!isLinkedCard(c))return;
+  const master=findOfficialMaster(c);
+  if(!master||!master.updated)return;
+  if(!state.cardLastSeen)state.cardLastSeen={};
+  if((state.cardLastSeen[c.id]||0)>=master.updated)return;
+  state.cardLastSeen[c.id]=master.updated;
+  save();
+  updateHomeNewBadge();
+}
+
+function totalCardUpdateCount(){
+  let n=0;
+  for(const c of state.cards){
+    if(cardHasUpdate(c))n++;
+  }
+  return n;
+}
+
+function refreshLinkedCardsUI(){
+  try{
+    if(document.getElementById('screen-home')?.classList.contains('active')){
+      renderHome();
+    }
+  }catch(e){}
+  try{
+    if(state.current && isLinkedCard(state.current) &&
+       document.getElementById('screen-detail')?.classList.contains('active')){
+      const local=state.cards.find(x=>x.id===state.current.id);
+      if(local)openDetail(local,'mine');
+    }
+  }catch(e){}
 }
 
 // その棚に「新着メモが何件あるか」を返す
@@ -4162,6 +4282,7 @@ function totalNewCount(){
     const s=OFFICIAL_SHELVES.find(x=>x.id===id);
     if(s)n+=newCountForShelf(s);
   }
+  n+=totalCardUpdateCount();
   return n;
 }
 
@@ -4489,6 +4610,7 @@ async function exportBackup(){
       cards:personalCards,
       libraryOrder:state.libraryOrder||{},
       shelfLastSeen:state.shelfLastSeen||{},
+      cardLastSeen:state.cardLastSeen||{},
       subscribed:Array.isArray(state.subscribed)?state.subscribed:[],
     };
     const json=JSON.stringify(payload);
@@ -4627,6 +4749,13 @@ async function handleRestoreFile(e){
         if(typeof v==='number' && (!merged[k] || v>merged[k]))merged[k]=v;
       }
       state.shelfLastSeen=merged;
+    }
+    if(payload.cardLastSeen && typeof payload.cardLastSeen==='object'){
+      const merged={...state.cardLastSeen};
+      for(const [k,v] of Object.entries(payload.cardLastSeen)){
+        if(typeof v==='number' && (!merged[k] || v>merged[k]))merged[k]=v;
+      }
+      state.cardLastSeen=merged;
     }
     if(Array.isArray(payload.subscribed)){
       // subscribed は union (重複排除)
@@ -4807,7 +4936,8 @@ function renderToday(){
       <div class="today-newcards" id="today-newcards"></div>
     `;
     const wrap=$('today-newcards');
-    todayCards.forEach(c=>{
+    todayCards.forEach(c0=>{
+      const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
       const el=document.createElement('div');
       el.className='today-newcard '+c.type;
       if(c.type==='photo'||c.type==='photonote'){
@@ -4821,7 +4951,8 @@ function renderToday(){
       }else if(c.type==='link'){
         el.innerHTML=linkCardInner(c);
       }
-      el.addEventListener('click',()=>openDetail(c,'mine'));
+      if(cardHasUpdate(c0))el.innerHTML+=`<div class="card-update-badge">更新</div>`;
+      el.addEventListener('click',()=>openDetail(c0,'mine'));
       wrap.appendChild(el);
     });
   }else{
@@ -4903,7 +5034,8 @@ function renderPastDaySection(daysAgo){
     <div class="today-newcards" id="today-past${daysAgo}-cards"></div>
   `;
   const wrap=$('today-past'+daysAgo+'-cards');
-  cards.forEach(c=>{
+  cards.forEach(c0=>{
+    const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
     const el=document.createElement('div');
     el.className='today-newcard '+c.type;
     if(c.type==='photo'||c.type==='photonote'){
@@ -4917,7 +5049,8 @@ function renderPastDaySection(daysAgo){
     }else if(c.type==='link'){
       el.innerHTML=linkCardInner(c);
     }
-    el.addEventListener('click',()=>openDetail(c,'mine'));
+    if(cardHasUpdate(c0))el.innerHTML+=`<div class="card-update-badge">更新</div>`;
+    el.addEventListener('click',()=>openDetail(c0,'mine'));
     wrap.appendChild(el);
   });
 }
@@ -4966,7 +5099,8 @@ function renderPastMoreSection(){
   let html='';
   for(const g of groups){
     const label=g.d+'日前のメモ';
-    const cardsHtml=g.cards.map(c=>{
+    const cardsHtml=g.cards.map(c0=>{
+      const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
       let body='';
       if(c.type==='photo'||c.type==='photonote'){
         body=`<img src="${c.image||''}" decoding="async" loading="eager">`;
@@ -4979,7 +5113,8 @@ function renderPastMoreSection(){
       }else if(c.type==='link'){
         body=linkCardInner(c);
       }
-      return `<div class="today-newcard ${c.type}" data-card-id="${esc(c.id)}">${body}</div>`;
+      if(cardHasUpdate(c0))body+=`<div class="card-update-badge">更新</div>`;
+      return `<div class="today-newcard ${c.type}" data-card-id="${esc(c0.id)}">${body}</div>`;
     }).join('');
     html+=`
       <div class="today-block">
@@ -5055,8 +5190,10 @@ function renderGrid(el,cards,origin){
   // ホーム以外の呼び出し (公式棚など) では選択モードは使わない
   const isHome=(el.id==='grid-home' && origin==='mine');
   cards.forEach((c,idx)=>{
+    // 公式由来カードは本文を最新マスターに差し替えて表示
+    const dc=(origin==='mine' && isLinkedCard(c))?resolveLiveCard(c):c;
     const card=document.createElement('div');
-    card.className='card '+c.type;
+    card.className='card '+dc.type;
     if(state.mosaicMode && origin==='mine')card.classList.add('mosaic');
     if(isHome && state.selectMode){
       card.classList.add('selectable');
@@ -5067,20 +5204,23 @@ function renderGrid(el,cards,origin){
     card.dataset.origin=origin;
 
     let inner='';
-    if(c.type==='photo' || c.type==='photonote'){
-      const col=colorById(c.color);
+    if(dc.type==='photo' || dc.type==='photonote'){
+      const col=colorById(dc.color);
       card.style.background=col.bg;
-      inner=`<img src="${c.image||''}" alt="" decoding="async" loading="eager">`;
-      if(c.text)inner+=`<div class="card-source">${esc(c.text.slice(0,30))}</div>`;
-    }else if(c.type==='note'){
-      const col=colorById(c.color);
-      // テキスト量に応じてフォントサイズと行数を決める (共通関数)
-      const style=noteCardStyle(c,col);
-      inner=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
-    }else if(c.type==='list'){
-      inner=listCardInner(c);
-    }else if(c.type==='link'){
-      inner=linkCardInner(c);
+      inner=`<img src="${dc.image||''}" alt="" decoding="async" loading="eager">`;
+      if(dc.text)inner+=`<div class="card-source">${esc(dc.text.slice(0,30))}</div>`;
+    }else if(dc.type==='note'){
+      const col=colorById(dc.color);
+      const style=noteCardStyle(dc,col);
+      inner=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(dc.text||'')}</div></div>`;
+    }else if(dc.type==='list'){
+      inner=listCardInner(dc);
+    }else if(dc.type==='link'){
+      inner=linkCardInner(dc);
+    }
+    // 公式更新バッジ
+    if(origin==='mine' && cardHasUpdate(c)){
+      inner+=`<div class="card-update-badge" title="公式が更新しました">更新</div>`;
     }
     // ピン留めバッジ
     if(origin==='mine' && c.pinned){
@@ -5291,7 +5431,8 @@ function archiveSelected(){
 function renderFeed(el,cards){
   el.innerHTML='';
   el.classList.toggle('mosaic',!!state.mosaicMode);
-  cards.forEach(c=>{
+  cards.forEach(c0=>{
+    const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
     const item=document.createElement('div');
     item.className='feed-item';
     let inner='';
@@ -5322,18 +5463,19 @@ function renderFeed(el,cards){
       const host=esc(link.siteName||link.host||'');
       inner+=`<div class="feed-meta">${title}　${host}　${fmtDate(c.date)}</div>`;
     }
-    if(c.pinned){
+    if(cardHasUpdate(c0)){
+      inner+=`<div class="card-update-badge" title="公式が更新しました">更新</div>`;
+    }
+    if(c0.pinned){
       inner+=`<div class="pin-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
     }
     item.innerHTML=inner;
-    // モザイクモード時: タップで blur 解除/再表示をトグル (暗記練習用)。
-    // 通常モードに戻したいときは右上の目玉ボタンを押す。
     item.addEventListener('click',()=>{
       if(state.mosaicMode){
         item.classList.toggle('tapped');
         return;
       }
-      openDetail(c,'mine');
+      openDetail(c0,'mine');
     });
     el.appendChild(item);
   });
@@ -7658,6 +7800,12 @@ function setupImageZoom(container){
 }
 
 function openDetail(c,origin){
+  // 公式由来カードは本文を最新マスターに差し替えて表示 (個人レイヤーは保持)
+  const localCard=c;
+  if(origin!=='official' && isLinkedCard(c)){
+    c=resolveLiveCard(c);
+    markCardSeen(localCard);
+  }
   state.current=Object.assign({},c,{_origin:origin});
   state.detailAiMode=false;
   // 別のカードを開いたらリプライ・部分コピー状態は持ち越さない
@@ -7793,6 +7941,14 @@ function openDetail(c,origin){
         <span>${esc(label)} の公式ライブラリより</span>
       </div>
     `;
+    if(c._linkStale){
+      contentHtml+=`
+        <div class="link-stale-note">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>この公式メモは現在取得できません。保存した時点の内容を表示しています。あなたの追記は下に残っています。</span>
+        </div>
+      `;
+    }
   }
 
   $('detail-content').innerHTML=contentHtml;
@@ -7802,7 +7958,8 @@ function openDetail(c,origin){
   renderChatLog(c);
 
   // リスト項目クリック (自分の棚のみ、check モードの項目のみ)
-  if(!isOfficial){
+  // 公式由来カードのリストは公式本文なので操作不可 (チェック状態は公式管理)
+  if(!isOfficial && !isLinkedCard(localCard)){
     $('detail-content').querySelectorAll('.detail-list-item').forEach(el=>{
       el.addEventListener('click',()=>{
         const idx=parseInt(el.dataset.listIdx);
@@ -8043,6 +8200,8 @@ async function detailSend(){
   const cIdx=state.cards.findIndex(x=>x.id===state.current.id);
   if(cIdx<0)return;
   const c=state.cards[cIdx];
+  // AIに渡す本文コンテキストは最新の公式本文 (書き込み先はローカルカード c)
+  const aiContext=isLinkedCard(c)?resolveLiveCard(c):c;
 
   // c.chat 配列を初期化(旧 aiLog があれば取り込んでマイグレーション)
   if(!c.chat){
@@ -8073,7 +8232,7 @@ async function detailSend(){
     $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
 
     try{
-      const answer=await callAI(v,c);
+      const answer=await callAI(v,aiContext);
       const cIdx2=state.cards.findIndex(x=>x.id===state.current.id);
       if(cIdx2>=0){
         const c2=state.cards[cIdx2];
@@ -8218,6 +8377,7 @@ function demoAI(q,ref){
 function editCard(){
   $('detail-menu').classList.remove('on');
   if(state.current._origin==='official'){toast('公式メモは編集できません');return;}
+  if(isLinkedCard(state.current)){toast('公式の本文は編集できません。メモは下に書き足せます');return;}
   const c=Object.assign({},state.current);
   delete c._origin;
   c._new=false;
@@ -8534,6 +8694,7 @@ function openColorPicker(){
       const idx=state.cards.findIndex(x=>x.id===state.current.id);
       if(idx<0)return;
       state.cards[idx].color=c.id;
+      if(isLinkedCard(state.cards[idx]))state.cards[idx]._userColor=true;
       state.current.color=c.id;
       save();
       closeColorPicker();
@@ -8551,29 +8712,42 @@ function closeColorPicker(){
 }
 
 async function copyToShelf(){
-  const c=Object.assign({},state.current);
-  delete c._origin;
-  c.id='c_'+Date.now();
-  c.date=new Date().toISOString().slice(0,10);
-  c.created=Date.now();
-  // 出典タグ (公式メモのコピー元を残す)
+  // 公式マスターを originCardId で参照。本文は固定コピーせず表示時に解決する。
+  const masterId=state.current && state.current.id;
+  const snap=Object.assign({},state.current);
+  delete snap._origin;
+  delete snap.chat;
+  delete snap.aiLog;
+
+  const c={
+    id:'c_'+Date.now(),
+    date:new Date().toISOString().slice(0,10),
+    created:Date.now(),
+    chat:[],          // 利用者の追記メモ・AIチャット (公式更新でも消えない)
+    _snap:snap,       // 本文フォールバック (削除/オフライン時)
+  };
   if(state.currentOfficial){
     c.sourceShelf={
       id:state.currentOfficial.id,
       handle:state.currentOfficial.handle,
       name:state.currentOfficial.name||state.currentOfficial.handle,
+      originCardId:masterId,
     };
   }
+  // 保存時点の公式 updated を見たことにする (直後に更新バッジを出さない)
+  const master=findOfficialMaster(c);
+  if(master && master.updated){
+    if(!state.cardLastSeen)state.cardLastSeen={};
+    state.cardLastSeen[c.id]=master.updated;
+  }
+
   state.cards.unshift(c);
-  // 画像付き (公式の写真メモ等) は IndexedDB にも書き込まないと、
-  // 次回起動時に hydrateCardImages が画像を見つけられず真っ白になる。
-  // 新IDを振り直しているので、元の公式メモのIDで保存されていた画像とは別キー。
-  if(c.image && typeof c.image==='string' && c.image.startsWith('data:')){
+  // 写真メモはフォールバック画像も c.image としてローカル保持 (IndexedDBへ)
+  if(snap.image && typeof snap.image==='string' && snap.image.startsWith('data:')){
+    c.image=snap.image;
     const ok=await saveWithImages();
     if(!ok){
-      // 容量不足などで保存できなかった
       toast('保存に失敗しました (容量不足の可能性)');
-      // state.cards への追加自体は残しておく (画面上では見える)
       return;
     }
   }else{
@@ -9160,15 +9334,18 @@ function doSearch(){
   let results=[];
   if(scope==='all'||scope==='mine'||scope==='photo'||scope==='note'||scope==='list'){
     getActiveCards().forEach(c=>{
-      if(scope==='photo' && c.type!=='photo' && c.type!=='photonote')return;
-      if(scope==='note' && c.type!=='note')return;
-      if(scope==='list' && c.type!=='list')return;
-      if(colorFilter && (c.color||'default')!==colorFilter)return;
+      // 公式由来カードは本文を最新マスターに解決して検索対象にする (個人の追記/チャットも対象)
+      const dc=isLinkedCard(c)?resolveLiveCard(c):c;
+      if(scope==='photo' && dc.type!=='photo' && dc.type!=='photonote')return;
+      if(scope==='note' && dc.type!=='note')return;
+      if(scope==='list' && dc.type!=='list')return;
+      if(colorFilter && (dc.color||'default')!==colorFilter)return;
       if(tagFilter && !(c.tags||[]).includes(tagFilter))return;
       if(q){
+        const chatText=(c.chat||[]).map(m=>m.text).join(' ');
         const aiText=(c.aiLog||[]).map(m=>m.text).join(' ');
-        const linkText=c.link?[c.link.title,c.link.description,c.link.url,c.link.host,c.link.siteName].filter(Boolean).join(' '):'';
-        const hay=(c.text||'')+' '+(c.title||'')+' '+((c.items||[]).map(i=>i.t).join(' '))+' '+(c.ocrText||'')+' '+aiText+' '+linkText+' '+((c.tags||[]).map(t=>'#'+t).join(' '));
+        const linkText=dc.link?[dc.link.title,dc.link.description,dc.link.url,dc.link.host,dc.link.siteName].filter(Boolean).join(' '):'';
+        const hay=(dc.text||'')+' '+(dc.title||'')+' '+((dc.items||[]).map(i=>i.t).join(' '))+' '+(dc.ocrText||'')+' '+chatText+' '+aiText+' '+linkText+' '+((c.tags||[]).map(t=>'#'+t).join(' '));
         if(!hay.toLowerCase().includes(q))return;
       }
       results.push({card:c,origin:'mine'});
@@ -9203,7 +9380,9 @@ function doSearch(){
     grid.className='grid';
     out.appendChild(grid);
     cardHits.forEach(r=>{
-      const c=r.card;
+      const c0=r.card;
+      // 自分のメモ側の公式由来カードは最新本文に解決して表示
+      const c=(r.origin!=='official' && isLinkedCard(c0))?resolveLiveCard(c0):c0;
       const card=document.createElement('div');
       card.className='card '+c.type;
       let inner='';
@@ -9219,10 +9398,11 @@ function doSearch(){
         inner=linkCardInner(c);
       }
       if(r.origin==='official')inner+=`<div class="card-source">${esc(r.shelf.handle)}</div>`;
+      if(r.origin!=='official' && cardHasUpdate(c0))inner+=`<div class="card-update-badge">更新</div>`;
       card.innerHTML=inner;
       card.addEventListener('click',()=>{
         if(r.origin==='official')state.currentOfficial=r.shelf;
-        openDetail(c,r.origin);
+        openDetail(c0,r.origin);
       });
       grid.appendChild(card);
     });
