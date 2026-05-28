@@ -669,18 +669,21 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   padding:14px 20px 4px;
 }
 .memo-list-head-title{
-  font-size:13px;font-weight:600;
+  font-size:16px;font-weight:700;
 }
 .memo-list-head-count{
-  font-size:11px;
-  color:var(--ink3);
+  font-size:12px;
+  font-weight:600;
+  background:var(--gl);
+  color:var(--g);
+  padding:3px 10px;
+  border-radius:999px;
 }
 .memo-grid{
   display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:1px;
-  background:var(--line);
-  padding:0 0 0;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+  padding:0 14px 8px;
 }
 .memo-card{
   aspect-ratio:1;
@@ -688,6 +691,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   overflow:hidden;
   position:relative;
   cursor:pointer;
+  border-radius:12px;
+  border:1px solid var(--line);
 }
 .memo-card:active{opacity:.8;}
 .memo-card img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -703,6 +708,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   word-break:break-word;
 }
 .memo-card.list .ctxt{font-size:11px;}
+.memo-card.note .ctxt{display:flex;flex-direction:column;}
+.memo-card.note .ctxt.h-center{align-items:center;text-align:center;}
+.memo-card.note .ctxt.h-left{align-items:flex-start;text-align:left;}
+.memo-card.note .ctxt.v-center{justify-content:center;}
+.memo-card.note .ctxt.v-top{justify-content:flex-start;}
 /* リンクカード: サムネ + テキストを縦に積む (画像で60%, ctxtは下40%) */
 .memo-card.link{display:flex;flex-direction:column;}
 .memo-card.link .ctxt{
@@ -2377,7 +2387,8 @@ function renderMemoGrid(){
       if(displayCard.text)inner+=`<div class="ctxt" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:white;padding:6px 8px;font-size:10px;-webkit-line-clamp:2;">${esc(displayCard.text)}</div>`;
     }else if(displayCard.type==='note'){
       const col=colorById(displayCard.color);
-      inner=`<div class="ctxt" style="background:${col.bg};color:${col.fg};">${esc(displayCard.text||'')}</div>`;
+      const al=resolveAlign(displayCard);
+      inner=`<div class="ctxt h-${al.h} v-${al.v}" style="background:${col.bg};color:${col.fg};">${esc(displayCard.text||'')}</div>`;
     }else if(displayCard.type==='list'){
       const items=(displayCard.items||[]).slice(0,5).map(i=>`<div>・${esc(i.t)}</div>`).join('');
       inner=`<div class="ctxt">${displayCard.title?`<b>${esc(displayCard.title)}</b><br>`:''}${items}</div>`;
