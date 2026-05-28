@@ -393,8 +393,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   word-break:break-word;
 }
 /* リスト型カードのアイテム表示 (グリッドの.cardと今日の横スクロール.today-newcardで共通) */
-.card .li, .today-newcard .li{display:flex;gap:4px;margin-bottom:3px;align-items:flex-start;}
-.card .li .chk, .today-newcard .li .chk{width:9px;height:9px;border:1px solid var(--ink3);border-radius:2px;flex-shrink:0;margin-top:2px;}
+.card .li, .today-newcard .li{display:flex;gap:4px;margin-bottom:3px;align-items:flex-start;line-height:1.3;}
+.card .li span, .today-newcard .li span{min-width:0;overflow:hidden;}
+.card .li .chk, .today-newcard .li .chk{width:9px;height:9px;border:1px solid var(--ink3);border-radius:2px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;color:#fff;box-sizing:border-box;}
+.card .li .chk svg, .today-newcard .li .chk svg{width:7px;height:7px;display:block;}
 .card .li.done .chk, .today-newcard .li.done .chk{background:var(--g);border-color:var(--g);}
 .card .li.done, .today-newcard .li.done{color:var(--ink3);text-decoration:line-through;}
 .card .li .li-num, .today-newcard .li .li-num{width:9px;font-size:9px;text-align:left;flex-shrink:0;color:var(--ink2);font-family:var(--font-en);}
@@ -3972,7 +3974,8 @@ function listCardInner(c){
       }
       return `<div class="li"><div class="li-num">${num}.</div><span>${esc(i.t)}</span></div>`;
     }
-    return `<div class="li ${done?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`;
+    const checkSvg=done?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>':'';
+    return `<div class="li ${done?'done':''}"><div class="chk">${checkSvg}</div><span>${esc(i.t)}</span></div>`;
   }).join('');
   const title=c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;color:var(--gd);">${esc(c.title)}</div>`:'';
   return `<div class="ctxt">${title}${itemsHtml}</div>`;
@@ -6207,6 +6210,22 @@ function loadImage(src){
   });
 }
 
+// API送信用に画像を縮小する。
+//  - 'chat' (既定): 長辺1024px・品質0.72。会話の参考用なのでトークンを優先して節約。
+//  - 'ocr': 長辺1568px・品質0.82。宿題等の文字を正確に読むため精度を優先 (それでも元画像より軽い)。
+// 失敗時は元の dataUrl を返す。
+async function compressForApi(dataUrl, mode){
+  if(typeof dataUrl!=='string' || !dataUrl.startsWith('data:'))return dataUrl;
+  const isOcr=mode==='ocr';
+  const side=isOcr?1568:1024;   // Claude Vision は長辺1568px程度までが効率的
+  const q=isOcr?0.82:0.72;
+  try{
+    return await compressOnce(dataUrl,side,q);
+  }catch(e){
+    return dataUrl;
+  }
+}
+
 // 圧縮処理 (長辺・品質を指定して JPEG dataURL を返す)
 function compressOnce(dataUrl,maxSide,quality){
   return loadImage(dataUrl).then(img=>{
@@ -7056,8 +7075,10 @@ async function runOcrInBackground(cardId){
   }
 
   try{
+    // OCR送信用に画像を縮小。ただし宿題等の読み取り精度を優先し、チャット用より高めの解像度にする。
+    const sendDataUrl=await compressForApi(card.image, 'ocr');
     // data URL から base64 と mediaType を分離
-    const m=card.image.match(/^data:([^;]+);base64,(.+)$/);
+    const m=sendDataUrl.match(/^data:([^;]+);base64,(.+)$/);
     if(!m)return;
     const mediaType=m[1];
     const data=m[2];
@@ -8329,7 +8350,11 @@ async function detailSend(){
     $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
 
     try{
-      const answer=await callAI(v,aiContext);
+      // 直近5往復ぶんの会話履歴を文脈として渡す (memo は AI 対話ではないので除外)。
+      // この時点で c.chat の末尾にはユーザーの最新質問とプレースホルダーが入っているので、
+      // それらを除いた「過去のやりとり」を履歴とする。
+      const history=buildAiHistory(c.chat, placeholderIdx);
+      const answer=await callAI(v,aiContext,history);
       const cIdx2=state.cards.findIndex(x=>x.id===state.current.id);
       if(cIdx2>=0){
         const c2=state.cards[cIdx2];
@@ -8372,7 +8397,21 @@ async function detailSend(){
 // AI API呼び出し (本番: Vercel等のサーバレス関数を経由、デモ: ローカル応答)
 const AI_ENDPOINT='/api/chat'; // 本番ではここをサーバレス関数のURLに
 
-async function callAI(userMessage,cardContext){
+// AIに渡す会話履歴を組み立てる。
+//  - chat: c.chat 配列、placeholderIdx: 末尾に積んだ「…」AIプレースホルダーの位置
+//  - 最新のユーザー質問(placeholderIdx-1)とプレースホルダー(placeholderIdx)は除く
+//  - memo(利用者の追記メモ)は AI 対話ではないので除外
+//  - 直近5往復 = 最大10メッセージに絞る (文脈とコストのバランス)
+const AI_HISTORY_TURNS=5; // 往復数
+function buildAiHistory(chat, placeholderIdx){
+  if(!Array.isArray(chat))return [];
+  const past=chat.slice(0, Math.max(0, placeholderIdx-1)); // 最新質問より前
+  const dialogue=past.filter(m=>m && (m.role==='user'||m.role==='ai') && m.text && !m.pending);
+  const trimmed=dialogue.slice(-AI_HISTORY_TURNS*2); // 1往復=2メッセージ
+  return trimmed.map(m=>({role:m.role==='ai'?'assistant':'user', text:m.text}));
+}
+
+async function callAI(userMessage,cardContext,history){
   // 認証チェック (塾生限定)
   if(!canUseAI()){
     return '[AIモードは JUKEN CAMP の塾生のみ利用できます。\nログイン画面から「JUKEN CAMP 塾生はこちら」で認証してください。]';
@@ -8397,32 +8436,35 @@ async function callAI(userMessage,cardContext){
     }
   }
   const systemPrompt=[
-    'あなたは学習支援のアシスタントです。生徒が保存したメモやノート(写真・テキスト・リスト)について、生徒が理解できるよう丁寧に答えてください。',
+    'あなたは学習支援のアシスタントです。生徒が保存したメモ(写真・テキスト・リスト)について、理解できるよう丁寧に答えてください。',
     '',
-    '【回答の姿勢】',
-    '・必要な背景や理由も含めて、しっかり説明してください。短すぎると不親切に感じられます。',
-    '・かといって冗長にする必要はありません。質問に対して必要な情報を、過不足なく丁寧に伝えるのが目標です。',
-    '・数学・理科などの解説では、考え方の筋道、途中式、用語の意味、なぜそうなるかの理由まで含めて答えてください。',
-    '・暗記事項の質問なら、答えだけでなく覚え方のヒントや関連事項も添えると親切です。',
-    '・説教調や上から目線は避け、対等な学習パートナーとして話してください。',
+    '【姿勢】',
+    '・必要な背景・理由・途中式まで含め、過不足なく説明する。短すぎず冗長すぎず。',
+    '・暗記事項なら覚え方や関連事項も添える。',
+    '・対等な学習パートナーとして話す。',
     '',
-    '【書式のルール】',
-    '・返信はプレーンテキストで書いてください。Markdown 記法 (# 見出し、**強調**、*斜体*、`コード`、- 箇条書きなど) は一切使わないでください。',
-    '・箇条書きが必要な時は行頭に「・」を使ってください。',
-    '・話題の区切りでは空行(\\n\\n)を入れてください。これは表示側で段落ごとに別の吹き出しに分割するために重要です。',
-    '・たとえば「結論」→空行→「理由の説明」→空行→「補足や例」のような構成にしてください。1つの吹き出しは概ね 3〜6 文程度を目安にしてください。',
+    '【書式】',
+    '・プレーンテキストのみ。Markdown 記法は使わない。箇条書きは行頭に「・」。',
+    '・話題の区切りは空行(\\n\\n)。1つの吹き出しは3〜6文程度。',
     '',
-    '【避けること】',
-    '・「いかがでしたか?」のような閉じの定型文。',
-    '・「〜について解説します」「ご質問にお答えします」のような前置き。本題から入ってください。',
+    '【避ける】',
+    '・「いかがでしたか?」等の締め。「〜について解説します」等の前置き。本題から入る。',
   ].join('\n');
+
+  // 会話履歴 (直近5往復) を messages の先頭に積む。
+  // 画像は「最初のAI質問」でだけ添付する: 履歴に assistant 応答が無い = 初回とみなす。
+  // 2回目以降は画像を送らず、OCRテキスト等のコンテキスト + 履歴で文脈を保つ (画像トークン節約)。
+  const hist=Array.isArray(history)?history:[];
+  const isFirstTurn=!hist.some(m=>m.role==='assistant');
+  const messages=hist.map(m=>({role:m.role,content:m.text}));
 
   // user メッセージの content を組み立てる
   let userContent;
   const hasImage=cardContext && cardContext.image && /^data:([^;]+);base64,(.+)$/.test(cardContext.image);
-  if(hasImage){
-    // 画像付き
-    const m=cardContext.image.match(/^data:([^;]+);base64,(.+)$/);
+  if(hasImage && isFirstTurn){
+    // 初回のみ画像添付。送信用に縮小してトークンを節約 (表示用画像はそのまま)。
+    const sendDataUrl=await compressForApi(cardContext.image);
+    const m=sendDataUrl.match(/^data:([^;]+);base64,(.+)$/);
     const mediaType=m[1];
     const data=m[2];
     const textPart=(contextStr?'コンテキスト:\n'+contextStr+'\n\n':'')+'質問: '+userMessage+'\n\n(添付の写真も参考にして答えてください。)';
@@ -8433,6 +8475,7 @@ async function callAI(userMessage,cardContext){
   }else{
     userContent=(contextStr?'コンテキスト:\n'+contextStr+'\n\n':'')+'質問: '+userMessage;
   }
+  messages.push({role:'user',content:userContent});
 
   try{
     const res=await fetch(AI_ENDPOINT,{
@@ -8443,7 +8486,7 @@ async function callAI(userMessage,cardContext){
       },
       body:JSON.stringify({
         system:systemPrompt,
-        messages:[{role:'user',content:userContent}],
+        messages:messages,
       }),
     });
     if(res.status===401 || res.status===403){
