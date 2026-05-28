@@ -1750,48 +1750,59 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .scope-chip.on{background:var(--g);color:white;border-color:var(--g);}
 
-/* 未閲覧フィルタ (N日以上見ていないメモ) */
-.stale-filter-row{
+/* 未閲覧メモ: 日数選択ポップ (search-extra-row をタップで開く) */
+.stale-picker{
+  padding:4px 20px 12px;
   display:flex;
-  align-items:center;
+  flex-wrap:wrap;
   gap:6px;
-  padding:0 20px 12px;
-  overflow-x:auto;
-  scrollbar-width:none;
+  align-items:center;
 }
-.stale-filter-row::-webkit-scrollbar{display:none;}
-.stale-filter-label{
-  font-size:11px;
-  color:var(--ink3);
-  white-space:nowrap;
-  flex-shrink:0;
-  margin-right:2px;
-}
-.stale-chip{
-  padding:6px 12px;
+.stale-pick-chip{
+  padding:7px 14px;
   background:var(--surface);
   border:0.5px solid var(--line2);
-  border-radius:14px;
-  font-size:12px;
+  border-radius:16px;
+  font-size:13px;
   color:var(--ink2);
   white-space:nowrap;
-  flex-shrink:0;
   font-weight:500;
-  font-family:var(--font-en);
 }
-.stale-chip.on{background:var(--amber,#E0A93B);color:white;border-color:var(--amber,#E0A93B);}
-.stale-input{
-  width:64px;
-  padding:6px 10px;
+.stale-pick-chip.on{background:var(--amber,#E8A33D);color:white;border-color:var(--amber,#E8A33D);}
+.stale-pick-input{
+  width:80px;
+  padding:7px 10px;
   background:var(--surface);
   border:0.5px solid var(--line2);
-  border-radius:14px;
-  font-size:12px;
+  border-radius:16px;
+  font-size:13px;
   color:var(--ink);
-  flex-shrink:0;
   text-align:center;
 }
-.stale-input:focus{border-color:var(--g);outline:none;}
+.stale-pick-input:focus{border-color:var(--g);outline:none;}
+
+/* タグ編集 (探すページのタグフィルター行を長押し/編集ボタンで編集可能に) */
+.tag-edit-toggle{
+  font-size:11px;
+  color:var(--g);
+  padding:4px 8px;
+  flex-shrink:0;
+  white-space:nowrap;
+}
+.tag-filter-chip.editing{
+  padding-right:6px;
+  border-color:var(--amber,#E8A33D);
+}
+.tag-chip-del{
+  width:16px;height:16px;
+  border-radius:8px;
+  background:rgba(0,0,0,0.12);
+  color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;
+  margin-left:5px;
+  flex-shrink:0;
+}
+.tag-chip-del svg{width:9px;height:9px;}
 
 .search-empty{padding:40px 30px;text-align:center;color:var(--ink3);font-size:13px;}
 
@@ -3216,15 +3227,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
     <div class="color-filter-row-wrap" id="color-filter-row"></div>
     <div class="tag-filter-row-wrap" id="tag-filter-row"></div>
-    <div class="stale-filter-row" id="stale-filter-row">
-      <span class="stale-filter-label">見ていない期間</span>
-      <button class="stale-chip" data-stale="3">3日+</button>
-      <button class="stale-chip" data-stale="5">5日+</button>
-      <button class="stale-chip" data-stale="7">7日+</button>
-      <button class="stale-chip" data-stale="10">10日+</button>
-      <button class="stale-chip" data-stale="14">14日+</button>
-      <input class="stale-input" id="stale-input" type="number" min="1" max="999" inputmode="numeric" placeholder="日数">
-    </div>
     <div id="search-idle"></div>
     <div id="search-results"></div>
   </div>
@@ -3554,6 +3556,8 @@ const state={
   searchColor:null,    // 探すページの色フィルター
   searchTag:null,      // 探すページのタグフィルター
   staleDays:null,      // 探すページの「N日以上見ていない」フィルター (null=無効)
+  staleOpen:false,     // 探す待機画面で日数選択を展開しているか
+  tagEditMode:false,   // 探すページのタグ編集モード
   // ─── JUKEN CAMP 塾生認証 ───
   auth:null,           // { token, role, studentId, name, group, shelfIds, aiEnabled } または null
   deviceId:null,       // この端末のID (claim時に使う、localStorage永続)
@@ -4290,7 +4294,8 @@ function goto(id,push){
     state.searchColor=null;
     state.searchTag=null;
     state.staleDays=null;
-    const si=$('stale-input');if(si)si.value='';
+    state.staleOpen=false;
+    state.tagEditMode=false;
     doSearch();
   }
   if(id==='screen-archive')renderArchiveScreen();
@@ -9060,8 +9065,6 @@ function doSearch(){
 
   // 色フィルターバーは常に描画 (タグバーも内部で呼ばれる)
   renderColorFilterBar();
-  // 未閲覧フィルターのチップ選択状態を反映
-  renderStaleFilter();
 
   // 空クエリ + 色なし + タグなし + 未閲覧フィルターなし → 待機画面
   if(!q && !colorFilter && !tagFilter && !staleDays){
@@ -9301,17 +9304,82 @@ function renderTagFilterBar(){
   const bar=$('tag-filter-row');
   if(!bar)return;
   const tags=getAllTags();
-  if(tags.length===0){bar.innerHTML='';return;}
-  bar.innerHTML=tags.map(t=>
-    `<button class="tag-filter-chip ${state.searchTag===t?'on':''}" data-tag="${esc(t)}"><span class="tag-hash">#</span>${esc(t)}</button>`
+  if(tags.length===0){bar.innerHTML='';state.tagEditMode=false;return;}
+  const editing=state.tagEditMode;
+  const delSvg=`<span class="tag-chip-del" data-tag-del><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span>`;
+  let html=tags.map(t=>
+    `<button class="tag-filter-chip ${state.searchTag===t&&!editing?'on':''} ${editing?'editing':''}" data-tag="${esc(t)}"><span class="tag-hash">#</span>${esc(t)}${editing?delSvg:''}</button>`
   ).join('');
+  // 末尾に編集トグル
+  html+=`<button class="tag-edit-toggle" data-tag-edit-toggle>${editing?'完了':'編集'}</button>`;
+  bar.innerHTML=html;
+
   bar.querySelectorAll('.tag-filter-chip').forEach(el=>{
-    el.addEventListener('click',()=>{
-      state.searchTag=state.searchTag===el.dataset.tag?null:el.dataset.tag;
+    const tag=el.dataset.tag;
+    el.addEventListener('click',(e)=>{
+      if(state.tagEditMode){
+        // ×をタップ → 削除確認
+        if(e.target.closest('[data-tag-del]')){
+          deleteTagEverywhere(tag);
+          return;
+        }
+        // チップ本体タップ → リネーム
+        renameTagEverywhere(tag);
+        return;
+      }
+      // 通常モード: フィルタ
+      state.searchTag=state.searchTag===tag?null:tag;
       renderTagFilterBar();
       doSearch();
     });
   });
+  const toggle=bar.querySelector('[data-tag-edit-toggle]');
+  if(toggle){
+    toggle.addEventListener('click',()=>{
+      state.tagEditMode=!state.tagEditMode;
+      // 編集モードに入ったらフィルタ選択は解除しておく (誤操作防止)
+      if(state.tagEditMode)state.searchTag=null;
+      renderTagFilterBar();
+      doSearch();
+    });
+  }
+}
+
+// タグを全メモから削除する (貼り付けたメモのタグも消える)
+function deleteTagEverywhere(tag){
+  if(!confirm(`タグ「#${tag}」をすべてのメモから削除しますか?\n(メモ自体は消えません)`))return;
+  let count=0;
+  state.cards.forEach(c=>{
+    if(Array.isArray(c.tags) && c.tags.includes(tag)){
+      c.tags=c.tags.filter(t=>t!==tag);
+      if(c.tags.length===0)delete c.tags;
+      count++;
+    }
+  });
+  if(state.searchTag===tag)state.searchTag=null;
+  save();
+  toast(`#${tag} を ${count}件から削除しました`);
+  renderTagFilterBar();
+  doSearch();
+}
+
+// タグ名を全メモで変更する (貼り付けたメモのタグも変わる)
+function renameTagEverywhere(tag){
+  const next=(prompt(`タグ「#${tag}」の新しい名前`,tag)||'').trim().replace(/^#+/,'').trim();
+  if(!next || next===tag)return;
+  let count=0;
+  state.cards.forEach(c=>{
+    if(Array.isArray(c.tags) && c.tags.includes(tag)){
+      // 既に next を持っている場合は重複させない
+      c.tags=c.tags.map(t=>t===tag?next:t).filter((t,i,a)=>a.indexOf(t)===i);
+      count++;
+    }
+  });
+  if(state.searchTag===tag)state.searchTag=next;
+  save();
+  toast(`#${tag} → #${next} に変更しました`);
+  renderTagFilterBar();
+  doSearch();
 }
 
 function setTagFilter(tag){
@@ -9338,22 +9406,6 @@ function renderColorFilterBar(){
   renderTagFilterBar();
 }
 
-// 未閲覧フィルター: チップの選択状態と入力欄を現在の state に合わせる
-function renderStaleFilter(){
-  const row=$('stale-filter-row');
-  if(!row)return;
-  const cur=state.staleDays||null;
-  row.querySelectorAll('.stale-chip').forEach(el=>{
-    el.classList.toggle('on', cur!==null && parseInt(el.dataset.stale,10)===cur);
-  });
-  // 入力欄: プリセットに一致しない任意の数値が選ばれている時だけ値を表示
-  const inp=$('stale-input');
-  if(inp && document.activeElement!==inp){
-    const presets=[3,5,7,10,14];
-    inp.value=(cur!==null && !presets.includes(cur))?String(cur):'';
-  }
-}
-
 // 未閲覧フィルターの日数をセット (同じ値を再タップで解除)
 function setStaleDays(days){
   const d=parseInt(days,10);
@@ -9363,15 +9415,34 @@ function setStaleDays(days){
   doSearch();
 }
 // 何も検索していないときの待機表示
-// (ピン留めはホームで目立つので重複表示しない。リストから外したメモ・捨てたメモへの入口だけ置く)
+// (ピン留めはホームで目立つので重複表示しない。
+//  「しばらく見ていないメモ」「リストから外したメモ」「捨てたメモ」への入口を置く)
 function renderSearchIdle(){
   const idle=$('search-idle');
   if(!idle)return;
 
-  // 控えめな入口: リストから外したメモ と 捨てたメモ (件数表示付き)
   const archivedCount=state.cards.filter(isArchivedCard).length;
   const trashedCount=state.cards.filter(isTrashedCard).length;
+
+  // 「しばらく見ていないメモ」行 + (開いていれば) 日数選択
+  const presets=[3,5,7,10,14];
+  const cur=state.staleDays||null;
+  const pickerHtml=state.staleOpen?`
+    <div class="stale-picker" id="stale-picker">
+      ${presets.map(d=>`<button class="stale-pick-chip ${cur===d?'on':''}" data-stale="${d}">${d}日</button>`).join('')}
+      <input class="stale-pick-input" id="stale-pick-input" type="number" min="1" max="999" inputmode="numeric" placeholder="日数" value="${(cur!==null&&!presets.includes(cur))?cur:''}">
+    </div>
+  `:'';
+
   const html=`<div class="search-extras">
+    <button class="search-extra-row" data-action="toggle-stale">
+      <span class="search-extra-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </span>
+      <span class="search-extra-label">しばらく見ていないメモ</span>
+      <svg class="search-extra-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="transform:rotate(${state.staleOpen?'90deg':'0'});transition:transform .2s;"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    ${pickerHtml}
     <button class="search-extra-row" data-action="open-archive">
       <span class="search-extra-icon">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
@@ -9391,6 +9462,22 @@ function renderSearchIdle(){
   </div>`;
 
   idle.innerHTML=html;
+
+  // 日数選択チップ・入力欄のイベント
+  if(state.staleOpen){
+    idle.querySelectorAll('.stale-pick-chip').forEach(el=>{
+      el.addEventListener('click',()=>setStaleDays(el.dataset.stale));
+    });
+    const inp=$('stale-pick-input');
+    if(inp){
+      inp.addEventListener('input',e=>{
+        const v=parseInt(e.target.value,10);
+        state.staleDays=(!v||v<1)?null:v;
+        // 入力中は idle を再描画せず結果だけ更新したいので、doSearch を直接呼ぶ
+        doSearch();
+      });
+    }
+  }
 }
 
 // ═══ UTILS ═══
@@ -9564,6 +9651,7 @@ document.addEventListener('click',e=>{
     case 'archive-card':archiveCard();break;
     case 'open-archive':goto('screen-archive');break;
     case 'open-trash':goto('screen-trash');break;
+    case 'toggle-stale':state.staleOpen=!state.staleOpen;if(!state.staleOpen)state.staleDays=null;renderSearchIdle();if(state.staleDays)doSearch();break;
     case 'empty-trash':emptyTrash();break;
     case 'toggle-pin':togglePin();break;
     case 'copy-to-shelf':copyToShelf();break;
@@ -9619,13 +9707,6 @@ document.addEventListener('click',e=>{
   setScope(c.dataset.scope);
 });
 
-// 未閲覧フィルターのチップ
-document.addEventListener('click',e=>{
-  const c=e.target.closest('.stale-chip');
-  if(!c)return;
-  setStaleDays(c.dataset.stale);
-});
-
 // リストから外したメモ・捨てたメモ画面の行内ボタン処理
 document.addEventListener('click',e=>{
   const btn=e.target.closest('[data-bin-action]');
@@ -9651,14 +9732,6 @@ document.addEventListener('click',e=>{
 
 // 入力ハンドラ
 $('search-q').addEventListener('input',doSearch);
-
-// 未閲覧フィルターの自由入力 (数値)。入力のたびに反映。
-$('stale-input').addEventListener('input',e=>{
-  const v=parseInt(e.target.value,10);
-  if(!v || v<1){ state.staleDays=null; }
-  else { state.staleDays=v; }
-  doSearch();
-});
 
 $('quick-input').addEventListener('input',onQuickInput);
 $('quick-input').addEventListener('keydown',e=>{
