@@ -2796,7 +2796,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .url-modal{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.45);
+  background:transparent;
   z-index:1100;
   display:none;
   align-items:center;
@@ -4486,6 +4486,9 @@ function goto(id,push){
   if(push===undefined)push=true;
   // 設定シートが開いていたら閉じる (画面遷移時に取り残されない)
   if($('settings-sheet')?.classList.contains('on'))closeSettings();
+  // 「＋」メニュー(add-sheet)が開いたまま別画面へ遷移する場合も閉じる
+  // (写真フローで画像選択後に screen-upload へ飛ぶ等)
+  if($('add-sheet')?.classList.contains('on'))closeAddSheet();
   // ホーム以外に移ったら選択モードを解除
   if(id!=='screen-home' && state.selectMode){
     state.selectMode=false;
@@ -5630,7 +5633,10 @@ function closeAddSheet(){
 }
 
 function startCreate(type){
-  closeAddSheet();
+  // 「写真」「URL」はその場で次のシート/モーダルを開くので、背後の5ボタンは残す。
+  // 「カメラ」「メモ」「リスト」は別画面へ遷移するので、ここで閉じる。
+  const staysOnPage=(type==='photo' || type==='photonote' || type==='url');
+  if(!staysOnPage)closeAddSheet();
   state.current={
     id:'c_'+Date.now(),
     type,
@@ -5648,6 +5654,7 @@ function startCreate(type){
   }else if(type==='photo' || type==='photonote'){
     // 「写真・ファイル」: 元仕様どおり accept="image/*" の input を直接開く。
     // iOS 標準シート (写真ライブラリ / 写真を撮る / ファイルを選択) が出る。トリミングなし。
+    // add-sheet は開いたまま残し、画面選択後の遷移時 or キャンセル時に閉じる。
     state.photoMode=type;
     state.cameraCapture=false;
     $('file-input').click();
@@ -5674,7 +5681,7 @@ function startCreate(type){
       if(inp)inp.focus();
     },100);
   }else if(type==='url'){
-    // 「URL」: URL入力モーダルを開く。state.current は OGP 取得後に組み立てる。
+    // 「URL」: URL入力モーダルを開く。背後の5ボタンは残したまま。
     state.current=null;
     openUrlModal();
   }
@@ -5695,6 +5702,8 @@ function openUrlModal(){
 function closeUrlModal(){
   $('url-modal').classList.remove('on');
   $('url-modal').setAttribute('aria-hidden','true');
+  // URL入力を閉じたら、背後に残していた「＋」メニューも閉じる
+  if($('add-sheet')?.classList.contains('on'))closeAddSheet();
 }
 
 async function fetchUrlAndCreate(){
