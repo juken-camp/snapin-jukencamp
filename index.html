@@ -5190,6 +5190,7 @@ function renderToday(){
       const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
       const el=document.createElement('div');
       el.className='today-newcard '+c.type;
+      el.dataset.id=c0.id; // applyGridNoteScale が揃え/色を引き直すのに必要
       if(c.type==='photo'||c.type==='photonote'){
         el.innerHTML=`<img src="${c.image||''}" decoding="async" loading="eager">`;
         if(!isNoColor(c.color)){const col=colorById(c.color);el.style.border='2.5px solid '+col.bd;el.style.boxSizing='border-box';}
@@ -5298,6 +5299,7 @@ function renderPastDaySection(daysAgo){
     const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
     const el=document.createElement('div');
     el.className='today-newcard '+c.type;
+    el.dataset.id=c0.id; // applyGridNoteScale が揃え/色を引き直すのに必要
     if(c.type==='photo'||c.type==='photonote'){
       el.innerHTML=`<img src="${c.image||''}" decoding="async" loading="eager">`;
       if(!isNoColor(c.color)){const col=colorById(c.color);el.style.border='2.5px solid '+col.bd;el.style.boxSizing='border-box';}
