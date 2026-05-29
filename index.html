@@ -3291,12 +3291,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   min-width:0;
 }
 .link-card-title{
-  font-size:12.5px;
+  font-size:11.5px;
   font-weight:600;
   color:var(--ink);
-  line-height:1.35;
+  line-height:1.3;
   display:-webkit-box;
-  -webkit-line-clamp:2;
+  -webkit-line-clamp:3;
   -webkit-box-orient:vertical;
   overflow:hidden;
 }
@@ -4693,7 +4693,9 @@ function linkCardInner(c){
     ? `<div class="link-card-thumb"><img src="${esc(link.image)}" alt="" onerror="this.parentElement.classList.add('no-img');this.remove();this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' fill=none stroke=currentColor stroke-width=1.6><path d=\\'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\\'/><path d=\\'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\\'/></svg>';"></div>`
     : `<div class="link-card-thumb no-img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
   const title=esc(link.title||link.url||'(無題のリンク)');
-  const host=esc(link.siteName||link.host||'');
+  let hostRaw=link.siteName||link.host||'';
+  if(/^youtube$/i.test(hostRaw))hostRaw=''; // 「YouTube」表記は冗長なので隠す
+  const host=esc(hostRaw);
   return `<div class="link-card">${thumb}<div class="link-card-body"><div class="link-card-title">${title}</div>${host?`<div class="link-card-host">${host}</div>`:''}</div></div>`;
 }
 // グリッドのテキストメモ用: 文字数に応じてフォントサイズ・行高・行数制限を決める。
@@ -6740,8 +6742,10 @@ function renderFeed(el,cards){
         : `<div class="feed-note" style="background:linear-gradient(135deg,#E8F5EF,#F4FAF7);color:var(--g);display:flex;align-items:center;justify-content:center;font-size:48px;">🔗</div>`;
       inner=img;
       const title=esc(link.title||link.url||'');
-      const host=esc(link.siteName||link.host||'');
-      inner+=`<div class="feed-meta">${title}　${host}　${fmtDate(c.date)}</div>`;
+      let hostRaw2=link.siteName||link.host||'';
+      if(/^youtube$/i.test(hostRaw2))hostRaw2='';
+      const host=esc(hostRaw2);
+      inner+=`<div class="feed-meta">${title}${host?'　'+host:''}　${fmtDate(c.date)}</div>`;
     }
     if(cardHasUpdate(c0)){
       inner+=`<div class="card-update-badge" title="共有ライブラリが更新しました">更新</div>`;
