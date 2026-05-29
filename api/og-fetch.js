@@ -316,7 +316,8 @@ function parseYouTube(rawUrl) {
 }
 
 function ytThumb(videoId) {
-  return 'https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg';
+  // mqdefault は黒帯のない 16:9 サムネ (hqdefault は上下に黒帯が入る)
+  return 'https://img.youtube.com/vi/' + videoId + '/mqdefault.jpg';
 }
 
 // 動画の oEmbed (タイトル+サムネ, キー不要)
@@ -329,7 +330,7 @@ async function ytOEmbed(videoId) {
     const j = await r.json();
     return {
       title: (j.title || '').slice(0, 300),
-      image: j.thumbnail_url || ytThumb(videoId),
+      image: ytThumb(videoId), // oEmbedのサムネは黒帯入りのことがあるので mqdefault に統一
       author: j.author_name || '',
     };
   } catch { return null; }
@@ -385,24 +386,18 @@ async function tryYouTube(url) {
 
   // 再生リスト優先で正式名を狙う (list が付いていれば)
   if (info.listId) {
-    const pl = await ytPlaylistInfo(info.listId);          // 正式タイトル+サムネ (キー有り)
-    let image = pl && pl.image ? pl.image : null;
+    const pl = await ytPlaylistInfo(info.listId);          // 正式タイトル (キー有り)
     let title = pl && pl.title ? pl.title : '';
-
-    // サムネが無い/タイトルが無いとき、先頭動画で補う
-    if (!image || !title) {
-      let firstVid = info.videoId;
-      if (!firstVid) firstVid = await ytFirstVideoOfPlaylist(info.listId);
-      if (firstVid) {
-        if (!image) image = ytThumb(firstVid);
-        if (!title) {
-          const oe = await ytOEmbed(firstVid);
-          if (oe && oe.title) title = oe.title;
-        }
-      }
+    // サムネは黒帯の無い先頭動画の mqdefault を優先する
+    let firstVid = info.videoId || await ytFirstVideoOfPlaylist(info.listId);
+    let image = firstVid ? ytThumb(firstVid) : (pl && pl.image ? pl.image : null);
+    // タイトルが取れていなければ先頭動画名で補う
+    if (!title && firstVid) {
+      const oe = await ytOEmbed(firstVid);
+      if (oe && oe.title) title = oe.title;
     }
     if (!title) title = '再生リスト';
-    return { ...base, title, image: image || null };
+    return { ...base, title, image: image || null, kind: 'playlist' };
   }
 
   // 単一動画
