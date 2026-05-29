@@ -612,25 +612,29 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   line-height:1.7;
   color:white;
   width:100%;
+  aspect-ratio:1;            /* グリッド/編集画面と同じく正方形に */
   background:linear-gradient(135deg,#1a3a2e,#0d2620);
-  height:100%;
   display:flex;align-items:center;justify-content:center;
   text-align:center;
   white-space:pre-wrap;
+  overflow:hidden;
 }
 .feed-list{
   padding:40px 28px;
   color:var(--feed-list-fg,#1A1A1A);
   width:100%;
-  height:100%;
+  aspect-ratio:1;            /* グリッド/編集画面と同じく正方形に */
   background:#FFFDF5;
   display:flex;flex-direction:column;justify-content:center;
+  overflow:hidden;
 }
 .feed-list h3{font-size:16px;margin-bottom:18px;color:inherit;opacity:0.7;font-weight:500;}
 .feed-list .li{font-size:17px;padding:10px 0;border-bottom:0.5px solid rgba(0,0,0,.1);display:flex;gap:12px;align-items:center;}
 .feed-list .li.done{opacity:0.4;text-decoration:line-through;}
-.feed-list .li .chk{width:16px;height:16px;border:1.5px solid currentColor;opacity:0.5;border-radius:3px;flex-shrink:0;}
-.feed-list .li.done .chk{background:var(--g);border-color:var(--g);opacity:1;}
+/* チェックはグリッド/編集画面と同じく、枠内に白いチェックマークを出す (塗りつぶしではなく) */
+.feed-list .li .chk{width:18px;height:18px;border:1.5px solid currentColor;opacity:0.5;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+.feed-list .li.done .chk{background:var(--g);border-color:var(--g);opacity:1;color:#fff;}
+.feed-list .li .chk svg{width:12px;height:12px;display:block;}
 .feed-list .li .li-num{width:16px;font-size:14px;text-align:center;flex-shrink:0;font-family:var(--font-en);opacity:0.85;}
 .feed-meta{
   position:absolute;
@@ -4040,6 +4044,7 @@ function save(){
   payload._savedAt=Date.now();
   state._savedAt=payload._savedAt;
   mirrorMetaToIDB(payload);
+  scheduleAutoBackup(); // ログイン中なら、しばらく後にこっそりクラウドへ (失敗無視)
   try{
     localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));
     return true;
@@ -5136,6 +5141,38 @@ function updateCloudStatus(){
   status.innerHTML=base;
 }
 
+// ─── 自動バックアップ (アカウント保有者のみ・静かに) ───
+// 変更があってしばらく経つ or アプリを閉じる時に、こっそり push する。
+// 失敗しても何も言わない / 通信不可なら何もしない / ログイン中のみ。本番の動作を一切妨げない。
+let _autoBackupTimer=null;
+let _lastPushedSavedAt=0;
+const AUTO_BACKUP_DELAY=20000; // 最後の変更から20秒後にまとめて
+function scheduleAutoBackup(){
+  if(!isStudent())return;
+  if(_autoBackupTimer)clearTimeout(_autoBackupTimer);
+  _autoBackupTimer=setTimeout(()=>{autoBackupNow();},AUTO_BACKUP_DELAY);
+}
+async function autoBackupNow(){
+  if(!isStudent())return;
+  if(typeof navigator!=='undefined' && navigator.onLine===false)return;
+  // 前回 push 以降に変更が無ければ送らない
+  if((state._savedAt||0) <= _lastPushedSavedAt)return;
+  const targetSavedAt=state._savedAt||Date.now();
+  try{
+    const res=await fetch(SYNC_ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-snapin-token':state.auth.token},
+      body:JSON.stringify({action:'push', payload:buildCloudPayload(), savedAt:targetSavedAt}),
+    });
+    if(!res.ok)return; // 認証切れ/サイズ超過などは静かに諦める (次の機会に再試行)
+    const data=await res.json();
+    _lastPushedSavedAt=targetSavedAt;
+    // lastCloudBackupAt はメモリ上だけ更新 (ここで save() すると無限ループになるため呼ばない)
+    state.lastCloudBackupAt=data.savedAt||Date.now();
+    if($('cloud-box') && $('cloud-box').style.display!=='none')updateCloudStatus();
+  }catch(e){ /* 通信失敗は静かに無視 */ }
+}
+
 // 「使ってみたい・相談する」: 問い合わせ先。
 // ※ ここのメールアドレスを実際の問い合わせ先に差し替えてください。
 //   後で Google フォーム等にするなら CONTACT_URL を使う形に変えれば OK。
@@ -6170,9 +6207,17 @@ function renderFeed(el,cards){
       inner+=`<div class="feed-meta" style="color:${col.fg};opacity:0.5;">${fmtDate(c.date)}</div>`;
     }else if(c.type==='list'){
       const col=colorById(c.color);
-      const items=(c.items||[]).map(i=>
-        `<div class="li ${i.d?'done':''}"><div class="chk"></div><span>${esc(i.t)}</span></div>`
-      ).join('');
+      const items=(c.items||[]).map((i,idx)=>{
+        const m=i.mark||'check';
+        const done=i.d===true;
+        if(m==='number'){
+          let num=0;
+          for(let k=0;k<=idx;k++){ if(((c.items||[])[k].mark||'check')==='number')num++; }
+          return `<div class="li"><div class="li-num">${num}.</div><span>${esc(i.t)}</span></div>`;
+        }
+        const checkSvg=done?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>':'';
+        return `<div class="li ${done?'done':''}"><div class="chk">${checkSvg}</div><span>${esc(i.t)}</span></div>`;
+      }).join('');
       inner=`<div class="feed-list" style="background:${col.bg};color:${col.fg};--feed-list-fg:${col.fg};">` +
             `<h3 style="color:${col.fg};opacity:0.7;">${esc(c.title||'リスト')}</h3>${items}</div>`;
       inner+=`<div class="feed-meta" style="color:${col.fg};opacity:0.5;">${fmtDate(c.date)}</div>`;
@@ -11057,6 +11102,11 @@ if(load() && state.user){
     }).catch(()=>{});
   }).catch(e=>console.warn('boot recover failed:',e));
 }
+
+// アプリを閉じる/バックグラウンドに回した瞬間に、未送信の変更があればクラウドへ送る
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden')autoBackupNow();
+});
 
 // claim 入力フィールド: Enter で送信、誕生日は数字だけに
 (function setupClaimInputs(){
