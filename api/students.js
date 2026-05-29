@@ -99,11 +99,11 @@ export default async function handler(req, res) {
       const existingById = new Map(existing.map(s => [s.id, s]));
       const sanitized = students.map(s => {
         const old = existingById.get(s.id) || {};
-        return {
+        const rec = {
           id: s.id,
           name: String(s.name || '').slice(0, 100),
           nameKey: String(s.nameKey || '').slice(0, 100),
-          birthday: String(s.birthday || '').slice(0, 4),
+          birthday: String(s.birthday || '').slice(0, 6),
           group: String(s.group || '').slice(0, 100),
           shelfIds: Array.isArray(s.shelfIds) ? s.shelfIds.slice(0, 100) : [],
           aiEnabled: s.aiEnabled !== false,
@@ -113,6 +113,15 @@ export default async function handler(req, res) {
           revoked: s.revoked === true,
           createdAt: old.createdAt || s.createdAt || Date.now(),
         };
+        // 団体メンバー (api/join.js 由来) のサーバー管理フィールドを保持する。
+        // admin の名簿保存で teamId 等が消えると、再ログインの団体内照合や
+        // 「団体→メンバーへの反映」が壊れるため、既存値 (old) を必ず引き継ぐ。
+        const teamId = old.teamId || s.teamId;
+        if (teamId) rec.teamId = teamId;
+        if (old.viaJoin === true || s.viaJoin === true) rec.viaJoin = true;
+        if (old.failCount) rec.failCount = old.failCount;
+        if (old.lockUntil) rec.lockUntil = old.lockUntil;
+        return rec;
       });
       await redis.set(KEY, sanitized);
       return res.status(200).json({ ok: true, count: sanitized.length });
