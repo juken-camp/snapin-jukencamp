@@ -3045,7 +3045,7 @@ function renderTeamsList(){
         <div class="team-card-top">
           <div>
             <div class="team-card-name">${esc(t.name||'(無題)')}</div>
-            <div class="team-card-meta">メンバー ${members}人 ・ 公式ライブラリ ${shelfN}件${t.disabled?' ・ 無効':''}</div>
+            <div class="team-card-meta">メンバー ${members}人 ・ 公式ライブラリ ${shelfN}件${t.multiDevice?' ・ 複数端末OK':''}${t.disabled?' ・ 無効':''}</div>
           </div>
           <span class="team-card-badge ${ai?'':'off'}">${ai?'AI 有効':'AI なし'}</span>
         </div>
@@ -3102,7 +3102,7 @@ function fallbackCopyText(text,cb){
 function openTeamModal(team){
   const isNew=!team;
   if(isNew){
-    team={id:null,name:'',code:'',shelfIds:[],aiEnabled:true,secretDigits:4,note:'',disabled:false};
+    team={id:null,name:'',code:'',shelfIds:[],aiEnabled:true,multiDevice:false,secretDigits:4,note:'',disabled:false};
   }
   state.editingTeam=Object.assign({},team,{
     shelfIds:Array.isArray(team.shelfIds)?team.shelfIds.slice():[],
@@ -3135,6 +3135,13 @@ function renderTeamModalBody(){
       </div>
       <div class="team-toggle-desc">ONにすると、この団体のメンバーがAIに質問できます。利用に応じてAPI費用がかかります。</div>
     </div>
+    <div class="team-edit-field">
+      <div class="team-toggle-row">
+        <label style="margin:0;">複数の端末で使えるようにする</label>
+        <div class="team-switch ${t.multiDevice===true?'on':''}" id="team-multi-switch"></div>
+      </div>
+      <div class="team-toggle-desc">ONにすると、同じ名前＋暗証番号で複数の端末から入れます（家族や共有での利用向け）。OFFは1人1端末です。</div>
+    </div>
     <div class="student-shelves-row">
       <div class="student-shelves-label">配る公式ライブラリ</div>
       ${shelves.length===0
@@ -3163,6 +3170,11 @@ function renderTeamModalBody(){
     state.editingTeam.aiEnabled=!(state.editingTeam.aiEnabled!==false);
     sw.classList.toggle('on',state.editingTeam.aiEnabled);
   });
+  const msw=$('team-multi-switch');
+  if(msw)msw.addEventListener('click',()=>{
+    state.editingTeam.multiDevice=!(state.editingTeam.multiDevice===true);
+    msw.classList.toggle('on',state.editingTeam.multiDevice);
+  });
   body.querySelectorAll('[data-team-shelf]').forEach(el=>{
     el.addEventListener('click',()=>{
       const id=el.dataset.teamShelf;
@@ -3186,8 +3198,8 @@ async function saveTeamFromModal(){
   const name=(t.name||'').trim();
   if(!name){setStatus('団体名を入れてください','error');return;}
   const payload=t._new
-    ? {action:'create',name,shelfIds:t.shelfIds,aiEnabled:t.aiEnabled!==false,note:t.note||''}
-    : {action:'update',id:t.id,name,shelfIds:t.shelfIds,aiEnabled:t.aiEnabled!==false,note:t.note||''};
+    ? {action:'create',name,shelfIds:t.shelfIds,aiEnabled:t.aiEnabled!==false,multiDevice:t.multiDevice===true,note:t.note||''}
+    : {action:'update',id:t.id,name,shelfIds:t.shelfIds,aiEnabled:t.aiEnabled!==false,multiDevice:t.multiDevice===true,note:t.note||''};
   const data=await teamApi(payload);
   if(!data)return;
   closeTeamModal();
