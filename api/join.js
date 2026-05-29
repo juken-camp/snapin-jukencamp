@@ -149,16 +149,20 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: false, reason: 'wrong_secret', remaining });
       }
 
-      // 端末判定 (claim.js と同じ単一端末モデル)
-      if (member.claimedBy && member.claimedBy !== deviceId && !force) {
+      // 端末判定: 単一端末モデルでは別端末は force でのみ引き継ぐ。
+      // 複数端末を許可している団体ではこのチェックを行わない (どの端末でも入れる)。
+      const multi = team.multiDevice === true;
+      if (!multi && member.claimedBy && member.claimedBy !== deviceId && !force) {
         return res.status(200).json({ ok: false, reason: 'already_claimed' });
       }
 
-      // 引き継ぎ成立 (初回 / 同端末 / force)
+      // ログイン成立 (初回 / 同端末 / force / 複数端末許可)。
+      // claimedBy は「最後に使った端末」として更新する (複数端末でも記録は残す)。
       member.claimedBy = deviceId;
       member.claimedAt = now;
       member.failCount = 0;
       member.lockUntil = 0;
+      member.multiDevice = multi;     // 団体の設定に追従
       students[idx] = member;
       await redis.set(STUDENTS_KEY, students);
 
@@ -186,6 +190,7 @@ export default async function handler(req, res) {
       teamId: team.id,                       // どの団体か (メンバー識別用・新フィールド)
       shelfIds: Array.isArray(team.shelfIds) ? team.shelfIds.slice(0, 200) : [],
       aiEnabled: team.aiEnabled !== false,
+      multiDevice: team.multiDevice === true,  // 複数端末を許可する団体か
       claimedBy: deviceId,
       claimedAt: now,
       revoked: false,
