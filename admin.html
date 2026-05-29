@@ -384,7 +384,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   padding:18px 20px;
 }
 
-/* ── 検索・絞り込みバー (塾生 / 公式ライブラリ共通) ── */
+/* ── 検索・絞り込みバー (塾生 / 共有ライブラリ共通) ── */
 .admin-search-wrap{
   padding:4px 14px 10px;
 }
@@ -536,7 +536,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   padding:28px 20px;
 }
 
-/* ── 公式ライブラリ件数バッジ調整 ── */
+/* ── 共有ライブラリ件数バッジ調整 ── */
 .shelf-none-match{
   text-align:center;
   color:var(--ink3);
@@ -677,7 +677,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .bulk-add-preview .row{padding:3px 0;}
 .bulk-add-preview .err{color:var(--rose,#C43A2C);}
 
-/* 公式ライブラリ一覧 */
+/* 共有ライブラリ一覧 */
 .shelf-list{
   display:flex;
   flex-direction:column;
@@ -721,7 +721,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .shelf-avatar.has-icon{background:transparent;}
 .shelf-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
 
-/* アイコン編集 (公式ライブラリ用) */
+/* アイコン編集 (共有ライブラリ用) */
 .icon-edit-row{
   display:flex;
   align-items:center;
@@ -822,7 +822,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .new-shelf-btn:active{background:var(--gl);transform:scale(.99);}
 
-/* 公式ライブラリの編集パネル */
+/* 共有ライブラリの編集パネル */
 .shelf-edit{
   margin:12px 0 0;
   background:var(--surface);
@@ -1240,7 +1240,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   white-space:nowrap;
 }
 
-/* クロスポスト: 共有する公式ライブラリ */
+/* クロスポスト: 共有する共有ライブラリ */
 .share-row{
   background:var(--surface);
   border-radius:12px;
@@ -1779,7 +1779,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .cat-add:active{transform:scale(.92);background:var(--gl);color:var(--g);}
 .cat-add svg{width:16px;height:16px;}
 
-/* ━━━ 公式ライブラリ 並べ替えドラッグ ━━━ */
+/* ━━━ 共有ライブラリ 並べ替えドラッグ ━━━ */
 .shelf-drag-handle{
   flex:0 0 auto;
   display:flex;
@@ -1932,7 +1932,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   /* タブ列はそのまま上部に。中身を広げる */
   .admin-tabs{padding-left:24px;padding-right:24px;}
 
-  /* 公式ライブラリ: 左=一覧 / 右=編集 の2カラム */
+  /* 共有ライブラリ: 左=一覧 / 右=編集 の2カラム */
   #pane-shelves{
     display:grid;
     grid-template-columns:340px 1fr;
@@ -2003,7 +2003,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="login-wrap">
     <div class="login-logo">Snap<em>In</em></div>
     <div class="login-by">管理画面</div>
-    <div class="login-tag">JUKEN CAMP 公式アカウント</div>
+    <div class="login-tag">JUKEN CAMP 共有アカウント</div>
     <form class="login-form" id="login-form" onsubmit="return false;">
       <div>
         <label for="login-email">メールアドレス</label>
@@ -2032,16 +2032,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <div id="main-screen" class="scroll hide">
   <!-- タブ切替 -->
   <div class="admin-tabs">
-    <button class="admin-tab on" data-admin-tab="shelves">公式ライブラリ</button>
+    <button class="admin-tab on" data-admin-tab="shelves">共有ライブラリ</button>
     <button class="admin-tab" data-admin-tab="students">名簿 <span class="admin-tab-count" id="students-tab-count">0</span></button>
     <button class="admin-tab" data-admin-tab="teams">グループ <span class="admin-tab-count" id="teams-tab-count">0</span></button>
   </div>
 
-  <!-- 公式ライブラリタブ -->
+  <!-- 共有ライブラリタブ -->
   <div class="admin-tab-pane on" id="pane-shelves">
     <div class="shelf-col-left">
       <div class="cat-bar" id="cat-bar-shelves"></div>
-      <div class="section-title" id="shelf-section-title">管理する公式ライブラリ</div>
+      <div class="section-title" id="shelf-section-title">管理する共有ライブラリ</div>
       <div class="admin-search-wrap" id="shelf-search-wrap">
         <div class="admin-search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3" stroke-linecap="round"/></svg>
@@ -2053,7 +2053,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="shelf-list" id="shelf-list"></div>
       <button class="new-shelf-btn" id="new-shelf-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-        <span id="new-shelf-label">新しい公式ライブラリを作る</span>
+        <span id="new-shelf-label">新しい共有ライブラリを作る</span>
       </button>
     </div>
 
@@ -2265,7 +2265,7 @@ const state={
   bulkText:'',           // 一括追加のテキスト
   studentSearch:'',      // 塾生検索文字列
   studentFilter:'all',   // 'all' | 'claimed' | 'unclaimed'
-  shelfSearch:'',        // 公式ライブラリ検索文字列
+  shelfSearch:'',        // 共有ライブラリ検索文字列
   // ─── カテゴリ (塾生 / 保護者 …) ───
   categories:[{id:'juku',name:'塾生'}], // カテゴリ定義 (juku=既定。削除不可)
   category:'juku',        // 現在選択中のカテゴリid
@@ -2700,9 +2700,9 @@ function renderStudentModalBody(){
       </select>
     </div>
     <div class="student-shelves-row">
-      <div class="student-shelves-label">登録できる公式ライブラリ</div>
+      <div class="student-shelves-label">登録できる共有ライブラリ</div>
       ${shelves.length===0
-        ? '<div style="font-size:12px;color:var(--ink3);padding:8px 0;">まだ公式ライブラリがありません。先に作ってください。</div>'
+        ? '<div style="font-size:12px;color:var(--ink3);padding:8px 0;">まだ共有ライブラリがありません。先に作ってください。</div>'
         : shelves.map(sh=>{
           const on=shelfIds.includes(sh.id);
           return `
@@ -2890,7 +2890,7 @@ function renderBulkModalBody(){
       &nbsp;&nbsp;佐藤花子,1225<br><br>
       カンマの後にスペースがあってもなくてもどちらでもOKです。<br>
       <b>追加先カテゴリ: ${esc(curCatName())}</b><br>
-      公式ライブラリの紐付けは追加後に1人ずつ設定してください。
+      共有ライブラリの紐付けは追加後に1人ずつ設定してください。
     </div>
     <div class="bulk-add-area">
       <textarea id="bulk-textarea" placeholder="ここに貼り付け">${esc(state.bulkText)}</textarea>
@@ -3045,7 +3045,7 @@ function renderTeamsList(){
         <div class="team-card-top">
           <div>
             <div class="team-card-name">${esc(t.name||'(無題)')}</div>
-            <div class="team-card-meta">メンバー ${members}人 ・ 公式ライブラリ ${shelfN}件${t.multiDevice?' ・ 複数端末OK':''}${t.disabled?' ・ 無効':''}</div>
+            <div class="team-card-meta">メンバー ${members}人 ・ 共有ライブラリ ${shelfN}件${t.multiDevice?' ・ 複数端末OK':''}${t.disabled?' ・ 無効':''}</div>
             ${t.adminName?`<div class="team-card-meta">グループ管理者: ${esc(t.adminName)}</div>`:''}
           </div>
           <span class="team-card-badge ${ai?'':'off'}">${ai?'AI 有効':'AI なし'}</span>
@@ -3144,9 +3144,9 @@ function renderTeamModalBody(){
       <div class="team-toggle-desc">ONにすると、同じ名前＋暗証番号で複数の端末から入れます（家族や共有での利用向け）。OFFは1人1端末です。</div>
     </div>
     <div class="student-shelves-row">
-      <div class="student-shelves-label">配る公式ライブラリ</div>
+      <div class="student-shelves-label">配る共有ライブラリ</div>
       ${shelves.length===0
-        ? '<div style="font-size:12px;color:var(--ink3);padding:8px 0;">まだ公式ライブラリがありません。先に作ってください。</div>'
+        ? '<div style="font-size:12px;color:var(--ink3);padding:8px 0;">まだ共有ライブラリがありません。先に作ってください。</div>'
         : shelves.map(sh=>{
           const on=shelfIds.includes(sh.id);
           return `
@@ -3160,7 +3160,7 @@ function renderTeamModalBody(){
     <div class="team-edit-field">
       <label>グループ管理者の名前 (任意)</label>
       <input id="team-admin-name" type="text" value="${esc(t.adminName||'')}" placeholder="例: 田中花子">
-      <div class="team-toggle-desc">この名前で参加したメンバーが、自分たちの公式ライブラリを作成・編集できます（JUKEN CAMP のライブラリには触れません）。空欄なら管理者なし。</div>
+      <div class="team-toggle-desc">この名前で参加したメンバーが、自分たちの共有ライブラリを作成・編集できます（JUKEN CAMP のライブラリには触れません）。空欄なら管理者なし。</div>
     </div>
     <div class="team-edit-field">
       <label>メモ (任意・管理用)</label>
@@ -3226,7 +3226,7 @@ async function regenTeamCode(t){
 
 async function syncTeam(t){
   if(!t)return;
-  if(!confirm(`「${t.name}」の設定（公式ライブラリ・AI）を、所属メンバー全員に反映しますか?`))return;
+  if(!confirm(`「${t.name}」の設定（共有ライブラリ・AI）を、所属メンバー全員に反映しますか?`))return;
   const data=await teamApi({action:'sync',id:t.id});
   if(!data)return;
   setStatus(`${data.updated||0}人に反映しました`);setTimeout(()=>setStatus(''),1600);
@@ -3284,8 +3284,8 @@ function renderCategoryBars(){
   });
   // ラベル類をカテゴリ名で更新
   const nm=curCatName();
-  const sst=$('shelf-section-title'); if(sst)sst.textContent=`${nm}の公式ライブラリ`;
-  const sl=$('new-shelf-label'); if(sl)sl.textContent=`新しい${nm}の公式ライブラリを作る`;
+  const sst=$('shelf-section-title'); if(sst)sst.textContent=`${nm}の共有ライブラリ`;
+  const sl=$('new-shelf-label'); if(sl)sl.textContent=`新しい${nm}の共有ライブラリを作る`;
   const stt=$('students-section-title'); if(stt)stt.textContent=`${nm}の名簿`;
   const stl=$('new-student-label'); if(stl)stl.textContent=`${nm}を1人ずつ追加`;
 }
@@ -3365,7 +3365,7 @@ async function deleteCategoryFromModal(){
   if(shelfN>0 || stuN>0){
     await confirmDialog({
       title:'まだ中身があります',
-      message:`「${nm}」には公式ライブラリ ${shelfN}件・名簿 ${stuN}人が残っています。\n先に別のカテゴリへ移すか削除してから、カテゴリを削除してください。`,
+      message:`「${nm}」には共有ライブラリ ${shelfN}件・名簿 ${stuN}人が残っています。\n先に別のカテゴリへ移すか削除してから、カテゴリを削除してください。`,
       okLabel:'わかりました',
       cancelLabel:'',
     });
@@ -3396,7 +3396,7 @@ async function tryLogin(){
   const btn=$('login-btn');
   btn.disabled=true;
   btn.textContent='読み込み中…';
-  // 最新の公式ライブラリを取得 (認証不要)
+  // 最新の共有ライブラリを取得 (認証不要)
   const ok=await fetchShelves();
   if(!ok){
     btn.disabled=false;
@@ -3462,7 +3462,7 @@ function renderShelfList(){
   const catList=state.shelves.filter(shelfInCurCat);
   if(catList.length===0){
     if(hintEl)hintEl.style.display='none';
-    el.innerHTML=`<div class="empty-shelf-state"><div class="empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>まだ「${esc(curCatName())}」の公式ライブラリがありません。<br>下のボタンから作ってみましょう。</div>`;
+    el.innerHTML=`<div class="empty-shelf-state"><div class="empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>まだ「${esc(curCatName())}」の共有ライブラリがありません。<br>下のボタンから作ってみましょう。</div>`;
     return;
   }
   const q=(state.shelfSearch||'').trim().toLowerCase();
@@ -3474,7 +3474,7 @@ function renderShelfList(){
   const canReorder=(q==='');
   if(hintEl)hintEl.style.display=(canReorder && list.length>1)?'':'none';
   if(list.length===0){
-    el.innerHTML='<div class="shelf-none-match">該当する公式ライブラリがありません。</div>';
+    el.innerHTML='<div class="shelf-none-match">該当する共有ライブラリがありません。</div>';
     return;
   }
   list.forEach(s=>{
@@ -3589,7 +3589,7 @@ function newShelf(){
   const id='shelf_'+Date.now();
   const s={
     id,
-    name:'新しい公式ライブラリ',
+    name:'新しい共有ライブラリ',
     handle:'@new-library-'+Math.floor(Math.random()*9999),
     desc:'',
     category:state.category,
@@ -3608,7 +3608,7 @@ function newShelf(){
 async function deleteShelf(id){
   const s=state.shelves.find(x=>x.id===id);
   if(!s)return;
-  if(!await confirmDialog({title:'公式ライブラリを削除',message:`「${s.name}」を削除しますか？\nこの公式ライブラリを登録している生徒の端末からは消えません(各端末のキャッシュとして残ります)。`,okLabel:'削除する',danger:true}))return;
+  if(!await confirmDialog({title:'共有ライブラリを削除',message:`「${s.name}」を削除しますか？\nこの共有ライブラリを登録している生徒の端末からは消えません(各端末のキャッシュとして残ります)。`,okLabel:'削除する',danger:true}))return;
   // このライブラリにあった実体メモのIDを集める
   const masterIds=new Set((s.cards||[]).filter(c=>!c._ref).map(c=>c.id));
   // 他のライブラリにある「このライブラリを元にした参照」を一掃
@@ -3665,7 +3665,7 @@ function renderShelfEdit(){
           </div>
         </div>
         <div class="shelf-edit-row">
-          <label>公式ライブラリの名前</label>
+          <label>共有ライブラリの名前</label>
           <input id="shelf-name" type="text" value="${esc(s.name||'')}" maxlength="60">
         </div>
         <div class="shelf-edit-row">
@@ -3692,7 +3692,7 @@ function renderShelfEdit(){
     <div class="memo-grid" id="memo-grid"></div>
   `;
 
-  // 公式ライブラリ情報の自動保存 (フォーカスアウト時)
+  // 共有ライブラリ情報の自動保存 (フォーカスアウト時)
   let saveTimer=null;
   let savedHideTimer=null;
   const setAutosave=(cls)=>{
@@ -3764,7 +3764,7 @@ function renderShelfEdit(){
     });
   }
 
-  // アイコン (公式ライブラリ用) のアップロード
+  // アイコン (共有ライブラリ用) のアップロード
   const iconFile=$('icon-file');
   if(iconFile){
     iconFile.addEventListener('change',async e=>{
@@ -4090,7 +4090,7 @@ function renderMemoModalBody(){
 
   const delHtml=m._new?'':`<button class="modal-del" id="memo-del">このメモを削除</button>`;
 
-  // 共有する公式ライブラリ (クロスポスト)
+  // 共有する共有ライブラリ (クロスポスト)
   const s=getSelectedShelf();
   const masterId=s?s.id:null;
   const otherShelves=state.shelves.filter(x=>x.id!==masterId);
@@ -4100,7 +4100,7 @@ function renderMemoModalBody(){
   if(masterId && otherShelves.length>0){
     shareHtml=`
       <div class="share-row">
-        <div class="share-row-label">共有する公式ライブラリ</div>
+        <div class="share-row-label">共有する共有ライブラリ</div>
         <div class="share-opt master">
           <div class="share-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
           ${s.icon?`<div class="share-mini-avatar"><img src="${esc(s.icon)}" alt=""></div>`:`<div class="share-mini-avatar">${esc((s.name||'?').slice(0,1))}</div>`}
@@ -4714,7 +4714,7 @@ async function fetchLinkInModal(){
   }
 }
 
-// 公式メモの「本文系」フィールドが変わったか判定する。
+// 共有メモの「本文系」フィールドが変わったか判定する。
 // これが true の時だけ memo.updated を更新し、利用者端末に「更新」バッジを出す。
 // type / text / title / image / items / link / ocrText / color を比較対象とする。
 function memoBodyChanged(prev,next){
@@ -4768,7 +4768,7 @@ async function saveMemoFromModal(){
   }else{
     const idx=s.cards.findIndex(x=>x.id===memo.id);
     // 既存メモの本文を編集した場合は updated を打つ。
-    // これを利用者端末が見て「公式が更新した」バッジを出す。
+    // これを利用者端末が見て「共有が更新した」バッジを出す。
     // 本文に関係するフィールドだけを比較し、変化があった時だけ更新する
     // (sharedWith の付け替えなど見た目に出ない変更ではバッジを出さない)。
     if(idx>=0){
@@ -4831,7 +4831,7 @@ async function deleteMemoFromModal(){
   // 共有先がある場合は警告を強める
   const sw=Array.isArray(m.sharedWith)?m.sharedWith.filter(id=>state.shelves.some(x=>x.id===id)):[];
   const msg=sw.length>0
-    ? `このメモを削除しますか？\n他の${sw.length}個の公式ライブラリにも共有中です。すべての共有先からも消えます。`
+    ? `このメモを削除しますか？\n他の${sw.length}個の共有ライブラリにも共有中です。すべての共有先からも消えます。`
     : 'このメモを削除しますか？';
   if(!await confirmDialog({title:'メモを削除',message:msg,okLabel:'削除する',danger:true}))return;
   const s=getSelectedShelf();
@@ -4974,7 +4974,7 @@ $('password-toggle').addEventListener('click',()=>{
   });
 });
 
-// 起動: 前回のログインを復元、公式ライブラリ一覧をフェッチ
+// 起動: 前回のログインを復元、共有ライブラリ一覧をフェッチ
 (async function init(){
   loadCategoriesLocal();
   const hasAuth=loadAuth();
@@ -4982,11 +4982,11 @@ $('password-toggle').addEventListener('click',()=>{
     // メールを入力欄に復元 (UIで見えるように)
     if(state.email)$('login-email').value=state.email;
     if(state.password)$('login-password').value=state.password;
-    // 公式ライブラリをフェッチしてメイン画面へ
+    // 共有ライブラリをフェッチしてメイン画面へ
     await fetchShelves();
     showMain();
   }else{
-    // 公式の最新を取得 (ログイン前でも閲覧用に)
+    // 共有の最新を取得 (ログイン前でも閲覧用に)
     fetchShelves();
   }
 })();
