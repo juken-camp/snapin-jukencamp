@@ -125,6 +125,7 @@ export default async function handler(req, res) {
         shelfIds: sanitizeShelfIds(body.shelfIds),
         aiEnabled: body.aiEnabled !== false,
         multiDevice: body.multiDevice === true,
+        adminName: String(body.adminName || '').trim().slice(0, 60),
         secretDigits: Number(body.secretDigits) === 6 ? 6 : 4,
         note: String(body.note || '').slice(0, 500),
         disabled: false,
@@ -144,6 +145,7 @@ export default async function handler(req, res) {
       if (body.shelfIds !== undefined) t.shelfIds = sanitizeShelfIds(body.shelfIds);
       if (body.aiEnabled !== undefined) t.aiEnabled = body.aiEnabled === true;
       if (body.multiDevice !== undefined) t.multiDevice = body.multiDevice === true;
+      if (body.adminName !== undefined) t.adminName = String(body.adminName).trim().slice(0, 60);
       if (body.secretDigits !== undefined) t.secretDigits = Number(body.secretDigits) === 6 ? 6 : 4;
       if (body.note !== undefined) t.note = String(body.note).slice(0, 500);
       if (body.disabled !== undefined) t.disabled = body.disabled === true;
