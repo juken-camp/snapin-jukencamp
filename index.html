@@ -667,6 +667,84 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .empty-title{font-size:16px;color:var(--ink);font-weight:600;margin-bottom:6px;}
 .empty-sub{font-size:13px;line-height:1.6;}
 
+/* 空ホームの作成ボタン群 (オンボーディング: 最初の一手を促す) */
+.empty-actions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:10px;
+  margin-top:22px;
+  max-width:260px;
+}
+.empty-action{
+  flex:0 0 auto;
+  width:72px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 6px 10px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:7px;
+  box-shadow:var(--shadow);
+  transition:transform .12s, background-color .12s;
+}
+.empty-action:active{transform:scale(0.94);background:var(--gl);}
+.empty-action-icon{
+  width:36px;height:36px;
+  border-radius:10px;
+  background:var(--gl);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--g);
+}
+.empty-action-label{font-size:12px;font-weight:600;color:var(--ink2);}
+
+/* 初回ウェルカムシート */
+.welcome-body{
+  padding:6px 26px calc(26px + env(safe-area-inset-bottom));
+  text-align:center;
+  overflow-y:auto;
+}
+.welcome-logo{
+  font-family:var(--font-en);
+  font-size:26px;
+  color:var(--g);
+  margin:8px 0 14px;
+}
+.welcome-logo em{font-style:italic;}
+.welcome-title{font-size:19px;font-weight:700;color:var(--ink);margin-bottom:8px;}
+.welcome-lead{font-size:13px;line-height:1.7;color:var(--ink2);margin-bottom:22px;}
+.welcome-points{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  text-align:left;
+  margin-bottom:26px;
+}
+.welcome-point{display:flex;align-items:flex-start;gap:12px;}
+.welcome-point-icon{
+  flex:0 0 auto;
+  width:34px;height:34px;
+  border-radius:10px;
+  background:var(--gl);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--g);
+  margin-top:1px;
+}
+.welcome-point-text{font-size:13px;line-height:1.6;color:var(--ink2);}
+.welcome-point-text b{display:block;font-size:14px;color:var(--ink);font-weight:700;margin-bottom:1px;}
+.welcome-start{
+  width:100%;
+  padding:15px;
+  background:var(--g);
+  color:#fff;
+  border-radius:14px;
+  font-size:15px;
+  font-weight:700;
+}
+.welcome-start:active{background:var(--gd);}
+
 /* ADD SHEET */
 .sheet-mask{
   position:absolute;inset:0;
@@ -3504,8 +3582,34 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="empty-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.81.01L6 21"/></svg>
       </div>
-      <div class="empty-title">空っぽです</div>
-      <div class="empty-sub">上の入力欄か、下の + から<br>残してみてください。</div>
+      <div class="empty-title">まずは、ひとつ残してみましょう。</div>
+      <div class="empty-sub">写真でも、ひとことメモでも。<br>あとで効いてきます。</div>
+      <div class="empty-actions">
+        <button class="empty-action" data-action="create-photo">
+          <span class="empty-action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          </span>
+          <span class="empty-action-label">写真</span>
+        </button>
+        <button class="empty-action" data-action="create-note">
+          <span class="empty-action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </span>
+          <span class="empty-action-label">メモ</span>
+        </button>
+        <button class="empty-action" data-action="create-list">
+          <span class="empty-action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </span>
+          <span class="empty-action-label">リスト</span>
+        </button>
+        <button class="empty-action" data-action="create-url">
+          <span class="empty-action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </span>
+          <span class="empty-action-label">リンク</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -3798,6 +3902,38 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
 </div>
 
+<!-- 初回ウェルカム (一般ユーザーの初回ログイン時に一度だけ表示) -->
+<div class="sheet-mask" id="welcome-mask" data-action="close-welcome"></div>
+<div class="sheet" id="welcome-sheet" aria-hidden="true">
+  <div class="sheet-handle"></div>
+  <div class="welcome-body">
+    <div class="welcome-logo">Snap<em>In</em></div>
+    <div class="welcome-title">ようこそ、SnapIn へ。</div>
+    <div class="welcome-lead">見たもの・思いついたこと・やること。<br>あとで効いてくる、自分だけのメモ。</div>
+    <div class="welcome-points">
+      <div class="welcome-point">
+        <span class="welcome-point-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </span>
+        <span class="welcome-point-text"><b>残す</b>写真・メモ・リスト・リンクを、パッと。</span>
+      </div>
+      <div class="welcome-point">
+        <span class="welcome-point-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+        <span class="welcome-point-text"><b>見返す</b>「探す」と「思い出す」で、あとから。</span>
+      </div>
+      <div class="welcome-point">
+        <span class="welcome-point-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </span>
+        <span class="welcome-point-text"><b>安心</b>ぜんぶ、この端末に残ります。</span>
+      </div>
+    </div>
+    <button class="welcome-start" data-action="close-welcome">はじめる</button>
+  </div>
+</div>
+
 <div class="toast" id="toast">保存しました</div>
 <div class="save-ok" id="save-ok" aria-hidden="true">
   <div class="save-ok-circle">
@@ -3987,6 +4123,7 @@ const state={
   searchTag:null,      // 探すページのタグフィルター
   staleDays:null,      // 「しばらく見ていないメモ」ページの日数 (null=未設定→デフォルト7)
   aiNote:'',           // 設定「AIへの希望」フリー記入。systemプロンプトに差し込む利用者の要望。
+  onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
   _savedAt:0,          // 直近の保存時刻 (localStorage と IDB 耐久コピーの新旧比較に使う)
   lastCloudBackupAt:0, // 直近にクラウドへバックアップした時刻 (UI 表示用、ローカルのみ)
   tagEditMode:false,   // 探すページのタグ編集モード
@@ -4022,6 +4159,7 @@ function buildLightPayload(){
     auth:state.auth,
     deviceId:state.deviceId,
     aiNote:state.aiNote,
+    onboarded:state.onboarded,
     lastCloudBackupAt:state.lastCloudBackupAt,
   };
 }
@@ -4228,6 +4366,7 @@ function applyPayload(d){
   state.auth=d.auth||null;
   state.deviceId=d.deviceId||null;
   state.aiNote=d.aiNote||'';
+  state.onboarded=d.onboarded||false;
   state._savedAt=d._savedAt||0;
   state.lastCloudBackupAt=d.lastCloudBackupAt||0;
 }
@@ -4924,6 +5063,32 @@ function login(mode){
   save();
   state.navStack=['screen-home'];
   goto('screen-home',false);
+  // 一般ユーザーの初回ログイン時だけ、ウェルカムを一度だけ表示する
+  if(mode==='personal' && !state.onboarded){
+    setTimeout(openWelcome,260); // ホームへの遷移が落ち着いてからシートを出す
+  }
+}
+
+// 初回ウェルカムシートを開く
+function openWelcome(){
+  const sheet=$('welcome-sheet');
+  const mask=$('welcome-mask');
+  if(!sheet||!mask)return;
+  mask.classList.add('on');
+  sheet.classList.add('on');
+  sheet.setAttribute('aria-hidden','false');
+}
+
+// ウェルカムシートを閉じる (×・背景タップ・はじめる 共通)。閉じた時点で表示済みにする。
+function closeWelcome(){
+  const sheet=$('welcome-sheet');
+  const mask=$('welcome-mask');
+  if(sheet){sheet.classList.remove('on');sheet.setAttribute('aria-hidden','true');}
+  if(mask)mask.classList.remove('on');
+  if(!state.onboarded){
+    state.onboarded=true;
+    save();
+  }
 }
 
 // 塾生として claim を試みる (名前+誕生日4桁)
@@ -10809,6 +10974,7 @@ document.addEventListener('click',e=>{
     case 'back':back();break;
     case 'open-add':openAddSheet();break;
     case 'close-add':closeAddSheet();break;
+    case 'close-welcome':closeWelcome();break;
     case 'create-camera':startCreate('camera');break;
     case 'create-photo':startCreate('photo');break;
     case 'create-note':startCreate('note');break;
