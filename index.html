@@ -6891,7 +6891,7 @@ function isYouTubeUrl(url){
   }catch(_){return false;}
 }
 // 動画IDからサムネ画像URL (規則的に決まるので確実)
-function youtubeThumb(id){ return 'https://img.youtube.com/vi/'+id+'/hqdefault.jpg'; }
+function youtubeThumb(id){ return 'https://img.youtube.com/vi/'+id+'/mqdefault.jpg'; }
 
 async function fetchUrlAndCreate(){
   const raw=$('url-input').value.trim();
