@@ -2563,7 +2563,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .login-card-juken{
   background:var(--gl);
   color:var(--gd);
-  margin-top:8px;
 }
 .login-card-juken:active{background:#D9EFE5;}
 
@@ -3533,7 +3532,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <button class="login-card login-card-juken" data-action="goto-claim">
       <div class="login-card-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        AI・ライブラリを使う
+        AI機能と共有ライブラリを使う
       </div>
     </button>
     <button class="login-card" data-action="goto-join">
@@ -9587,7 +9586,7 @@ function buildAiHistory(chat, placeholderIdx){
 async function callAI(userMessage,cardContext,history,replyRef){
   // 認証チェック (塾生限定)
   if(!canUseAI()){
-    return '[AIは「AI・ライブラリ」を使えるアカウントで利用できます。\nログイン画面の「AI・ライブラリを使う」から登録してください。導入のご相談は共有ライブラリの「使ってみたい・相談する」からどうぞ。]';
+    return '[AIは「AI・ライブラリ」を使えるアカウントで利用できます。\nログイン画面の「AI機能と共有ライブラリを使う」から登録してください。導入のご相談は共有ライブラリの「使ってみたい・相談する」からどうぞ。]';
   }
 
   // メッセージを組み立てる
@@ -9693,7 +9692,7 @@ async function callAI(userMessage,cardContext,history,replyRef){
       // 認証エラー: 塾生token が失効したかも
       state.auth=null;
       save();
-      return '[認証が切れました。ログアウトしてもう一度「AI・ライブラリを使う」から入り直してください。]';
+      return '[認証が切れました。ログアウトしてもう一度「AI機能と共有ライブラリを使う」から入り直してください。]';
     }
     if(!res.ok)throw new Error('API error: '+res.status);
     const data=await res.json();
