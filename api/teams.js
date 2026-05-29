@@ -27,6 +27,7 @@
 // レスポンス: { ok:true, ... } | { ok:false, reason }
 
 import { Redis } from '@upstash/redis';
+import { authFromReq, normalizeName } from './_lib/auth.js';
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
@@ -35,6 +36,15 @@ const redis = new Redis({
 
 const TEAMS_KEY = 'snapin:teams';
 const STUDENTS_KEY = 'snapin:students';
+const MAX_SHELVES_PER_TEAM = 100;
+const MAX_CARDS_PER_SHELF = 500;
+function teamShelfKey(teamId) { return 'snapin:gshelf:team:' + teamId; }
+function newShelfId() {
+  const rnd = (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+    : Math.random().toString(36).slice(2, 14);
+  return 'gshelf_' + rnd;
+}
 
 // 参加コードの文字種 (紛らわしい 0/O/1/I/L を除外した大文字英数)
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -42,8 +52,8 @@ const CODE_LEN = 8;
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-password');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-password, x-snapin-token');
 }
 
 function isAdmin(req) {
@@ -85,9 +95,109 @@ function sanitizeShelfIds(v) {
   return Array.isArray(v) ? v.filter(x => typeof x === 'string').slice(0, 200) : [];
 }
 
+// ── グループ管理者の自前ライブラリ (旧 group-shelf.js を統合: 関数数を増やさないため) ──
+// 呼び出し: /api/teams?gshelf=1  (メンバーtoken x-snapin-token で認証)
+//   GET    → 自分のグループのライブラリ一覧 (メンバーなら誰でも)
+//   POST   → 作成/更新 (グループ管理者のみ)  body:{ shelf }
+//   DELETE → 削除 (グループ管理者のみ)        body:{ shelfId }
+// teamId はメンバーのレコードから導出。グローバル(snapin:shelves)には触れない。
+async function handleGroupShelf(req, res) {
+  const auth = authFromReq(req);
+  if (!auth.ok || auth.payload.role !== 'student') {
+    return res.status(401).json({ ok: false, reason: 'invalid_token' });
+  }
+  try {
+    const students = (await redis.get(STUDENTS_KEY)) || [];
+    const member = students.find(s => s && s.id === auth.payload.sub);
+    if (!member) return res.status(200).json({ ok: false, reason: 'student_not_found' });
+    if (member.revoked) return res.status(200).json({ ok: false, reason: 'revoked' });
+    const teamId = member.teamId;
+    if (!teamId) return res.status(200).json({ ok: false, reason: 'no_team' });
+    if (!member.multiDevice && member.claimedBy !== auth.payload.did) {
+      return res.status(200).json({ ok: false, reason: 'claim_lost' });
+    }
+    const KEY = teamShelfKey(teamId);
+
+    if (req.method === 'GET') {
+      const shelves = (await redis.get(KEY)) || [];
+      return res.status(200).json({ ok: true, shelves });
+    }
+
+    // 書き込みはグループ管理者のみ
+    const teams = (await redis.get(TEAMS_KEY)) || [];
+    const team = teams.find(t => t && t.id === teamId);
+    const isGAdmin = !!(team && team.adminName &&
+      normalizeName(team.adminName) === normalizeName(member.name || ''));
+    if (!isGAdmin) return res.status(403).json({ ok: false, reason: 'not_group_admin' });
+
+    const body = typeof req.body === 'string' ? (safeParse(req.body) || {}) : (req.body || {});
+
+    if (req.method === 'POST') {
+      const shelf = body.shelf || {};
+      const name = String(shelf.name || '').trim();
+      if (!name) return res.status(400).json({ ok: false, reason: 'name_required' });
+      const list = (await redis.get(KEY)) || [];
+      const now = Date.now();
+      const cards = Array.isArray(shelf.cards) ? shelf.cards.slice(0, MAX_CARDS_PER_SHELF) : [];
+      let rec;
+      const i = shelf.id ? list.findIndex(x => x && x.id === shelf.id) : -1;
+      if (i >= 0) {
+        rec = {
+          ...list[i],
+          name: name.slice(0, 60),
+          handle: String(shelf.handle != null ? shelf.handle : (list[i].handle || '')).slice(0, 40),
+          desc: String(shelf.desc != null ? shelf.desc : (list[i].desc || '')).slice(0, 300),
+          icon: shelf.icon != null ? shelf.icon : (list[i].icon || ''),
+          cards: Array.isArray(shelf.cards) ? cards : (list[i].cards || []),
+          ownerTeamId: teamId,
+          updatedAt: now,
+        };
+        list[i] = rec;
+      } else {
+        rec = {
+          id: newShelfId(),
+          name: name.slice(0, 60),
+          handle: String(shelf.handle || '').slice(0, 40),
+          desc: String(shelf.desc || '').slice(0, 300),
+          icon: shelf.icon || '',
+          cards,
+          ownerTeamId: teamId,
+          createdAt: now,
+          updatedAt: now,
+        };
+        if (list.length >= MAX_SHELVES_PER_TEAM) {
+          return res.status(200).json({ ok: false, reason: 'limit_reached' });
+        }
+        list.push(rec);
+      }
+      await redis.set(KEY, list);
+      return res.status(200).json({ ok: true, shelf: rec });
+    }
+
+    if (req.method === 'DELETE') {
+      const shelfId = body.shelfId;
+      if (!shelfId) return res.status(400).json({ ok: false, reason: 'bad_request' });
+      const list = (await redis.get(KEY)) || [];
+      const next = list.filter(x => x && x.id !== shelfId);
+      await redis.set(KEY, next);
+      return res.status(200).json({ ok: true });
+    }
+
+    return res.status(405).json({ ok: false, reason: 'method_not_allowed' });
+  } catch (err) {
+    console.error('group-shelf (via teams) error:', err);
+    return res.status(500).json({ ok: false, reason: 'server_error' });
+  }
+}
+
 export default async function handler(req, res) {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // グループ管理者の自前ライブラリは、関数数を増やさないためこのエンドポイントに相乗り。
+  if (req.query && (req.query.gshelf === '1' || req.query.gshelf === 'true')) {
+    return handleGroupShelf(req, res);
+  }
 
   if (!isAdmin(req)) {
     return res.status(401).json({ ok: false, reason: 'unauthorized' });
