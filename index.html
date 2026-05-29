@@ -8597,8 +8597,14 @@ async function detailSend(){
   }
 
   // 送信時にリプライ対象があればその引用情報を添付する。送信後はリプライ状態を解除。
+  // replyRef は「バブルに出す表示用の引用」(60字に省略済み)。
   const replyRef=(state.replyTo && state.replyTo.cardId===c.id)
     ? {text:truncateForQuote(state.replyTo.text),role:state.replyTo.role,msgIdx:state.replyTo.msgIdx}
+    : null;
+  // replyContextForAi は「AIに渡す引用」。表示用は60字で切れているので、省略しない全文を渡す。
+  // これが無いと AI には「ここについて教えて」だけが届き、どのバブルを指しているか分からない。
+  const replyContextForAi=(state.replyTo && state.replyTo.cardId===c.id)
+    ? {text:state.replyTo.text, role:state.replyTo.role}
     : null;
 
   if(state.detailAiMode){
@@ -8623,7 +8629,7 @@ async function detailSend(){
       // この時点で c.chat の末尾にはユーザーの最新質問とプレースホルダーが入っているので、
       // それらを除いた「過去のやりとり」を履歴とする。
       const history=buildAiHistory(c.chat, placeholderIdx);
-      const answer=await callAI(v,aiContext,history);
+      const answer=await callAI(v,aiContext,history,replyContextForAi);
       const cIdx2=state.cards.findIndex(x=>x.id===state.current.id);
       if(cIdx2>=0){
         const c2=state.cards[cIdx2];
@@ -8677,10 +8683,18 @@ function buildAiHistory(chat, placeholderIdx){
   const past=chat.slice(0, Math.max(0, placeholderIdx-1)); // 最新質問より前
   const dialogue=past.filter(m=>m && (m.role==='user'||m.role==='ai') && m.text && !m.pending);
   const trimmed=dialogue.slice(-AI_HISTORY_TURNS*2); // 1往復=2メッセージ
-  return trimmed.map(m=>({role:m.role==='ai'?'assistant':'user', text:m.text}));
+  return trimmed.map(m=>{
+    let text=m.text;
+    // 過去のユーザー発言にリプライ引用が付いていたら、その引用も本文に含めておく。
+    // (履歴にも引用を残さないと、後続ターンで「さっきのあれ」が辿れなくなる)
+    if(m.role!=='ai' && m.replyTo && m.replyTo.text){
+      text='(引用:「'+m.replyTo.text+'」について) '+text;
+    }
+    return {role:m.role==='ai'?'assistant':'user', text};
+  });
 }
 
-async function callAI(userMessage,cardContext,history){
+async function callAI(userMessage,cardContext,history,replyRef){
   // 認証チェック (塾生限定)
   if(!canUseAI()){
     return '[AIモードは JUKEN CAMP の塾生のみ利用できます。\nログイン画面から「JUKEN CAMP 塾生はこちら」で認証してください。]';
@@ -8730,19 +8744,32 @@ async function callAI(userMessage,cardContext,history){
   // user メッセージの content を組み立てる
   let userContent;
   const hasImage=cardContext && cardContext.image && /^data:([^;]+);base64,(.+)$/.test(cardContext.image);
+
+  // リプライ引用があれば「どの部分について聞かれているか」を本文に明示する。
+  // UI上はバブルに引用が出ているが、その情報を本文に入れないとモデルには
+  // 「ここについて教えて」しか届かず、指している場所が分からなくなる。
+  let quotePrefix='';
+  if(replyRef && replyRef.text){
+    const who = replyRef.role==='ai'   ? 'あなた(アシスタント)の前回の返信'
+              : replyRef.role==='memo' ? '生徒が書いたメモ'
+              :                          '生徒の前のメッセージ';
+    quotePrefix='【生徒は、'+who+'の次の部分を引用して、それについて質問しています】\n'
+              + '引用:「'+String(replyRef.text).replace(/\s+/g,' ').trim()+'」\n\n';
+  }
+
   if(hasImage && isFirstTurn){
     // 初回のみ画像添付。送信用に縮小してトークンを節約 (表示用画像はそのまま)。
     const sendDataUrl=await compressForApi(cardContext.image);
     const m=sendDataUrl.match(/^data:([^;]+);base64,(.+)$/);
     const mediaType=m[1];
     const data=m[2];
-    const textPart=(contextStr?'コンテキスト:\n'+contextStr+'\n\n':'')+'質問: '+userMessage+'\n\n(添付の写真も参考にして答えてください。)';
+    const textPart=(contextStr?'コンテキスト:\n'+contextStr+'\n\n':'')+quotePrefix+'質問: '+userMessage+'\n\n(添付の写真も参考にして答えてください。)';
     userContent=[
       {type:'image',source:{type:'base64',media_type:mediaType,data:data}},
       {type:'text',text:textPart},
     ];
   }else{
-    userContent=(contextStr?'コンテキスト:\n'+contextStr+'\n\n':'')+'質問: '+userMessage;
+    userContent=(contextStr?'コンテキスト:\n'+contextStr+'\n\n':'')+quotePrefix+'質問: '+userMessage;
   }
   messages.push({role:'user',content:userContent});
 
