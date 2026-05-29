@@ -4891,7 +4891,7 @@ async function mergeGroupShelves(){
   state.groupShelfIds=[];
   if(!isStudent() || !state.auth || !state.auth.teamId)return;
   try{
-    const res=await fetch('/api/group-shelf',{headers:{'x-snapin-token':state.auth.token}});
+    const res=await fetch('/api/teams?gshelf=1',{headers:{'x-snapin-token':state.auth.token}});
     if(!res.ok)return;
     const data=await res.json();
     if(!data || !data.ok || !Array.isArray(data.shelves))return;
@@ -10709,7 +10709,7 @@ function renderGroupLibList(){
 async function groupShelfApi(method,body){
   if(!state.auth || !state.auth.token)return null;
   try{
-    const res=await fetch('/api/group-shelf',{
+    const res=await fetch('/api/teams?gshelf=1',{
       method,
       headers:{'Content-Type':'application/json','x-snapin-token':state.auth.token},
       body:body?JSON.stringify(body):undefined,
