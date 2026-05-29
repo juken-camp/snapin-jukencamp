@@ -3507,6 +3507,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
         AI・ライブラリを使う
       </div>
     </button>
+    <button class="login-card" data-action="goto-join">
+      <div class="login-card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        団体コードで入る
+      </div>
+    </button>
   </div>
 </div>
 
@@ -3537,6 +3543,41 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </button>
     <div class="claim-help">
       うまく入れない時は、登録元の塾・団体にご確認ください。
+    </div>
+  </div>
+</div>
+
+<!-- JOIN (団体コードで参加) -->
+<div class="screen" id="screen-join">
+  <div class="bhdr">
+    <button class="bhdr-back" data-action="back">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div class="bhdr-title">団体コードで入る</div>
+  </div>
+  <div class="claim-wrap">
+    <div class="claim-intro">
+      団体から配られたコードと、あなたの名前・暗証番号を入れてください。<br>
+      <small>暗証番号(4桁)は、次に入るときにも使います。忘れないものにしてください。</small>
+    </div>
+    <div class="claim-field">
+      <label>参加コード</label>
+      <input id="join-code" type="text" placeholder="例: ABCD2345" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    </div>
+    <div class="claim-field">
+      <label>名前</label>
+      <input id="join-name" type="text" placeholder="例: 田中花子" autocomplete="off" autocapitalize="off">
+    </div>
+    <div class="claim-field">
+      <label>暗証番号 (4桁の数字)</label>
+      <input id="join-secret" type="tel" inputmode="numeric" maxlength="4" placeholder="例: 1234" autocomplete="off">
+    </div>
+    <div class="claim-error hide" id="join-error"></div>
+    <button class="claim-submit" id="join-submit" data-action="join-submit">
+      入る
+    </button>
+    <div class="claim-help">
+      コードが分からない時は、団体の担当者にご確認ください。
     </div>
   </div>
 </div>
@@ -5199,6 +5240,113 @@ function gotoClaim(){
   $('claim-submit').disabled=false;
   $('claim-submit').textContent='入る';
   goto('screen-claim');
+}
+
+function gotoJoin(){
+  $('join-code').value='';
+  $('join-name').value='';
+  $('join-secret').value='';
+  $('join-error').classList.add('hide');
+  $('join-submit').disabled=false;
+  $('join-submit').textContent='入る';
+  const old=document.getElementById('join-force-btn');
+  if(old)old.remove();
+  goto('screen-join');
+}
+
+// 団体コードで参加する (コード + 名前 + 暗証番号4桁)
+// force=true: 別端末で使用中でも、名前+暗証番号が合えば deviceId を引き継ぐ
+async function doJoinSubmit(force){
+  const codeEl=$('join-code');
+  const nameEl=$('join-name');
+  const secEl=$('join-secret');
+  const errEl=$('join-error');
+  const btn=$('join-submit');
+  const code=(codeEl.value||'').trim().toUpperCase();
+  const name=(nameEl.value||'').trim();
+  const secret=(secEl.value||'').replace(/\D/g,'');
+
+  errEl.classList.add('hide');
+  const oldForceBtn=document.getElementById('join-force-btn');
+  if(oldForceBtn)oldForceBtn.remove();
+
+  if(!code || !name || secret.length!==4){
+    errEl.textContent='コード・名前・暗証番号(4桁)を入れてください。';
+    errEl.classList.remove('hide');
+    return;
+  }
+
+  const deviceId=ensureDeviceId();
+  btn.disabled=true;
+  btn.textContent='確認中…';
+
+  try{
+    const body={code,name,secret,deviceId};
+    if(force)body.force=true;
+    const res=await fetch('/api/join',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body),
+    });
+    const data=await res.json();
+    if(!data.ok){
+      let msg='うまく確認できませんでした。';
+      if(data.reason==='invalid_code')msg='参加コードが正しくありません。もう一度確認してください。';
+      else if(data.reason==='wrong_secret'){
+        msg='暗証番号が違います。';
+        if(typeof data.remaining==='number' && data.remaining>0)msg+=`\n(あと ${data.remaining} 回まちがえるとロックされます)`;
+      }
+      else if(data.reason==='locked'){
+        const min=data.retryAfterSec?Math.ceil(data.retryAfterSec/60):10;
+        msg=`暗証番号を続けてまちがえたため、一時的にロックされています。\n約 ${min} 分後にもう一度お試しください。`;
+      }
+      else if(data.reason==='already_claimed')msg='この名前はすでに別の端末で使われています。\n機種変や入れ直しなら、下のボタンで切り替えられます。';
+      else if(data.reason==='revoked')msg='現在この団体・アカウントは利用できません。担当者に確認してください。';
+      else if(data.reason==='bad_request')msg='入力に不備があります。もう一度確認してください。';
+      errEl.textContent=msg;
+      errEl.classList.remove('hide');
+      btn.disabled=false;
+      btn.textContent='入る';
+
+      // 別端末で使用中の時だけ「この端末で使う」ボタンを出す (force:true で再送信)
+      if(data.reason==='already_claimed'){
+        const forceBtn=document.createElement('button');
+        forceBtn.id='join-force-btn';
+        forceBtn.className='claim-submit';
+        forceBtn.style.cssText='margin-top:10px;background:var(--ink2);';
+        forceBtn.textContent='この端末で使う';
+        forceBtn.addEventListener('click',()=>{
+          if(!confirm('別の端末からこのアカウントを引き継ぎますか?\n(元の端末からは使えなくなります)'))return;
+          forceBtn.remove();
+          doJoinSubmit(true);
+        });
+        btn.insertAdjacentElement('afterend',forceBtn);
+      }
+      return;
+    }
+    // 成功: token と本人情報を保存 (claim と同じ shape)
+    state.auth={
+      token:data.token,
+      role:'student',
+      studentId:data.student.id,
+      name:data.student.name,
+      group:data.student.group||'',
+      shelfIds:data.student.shelfIds||[],
+      aiEnabled:data.student.aiEnabled!==false,
+    };
+    if(!state.user){
+      state.user={mode:'personal',name:data.student.name,handle:'@'+data.student.id};
+    }
+    save();
+    state.navStack=['screen-home'];
+    goto('screen-home',false);
+    toast(`ようこそ ${data.student.name} さん`);
+  }catch(e){
+    errEl.textContent='通信エラーです。電波の良い場所でもう一度お試しください。';
+    errEl.classList.remove('hide');
+    btn.disabled=false;
+    btn.textContent='入る';
+  }
 }
 
 function logoutConfirm(){
@@ -10970,8 +11118,10 @@ document.addEventListener('click',e=>{
   switch(a){
     case 'login-personal':login('personal');break;
     case 'goto-claim':gotoClaim();break;
+    case 'goto-join':gotoJoin();break;
     case 'contact-inquiry':contactInquiry();break;
     case 'claim-submit':doClaimSubmit();break;
+    case 'join-submit':doJoinSubmit();break;
     case 'logout-confirm':logoutConfirm();break;
     case 'open-settings':openSettings();break;
     case 'close-settings':closeSettings();break;
@@ -11363,6 +11513,29 @@ document.addEventListener('visibilitychange',()=>{
       e.preventDefault();
       doClaimSubmit();
     }
+  });
+})();
+
+// join 入力フィールド: コードは大文字化、Enter で次へ/送信、暗証番号は数字だけに
+(function setupJoinInputs(){
+  const codeInp=document.getElementById('join-code');
+  const nameInp=document.getElementById('join-name');
+  const secInp=document.getElementById('join-secret');
+  if(!codeInp || !nameInp || !secInp)return;
+  codeInp.addEventListener('input',e=>{
+    e.target.value=e.target.value.toUpperCase().replace(/\s/g,'');
+  });
+  codeInp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();nameInp.focus();}
+  });
+  nameInp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();secInp.focus();}
+  });
+  secInp.addEventListener('input',e=>{
+    e.target.value=e.target.value.replace(/\D/g,'').slice(0,4);
+  });
+  secInp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();doJoinSubmit();}
   });
 })();
 
