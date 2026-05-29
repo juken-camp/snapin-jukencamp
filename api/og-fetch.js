@@ -166,6 +166,10 @@ export default async function handler(req, res) {
     return;
   }
 
+  // ── YouTube は専用処理 (oEmbed / Data API) で正確なタイトル+サムネを取る ──
+  const yt = await tryYouTube(url);
+  if (yt) { res.status(200).json(yt); return; }
+
   // タイムアウト付き fetch
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000); // 8秒タイムアウト
@@ -276,4 +280,140 @@ export default async function handler(req, res) {
       warning: 'fetch failed: ' + (e && e.message ? e.message : 'unknown'),
     });
   }
+}
+
+// ───────────────────────── YouTube 専用処理 ─────────────────────────
+// 目的: グリッドのタイトルを「www.youtube.com」ではなく動画名/再生リスト名にし、
+//       サムネを確実に表示する。
+//   - 動画URL    → oEmbed (キー不要) でタイトル+サムネ
+//   - 再生リスト → Data API (YOUTUBE_API_KEY) で正式タイトル。無ければ先頭動画にフォールバック
+// YouTube でなければ null を返し、通常の OGP 取得に進む。
+
+function parseYouTube(rawUrl) {
+  let u;
+  try { u = new URL(rawUrl); } catch { return null; }
+  const host = u.hostname.replace(/^www\./, '').toLowerCase();
+  const isYT = host === 'youtube.com' || host === 'm.youtube.com' ||
+               host === 'music.youtube.com' || host === 'youtu.be';
+  if (!isYT) return null;
+
+  let videoId = null, listId = null;
+  if (host === 'youtu.be') {
+    const seg = u.pathname.split('/').filter(Boolean)[0];
+    if (/^[\w-]{11}$/.test(seg || '')) videoId = seg;
+  } else {
+    const v = u.searchParams.get('v');
+    if (v && /^[\w-]{11}$/.test(v)) videoId = v;
+    const parts = u.pathname.split('/').filter(Boolean);
+    const i = parts.findIndex(p => p === 'shorts' || p === 'embed' || p === 'live');
+    if (i >= 0 && /^[\w-]{11}$/.test(parts[i + 1] || '')) videoId = parts[i + 1];
+  }
+  const list = u.searchParams.get('list');
+  if (list && /^[\w-]+$/.test(list)) listId = list;
+
+  if (!videoId && !listId) return null;
+  return { videoId, listId };
+}
+
+function ytThumb(videoId) {
+  return 'https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg';
+}
+
+// 動画の oEmbed (タイトル+サムネ, キー不要)
+async function ytOEmbed(videoId) {
+  try {
+    const api = 'https://www.youtube.com/oembed?format=json&url=' +
+      encodeURIComponent('https://www.youtube.com/watch?v=' + videoId);
+    const r = await fetchWithTimeout(api, 5000);
+    if (!r || !r.ok) return null;
+    const j = await r.json();
+    return {
+      title: (j.title || '').slice(0, 300),
+      image: j.thumbnail_url || ytThumb(videoId),
+      author: j.author_name || '',
+    };
+  } catch { return null; }
+}
+
+// 再生リストの正式名 (Data API)。キー未設定や失敗時は null。
+async function ytPlaylistInfo(listId) {
+  const key = process.env.YOUTUBE_API_KEY;
+  if (!key) return null;
+  try {
+    const api = 'https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=' +
+      encodeURIComponent(listId) + '&key=' + encodeURIComponent(key);
+    const r = await fetchWithTimeout(api, 5000);
+    if (!r || !r.ok) return null;
+    const j = await r.json();
+    const sn = j && j.items && j.items[0] && j.items[0].snippet;
+    if (!sn) return null;
+    const th = sn.thumbnails || {};
+    const img = (th.high || th.medium || th.default || {}).url || null;
+    return { title: (sn.title || '').slice(0, 300), image: img };
+  } catch { return null; }
+}
+
+// 再生リストの先頭動画ID (Data API)。キー未設定や失敗時は null。
+async function ytFirstVideoOfPlaylist(listId) {
+  const key = process.env.YOUTUBE_API_KEY;
+  if (!key) return null;
+  try {
+    const api = 'https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=1&playlistId=' +
+      encodeURIComponent(listId) + '&key=' + encodeURIComponent(key);
+    const r = await fetchWithTimeout(api, 5000);
+    if (!r || !r.ok) return null;
+    const j = await r.json();
+    const id = j && j.items && j.items[0] && j.items[0].contentDetails && j.items[0].contentDetails.videoId;
+    return /^[\w-]{11}$/.test(id || '') ? id : null;
+  } catch { return null; }
+}
+
+async function fetchWithTimeout(url, ms) {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), ms);
+  try { return await fetch(url, { signal: c.signal }); }
+  catch { return null; }
+  finally { clearTimeout(t); }
+}
+
+// YouTube を処理して結果オブジェクトを返す。YouTube でなければ null。
+async function tryYouTube(url) {
+  const info = parseYouTube(url);
+  if (!info) return null;
+  const host = hostOf(url);
+  const base = { ok: true, url, finalUrl: url, description: '', siteName: 'YouTube', host };
+
+  // 再生リスト優先で正式名を狙う (list が付いていれば)
+  if (info.listId) {
+    const pl = await ytPlaylistInfo(info.listId);          // 正式タイトル+サムネ (キー有り)
+    let image = pl && pl.image ? pl.image : null;
+    let title = pl && pl.title ? '[再生リスト] ' + pl.title : '';
+
+    // サムネが無い/タイトルが無いとき、先頭動画で補う
+    if (!image || !title) {
+      let firstVid = info.videoId;
+      if (!firstVid) firstVid = await ytFirstVideoOfPlaylist(info.listId);
+      if (firstVid) {
+        if (!image) image = ytThumb(firstVid);
+        if (!title) {
+          const oe = await ytOEmbed(firstVid);
+          if (oe && oe.title) title = '[再生リスト] ' + oe.title;
+        }
+      }
+    }
+    if (!title) title = 'YouTube の再生リスト';
+    return { ...base, title, image: image || null };
+  }
+
+  // 単一動画
+  if (info.videoId) {
+    const oe = await ytOEmbed(info.videoId);
+    return {
+      ...base,
+      title: (oe && oe.title) ? oe.title : 'YouTube の動画',
+      image: (oe && oe.image) ? oe.image : ytThumb(info.videoId),
+      siteName: (oe && oe.author) ? oe.author : 'YouTube',
+    };
+  }
+  return null;
 }
