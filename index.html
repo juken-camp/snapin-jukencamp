@@ -3285,9 +3285,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .link-card-body{
   flex:none;
-  padding:6px 9px 7px;
+  height:46px;
+  box-sizing:border-box;
+  padding:4px 9px;
   display:flex;
   flex-direction:column;
+  justify-content:center;
   gap:2px;
   min-width:0;
 }
@@ -3302,6 +3305,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   overflow:hidden;
 }
 .link-card-title--3{-webkit-line-clamp:3;}
+.link-card-body.has-kind{height:62px;}
 .link-card-host{
   font-size:10.5px;
   color:var(--ink3);
@@ -4710,9 +4714,9 @@ function linkCardInner(c){
   const plLabel=(link.kind==='playlist')
     ? `<div class="link-card-kind"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h13M3 18h9"/><path d="M17 14l5 3-5 3z"/></svg>再生リスト</div>`
     : '';
-  // ラベルが無いカード(単発動画/通常リンク)はタイトル3行、再生リストは2行
-  const titleCls=plLabel?'link-card-title':'link-card-title link-card-title--3';
-  return `<div class="link-card">${thumb}<div class="link-card-body">${plLabel}<div class="${titleCls}">${title}</div></div></div>`;
+  // 白枠を固定高さにしたため、タイトルは全て2行で統一
+  const bodyCls=plLabel?'link-card-body has-kind':'link-card-body';
+  return `<div class="link-card">${thumb}<div class="${bodyCls}">${plLabel}<div class="link-card-title">${title}</div></div></div>`;
 }
 // グリッドのテキストメモ用: 文字数に応じてフォントサイズ・行高・行数制限を決める。
 // グリッドセルと今日のメモのカード両方で同じ寸法 (内側 ~100×100px) になるが、
