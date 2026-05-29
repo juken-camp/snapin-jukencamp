@@ -1839,12 +1839,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   position:fixed;
   inset:0;
   z-index:9000;
-  background:rgba(0,0,0,.72);
+  background:rgba(0,0,0,.32);
   align-items:center;
   justify-content:center;
   animation:lb-fade-in .18s ease-out;
-  -webkit-backdrop-filter:blur(6px);
-  backdrop-filter:blur(6px);
 }
 #icon-lightbox.open{display:flex;}
 @keyframes lb-fade-in{
@@ -1868,8 +1866,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   height:min(220px, 58vw);
   border-radius:22px;
   object-fit:cover;
-  box-shadow:0 12px 48px rgba(0,0,0,.55);
+  box-shadow:0 8px 32px rgba(0,0,0,.38);
   display:block;
+  transition:border-radius .15s;
 }
 /* テキストアバター（画像なし）の拡大表示 */
 #icon-lightbox-text{
@@ -10663,13 +10662,46 @@ window.addEventListener('resize',()=>{
   const lbName   = document.getElementById('icon-lightbox-name');
   const lbHandle = document.getElementById('icon-lightbox-handle');
 
+  // 画像の四隅ピクセルを Canvas でサンプリングし、
+  // すべて透明（alpha≈0）なら「もともと丸アイコン」と判定する。
+  // CORS の制限がある場合は安全に四角にフォールバック。
+  function detectRoundIcon(img){
+    return new Promise(resolve => {
+      try{
+        const SIZE = 40; // サンプリング用縮小サイズ
+        const cv = document.createElement('canvas');
+        cv.width = cv.height = SIZE;
+        const ctx = cv.getContext('2d');
+        ctx.drawImage(img, 0, 0, SIZE, SIZE);
+        const PAD = 2; // 四隅の何px内側を見るか
+        const corners = [
+          ctx.getImageData(PAD, PAD, 1, 1).data,
+          ctx.getImageData(SIZE-PAD-1, PAD, 1, 1).data,
+          ctx.getImageData(PAD, SIZE-PAD-1, 1, 1).data,
+          ctx.getImageData(SIZE-PAD-1, SIZE-PAD-1, 1, 1).data,
+        ];
+        // 全四隅のアルファ値が 30 以下なら「丸アイコン」
+        const allTransparent = corners.every(c => c[3] < 30);
+        resolve(allTransparent);
+      } catch(e){
+        resolve(false); // CORS等でアクセス不可 → 四角扱い
+      }
+    });
+  }
+
   function openIconLightbox(src, name, handle){
     lbName.textContent   = name   || '';
     lbHandle.textContent = handle || '';
     if(src){
+      // まず四角で表示してからロード後に形状判定
+      lbImg.style.borderRadius = '22px';
       lbImg.src = src;
       lbImg.style.display  = 'block';
       lbText.style.display = 'none';
+      lbImg.onload = async () => {
+        const isRound = await detectRoundIcon(lbImg);
+        lbImg.style.borderRadius = isRound ? '50%' : '22px';
+      };
     } else {
       lbText.textContent   = (name||'?').slice(0,1);
       lbImg.style.display  = 'none';
