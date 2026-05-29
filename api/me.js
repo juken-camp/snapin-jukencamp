@@ -16,7 +16,9 @@
 //   { ok:false, reason:'claim_lost' }  → クライアントは auth をクリア
 
 import { Redis } from '@upstash/redis';
-import { authFromReq } from './_lib/auth.js';
+import { authFromReq, normalizeName } from './_lib/auth.js';
+
+const TEAMS_KEY = 'snapin:teams';
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
@@ -69,6 +71,18 @@ export default async function handler(req, res) {
     if (!student.multiDevice && student.claimedBy !== auth.payload.did) {
       return res.status(200).json({ ok: false, reason: 'claim_lost' });
     }
+    // グループ管理者かどうか (グループの adminName と本人の名前が一致するか)
+    let isGroupAdmin = false;
+    if (student.teamId) {
+      try {
+        const teams = (await redis.get(TEAMS_KEY)) || [];
+        const team = teams.find(t => t && t.id === student.teamId);
+        if (team && team.adminName &&
+            normalizeName(team.adminName) === normalizeName(student.name || '')) {
+          isGroupAdmin = true;
+        }
+      } catch (_) { /* 取得失敗時は管理者扱いしない */ }
+    }
     return res.status(200).json({
       ok: true,
       role: 'student',
@@ -78,6 +92,8 @@ export default async function handler(req, res) {
         group: student.group || '',
         shelfIds: Array.isArray(student.shelfIds) ? student.shelfIds : [],
         aiEnabled: student.aiEnabled !== false,
+        teamId: student.teamId || null,
+        isGroupAdmin,
       },
       claimed: true,
     });
