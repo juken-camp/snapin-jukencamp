@@ -1692,6 +1692,171 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 
 .hide{display:none !important;}
+/* ━━━ カテゴリ切替チップ (塾生 / 保護者 …) ━━━ */
+.cat-bar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:12px 14px 8px;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.cat-bar::-webkit-scrollbar{display:none;}
+.cat-chip{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:13px;
+  font-weight:600;
+  padding:7px 14px;
+  border-radius:999px;
+  border:1px solid var(--line2);
+  background:var(--surface);
+  color:var(--ink2);
+  cursor:pointer;
+  transition:all .12s;
+  white-space:nowrap;
+}
+.cat-chip:active{transform:scale(.96);}
+.cat-chip.on{
+  background:var(--g);
+  border-color:var(--g);
+  color:#fff;
+}
+.cat-chip .cat-edit{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;height:18px;
+  margin:-2px -4px -2px 0;
+  border-radius:50%;
+  color:rgba(255,255,255,.8);
+}
+.cat-chip .cat-edit:active{background:rgba(255,255,255,.18);}
+.cat-chip .cat-edit svg{width:13px;height:13px;}
+.cat-add{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;height:34px;
+  border-radius:50%;
+  border:1px dashed var(--line2);
+  background:var(--surface);
+  color:var(--ink2);
+  cursor:pointer;
+  transition:all .12s;
+}
+.cat-add:active{transform:scale(.92);background:var(--gl);color:var(--g);}
+.cat-add svg{width:16px;height:16px;}
+
+/* ━━━ 公式ライブラリ 並べ替えドラッグ ━━━ */
+.shelf-drag-handle{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  margin:-12px 0 -12px -8px;
+  padding:12px 4px;
+  color:var(--ink3);
+  cursor:grab;
+  touch-action:none;            /* 自前でドラッグを処理 */
+}
+.shelf-drag-handle:active{cursor:grabbing;color:var(--ink2);}
+.shelf-drag-handle svg{width:18px;height:18px;pointer-events:none;}
+.shelf-item.dragging{
+  background:var(--surface);
+  box-shadow:0 6px 20px rgba(0,0,0,.18);
+  border-radius:12px;
+  border-color:transparent;
+  opacity:.96;
+  z-index:5;
+}
+.shelf-item.dragging::before{transform:scaleY(0)!important;}
+.shelf-list.is-dragging .shelf-item{transition:transform .14s ease;}
+.shelf-reorder-hint{
+  font-size:11px;
+  color:var(--ink3);
+  padding:2px 18px 6px;
+}
+
+/* ━━━ 対象カテゴリ セレクト (編集パネル / 塾生モーダル) ━━━ */
+.cat-select{
+  width:100%;
+  height:42px;
+  padding:0 14px;
+  background:var(--bg);
+  border:0.5px solid var(--line2);
+  border-radius:10px;
+  font-size:14px;
+  color:var(--ink);
+  -webkit-appearance:none;
+  appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239A9A9A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 12px center;
+}
+.cat-select:focus{border-color:var(--g);background-color:var(--surface);}
+
+/* ━━━ カテゴリ追加 / 編集モーダル (確認ダイアログと同系統) ━━━ */
+.cat-modal-mask{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.4);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  z-index:200;
+}
+.cat-modal-mask.on{display:flex;}
+.cat-modal-box{
+  width:100%;
+  max-width:340px;
+  background:var(--surface);
+  border-radius:16px;
+  padding:20px;
+  box-shadow:0 12px 40px rgba(0,0,0,.3);
+}
+.cat-modal-title{
+  font-size:16px;
+  font-weight:700;
+  color:var(--ink);
+  margin-bottom:14px;
+}
+.cat-modal-box input{
+  width:100%;
+  height:44px;
+  padding:0 14px;
+  background:var(--bg);
+  border:0.5px solid var(--line2);
+  border-radius:10px;
+  font-size:15px;
+  color:var(--ink);
+}
+.cat-modal-box input:focus{border-color:var(--g);background:var(--surface);}
+.cat-modal-actions{
+  display:flex;
+  gap:8px;
+  margin-top:16px;
+}
+.cat-modal-actions .spacer{flex:1;}
+.cat-modal-btn{
+  padding:10px 16px;
+  border-radius:10px;
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+}
+.cat-modal-btn.cancel{color:var(--ink2);background:var(--surface2);}
+.cat-modal-btn.ok{color:#fff;background:var(--g);}
+.cat-modal-btn.ok:active{background:var(--gd);}
+.cat-modal-btn.del{color:var(--rose);background:transparent;}
+.cat-modal-btn.del:active{background:var(--rose-bg);}
+
 /* ━━━ デスクトップ: 2カラムレイアウト (画面が広いとき) ━━━ */
 @media (min-width: 900px){
   .app{
@@ -1801,13 +1966,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <!-- タブ切替 -->
   <div class="admin-tabs">
     <button class="admin-tab on" data-admin-tab="shelves">公式ライブラリ</button>
-    <button class="admin-tab" data-admin-tab="students">塾生 <span class="admin-tab-count" id="students-tab-count">0</span></button>
+    <button class="admin-tab" data-admin-tab="students">名簿 <span class="admin-tab-count" id="students-tab-count">0</span></button>
   </div>
 
   <!-- 公式ライブラリタブ -->
   <div class="admin-tab-pane on" id="pane-shelves">
     <div class="shelf-col-left">
-      <div class="section-title">管理する公式ライブラリ</div>
+      <div class="cat-bar" id="cat-bar-shelves"></div>
+      <div class="section-title" id="shelf-section-title">管理する公式ライブラリ</div>
       <div class="admin-search-wrap" id="shelf-search-wrap">
         <div class="admin-search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3" stroke-linecap="round"/></svg>
@@ -1815,19 +1981,21 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
           <button class="admin-search-clear" id="shelf-search-clear" aria-label="検索をクリア">✕</button>
         </div>
       </div>
+      <div class="shelf-reorder-hint" id="shelf-reorder-hint">⠿ を長押し or ドラッグで並べ替え</div>
       <div class="shelf-list" id="shelf-list"></div>
       <button class="new-shelf-btn" id="new-shelf-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-        新しい公式ライブラリを作る
+        <span id="new-shelf-label">新しい公式ライブラリを作る</span>
       </button>
     </div>
 
     <div id="shelf-edit-panel"></div>
   </div>
 
-  <!-- 塾生タブ -->
+  <!-- 名簿タブ -->
   <div class="admin-tab-pane" id="pane-students">
-    <div class="section-title">塾生名簿</div>
+    <div class="cat-bar" id="cat-bar-students"></div>
+    <div class="section-title" id="students-section-title">塾生名簿</div>
     <div class="stat-strip" id="students-stats"></div>
     <div class="admin-search-wrap">
       <div class="admin-search">
@@ -1845,7 +2013,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <div class="students-actions">
       <button class="new-shelf-btn" id="new-student-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-        生徒を1人ずつ追加
+        <span id="new-student-label">生徒を1人ずつ追加</span>
       </button>
       <button class="new-shelf-btn" id="bulk-student-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
@@ -1931,6 +2099,20 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
 </div>
 
+<!-- カテゴリ追加 / 編集モーダル -->
+<div class="cat-modal-mask" id="cat-modal-mask">
+  <div class="cat-modal-box" role="dialog" aria-modal="true">
+    <div class="cat-modal-title" id="cat-modal-title">カテゴリを追加</div>
+    <input id="cat-modal-input" type="text" placeholder="例: 保護者" maxlength="20" autocomplete="off">
+    <div class="cat-modal-actions">
+      <button class="cat-modal-btn del" id="cat-modal-del" style="display:none;">削除</button>
+      <div class="spacer"></div>
+      <button class="cat-modal-btn cancel" id="cat-modal-cancel">キャンセル</button>
+      <button class="cat-modal-btn ok" id="cat-modal-ok">保存</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"><span class="toast-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="toast-text">保存しました</span></div>
 
 </div>
@@ -1989,7 +2171,79 @@ const state={
   studentSearch:'',      // 塾生検索文字列
   studentFilter:'all',   // 'all' | 'claimed' | 'unclaimed'
   shelfSearch:'',        // 公式ライブラリ検索文字列
+  // ─── カテゴリ (塾生 / 保護者 …) ───
+  categories:[{id:'juku',name:'塾生'}], // カテゴリ定義 (juku=既定。削除不可)
+  category:'juku',        // 現在選択中のカテゴリid
 };
+
+const DEFAULT_CAT='juku';
+const CATS_KEY='snapin_admin_categories';
+const CUR_CAT_KEY='snapin_admin_cur_category';
+
+// レコードのカテゴリを取得 (未設定の旧データは既定カテゴリ扱い)
+function catOf(rec){
+  const c=rec&&rec.category;
+  return (c&&typeof c==='string')?c:DEFAULT_CAT;
+}
+function catName(id){
+  const c=state.categories.find(x=>x.id===id);
+  return c?c.name:id;
+}
+function curCatName(){return catName(state.category);}
+
+// カテゴリ定義の保存/読み込み (この端末: localStorage)
+function saveCategoriesLocal(){
+  try{
+    localStorage.setItem(CATS_KEY,JSON.stringify(state.categories));
+    localStorage.setItem(CUR_CAT_KEY,state.category);
+  }catch(e){}
+}
+function loadCategoriesLocal(){
+  try{
+    const raw=localStorage.getItem(CATS_KEY);
+    if(raw){
+      const arr=JSON.parse(raw);
+      if(Array.isArray(arr)&&arr.length)state.categories=arr;
+    }
+    const cur=localStorage.getItem(CUR_CAT_KEY);
+    if(cur)state.category=cur;
+  }catch(e){}
+  ensureDefaultCat();
+}
+// 既定カテゴリ(塾生)を必ず先頭に保つ
+function ensureDefaultCat(){
+  if(!state.categories.some(c=>c.id===DEFAULT_CAT)){
+    state.categories.unshift({id:DEFAULT_CAT,name:'塾生'});
+  }
+}
+// データ(shelves/students)に出てくるカテゴリを定義へ取り込む (定義が消えても残す保険)
+function deriveCategoriesFromData(){
+  const known=new Set(state.categories.map(c=>c.id));
+  const add=id=>{
+    if(id&&!known.has(id)){
+      state.categories.push({id,name:id});
+      known.add(id);
+    }
+  };
+  (state.shelves||[]).forEach(s=>add(catOf(s)));
+  (state.students||[]).forEach(s=>add(catOf(s)));
+}
+// サーバーから categories が返ってきたら定義を更新 (名前はサーバー優先、ローカルとマージ)
+function mergeServerCategories(arr){
+  if(!Array.isArray(arr)||!arr.length)return;
+  const byId=new Map(state.categories.map(c=>[c.id,c]));
+  arr.forEach(c=>{
+    if(c&&c.id){
+      if(byId.has(c.id))byId.get(c.id).name=c.name||byId.get(c.id).name;
+      else state.categories.push({id:c.id,name:c.name||c.id});
+    }
+  });
+  ensureDefaultCat();
+}
+
+// 現在カテゴリに属するか
+function shelfInCurCat(s){return catOf(s)===state.category;}
+function studentInCurCat(s){return catOf(s)===state.category;}
 
 const ADMIN_AUTH_KEY='snapin_admin_auth';
 
@@ -2055,7 +2309,12 @@ function confirmDialog(arg){
   else{titleEl.textContent='';titleEl.style.display='none';}
   msgEl.textContent=opts.message||'';
   okBtn.textContent=opts.okLabel||'OK';
-  cancelBtn.textContent=opts.cancelLabel||'キャンセル';
+  if(opts.cancelLabel===''){
+    cancelBtn.style.display='none';
+  }else{
+    cancelBtn.style.display='';
+    cancelBtn.textContent=opts.cancelLabel||'キャンセル';
+  }
   okBtn.classList.toggle('danger', !!opts.danger);
   mask.classList.add('on');
   okBtn.focus();
@@ -2094,6 +2353,8 @@ async function fetchShelves(){
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
     state.shelves=Array.isArray(data.shelves)?data.shelves:[];
+    mergeServerCategories(data.categories);
+    deriveCategoriesFromData();
     setStatus('読み込みました');
     setTimeout(()=>setStatus(''),1500);
     return true;
@@ -2120,6 +2381,7 @@ async function saveShelves(){
         password:state.password,
         adminPassword:state.password,
         shelves:state.shelves,
+        categories:state.categories,
       }),
     });
     if(res.status===401 || res.status===403){
@@ -2196,17 +2458,18 @@ async function saveStudents(){
 
 function updateStudentsTabCount(){
   const el=$('students-tab-count');
-  if(el)el.textContent=state.students.length;
+  if(el)el.textContent=state.students.filter(studentInCurCat).length;
 }
 
 function renderStudentsStats(){
   const el=$('students-stats');
   if(!el)return;
-  const total=state.students.length;
-  const claimed=state.students.filter(s=>!!s.claimedBy).length;
+  const inCat=state.students.filter(studentInCurCat);
+  const total=inCat.length;
+  const claimed=inCat.filter(s=>!!s.claimedBy).length;
   const unclaimed=total-claimed;
   el.innerHTML=`
-    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-lbl">全塾生</div></div>
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-lbl">${esc(curCatName())}全体</div></div>
     <div class="stat-card ok"><div class="stat-num">${claimed}</div><div class="stat-lbl">登録済</div></div>
     <div class="stat-card warn"><div class="stat-num">${unclaimed}</div><div class="stat-lbl">未登録</div></div>
   `;
@@ -2222,12 +2485,13 @@ function renderStudentsList(){
   const el=$('students-list');
   if(!el)return;
   el.innerHTML='';
-  if(state.students.length===0){
-    el.innerHTML='<div class="students-empty"><div class="empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke-linecap="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" stroke-linecap="round"/></svg></div>まだ塾生が登録されていません。<br>下のボタンから追加してください。</div>';
+  const inCat=state.students.filter(studentInCurCat);
+  if(inCat.length===0){
+    el.innerHTML=`<div class="students-empty"><div class="empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke-linecap="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" stroke-linecap="round"/></svg></div>まだ「${esc(curCatName())}」が登録されていません。<br>下のボタンから追加してください。</div>`;
     return;
   }
   // 名前順にソート (nameKeyベース、フォールバックで name)
-  const sorted=[...state.students].sort((a,b)=>{
+  const sorted=[...inCat].sort((a,b)=>{
     const ka=(a.nameKey||a.name||'').toString();
     const kb=(b.nameKey||b.name||'').toString();
     return ka.localeCompare(kb,'ja');
@@ -2245,7 +2509,7 @@ function renderStudentsList(){
     return true;
   });
   if(filtered.length===0){
-    el.innerHTML='<div class="students-none-match">該当する塾生がいません。</div>';
+    el.innerHTML=`<div class="students-none-match">該当する${esc(curCatName())}がいません。</div>`;
     return;
   }
   filtered.forEach(s=>{
@@ -2281,6 +2545,7 @@ function openStudentModal(student){
       nameKey:'',
       birthday:'',
       shelfIds:[],
+      category:state.category,
       aiEnabled:true, // 全員trueで固定 (UI上ではトグルしない)
       claimedBy:null,
       claimedAt:null,
@@ -2305,8 +2570,11 @@ function renderStudentModalBody(){
   const body=$('student-modal-body');
   const s=state.editingStudent;
   if(!s)return;
-  const shelves=state.shelves||[];
   const shelfIds=Array.isArray(s.shelfIds)?s.shelfIds:[];
+  const scat=catOf(s);
+  // この区分のライブラリ + すでに紐付いているものを表示
+  const allShelves=state.shelves||[];
+  const shelves=allShelves.filter(sh=>catOf(sh)===scat || shelfIds.includes(sh.id));
   // claim状態
   const claimed=!!s.claimedBy;
   const claimDate=s.claimedAt?new Date(s.claimedAt).toLocaleDateString('ja-JP'):'';
@@ -2329,6 +2597,12 @@ function renderStudentModalBody(){
       <label>誕生日 (MMDD)</label>
       <input id="stu-bd" type="tel" inputmode="numeric" maxlength="4" value="${esc(s.birthday||'')}" placeholder="例: 0401">
       <div class="field-hint">4月1日なら 0401、12月25日なら 1225</div>
+    </div>
+    <div class="student-edit-field">
+      <label>区分</label>
+      <select id="stu-category" class="cat-select">
+        ${state.categories.map(c=>`<option value="${esc(c.id)}" ${scat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
+      </select>
     </div>
     <div class="student-shelves-row">
       <div class="student-shelves-label">登録できる公式ライブラリ</div>
@@ -2355,6 +2629,13 @@ function renderStudentModalBody(){
     e.target.value=e.target.value.replace(/\D/g,'').slice(0,4);
     state.editingStudent.birthday=e.target.value;
   });
+  const catInp=$('stu-category');
+  if(catInp){
+    catInp.addEventListener('change',e=>{
+      state.editingStudent.category=e.target.value;
+      renderStudentModalBody(); // 区分に合わせて候補ライブラリを切替
+    });
+  }
   body.querySelectorAll('[data-stu-shelf]').forEach(el=>{
     el.addEventListener('click',()=>{
       const id=el.dataset.stuShelf;
@@ -2395,6 +2676,7 @@ async function saveStudentFromModal(){
     nameKey:'',
     birthday:bd,
     shelfIds:Array.isArray(s.shelfIds)?s.shelfIds:[],
+    category:catOf(s),
     aiEnabled:true,
     revoked:false,
     createdAt:s.createdAt||Date.now(),
@@ -2512,6 +2794,7 @@ function renderBulkModalBody(){
       &nbsp;&nbsp;山田太郎,0401<br>
       &nbsp;&nbsp;佐藤花子,1225<br><br>
       カンマの後にスペースがあってもなくてもどちらでもOKです。<br>
+      <b>追加先カテゴリ: ${esc(curCatName())}</b><br>
       公式ライブラリの紐付けは追加後に1人ずつ設定してください。
     </div>
     <div class="bulk-add-area">
@@ -2559,6 +2842,7 @@ async function saveBulkStudents(){
       nameKey:'',
       birthday:p.birthday,
       shelfIds:[],
+      category:state.category,
       aiEnabled:true,
       revoked:false,
       createdAt:Date.now(),
@@ -2572,6 +2856,8 @@ async function saveBulkStudents(){
   if(skipped.length>0)msg+=`\n(${skipped.length}人は既存と重複するためスキップ)`;
   msg+='。よろしいですか?';
   if(!await confirmDialog({title:'まとめて追加',message:msg,okLabel:'追加する'}))return;
+  // 名簿に追加してから保存
+  state.students.unshift(...newOnes);
   const saved=await saveStudents();
   if(!saved)return;
   closeBulkModal();
@@ -2589,13 +2875,150 @@ function switchAdminTab(tab){
   document.querySelectorAll('.admin-tab-pane').forEach(el=>{
     el.classList.toggle('on',el.id==='pane-'+tab);
   });
-  // 塾生タブを開いた時、毎回最新の状態を取りに行く
+  renderCategoryBars();
+  // 名簿タブを開いた時、毎回最新の状態を取りに行く
   if(tab==='students' && state.password){
     fetchStudents().then(()=>{
+      deriveCategoriesFromData();
+      renderCategoryBars();
       renderStudentsList();
       updateStudentsTabCount();
     });
   }
+}
+
+// ═══ CATEGORIES (塾生 / 保護者 …) ═══
+// 両ペインのカテゴリチップを描画 (同じ state.category を共有)
+function renderCategoryBars(){
+  ['cat-bar-shelves','cat-bar-students'].forEach(barId=>{
+    const bar=$(barId);
+    if(!bar)return;
+    bar.innerHTML='';
+    state.categories.forEach(c=>{
+      const chip=document.createElement('button');
+      chip.className='cat-chip'+(c.id===state.category?' on':'');
+      chip.dataset.catId=c.id;
+      const label=document.createElement('span');
+      label.textContent=c.name;
+      chip.appendChild(label);
+      // 選択中のカテゴリには編集(✎)を表示
+      if(c.id===state.category){
+        const edit=document.createElement('span');
+        edit.className='cat-edit';
+        edit.title='カテゴリを編集';
+        edit.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+        edit.addEventListener('click',ev=>{ev.stopPropagation();openCategoryModal(c.id);});
+        chip.appendChild(edit);
+      }
+      chip.addEventListener('click',()=>setCategory(c.id));
+      bar.appendChild(chip);
+    });
+    const add=document.createElement('button');
+    add.className='cat-add';
+    add.title='カテゴリを追加';
+    add.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+    add.addEventListener('click',()=>openCategoryModal(null));
+    bar.appendChild(add);
+  });
+  // ラベル類をカテゴリ名で更新
+  const nm=curCatName();
+  const sst=$('shelf-section-title'); if(sst)sst.textContent=`${nm}の公式ライブラリ`;
+  const sl=$('new-shelf-label'); if(sl)sl.textContent=`新しい${nm}の公式ライブラリを作る`;
+  const stt=$('students-section-title'); if(stt)stt.textContent=`${nm}の名簿`;
+  const stl=$('new-student-label'); if(stl)stl.textContent=`${nm}を1人ずつ追加`;
+}
+
+function setCategory(id){
+  if(state.category===id)return;
+  state.category=id;
+  saveCategoriesLocal();
+  // 選択中のライブラリが別カテゴリなら選択を外す
+  const sel=getSelectedShelf();
+  if(sel && catOf(sel)!==id){
+    state.selectedId=null;
+    const panel=$('shelf-edit-panel');
+    if(panel)panel.innerHTML='';
+  }
+  renderCategoryBars();
+  renderShelfList();
+  renderStudentsList();
+  updateStudentsTabCount();
+}
+
+// 追加(id=null) / 編集(id指定) を同じモーダルで扱う
+let _catModalId=null;
+function openCategoryModal(id){
+  _catModalId=id;
+  const isNew=!id;
+  const isDefault=id===DEFAULT_CAT;
+  $('cat-modal-title').textContent=isNew?'カテゴリを追加':'カテゴリ名を変更';
+  const inp=$('cat-modal-input');
+  inp.value=isNew?'':catName(id);
+  inp.placeholder='例: 保護者';
+  // 既定カテゴリ(塾生)は削除不可。それ以外の既存カテゴリは削除可。
+  $('cat-modal-del').style.display=(!isNew && !isDefault)?'':'none';
+  $('cat-modal-mask').classList.add('on');
+  setTimeout(()=>{inp.focus();},50);
+}
+function closeCategoryModal(){
+  $('cat-modal-mask').classList.remove('on');
+  _catModalId=null;
+}
+function saveCategoryFromModal(){
+  const name=$('cat-modal-input').value.trim();
+  if(!name){toast('名前を入力してください');return;}
+  if(_catModalId){
+    // 名前変更
+    const c=state.categories.find(x=>x.id===_catModalId);
+    if(c)c.name=name;
+  }else{
+    // 追加 (同名は弾く)
+    if(state.categories.some(c=>c.name===name)){toast('同じ名前のカテゴリがあります');return;}
+    const id='cat_'+Date.now();
+    state.categories.push({id,name});
+    state.category=id; // 追加したカテゴリに切替
+    state.selectedId=null;
+    const panel=$('shelf-edit-panel');
+    if(panel)panel.innerHTML='';
+  }
+  saveCategoriesLocal();
+  // サーバーにもカテゴリ定義を保存(対応していれば同期。未対応でも無害)
+  saveShelves();
+  closeCategoryModal();
+  renderCategoryBars();
+  renderShelfList();
+  renderStudentsList();
+  updateStudentsTabCount();
+  toast(_catModalId?'カテゴリを保存しました':'カテゴリを追加しました');
+}
+async function deleteCategoryFromModal(){
+  const id=_catModalId;
+  if(!id || id===DEFAULT_CAT)return;
+  const nm=catName(id);
+  // 中身があるカテゴリは消さない (データ消失を防ぐ)
+  const shelfN=(state.shelves||[]).filter(s=>catOf(s)===id).length;
+  const stuN=(state.students||[]).filter(s=>catOf(s)===id).length;
+  if(shelfN>0 || stuN>0){
+    await confirmDialog({
+      title:'まだ中身があります',
+      message:`「${nm}」には公式ライブラリ ${shelfN}件・名簿 ${stuN}人が残っています。\n先に別のカテゴリへ移すか削除してから、カテゴリを削除してください。`,
+      okLabel:'わかりました',
+      cancelLabel:'',
+    });
+    return;
+  }
+  if(!await confirmDialog({title:'カテゴリを削除',message:`カテゴリ「${nm}」を削除しますか?`,okLabel:'削除する',danger:true}))return;
+  state.categories=state.categories.filter(c=>c.id!==id);
+  ensureDefaultCat();
+  if(state.category===id)state.category=DEFAULT_CAT;
+  saveCategoriesLocal();
+  saveShelves();
+  closeCategoryModal();
+  renderCategoryBars();
+  renderShelfList();
+  renderStudentsList();
+  updateStudentsTabCount();
+  toast('カテゴリを削除しました');
 }
 
 // ═══ LOGIN ═══
@@ -2646,12 +3069,15 @@ function showMain(){
   $('login-screen').classList.add('hide');
   $('main-screen').classList.remove('hide');
   $('hdr-icons').style.display='flex';
+  renderCategoryBars();
   renderShelfList();
   if(state.selectedId){
     renderShelfEdit();
   }
-  // 塾生名簿も取得 (非同期、UIブロックしない)
+  // 名簿も取得 (非同期、UIブロックしない)
   fetchStudents().then(()=>{
+    deriveCategoriesFromData();
+    renderCategoryBars();
     renderStudentsList();
     updateStudentsTabCount();
   });
@@ -2661,15 +3087,23 @@ function showMain(){
 function renderShelfList(){
   const el=$('shelf-list');
   el.innerHTML='';
-  if(state.shelves.length===0){
-    el.innerHTML='<div class="empty-shelf-state"><div class="empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>まだ公式ライブラリがありません。<br>下のボタンから作ってみましょう。</div>';
+  const hintEl=$('shelf-reorder-hint');
+
+  // 現在のカテゴリに属するライブラリだけ
+  const catList=state.shelves.filter(shelfInCurCat);
+  if(catList.length===0){
+    if(hintEl)hintEl.style.display='none';
+    el.innerHTML=`<div class="empty-shelf-state"><div class="empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>まだ「${esc(curCatName())}」の公式ライブラリがありません。<br>下のボタンから作ってみましょう。</div>`;
     return;
   }
   const q=(state.shelfSearch||'').trim().toLowerCase();
-  const list=q?state.shelves.filter(s=>{
+  const list=q?catList.filter(s=>{
     const hay=((s.name||'')+' '+(s.handle||'')).toLowerCase();
     return hay.includes(q);
-  }):state.shelves;
+  }):catList;
+  // 検索でしぼり込み中は並べ替えオフ (一覧が部分的になるため)
+  const canReorder=(q==='');
+  if(hintEl)hintEl.style.display=(canReorder && list.length>1)?'':'none';
   if(list.length===0){
     el.innerHTML='<div class="shelf-none-match">該当する公式ライブラリがありません。</div>';
     return;
@@ -2677,10 +3111,15 @@ function renderShelfList(){
   list.forEach(s=>{
     const row=document.createElement('div');
     row.className='shelf-item'+(state.selectedId===s.id?' active':'');
+    row.dataset.shelfId=s.id;
+    const handle=(canReorder && list.length>1)
+      ? '<div class="shelf-drag-handle" aria-label="並べ替え"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></div>'
+      : '';
     const avatar=s.icon
       ? `<div class="shelf-avatar has-icon"><img src="${esc(s.icon)}" alt=""></div>`
       : `<div class="shelf-avatar">${esc((s.name||'?').slice(0,1))}</div>`;
     row.innerHTML=`
+      ${handle}
       ${avatar}
       <div class="shelf-info">
         <div class="shelf-name">${esc(s.name||'(無題)')}</div>
@@ -2699,8 +3138,77 @@ function renderShelfList(){
         if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
       },50);
     });
+    const h=row.querySelector('.shelf-drag-handle');
+    if(h)attachShelfDragHandle(h,row,el);
     el.appendChild(row);
   });
+}
+
+// ── 指ドラッグで並べ替え (ポインタイベント: タッチ・マウス両対応) ──
+let shelfDrag=null;
+function attachShelfDragHandle(handle,row,listEl){
+  handle.addEventListener('click',e=>{e.stopPropagation();}); // タップで選択させない
+  handle.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse' && e.button!==0)return;
+    e.preventDefault();
+    e.stopPropagation();
+    shelfDrag={row,listEl,pointerId:e.pointerId,moved:false};
+    row.classList.add('dragging');
+    listEl.classList.add('is-dragging');
+    try{handle.setPointerCapture(e.pointerId);}catch(_){}
+    handle.addEventListener('pointermove',onShelfDragMove);
+    handle.addEventListener('pointerup',onShelfDragEnd);
+    handle.addEventListener('pointercancel',onShelfDragEnd);
+  });
+}
+function onShelfDragMove(e){
+  if(!shelfDrag)return;
+  e.preventDefault();
+  shelfDrag.moved=true;
+  const {row,listEl}=shelfDrag;
+  const y=e.clientY;
+  const sibs=[...listEl.querySelectorAll('.shelf-item:not(.dragging)')];
+  let placed=false;
+  for(const sib of sibs){
+    const r=sib.getBoundingClientRect();
+    if(y < r.top + r.height/2){
+      listEl.insertBefore(row,sib);
+      placed=true;
+      break;
+    }
+  }
+  if(!placed)listEl.appendChild(row);
+  // 端に近いと自動スクロール
+  const margin=70, sp=12;
+  if(y<margin)window.scrollBy(0,-sp);
+  else if(y>window.innerHeight-margin)window.scrollBy(0,sp);
+}
+function onShelfDragEnd(e){
+  if(!shelfDrag)return;
+  const {row,listEl,pointerId,moved}=shelfDrag;
+  const handle=e.currentTarget;
+  try{handle.releasePointerCapture(pointerId);}catch(_){}
+  handle.removeEventListener('pointermove',onShelfDragMove);
+  handle.removeEventListener('pointerup',onShelfDragEnd);
+  handle.removeEventListener('pointercancel',onShelfDragEnd);
+  row.classList.remove('dragging');
+  listEl.classList.remove('is-dragging');
+  shelfDrag=null;
+  if(moved)commitShelfOrder(listEl);
+}
+function commitShelfOrder(listEl){
+  const orderedIds=[...listEl.querySelectorAll('.shelf-item')].map(r=>r.dataset.shelfId).filter(Boolean);
+  const idToShelf=new Map(state.shelves.map(s=>[s.id,s]));
+  const newSubset=orderedIds.map(id=>idToShelf.get(id)).filter(Boolean);
+  const before=state.shelves.filter(shelfInCurCat).map(s=>s.id).join(',');
+  const after=newSubset.map(s=>s.id).join(',');
+  if(before===after)return; // 変化なし
+  // 現在カテゴリのスロットだけ新しい順で差し替え (他カテゴリは位置を維持)
+  let i=0;
+  state.shelves=state.shelves.map(s=>shelfInCurCat(s)?newSubset[i++]:s);
+  renderShelfList();
+  saveShelves();
+  toast('並び順を保存しました');
 }
 
 function newShelf(){
@@ -2710,6 +3218,7 @@ function newShelf(){
     name:'新しい公式ライブラリ',
     handle:'@new-library-'+Math.floor(Math.random()*9999),
     desc:'',
+    category:state.category,
     cards:[],
   };
   state.shelves.push(s);
@@ -2783,6 +3292,12 @@ function renderShelfEdit(){
           <label>説明</label>
           <textarea id="shelf-desc" maxlength="200">${esc(s.desc||'')}</textarea>
         </div>
+        <div class="shelf-edit-row">
+          <label>対象カテゴリ</label>
+          <select id="shelf-category" class="cat-select">
+            ${state.categories.map(c=>`<option value="${esc(c.id)}" ${catOf(s)===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
+          </select>
+        </div>
       </div>
     </div>
 
@@ -2832,6 +3347,25 @@ function renderShelfEdit(){
   });
 
   $('shelf-delete-btn').addEventListener('click',()=>deleteShelf(s.id));
+
+  // 対象カテゴリの変更 (別カテゴリへ移動)
+  const catSel=$('shelf-category');
+  if(catSel){
+    catSel.addEventListener('change',async ()=>{
+      const cur=getSelectedShelf();
+      if(!cur)return;
+      const newCat=catSel.value;
+      cur.category=newCat;
+      await saveShelves();
+      // 移動先のカテゴリに切り替えて追従表示
+      if(newCat!==state.category){
+        setCategory(newCat);
+      }else{
+        renderShelfList();
+      }
+      toast('カテゴリを変更しました');
+    });
+  }
 
   // アイコン (公式ライブラリ用) のアップロード
   const iconFile=$('icon-file');
@@ -3903,6 +4437,7 @@ async function deleteMemoFromModal(){
     ? `このメモを削除しますか？\n他の${sw.length}個の公式ライブラリにも共有中です。すべての共有先からも消えます。`
     : 'このメモを削除しますか？';
   if(!await confirmDialog({title:'メモを削除',message:msg,okLabel:'削除する',danger:true}))return;
+  const s=getSelectedShelf();
   if(!s)return;
   // マスターから削除
   s.cards=(s.cards||[]).filter(x=>x.id!==m.id);
@@ -3945,6 +4480,17 @@ $('bulk-cancel').addEventListener('click',closeBulkModal);
 $('bulk-save').addEventListener('click',saveBulkStudents);
 $('bulk-modal').addEventListener('click',e=>{
   if(e.target===$('bulk-modal'))closeBulkModal();
+});
+
+// ─── カテゴリ追加/編集モーダル ───
+$('cat-modal-ok').addEventListener('click',saveCategoryFromModal);
+$('cat-modal-cancel').addEventListener('click',closeCategoryModal);
+$('cat-modal-del').addEventListener('click',deleteCategoryFromModal);
+$('cat-modal-mask').addEventListener('click',e=>{
+  if(e.target===$('cat-modal-mask'))closeCategoryModal();
+});
+$('cat-modal-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();saveCategoryFromModal();}
 });
 
 // ─── 検索・絞り込み ───
@@ -3997,6 +4543,7 @@ document.addEventListener('keydown',e=>{
     return;
   }
   // 開いているモーダルを閉じる
+  if($('cat-modal-mask') && $('cat-modal-mask').classList.contains('on')){closeCategoryModal();return;}
   if($('crop-modal') && $('crop-modal').classList.contains('on')){
     const c=$('crop-cancel'); if(c)c.click(); return;
   }
@@ -4024,6 +4571,7 @@ $('password-toggle').addEventListener('click',()=>{
 
 // 起動: 前回のログインを復元、公式ライブラリ一覧をフェッチ
 (async function init(){
+  loadCategoriesLocal();
   const hasAuth=loadAuth();
   if(hasAuth){
     // メールを入力欄に復元 (UIで見えるように)
