@@ -1764,6 +1764,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink3);
   cursor:grab;
   touch-action:none;            /* 自前でドラッグを処理 */
+  -webkit-touch-callout:none;
+  -webkit-user-select:none;
+  user-select:none;
 }
 .shelf-drag-handle:active{cursor:grabbing;color:var(--ink2);}
 .shelf-drag-handle svg{width:18px;height:18px;pointer-events:none;}
@@ -1856,6 +1859,41 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .cat-modal-btn.ok:active{background:var(--gd);}
 .cat-modal-btn.del{color:var(--rose);background:transparent;}
 .cat-modal-btn.del:active{background:var(--rose-bg);}
+
+/* iOSの長押しでテキスト選択メニュー(コピー/調べる…)が出ないように */
+.shelf-item{
+  -webkit-touch-callout:none;
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  user-select:none;
+}
+.shelf-list.is-dragging,
+.shelf-list.is-dragging *{
+  -webkit-user-select:none;
+  user-select:none;
+}
+
+/* ━━━ モバイル: ライブラリ編集は「別画面」に切り替え ━━━ */
+.shelf-detail-back{
+  display:none;            /* PC(2カラム)では不要 */
+  align-items:center;
+  gap:6px;
+  background:none;
+  border:none;
+  color:var(--g);
+  font-size:14px;
+  font-weight:700;
+  padding:14px 16px 6px;
+  cursor:pointer;
+}
+.shelf-detail-back svg{width:18px;height:18px;}
+.shelf-detail-back:active{opacity:.6;}
+@media (max-width:899px){
+  .shelf-detail-back{display:flex;}
+  /* 編集を開いている時は一覧を隠し、閉じている時は編集パネルを隠す */
+  #pane-shelves.detail-open .shelf-col-left{display:none;}
+  #pane-shelves:not(.detail-open) #shelf-edit-panel{display:none;}
+}
 
 /* ━━━ デスクトップ: 2カラムレイアウト (画面が広いとき) ━━━ */
 @media (min-width: 900px){
@@ -2939,6 +2977,8 @@ function setCategory(id){
     const panel=$('shelf-edit-panel');
     if(panel)panel.innerHTML='';
   }
+  const pane=$('pane-shelves');
+  if(pane)pane.classList.remove('detail-open');
   renderCategoryBars();
   renderShelfList();
   renderStudentsList();
@@ -3131,12 +3171,10 @@ function renderShelfList(){
       state.selectedId=s.id;
       renderShelfList();
       renderShelfEdit();
-      // スクロールを編集パネル位置に (狭い画面=1カラムのときだけ)
-      setTimeout(()=>{
-        if(window.matchMedia('(min-width: 900px)').matches)return;
-        const panel=$('shelf-edit-panel');
-        if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
-      },50);
+      // モバイルでは編集を別画面として開く (一覧の下までスクロールしない)
+      const pane=$('pane-shelves');
+      if(pane)pane.classList.add('detail-open');
+      window.scrollTo({top:0});
     });
     const h=row.querySelector('.shelf-drag-handle');
     if(h)attachShelfDragHandle(h,row,el);
@@ -3148,6 +3186,7 @@ function renderShelfList(){
 let shelfDrag=null;
 function attachShelfDragHandle(handle,row,listEl){
   handle.addEventListener('click',e=>{e.stopPropagation();}); // タップで選択させない
+  handle.addEventListener('contextmenu',e=>e.preventDefault()); // 長押しメニュー抑止
   handle.addEventListener('pointerdown',e=>{
     if(e.pointerType==='mouse' && e.button!==0)return;
     e.preventDefault();
@@ -3225,6 +3264,9 @@ function newShelf(){
   state.selectedId=id;
   renderShelfList();
   renderShelfEdit();
+  const pane=$('pane-shelves');
+  if(pane)pane.classList.add('detail-open');
+  window.scrollTo({top:0});
   saveShelves();
 }
 
@@ -3243,8 +3285,11 @@ async function deleteShelf(id){
   state.shelves=state.shelves.filter(x=>x.id!==id);
   if(state.selectedId===id)state.selectedId=null;
   await saveShelves();
+  const pane=$('pane-shelves');
+  if(pane)pane.classList.remove('detail-open');
   renderShelfList();
   $('shelf-edit-panel').innerHTML='';
+  window.scrollTo({top:0});
 }
 
 // ═══ SHELF EDIT ═══
@@ -3257,6 +3302,10 @@ function renderShelfEdit(){
   const s=getSelectedShelf();
   if(!s){panel.innerHTML='';return;}
   panel.innerHTML=`
+    <button class="shelf-detail-back" id="shelf-detail-back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      一覧に戻る
+    </button>
     <div class="shelf-edit">
       <div class="shelf-edit-head">
         <div class="shelf-edit-title">${esc(s.name)}</div>
@@ -3347,6 +3396,19 @@ function renderShelfEdit(){
   });
 
   $('shelf-delete-btn').addEventListener('click',()=>deleteShelf(s.id));
+
+  // 一覧に戻る (モバイルの別画面表示から戻る)
+  const backBtn=$('shelf-detail-back');
+  if(backBtn){
+    backBtn.addEventListener('click',()=>{
+      const pane=$('pane-shelves');
+      if(pane)pane.classList.remove('detail-open');
+      state.selectedId=null;
+      renderShelfList();
+      panel.innerHTML='';
+      window.scrollTo({top:0});
+    });
+  }
 
   // 対象カテゴリの変更 (別カテゴリへ移動)
   const catSel=$('shelf-category');
