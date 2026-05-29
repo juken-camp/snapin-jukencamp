@@ -6846,6 +6846,37 @@ function closeUrlModal(){
   if($('add-sheet')?.classList.contains('on'))closeAddSheet();
 }
 
+// YouTube のURLから動画IDを取り出す。動画でなければ null。
+// 対応: youtube.com/watch?v=ID, youtu.be/ID, /shorts/ID, /embed/ID, /live/ID
+function youtubeVideoId(url){
+  if(!url)return null;
+  try{
+    const u=new URL(/^https?:\/\//i.test(url)?url:('https://'+url));
+    const host=u.hostname.replace(/^www\./,'').toLowerCase();
+    if(host==='youtu.be'){
+      const id=u.pathname.split('/').filter(Boolean)[0];
+      return /^[\w-]{11}$/.test(id||'')?id:null;
+    }
+    if(host==='youtube.com' || host==='m.youtube.com' || host==='music.youtube.com'){
+      if(u.searchParams.get('v') && /^[\w-]{11}$/.test(u.searchParams.get('v')))return u.searchParams.get('v');
+      const parts=u.pathname.split('/').filter(Boolean);
+      const i=parts.findIndex(p=>p==='shorts'||p==='embed'||p==='live');
+      if(i>=0 && /^[\w-]{11}$/.test(parts[i+1]||''))return parts[i+1];
+    }
+  }catch(_){}
+  return null;
+}
+// YouTube のURLか (動画 or 再生リスト)
+function isYouTubeUrl(url){
+  if(!url)return false;
+  try{
+    const u=new URL(/^https?:\/\//i.test(url)?url:('https://'+url));
+    return /(^|\.)youtube\.com$|(^|\.)youtu\.be$/i.test(u.hostname);
+  }catch(_){return false;}
+}
+// 動画IDからサムネ画像URL (規則的に決まるので確実)
+function youtubeThumb(id){ return 'https://img.youtube.com/vi/'+id+'/hqdefault.jpg'; }
+
 async function fetchUrlAndCreate(){
   const raw=$('url-input').value.trim();
   if(!raw){
@@ -6869,6 +6900,14 @@ async function fetchUrlAndCreate(){
     if(!data || !data.ok){
       throw new Error(data&&data.error?data.error:'取得に失敗しました');
     }
+    const finalUrl=data.finalUrl||data.url||raw;
+    // YouTube はサーバ側(og-fetch)が oEmbed / Data API で正確なタイトル+サムネを返す。
+    // サーバ画像を優先し、万一空のときだけ規則的なサムネURLで補う。
+    let img=data.image||null;
+    if(!img){
+      const ytId=youtubeVideoId(finalUrl)||youtubeVideoId(raw);
+      if(ytId)img=youtubeThumb(ytId);
+    }
     // state.current を組み立てる
     state.current={
       id:'c_'+Date.now(),
@@ -6877,11 +6916,11 @@ async function fetchUrlAndCreate(){
       _new:true,
       text:'',
       link:{
-        url:data.finalUrl||data.url||raw,
+        url:finalUrl,
         originalUrl:raw,
         title:data.title||'',
         description:data.description||'',
-        image:data.image||null,
+        image:img,
         host:data.host||'',
         siteName:data.siteName||data.host||'',
       },
