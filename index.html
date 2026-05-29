@@ -158,7 +158,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   100%{transform:scale(1);}
 }
 
-/* BOTTOM NAV (4タブに削減: 棚 / 公式 / + / 探す) */
+/* BOTTOM NAV (4タブに削減: 棚 / 共有 / + / 探す) */
 .bnav{
   display:flex;
   background:var(--surface);
@@ -1549,7 +1549,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   30%{transform:translateY(-4px);opacity:0.95;}
 }
 
-/* 出典タグ (公式コピー元) */
+/* 出典タグ (共有コピー元) */
 .source-tag{
   margin-top:20px;
   padding:10px 14px;
@@ -1564,7 +1564,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .source-tag svg{flex-shrink:0;}
 
-/* 公式メモが取得できない時の注意書き (削除/オフライン時) */
+/* 共有メモが取得できない時の注意書き (削除/オフライン時) */
 .link-stale-note{
   margin-top:10px;
   padding:10px 14px;
@@ -1580,7 +1580,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .link-stale-note svg{flex-shrink:0;margin-top:2px;}
 
-/* 公式更新バッジ (グリッドのカード左上) */
+/* 共有更新バッジ (グリッドのカード左上) */
 .card-update-badge{
   position:absolute;
   top:6px;
@@ -1599,7 +1599,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .feed-item .card-update-badge{top:14px;left:14px;}
 
-/* 新着バッジ (ホームヘッダーの公式アイコン) */
+/* 新着バッジ (ホームヘッダーの共有アイコン) */
 /* アイコン(SVG)を包む小さなラッパー。バッジはこの中で絶対配置するので、アイコンの右上に正確に乗る */
 .bnav-icon-wrap{
   position:relative;
@@ -1637,7 +1637,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   box-shadow:0 1px 3px rgba(0,0,0,0.08);
 }
 
-/* 公式タブの各ライブラリ名の隣の新着バッジ */
+/* 共有タブの各ライブラリ名の隣の新着バッジ */
 .lib-new-badge{
   display:inline-flex;
   align-items:center;
@@ -1867,7 +1867,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   touch-action:none;
 }
 
-/* 公式の新着セクション */
+/* 共有の新着セクション */
 .lib-new-block{
   padding:14px 20px 18px;
 }
@@ -1929,7 +1929,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .lib-new-card-foot .av.has-icon{background:transparent;}
 .lib-new-card-foot .av img{width:100%;height:100%;object-fit:cover;display:block;}
 
-/* 公式棚詳細 */
+/* 共有棚詳細 */
 .official-simple-hdr{
   padding:18px;
   background:var(--surface);
@@ -2642,7 +2642,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   margin-top:8px;
 }
 
-/* 公式タブ: 未認証 / 塾生限定の見せ方 */
+/* 共有タブ: 未認証 / 塾生限定の見せ方 */
 .lib-locked-banner{
   margin:14px 16px;
   padding:18px 18px;
@@ -3723,7 +3723,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <!-- LIBRARY -->
 <div class="screen" id="screen-library">
   <div class="hdr">
-    <div class="logo">Snap<em>In</em><span class="page-sub">公式ライブラリ</span></div>
+    <div class="logo">Snap<em>In</em><span class="page-sub">共有ライブラリ</span></div>
   </div>
   <div class="scroll" id="lib-scroll">
     <div id="lib-new-section"></div>
@@ -3742,7 +3742,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <div class="bhdr-title">グループのライブラリ</div>
   </div>
   <div class="scroll" id="glib-scroll">
-    <div class="glib-intro">あなたのグループ専用の公式ライブラリです。ここで作ったものは、グループのメンバーに表示されます。</div>
+    <div class="glib-intro">あなたのグループ専用の共有ライブラリです。ここで作ったものは、グループのメンバーに表示されます。</div>
     <div id="glib-list"></div>
     <button class="new-glib-btn" data-action="glib-new">＋ 新しいライブラリを作る</button>
   </div>
@@ -3800,7 +3800,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
     <div class="search-scope" id="search-scope-bar">
       <button class="scope-chip" data-scope="mine">自分</button>
-      <button class="scope-chip" data-scope="official">公式</button>
+      <button class="scope-chip" data-scope="official">共有</button>
       <button class="scope-chip" data-scope="photo">写真</button>
       <button class="scope-chip" data-scope="note">メモ</button>
       <button class="scope-chip" data-scope="list">リスト</button>
@@ -4171,7 +4171,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="settings-item-sub">書き出した JSON ファイルを読み込む</div>
     </div>
   </button>
-  <div class="settings-note">バックアップは公式ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
+  <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
 </div>
 
 <!-- バブル長押しメニュー (コピー/部分コピー/リプライ/削除) -->
@@ -4228,9 +4228,9 @@ const state={
   selectMode:false,    // グリッドの複数選択モード
   selectedIds:new Set(),
   pastMoreOpen:false,  // 今日タブの「もっと前の保存を見る」展開状態
-  shelfLastSeen:{},    // 公式棚ごとに最後に開いた時刻 (新着判定用)
-  cardLastSeen:{},     // 公式由来カードごとに「公式更新を最後に見た updated 時刻」(更新バッジ判定用)
-  libraryOrder:{},     // 公式ライブラリ一覧の手動並び順 { distributed:[id...], subbed:[id...], avail:[id...] }
+  shelfLastSeen:{},    // 共有棚ごとに最後に開いた時刻 (新着判定用)
+  cardLastSeen:{},     // 共有由来カードごとに「共有更新を最後に見た updated 時刻」(更新バッジ判定用)
+  libraryOrder:{},     // 共有ライブラリ一覧の手動並び順 { distributed:[id...], subbed:[id...], avail:[id...] }
   searchColor:null,    // 探すページの色フィルター
   searchTag:null,      // 探すページのタグフィルター
   staleDays:null,      // 「しばらく見ていないメモ」ページの日数 (null=未設定→デフォルト7)
@@ -4242,7 +4242,7 @@ const state={
   // ─── JUKEN CAMP 塾生認証 ───
   auth:null,           // { token, role, studentId, name, group, shelfIds, aiEnabled } または null
   deviceId:null,       // この端末のID (claim時に使う、localStorage永続)
-  groupShelfIds:[],    // 自分のグループが所有する公式ライブラリのID (常に閲覧可)
+  groupShelfIds:[],    // 自分のグループが所有する共有ライブラリのID (常に閲覧可)
   editingGLib:null,    // グループ管理者がいま編集中のライブラリ
 };
 
@@ -4456,7 +4456,7 @@ async function hydrateCardImages(){
       }catch(e){console.warn('load img failed',c.id,e);}
       delete c.__hasImg;
     }
-    // _snap.image を抜いて保存していた場合 (公式投稿の保存カード)、
+    // _snap.image を抜いて保存していた場合 (共有投稿の保存カード)、
     // IndexedDB から復元した c.image を _snap 側にも戻しておく。
     // (フォールバック本文表示 resolveLiveCard が _snap.image を参照するため)
     if(c._snap && c._snap.__hasImg){
@@ -4780,7 +4780,7 @@ function applyGridNoteScale(root){
       c=(state.cards||[]).find(x=>x.id===cardId);
       if(c && isLinkedCard(c))c=resolveLiveCard(c);
       if(!c){
-        // 公式棚など
+        // 共有棚など
         for(const s of (OFFICIAL_SHELVES||[])){
           c=(s.cards||[]).find(x=>x.id===cardId);
           if(c)break;
@@ -4828,8 +4828,8 @@ function applyDetailNoteStyle(){
   });
 }
 
-// 公式棚デモデータ
-// 公式棚データ。起動時に /api/shelves から取得する。
+// 共有棚デモデータ
+// 共有棚データ。起動時に /api/shelves から取得する。
 // (Vercel Redis に保存されているデータをロード)
 let OFFICIAL_SHELVES=[];
 
@@ -4880,13 +4880,13 @@ async function loadOfficialShelves(){
     // ホームのヘッダーバッジも更新
     updateHomeNewBadge();
   }catch(err){
-    console.warn('公式棚の取得に失敗:',err);
+    console.warn('共有棚の取得に失敗:',err);
   }
   refreshLinkedCardsUI();
 }
 
-// 自分のグループが所有する公式ライブラリを取得し、OFFICIAL_SHELVES に足す。
-// (グローバルの公式ライブラリとは別エンドポイント。自分のグループの分しか返らない)
+// 自分のグループが所有する共有ライブラリを取得し、OFFICIAL_SHELVES に足す。
+// (グローバルの共有ライブラリとは別エンドポイント。自分のグループの分しか返らない)
 async function mergeGroupShelves(){
   state.groupShelfIds=[];
   if(!isStudent() || !state.auth || !state.auth.teamId)return;
@@ -5040,7 +5040,7 @@ function markShelfSeen(shelfId){
   updateHomeNewBadge();
 }
 
-// ナビバー「公式」の新着バッジを更新
+// ナビバー「共有」の新着バッジを更新
 function updateHomeNewBadge(){
   const n=totalNewCount();
   // ナビバーは複数画面に存在するので querySelectorAll で全部更新
@@ -5061,7 +5061,7 @@ function navHtml(active){
     {id:'today',label:'今日',svg:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'},
     {id:'add',label:'',svg:''},
     {id:'search',label:'探す',svg:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>'},
-    {id:'library',label:'公式',svg:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'},
+    {id:'library',label:'共有',svg:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'},
   ];
   return items.map(i=>{
     if(i.id==='add'){
@@ -5113,7 +5113,7 @@ async function refreshMe(force){
       if(['claim_lost','revoked','student_not_found'].includes(data.reason)){
         state.auth=null;
         save();
-        // 公式タブにいたら再描画して鍵マークに切り替え
+        // 共有タブにいたら再描画して鍵マークに切り替え
         if(document.getElementById('screen-library')?.classList.contains('active')){
           renderLibrary();
         }
@@ -5134,7 +5134,7 @@ async function refreshMe(force){
     state.auth.teamId=s.teamId||null;
     state.auth.isGroupAdmin=s.isGroupAdmin===true;
     save();
-    // 公式タブを開いている時は反映のため再描画
+    // 共有タブを開いている時は反映のため再描画
     if(document.getElementById('screen-library')?.classList.contains('active')){
       renderLibrary();
     }
@@ -5165,7 +5165,7 @@ function goto(id,push){
     state.navStack.push(id);
   }
   // 画面遷移ごとに塾生情報を最新化 (スロットリングあり)
-  // 公式タブは即時更新 (admin変更を即座に反映したいので)
+  // 共有タブは即時更新 (admin変更を即座に反映したいので)
   refreshMe(id==='screen-library');
   if(id==='screen-home'){renderHome();updateHomeNewBadge();}
   if(id==='screen-today')renderToday();
@@ -5454,7 +5454,7 @@ function logoutConfirm(){
 // 個人メモは PWA を削除したり機種変したりすると消えてしまう。
 // サーバー同期は塾生プラン側で別途検討するとして、まずクライアントだけで完結する
 // JSON エクスポート/インポート方式を用意する。
-// 公式棚 (subscribed/distributed) の中身そのものはサーバー由来なので含めない。
+// 共有棚 (subscribed/distributed) の中身そのものはサーバー由来なので含めない。
 // 復元はマージ既定 (ID 重複は既存優先) ＋ オプションで全置換も選べる。
 
 // AIへの希望 (フリー記入) の上限。トークン・表示の両面で適度な長さに。
@@ -5656,7 +5656,7 @@ const CONTACT_EMAIL='info@juken-camp.online';
 function contactInquiry(){
   const subject=encodeURIComponent('SnapIn の利用・導入について');
   const body=encodeURIComponent(
-    'SnapIn の AI・公式ライブラリの利用/導入について問い合わせます。\n\n'+
+    'SnapIn の AI・共有ライブラリの利用/導入について問い合わせます。\n\n'+
     '・お名前 / グループ名:\n'+
     '・ご利用の目的 (塾・学校・個人など):\n'+
     '・人数 (おおよそ):\n'+
@@ -5765,7 +5765,7 @@ function closeSettings(){
 }
 
 // ── エクスポート ──
-// 個人メモのみを対象とする (fromShelf を持つカード = 公式棚からコピーしたもの は除外)。
+// 個人メモのみを対象とする (fromShelf を持つカード = 共有棚からコピーしたもの は除外)。
 // 画像は state.cards.image (dataURL) が hydrateCardImages で既に展開済みなので、
 // そのまま JSON に乗せれば良い。
 async function exportBackup(){
@@ -5773,7 +5773,7 @@ async function exportBackup(){
     // 念のため、現在 state.cards に画像 dataURL が乗っていない可能性に備えて再 hydrate
     await hydrateCardImages();
 
-    // バックアップ対象: 公式棚由来でなく、捨てたメモ (deletedAt) でないもの。
+    // バックアップ対象: 共有棚由来でなく、捨てたメモ (deletedAt) でないもの。
     // リストから外したメモ (archivedAt) は含める。本人にとってまだ大事なメモのはずなので。
     const personalCards=state.cards.filter(c=>c && !c.fromShelf && !c.deletedAt);
     const payload={
@@ -5881,7 +5881,7 @@ async function handleRestoreFile(e){
     closeSettings();
     toast('復元中...');
 
-    // 公式棚由来カードは消したくないので、復元先のベースに残す
+    // 共有棚由来カードは消したくないので、復元先のベースに残す
     const shelfCards=state.cards.filter(c=>c && c.fromShelf);
 
     let baseCards;
@@ -6421,10 +6421,10 @@ function renderHome(){
 // ═══ GRID ═══
 function renderGrid(el,cards,origin){
   el.innerHTML='';
-  // ホーム以外の呼び出し (公式棚など) では選択モードは使わない
+  // ホーム以外の呼び出し (共有棚など) では選択モードは使わない
   const isHome=(el.id==='grid-home' && origin==='mine');
   cards.forEach((c,idx)=>{
-    // 公式由来カードは本文を最新マスターに差し替えて表示
+    // 共有由来カードは本文を最新マスターに差し替えて表示
     const dc=(origin==='mine' && isLinkedCard(c))?resolveLiveCard(c):c;
     const card=document.createElement('div');
     card.className='card '+dc.type;
@@ -6453,9 +6453,9 @@ function renderGrid(el,cards,origin){
     }else if(dc.type==='link'){
       inner=linkCardInner(dc);
     }
-    // 公式更新バッジ
+    // 共有更新バッジ
     if(origin==='mine' && cardHasUpdate(c)){
-      inner+=`<div class="card-update-badge" title="公式が更新しました">更新</div>`;
+      inner+=`<div class="card-update-badge" title="共有ライブラリが更新しました">更新</div>`;
     }
     // ピン留めバッジ
     if(origin==='mine' && c.pinned){
@@ -6708,7 +6708,7 @@ function renderFeed(el,cards){
       inner+=`<div class="feed-meta">${title}　${host}　${fmtDate(c.date)}</div>`;
     }
     if(cardHasUpdate(c0)){
-      inner+=`<div class="card-update-badge" title="公式が更新しました">更新</div>`;
+      inner+=`<div class="card-update-badge" title="共有ライブラリが更新しました">更新</div>`;
     }
     if(c0.pinned){
       inner+=`<div class="pin-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
@@ -7951,7 +7951,7 @@ function renderListItems(wrap){
 
 // ═══ リスト項目の並べ替え (ハンドルドラッグ) ═══
 // .cl-handle を掴んだ瞬間にドラッグ開始 (長押し不要)。
-// 公式ライブラリ並べ替えと違って専用ハンドルがあるので即時開始で OK。
+// 共有ライブラリ並べ替えと違って専用ハンドルがあるので即時開始で OK。
 function setupListReorder(wrap){
   if(!wrap)return;
   // 二重バインド防止: 既に設定済みなら何もしない
@@ -9071,7 +9071,7 @@ function setupImageZoom(container){
 }
 
 function openDetail(c,origin){
-  // 公式由来カードは本文を最新マスターに差し替えて表示 (個人レイヤーは保持)
+  // 共有由来カードは本文を最新マスターに差し替えて表示 (個人レイヤーは保持)
   const localCard=c;
   if(origin!=='official' && isLinkedCard(c)){
     c=resolveLiveCard(c);
@@ -9177,7 +9177,7 @@ function openDetail(c,origin){
 
   // 写真の場合、OCRテキストを下に表示
   if((c.type==='photo'||c.type==='photonote') && c.ocrText){
-    // 公式メモはOCR再実行・撮り直し不可 (オリジナルを壊さないため)
+    // 共有メモはOCR再実行・撮り直し不可 (オリジナルを壊さないため)
     const actionsHtml=isOfficial?'':`
       <div class="ocr-actions">
         <button class="ocr-action" data-action="ocr-rerun">
@@ -9196,7 +9196,7 @@ function openDetail(c,origin){
     </div>`;
   }
 
-  // 公式コピーボタン (公式棚カード時のみ表示)
+  // 共有コピーボタン (共有棚カード時のみ表示)
   if(isOfficial){
     contentHtml+=`<button class="login-card" style="margin-top:18px;background:var(--gl);" data-action="copy-to-shelf">
       <div class="login-card-title" style="color:var(--gd);">
@@ -9206,23 +9206,23 @@ function openDetail(c,origin){
     </button>`;
   }
 
-  // 出典タグ (公式メモからコピーしたものに表示。編集不可で消えない)
+  // 出典タグ (共有メモからコピーしたものに表示。編集不可で消えない)
   if(!isOfficial && c.sourceShelf){
     // 表示は教室名 (name) を優先。古いデータで name が無い場合は handle にフォールバック。
-    // さらに最新の公式棚情報があればそちらの name を優先 (教室名が改名された場合に追従)。
+    // さらに最新の共有棚情報があればそちらの name を優先 (教室名が改名された場合に追従)。
     const fresh=OFFICIAL_SHELVES.find(x=>x.id===c.sourceShelf.id);
     const label=(fresh&&fresh.name) || c.sourceShelf.name || c.sourceShelf.handle;
     contentHtml+=`
       <div class="source-tag">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        <span>${esc(label)} の公式ライブラリより</span>
+        <span>${esc(label)} の共有ライブラリより</span>
       </div>
     `;
     if(c._linkStale){
       contentHtml+=`
         <div class="link-stale-note">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span>この公式メモは現在取得できません。保存した時点の内容を表示しています。あなたの追記は下に残っています。</span>
+          <span>この共有メモは現在取得できません。保存した時点の内容を表示しています。あなたの追記は下に残っています。</span>
         </div>
       `;
     }
@@ -9235,7 +9235,7 @@ function openDetail(c,origin){
   renderChatLog(c);
 
   // リスト項目クリック (自分の棚のみ、check モードの項目のみ)
-  // 公式由来カードのリストは公式本文なので操作不可 (チェック状態は公式管理)
+  // 共有由来カードのリストは共有本文なので操作不可 (チェック状態は共有管理)
   if(!isOfficial && !isLinkedCard(localCard)){
     $('detail-content').querySelectorAll('.detail-list-item').forEach(el=>{
       el.addEventListener('click',()=>{
@@ -9257,7 +9257,7 @@ function openDetail(c,origin){
 
   // 入力バーの状態リセット
   $('detail-input').value='';
-  $('detail-input').placeholder=isOfficial?'(公式メモはコピー後に編集できます)':'メモを書く…';
+  $('detail-input').placeholder=isOfficial?'(共有メモはコピー後に編集できます)':'メモを書く…';
   $('detail-input').style.height='auto';
   $('detail-ai-toggle').classList.remove('on');
   $('detail-input-send').style.background='var(--g)';
@@ -9269,11 +9269,11 @@ function openDetail(c,origin){
     pinBtn.style.display=isOfficial?'none':'';
     if(pinLabel)pinLabel.textContent=c.pinned?'ピン留めを外す':'ピン留め';
   }
-  // 「リストから外す」も公式メモには出さない
+  // 「リストから外す」も共有メモには出さない
   const archBtn=$('menu-archive-btn');
   if(archBtn)archBtn.style.display=isOfficial?'none':'';
 
-  // 公式カードでは入力バー非表示
+  // 共有カードでは入力バー非表示
   $('detail-input-bar').style.display=isOfficial?'none':'';
 
   // タグ描画
@@ -9477,7 +9477,7 @@ async function detailSend(){
   const cIdx=state.cards.findIndex(x=>x.id===state.current.id);
   if(cIdx<0)return;
   const c=state.cards[cIdx];
-  // AIに渡す本文コンテキストは最新の公式本文 (書き込み先はローカルカード c)
+  // AIに渡す本文コンテキストは最新の共有本文 (書き込み先はローカルカード c)
   const aiContext=isLinkedCard(c)?resolveLiveCard(c):c;
 
   // c.chat 配列を初期化(旧 aiLog があれば取り込んでマイグレーション)
@@ -9587,7 +9587,7 @@ function buildAiHistory(chat, placeholderIdx){
 async function callAI(userMessage,cardContext,history,replyRef){
   // 認証チェック (塾生限定)
   if(!canUseAI()){
-    return '[AIは「AI・ライブラリ」を使えるアカウントで利用できます。\nログイン画面の「AI・ライブラリを使う」から登録してください。導入のご相談は公式ライブラリの「使ってみたい・相談する」からどうぞ。]';
+    return '[AIは「AI・ライブラリ」を使えるアカウントで利用できます。\nログイン画面の「AI・ライブラリを使う」から登録してください。導入のご相談は共有ライブラリの「使ってみたい・相談する」からどうぞ。]';
   }
 
   // メッセージを組み立てる
@@ -9716,8 +9716,8 @@ function demoAI(q,ref){
 
 function editCard(){
   $('detail-menu').classList.remove('on');
-  if(state.current._origin==='official'){toast('公式メモは編集できません');return;}
-  if(isLinkedCard(state.current)){toast('公式の本文は編集できません。メモは下に書き足せます');return;}
+  if(state.current._origin==='official'){toast('共有メモは編集できません');return;}
+  if(isLinkedCard(state.current)){toast('共有の本文は編集できません。メモは下に書き足せます');return;}
   const c=Object.assign({},state.current);
   delete c._origin;
   c._new=false;
@@ -9728,7 +9728,7 @@ function editCard(){
 
 function deleteCard(){
   $('detail-menu').classList.remove('on');
-  if(state.current._origin==='official'){toast('公式メモは削除できません');return;}
+  if(state.current._origin==='official'){toast('共有メモは削除できません');return;}
   if(!confirm('このメモを捨てますか?\n\n7日間は探すページの「捨てたメモ」から戻せます。\nその後、完全に削除されます。'))return;
   const id=state.current.id;
   const idx=state.cards.findIndex(x=>x.id===id);
@@ -9745,7 +9745,7 @@ function deleteCard(){
 function archiveCard(){
   $('detail-menu').classList.remove('on');
   if(!state.current)return;
-  if(state.current._origin==='official'){toast('公式メモは操作できません');return;}
+  if(state.current._origin==='official'){toast('共有メモは操作できません');return;}
   const id=state.current.id;
   const idx=state.cards.findIndex(x=>x.id===id);
   if(idx<0)return;
@@ -10003,7 +10003,7 @@ async function purgeOneConfirm(id){
 function togglePin(){
   $('detail-menu').classList.remove('on');
   if(!state.current)return;
-  if(state.current._origin==='official'){toast('公式メモはピン留めできません');return;}
+  if(state.current._origin==='official'){toast('共有メモはピン留めできません');return;}
   const idx=state.cards.findIndex(x=>x.id===state.current.id);
   if(idx<0)return;
   const willPin=!state.cards[idx].pinned;
@@ -10018,7 +10018,7 @@ function togglePin(){
 function openColorPicker(){
   $('detail-menu').classList.remove('on');
   if(!state.current || state.current._origin==='official'){
-    toast('公式メモは色を変えられません');
+    toast('共有メモは色を変えられません');
     return;
   }
   const picker=$('color-picker');
@@ -10056,7 +10056,7 @@ function closeColorPicker(){
 }
 
 async function copyToShelf(){
-  // 公式マスターを originCardId で参照。本文は固定コピーせず表示時に解決する。
+  // 共有マスターを originCardId で参照。本文は固定コピーせず表示時に解決する。
   const masterId=state.current && state.current.id;
   const snap=Object.assign({},state.current);
   delete snap._origin;
@@ -10067,7 +10067,7 @@ async function copyToShelf(){
     id:'c_'+Date.now(),
     date:new Date().toISOString().slice(0,10),
     created:Date.now(),
-    chat:[],          // 利用者の追記メモ・AIチャット (公式更新でも消えない)
+    chat:[],          // 利用者の追記メモ・AIチャット (共有更新でも消えない)
     _snap:snap,       // 本文フォールバック (削除/オフライン時)
   };
   if(state.currentOfficial){
@@ -10078,7 +10078,7 @@ async function copyToShelf(){
       originCardId:masterId,
     };
   }
-  // 保存時点の公式 updated を見たことにする (直後に更新バッジを出さない)
+  // 保存時点の共有 updated を見たことにする (直後に更新バッジを出さない)
   const master=findOfficialMaster(c);
   if(master && master.updated){
     if(!state.cardLastSeen)state.cardLastSeen={};
@@ -10116,7 +10116,7 @@ function renderLibrary(){
   if(newSec && !isStudent()){
     newSec.innerHTML=`
       <div class="lib-locked-banner">
-        <div class="ttl">AI質問 ＆ 公式ライブラリ</div>
+        <div class="ttl">AI質問 ＆ 共有ライブラリ</div>
         <div class="benefits">
           <div>保存したメモや写真を、その場でAIに質問して解決</div>
           <div>塾・会社・家族・グループなど、所属先が用意した資料や情報をいつでも閲覧</div>
@@ -10184,7 +10184,7 @@ function renderLibrary(){
   setupLibraryReorder();
 }
 
-// ═══ 公式ライブラリの並べ替え (ドラッグ&ドロップ) ═══
+// ═══ 共有ライブラリの並べ替え (ドラッグ&ドロップ) ═══
 // 長押しで持ち上がり、上下にドラッグして並び順を変更できる。
 // グループ (配布型 / 登録ずみ / 登録可能) を越えての移動は不可。
 // タッチ (モバイル) とマウス (デスクトップ) の両方に対応。
@@ -10658,7 +10658,7 @@ function updateOfficialSubBtn(){
 
 // ═══ GROUP LIBRARY (グループ管理者の自前ライブラリ) ═══
 
-// 公式タブ上部の「グループのライブラリ」入口 (グループ管理者だけに出す)
+// 共有タブ上部の「グループのライブラリ」入口 (グループ管理者だけに出す)
 function renderGroupLibEntry(){
   const el=$('lib-gadmin-entry');
   if(!el)return;
@@ -10882,7 +10882,7 @@ function doSearch(){
   renderColorFilterBar();
 
   // キーワード・色・タグ・絞り込みチップ いずれもなし → 待機画面
-  // (scope!=='all' は「自分/公式/写真/メモ/リスト」で絞っている状態なので結果を出す)
+  // (scope!=='all' は「自分/共有/写真/メモ/リスト」で絞っている状態なので結果を出す)
   if(!q && !colorFilter && !tagFilter && scope==='all'){
     out.innerHTML='';
     renderSearchIdle();
@@ -10894,9 +10894,9 @@ function doSearch(){
   let results=[];
   if(scope==='all'||scope==='mine'||scope==='photo'||scope==='note'||scope==='list'||scope==='official'){
     getActiveCards().forEach(c=>{
-      // 「公式」スコープ: 自分が公式から保存したメモ (linkカード) だけに絞る
+      // 「共有」スコープ: 自分が共有から保存したメモ (linkカード) だけに絞る
       if(scope==='official' && !isLinkedCard(c))return;
-      // 公式由来カードは本文を最新マスターに解決して検索対象にする (個人の追記/チャットも対象)
+      // 共有由来カードは本文を最新マスターに解決して検索対象にする (個人の追記/チャットも対象)
       const dc=isLinkedCard(c)?resolveLiveCard(c):c;
       if(scope==='photo' && dc.type!=='photo' && dc.type!=='photonote')return;
       if(scope==='note' && dc.type!=='note')return;
@@ -10913,7 +10913,7 @@ function doSearch(){
       results.push({card:c,origin:'mine'});
     });
   }
-  // 公式ライブラリ本体の検索は「すべて」スコープでキーワードがある時だけ補助的に出す
+  // 共有ライブラリ本体の検索は「すべて」スコープでキーワードがある時だけ補助的に出す
   if(scope==='all' && !colorFilter){
     OFFICIAL_SHELVES.forEach(s=>{
       if(q && (s.name+' '+s.handle+' '+s.desc).toLowerCase().includes(q))results.push({shelf:s});
@@ -10944,7 +10944,7 @@ function doSearch(){
     out.appendChild(grid);
     cardHits.forEach(r=>{
       const c0=r.card;
-      // 自分のメモ側の公式由来カードは最新本文に解決して表示
+      // 自分のメモ側の共有由来カードは最新本文に解決して表示
       const c=(r.origin!=='official' && isLinkedCard(c0))?resolveLiveCard(c0):c0;
       const card=document.createElement('div');
       card.className='card '+c.type;
@@ -11075,7 +11075,7 @@ function renderDetailTags(c){
     (isOfficial?'':` <span class="detail-tag-del" data-tag-idx="${i}">✕</span>`)+
     `</span>`
   ).join('');
-  // 公式メモはタグ追加不可
+  // 共有メモはタグ追加不可
   if(row)row.style.display=isOfficial?'none':'';
   // 削除ボタン
   area.querySelectorAll('.detail-tag-del').forEach(btn=>{
@@ -11660,7 +11660,7 @@ async function refreshActiveScreen(){
     renderHome();
     updateHomeNewBadge();
   }else if(id==='screen-today'){
-    // 今日のタイムラインは公式ライブラリの新着メモなども含むため、最新を取得してから再描画
+    // 今日のタイムラインは共有ライブラリの新着メモなども含むため、最新を取得してから再描画
     await loadOfficialShelves();
     renderToday();
   }else if(id==='screen-library'){
@@ -11673,7 +11673,7 @@ async function refreshActiveScreen(){
       if(fresh)openOfficial(fresh);
     }
   }else if(id==='screen-search'){
-    // 検索結果も公式ライブラリ側の最新メモを含むため、取り直してから再検索
+    // 検索結果も共有ライブラリ側の最新メモを含むため、取り直してから再検索
     await loadOfficialShelves();
     doSearch();
   }
@@ -11729,7 +11729,7 @@ async function refreshFromLogo(logoEl){
 
 // 起動
 setupNavs();
-loadOfficialShelves(); // 公式棚をサーバーから取得 (非同期、UIブロックしない)
+loadOfficialShelves(); // 共有棚をサーバーから取得 (非同期、UIブロックしない)
 
 // 各画面のSnapInロゴをタップで現在画面を更新できるようにする
 // (プルダウンでは更新しない代わりに、明示的な更新手段として用意)
