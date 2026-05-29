@@ -287,9 +287,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .admin-tab-pane.on{display:block;}
 
-/* 団体タブ */
-.teams-intro{font-size:12px;color:var(--ink3);line-height:1.7;margin-bottom:14px;}
-.teams-list{display:flex;flex-direction:column;gap:12px;margin-bottom:14px;}
+/* グループタブ */
+.teams-intro{font-size:12px;color:var(--ink3);line-height:1.7;padding:0 20px;margin-bottom:14px;}
+.teams-list{display:flex;flex-direction:column;gap:12px;margin-bottom:14px;padding:0 20px;}
 .team-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);}
 .team-card.disabled{opacity:.55;}
 .team-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
@@ -2034,7 +2034,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="admin-tabs">
     <button class="admin-tab on" data-admin-tab="shelves">公式ライブラリ</button>
     <button class="admin-tab" data-admin-tab="students">名簿 <span class="admin-tab-count" id="students-tab-count">0</span></button>
-    <button class="admin-tab" data-admin-tab="teams">団体 <span class="admin-tab-count" id="teams-tab-count">0</span></button>
+    <button class="admin-tab" data-admin-tab="teams">グループ <span class="admin-tab-count" id="teams-tab-count">0</span></button>
   </div>
 
   <!-- 公式ライブラリタブ -->
@@ -2094,26 +2094,26 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </div>
 
-  <!-- 団体タブ (会社・家族・グループ) -->
+  <!-- グループタブ (会社・家族・グループ) -->
   <div class="admin-tab-pane" id="pane-teams">
-    <div class="section-title">団体（会社・家族・グループ）</div>
+    <div class="section-title">グループ（会社・家族など）</div>
     <div class="teams-intro">参加コードを発行して配ると、メンバーが自分で SnapIn に登録できます。塾生名簿とは別に管理されます。</div>
     <div class="teams-list" id="teams-list"></div>
     <button class="new-shelf-btn" id="new-team-btn">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-      新しい団体を作る
+      新しいグループを作る
     </button>
   </div>
 </div>
 
-<!-- 団体編集モーダル -->
+<!-- グループ編集モーダル -->
 <div class="modal-mask" id="team-modal">
   <div class="modal">
     <div class="modal-hdr">
       <button class="modal-hdr-back" id="team-cancel">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
-      <div class="modal-hdr-title" id="team-modal-title">団体を作る</div>
+      <div class="modal-hdr-title" id="team-modal-title">グループを作る</div>
       <button class="modal-save" id="team-save">保存</button>
     </div>
     <div class="modal-body" id="team-modal-body"></div>
@@ -2259,8 +2259,8 @@ const state={
   // ─── 塾生名簿関連 ───
   tab:'shelves',         // 'shelves' | 'students'
   students:[],           // 塾生名簿
-  teams:[],              // 団体 (会社・家族・グループ)
-  editingTeam:null,      // 編集中の団体
+  teams:[],              // グループ (会社・家族・グループ)
+  editingTeam:null,      // 編集中のグループ
   editingStudent:null,   // 編集中の塾生
   bulkText:'',           // 一括追加のテキスト
   studentSearch:'',      // 塾生検索文字列
@@ -2980,7 +2980,7 @@ function switchAdminTab(tab){
       updateStudentsTabCount();
     });
   }
-  // 団体タブを開いた時、最新の団体一覧を取りに行く
+  // グループタブを開いた時、最新のグループ一覧を取りに行く
   if(tab==='teams' && state.password){
     fetchTeams().then(()=>{
       renderTeamsList();
@@ -2989,7 +2989,7 @@ function switchAdminTab(tab){
   }
 }
 
-// ═══ TEAMS (団体: 会社・家族・グループ) ═══
+// ═══ TEAMS (グループ: 会社・家族・グループ) ═══
 async function fetchTeams(){
   if(!state.password)return false;
   try{
@@ -3001,7 +3001,7 @@ async function fetchTeams(){
   }catch(err){console.warn('teams fetch error:',err);return false;}
 }
 
-// 団体APIへのPOST共通 (create/update/regen/sync/delete)
+// グループAPIへのPOST共通 (create/update/regen/sync/delete)
 async function teamApi(payload){
   if(!state.password){setStatus('再ログインしてください','error');return null;}
   setStatus('保存中…','busy');
@@ -3033,7 +3033,7 @@ function renderTeamsList(){
   if(!el)return;
   const teams=state.teams||[];
   if(teams.length===0){
-    el.innerHTML='<div style="font-size:12px;color:var(--ink3);padding:14px 2px;line-height:1.7;">まだ団体がありません。<br>下の「新しい団体を作る」から、会社・家族・グループ用の参加コードを発行できます。</div>';
+    el.innerHTML='<div style="font-size:12px;color:var(--ink3);padding:14px 2px;line-height:1.7;">まだグループがありません。<br>下の「新しいグループを作る」から、会社・家族・グループ用の参加コードを発行できます。</div>';
     return;
   }
   el.innerHTML=teams.map(t=>{
@@ -3046,6 +3046,7 @@ function renderTeamsList(){
           <div>
             <div class="team-card-name">${esc(t.name||'(無題)')}</div>
             <div class="team-card-meta">メンバー ${members}人 ・ 公式ライブラリ ${shelfN}件${t.multiDevice?' ・ 複数端末OK':''}${t.disabled?' ・ 無効':''}</div>
+            ${t.adminName?`<div class="team-card-meta">グループ管理者: ${esc(t.adminName)}</div>`:''}
           </div>
           <span class="team-card-badge ${ai?'':'off'}">${ai?'AI 有効':'AI なし'}</span>
         </div>
@@ -3102,13 +3103,13 @@ function fallbackCopyText(text,cb){
 function openTeamModal(team){
   const isNew=!team;
   if(isNew){
-    team={id:null,name:'',code:'',shelfIds:[],aiEnabled:true,multiDevice:false,secretDigits:4,note:'',disabled:false};
+    team={id:null,name:'',code:'',shelfIds:[],aiEnabled:true,multiDevice:false,adminName:'',secretDigits:4,note:'',disabled:false};
   }
   state.editingTeam=Object.assign({},team,{
     shelfIds:Array.isArray(team.shelfIds)?team.shelfIds.slice():[],
     _new:isNew,
   });
-  $('team-modal-title').textContent=isNew?'団体を作る':'団体を編集';
+  $('team-modal-title').textContent=isNew?'グループを作る':'グループを編集';
   renderTeamModalBody();
   $('team-modal').classList.add('on');
   const b=$('team-modal-body');if(b)b.scrollTop=0;
@@ -3125,7 +3126,7 @@ function renderTeamModalBody(){
   const shelves=state.shelves||[];
   body.innerHTML=`
     <div class="team-edit-field">
-      <label>団体名</label>
+      <label>グループ名</label>
       <input id="team-name" type="text" value="${esc(t.name||'')}" placeholder="例: ○○株式会社 / 田中家">
     </div>
     <div class="team-edit-field">
@@ -3133,7 +3134,7 @@ function renderTeamModalBody(){
         <label style="margin:0;">AIを使えるようにする</label>
         <div class="team-switch ${t.aiEnabled!==false?'on':''}" id="team-ai-switch"></div>
       </div>
-      <div class="team-toggle-desc">ONにすると、この団体のメンバーがAIに質問できます。利用に応じてAPI費用がかかります。</div>
+      <div class="team-toggle-desc">ONにすると、このグループのメンバーがAIに質問できます。利用に応じてAPI費用がかかります。</div>
     </div>
     <div class="team-edit-field">
       <div class="team-toggle-row">
@@ -3157,14 +3158,21 @@ function renderTeamModalBody(){
       }
     </div>
     <div class="team-edit-field">
+      <label>グループ管理者の名前 (任意)</label>
+      <input id="team-admin-name" type="text" value="${esc(t.adminName||'')}" placeholder="例: 田中花子">
+      <div class="team-toggle-desc">この名前で参加したメンバーが、自分たちの公式ライブラリを作成・編集できます（JUKEN CAMP のライブラリには触れません）。空欄なら管理者なし。</div>
+    </div>
+    <div class="team-edit-field">
       <label>メモ (任意・管理用)</label>
       <input id="team-note" type="text" value="${esc(t.note||'')}" placeholder="例: 問い合わせ 2026/5 / 担当〇〇">
     </div>
-    ${t._new?'':'<button class="modal-del" id="team-del">この団体を削除</button>'}
+    ${t._new?'':'<button class="modal-del" id="team-del">このグループを削除</button>'}
   `;
   $('team-name').addEventListener('input',e=>{state.editingTeam.name=e.target.value;});
   const noteInp=$('team-note');
   if(noteInp)noteInp.addEventListener('input',e=>{state.editingTeam.note=e.target.value;});
+  const adminInp=$('team-admin-name');
+  if(adminInp)adminInp.addEventListener('input',e=>{state.editingTeam.adminName=e.target.value;});
   const sw=$('team-ai-switch');
   if(sw)sw.addEventListener('click',()=>{
     state.editingTeam.aiEnabled=!(state.editingTeam.aiEnabled!==false);
@@ -3196,10 +3204,10 @@ async function saveTeamFromModal(){
   const t=state.editingTeam;
   if(!t)return;
   const name=(t.name||'').trim();
-  if(!name){setStatus('団体名を入れてください','error');return;}
+  if(!name){setStatus('グループ名を入れてください','error');return;}
   const payload=t._new
-    ? {action:'create',name,shelfIds:t.shelfIds,aiEnabled:t.aiEnabled!==false,multiDevice:t.multiDevice===true,note:t.note||''}
-    : {action:'update',id:t.id,name,shelfIds:t.shelfIds,aiEnabled:t.aiEnabled!==false,multiDevice:t.multiDevice===true,note:t.note||''};
+    ? {action:'create',name,shelfIds:t.shelfIds,aiEnabled:t.aiEnabled!==false,multiDevice:t.multiDevice===true,adminName:t.adminName||'',note:t.note||''}
+    : {action:'update',id:t.id,name,shelfIds:t.shelfIds,aiEnabled:t.aiEnabled!==false,multiDevice:t.multiDevice===true,adminName:t.adminName||'',note:t.note||''};
   const data=await teamApi(payload);
   if(!data)return;
   closeTeamModal();
@@ -3437,7 +3445,7 @@ function showMain(){
     renderStudentsList();
     updateStudentsTabCount();
   });
-  // 団体も取得 (タブ数の表示用)
+  // グループも取得 (タブ数の表示用)
   fetchTeams().then(()=>{
     renderTeamsList();
     updateTeamsTabCount();
@@ -4871,7 +4879,7 @@ $('bulk-modal').addEventListener('click',e=>{
   if(e.target===$('bulk-modal'))closeBulkModal();
 });
 
-// ─── 団体モーダル ───
+// ─── グループモーダル ───
 $('new-team-btn').addEventListener('click',()=>openTeamModal(null));
 $('team-cancel').addEventListener('click',closeTeamModal);
 $('team-save').addEventListener('click',saveTeamFromModal);
