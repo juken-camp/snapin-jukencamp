@@ -119,6 +119,7 @@ export default async function handler(req, res) {
         const teamId = old.teamId || s.teamId;
         if (teamId) rec.teamId = teamId;
         if (old.viaJoin === true || s.viaJoin === true) rec.viaJoin = true;
+        if (old.multiDevice === true) rec.multiDevice = true;
         if (old.failCount) rec.failCount = old.failCount;
         if (old.lockUntil) rec.lockUntil = old.lockUntil;
         return rec;
