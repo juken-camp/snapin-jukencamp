@@ -701,6 +701,35 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .empty-action-label{font-size:11px;font-weight:600;color:var(--ink2);white-space:nowrap;}
 
+/* グループ管理者: 自前ライブラリ */
+.glib-entry-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:calc(100% - 32px);margin:12px 16px 4px;padding:14px 16px;background:var(--gl);border:none;border-radius:13px;color:var(--gd);font-weight:700;font-size:14px;}
+.glib-entry-btn:active{transform:scale(.98);}
+.glib-intro{font-size:13px;color:var(--ink2);line-height:1.7;padding:16px 18px 6px;}
+.glib-empty{font-size:13px;color:var(--ink3);padding:16px 18px;line-height:1.7;}
+.new-glib-btn{margin:14px 18px;padding:14px;width:calc(100% - 36px);background:transparent;border:1.5px dashed var(--line2);border-radius:12px;color:var(--ink2);font-weight:600;font-size:14px;}
+.new-glib-btn:active{background:var(--gl);}
+.glib-row{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);}
+.glib-row-main{flex:1;min-width:0;}
+.glib-row-name{font-size:15px;font-weight:700;color:var(--ink);}
+.glib-row-meta{font-size:12px;color:var(--ink3);margin-top:2px;}
+.glib-row-edit{font-size:13px;font-weight:600;color:var(--g);padding:8px 12px;border:1px solid var(--gl);border-radius:9px;background:transparent;}
+.glib-field{padding:14px 18px 4px;}
+.glib-field label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px;}
+.glib-field input{width:100%;border:1px solid var(--line2);border-radius:10px;padding:11px 12px;font-size:15px;font-family:inherit;background:var(--surface);color:var(--ink);}
+.glib-memos{padding:8px 18px;}
+.glib-memos-label{font-size:12px;font-weight:600;color:var(--ink2);margin:10px 0 8px;}
+.glib-memo{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:var(--shadow);}
+.glib-memo-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.glib-memo-kind{font-size:11px;font-weight:700;color:var(--g);background:var(--gl);padding:3px 8px;border-radius:7px;}
+.glib-memo-del{font-size:12px;color:var(--rose);font-weight:600;padding:4px 8px;background:transparent;}
+.glib-memo textarea,.glib-memo input{width:100%;border:1px solid var(--line2);border-radius:10px;padding:11px 12px;font-size:15px;font-family:inherit;background:var(--surface);color:var(--ink);}
+.glib-memo textarea{min-height:64px;resize:vertical;}
+.glib-memo input{margin-bottom:8px;}
+.glib-add-row{display:flex;gap:8px;padding:4px 18px 24px;}
+.glib-add-row button{flex:1;padding:12px;border:1.5px dashed var(--line2);border-radius:11px;background:transparent;color:var(--ink2);font-weight:600;font-size:13px;}
+.glib-add-row button:active{background:var(--gl);}
+.glib-del-lib{margin:8px 18px 28px;width:calc(100% - 36px);padding:13px;background:transparent;border:1px solid var(--rose);color:var(--rose);border-radius:11px;font-weight:600;font-size:14px;}
+
 /* 初回ウェルカムシート */
 .welcome-body{
   padding:6px 26px calc(26px + env(safe-area-inset-bottom));
@@ -3510,7 +3539,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <button class="login-card" data-action="goto-join">
       <div class="login-card-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        団体コードで入る
+        グループコードで入る
       </div>
     </button>
   </div>
@@ -3542,22 +3571,22 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       入る
     </button>
     <div class="claim-help">
-      うまく入れない時は、登録元の塾・団体にご確認ください。
+      うまく入れない時は、登録元の塾・グループにご確認ください。
     </div>
   </div>
 </div>
 
-<!-- JOIN (団体コードで参加) -->
+<!-- JOIN (グループコードで参加) -->
 <div class="screen" id="screen-join">
   <div class="bhdr">
     <button class="bhdr-back" data-action="back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
-    <div class="bhdr-title">団体コードで入る</div>
+    <div class="bhdr-title">グループコードで入る</div>
   </div>
   <div class="claim-wrap">
     <div class="claim-intro">
-      団体から配られたコードと、あなたの名前・暗証番号を入れてください。<br>
+      グループから配られたコードと、あなたの名前・暗証番号を入れてください。<br>
       <small>暗証番号(4桁)は、次に入るときにも使います。忘れないものにしてください。</small>
     </div>
     <div class="claim-field">
@@ -3577,7 +3606,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       入る
     </button>
     <div class="claim-help">
-      コードが分からない時は、団体の担当者にご確認ください。
+      コードが分からない時は、グループの担当者にご確認ください。
     </div>
   </div>
 </div>
@@ -3698,9 +3727,39 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
   <div class="scroll" id="lib-scroll">
     <div id="lib-new-section"></div>
+    <div id="lib-gadmin-entry"></div>
     <div id="lib-list"></div>
   </div>
   <div class="bnav" data-bnav="library"></div>
+</div>
+
+<!-- GROUP LIBRARY ADMIN (グループ管理者: 自分たちのライブラリ管理) -->
+<div class="screen" id="screen-glib">
+  <div class="bhdr">
+    <button class="bhdr-back" data-action="back">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div class="bhdr-title">グループのライブラリ</div>
+  </div>
+  <div class="scroll" id="glib-scroll">
+    <div class="glib-intro">あなたのグループ専用の公式ライブラリです。ここで作ったものは、グループのメンバーに表示されます。</div>
+    <div id="glib-list"></div>
+    <button class="new-glib-btn" data-action="glib-new">＋ 新しいライブラリを作る</button>
+  </div>
+</div>
+
+<!-- GROUP LIBRARY EDITOR -->
+<div class="screen" id="screen-glib-edit">
+  <div class="bhdr">
+    <button class="bhdr-back" data-action="back">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div class="bhdr-title" id="glib-edit-title">ライブラリ</div>
+    <button class="bhdr-action primary" data-action="save-glib">保存</button>
+  </div>
+  <div class="scroll" id="glib-edit-scroll">
+    <div id="glib-edit-body"></div>
+  </div>
 </div>
 
 <!-- OFFICIAL DETAIL -->
@@ -4183,6 +4242,8 @@ const state={
   // ─── JUKEN CAMP 塾生認証 ───
   auth:null,           // { token, role, studentId, name, group, shelfIds, aiEnabled } または null
   deviceId:null,       // この端末のID (claim時に使う、localStorage永続)
+  groupShelfIds:[],    // 自分のグループが所有する公式ライブラリのID (常に閲覧可)
+  editingGLib:null,    // グループ管理者がいま編集中のライブラリ
 };
 
 // localStorage に書く軽量ペイロードを組み立てる (save / 容量見積もりで共用)。
@@ -4509,6 +4570,8 @@ function canUseAI(){
 function canSeeShelfId(shelfId){
   if(!state.auth || !state.auth.token)return false;
   if(state.auth.role==='admin')return true;
+  // 自分のグループが所有するライブラリは常に閲覧可
+  if(Array.isArray(state.groupShelfIds) && state.groupShelfIds.includes(shelfId))return true;
   return Array.isArray(state.auth.shelfIds) && state.auth.shelfIds.includes(shelfId);
 }
 
@@ -4806,6 +4869,8 @@ async function loadOfficialShelves(){
     if(!res.ok)return;
     const data=await res.json();
     OFFICIAL_SHELVES=Array.isArray(data.shelves)?data.shelves:[];
+    // グループ所有ライブラリ (自分のグループの分だけ) を取得してマージ
+    await mergeGroupShelves();
     // クロスポスト: 参照を実体に解決
     resolveShelfRefs(OFFICIAL_SHELVES);
     // 表示中の画面があれば再描画
@@ -4818,6 +4883,31 @@ async function loadOfficialShelves(){
     console.warn('公式棚の取得に失敗:',err);
   }
   refreshLinkedCardsUI();
+}
+
+// 自分のグループが所有する公式ライブラリを取得し、OFFICIAL_SHELVES に足す。
+// (グローバルの公式ライブラリとは別エンドポイント。自分のグループの分しか返らない)
+async function mergeGroupShelves(){
+  state.groupShelfIds=[];
+  if(!isStudent() || !state.auth || !state.auth.teamId)return;
+  try{
+    const res=await fetch('/api/group-shelf',{headers:{'x-snapin-token':state.auth.token}});
+    if(!res.ok)return;
+    const data=await res.json();
+    if(!data || !data.ok || !Array.isArray(data.shelves))return;
+    const ids=[];
+    for(const s of data.shelves){
+      if(!s || !s.id)continue;
+      s._group=true; // 「グループのライブラリ」と区別する印
+      ids.push(s.id);
+      // 既存(同id)があれば差し替え、なければ追加
+      const i=OFFICIAL_SHELVES.findIndex(x=>x && x.id===s.id);
+      if(i>=0)OFFICIAL_SHELVES[i]=s; else OFFICIAL_SHELVES.push(s);
+    }
+    state.groupShelfIds=ids;
+  }catch(err){
+    console.warn('グループライブラリの取得に失敗:',err);
+  }
 }
 
 function isLinkedCard(c){
@@ -5041,6 +5131,8 @@ async function refreshMe(force){
     state.auth.aiEnabled=s.aiEnabled!==false;
     state.auth.name=s.name||state.auth.name;
     state.auth.group=s.group||'';
+    state.auth.teamId=s.teamId||null;
+    state.auth.isGroupAdmin=s.isGroupAdmin===true;
     save();
     // 公式タブを開いている時は反映のため再描画
     if(document.getElementById('screen-library')?.classList.contains('active')){
@@ -5254,7 +5346,7 @@ function gotoJoin(){
   goto('screen-join');
 }
 
-// 団体コードで参加する (コード + 名前 + 暗証番号4桁)
+// グループコードで参加する (コード + 名前 + 暗証番号4桁)
 // force=true: 別端末で使用中でも、名前+暗証番号が合えば deviceId を引き継ぐ
 async function doJoinSubmit(force){
   const codeEl=$('join-code');
@@ -5301,7 +5393,7 @@ async function doJoinSubmit(force){
         msg=`暗証番号を続けてまちがえたため、一時的にロックされています。\n約 ${min} 分後にもう一度お試しください。`;
       }
       else if(data.reason==='already_claimed')msg='この名前はすでに別の端末で使われています。\n機種変や入れ直しなら、下のボタンで切り替えられます。';
-      else if(data.reason==='revoked')msg='現在この団体・アカウントは利用できません。担当者に確認してください。';
+      else if(data.reason==='revoked')msg='現在このグループ・アカウントは利用できません。担当者に確認してください。';
       else if(data.reason==='bad_request')msg='入力に不備があります。もう一度確認してください。';
       errEl.textContent=msg;
       errEl.classList.remove('hide');
@@ -5565,7 +5657,7 @@ function contactInquiry(){
   const subject=encodeURIComponent('SnapIn の利用・導入について');
   const body=encodeURIComponent(
     'SnapIn の AI・公式ライブラリの利用/導入について問い合わせます。\n\n'+
-    '・お名前 / 団体名:\n'+
+    '・お名前 / グループ名:\n'+
     '・ご利用の目的 (塾・学校・個人など):\n'+
     '・人数 (おおよそ):\n'+
     '・ご質問:\n'
@@ -10017,6 +10109,8 @@ async function copyToShelf(){
 
 // ═══ LIBRARY ═══
 function renderLibrary(){
+  // グループ管理者には「グループのライブラリ」入口を出す
+  renderGroupLibEntry();
   // 未認証なら上部にバナー、それ以下のライブラリは「塾生限定」マークが付く
   const newSec=$('lib-new-section');
   if(newSec && !isStudent()){
@@ -10028,7 +10122,7 @@ function renderLibrary(){
           <div>塾・会社・家族・グループなど、所属先が用意した資料や情報をいつでも閲覧</div>
           <div>個人のメモや写真は、これまで通りずっと無料</div>
         </div>
-        <div class="sub">塾・学校・会社・家族・グループなど、団体での導入や個人での利用をご希望の方はお問い合わせください。</div>
+        <div class="sub">塾・学校・会社・家族・グループなど、導入や個人での利用をご希望の方はお問い合わせください。</div>
         <div class="btn-row">
           <button class="go-contact" data-action="contact-inquiry">使ってみたい・相談する</button>
         </div>
@@ -10560,6 +10654,206 @@ function updateOfficialSubBtn(){
   const subbed=state.subscribed.includes(state.currentOfficial.id);
   btn.textContent=subbed?'登録ずみ':'登録';
   btn.classList.toggle('on',subbed);
+}
+
+// ═══ GROUP LIBRARY (グループ管理者の自前ライブラリ) ═══
+
+// 公式タブ上部の「グループのライブラリ」入口 (グループ管理者だけに出す)
+function renderGroupLibEntry(){
+  const el=$('lib-gadmin-entry');
+  if(!el)return;
+  if(state.auth && state.auth.isGroupAdmin){
+    el.innerHTML=`<button class="glib-entry-btn" data-action="goto-glib">
+      <span>グループのライブラリを作る・編集する</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>`;
+  }else{
+    el.innerHTML='';
+  }
+}
+
+function myGroupShelves(){
+  return OFFICIAL_SHELVES.filter(s=>s && s._group && Array.isArray(state.groupShelfIds) && state.groupShelfIds.includes(s.id));
+}
+
+function gotoGroupLib(){
+  renderGroupLibList();
+  goto('screen-glib');
+}
+
+function renderGroupLibList(){
+  const el=$('glib-list');
+  if(!el)return;
+  const shelves=myGroupShelves();
+  if(shelves.length===0){
+    el.innerHTML='<div class="glib-empty">まだライブラリがありません。下のボタンから作ってみましょう。</div>';
+    return;
+  }
+  el.innerHTML=shelves.map(s=>`
+    <div class="glib-row" data-glib-id="${esc(s.id)}">
+      <div class="glib-row-main">
+        <div class="glib-row-name">${esc(s.name||'(無題)')}</div>
+        <div class="glib-row-meta">メモ ${Array.isArray(s.cards)?s.cards.length:0}件</div>
+      </div>
+      <button class="glib-row-edit" data-glib-edit="${esc(s.id)}">編集</button>
+    </div>
+  `).join('');
+  el.querySelectorAll('[data-glib-edit]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const s=myGroupShelves().find(x=>x.id===btn.dataset.glibEdit);
+      if(s)openGLibEditor(s);
+    });
+  });
+}
+
+async function groupShelfApi(method,body){
+  if(!state.auth || !state.auth.token)return null;
+  try{
+    const res=await fetch('/api/group-shelf',{
+      method,
+      headers:{'Content-Type':'application/json','x-snapin-token':state.auth.token},
+      body:body?JSON.stringify(body):undefined,
+    });
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok || data.ok===false){
+      toast('うまくいきませんでした'+(data && data.reason?(' ('+data.reason+')'):''));
+      return null;
+    }
+    return data;
+  }catch(e){
+    toast('通信エラーです');
+    return null;
+  }
+}
+
+// ライブラリ編集を開く (null=新規)
+function openGLibEditor(shelf){
+  const isNew=!shelf;
+  const cards=(shelf && Array.isArray(shelf.cards))?shelf.cards.map(c=>Object.assign({},c)):[];
+  state.editingGLib={
+    id:isNew?null:shelf.id,
+    name:isNew?'':(shelf.name||''),
+    desc:isNew?'':(shelf.desc||''),
+    cards,
+    _new:isNew,
+  };
+  $('glib-edit-title').textContent=isNew?'新しいライブラリ':'ライブラリを編集';
+  renderGLibEditor();
+  goto('screen-glib-edit');
+  const sc=$('glib-edit-scroll'); if(sc)sc.scrollTop=0;
+}
+
+function gLibMemoText(c){
+  if(c.type==='list'){
+    if(typeof c._itemsText==='string')return c._itemsText;
+    return (Array.isArray(c.items)?c.items:[]).map(i=>(i&&i.t)?i.t:'').join('\n');
+  }
+  return c.text||'';
+}
+
+function renderGLibEditor(){
+  const body=$('glib-edit-body');
+  const g=state.editingGLib;
+  if(!body||!g)return;
+  const memosHtml=(g.cards||[]).map((c,i)=>{
+    const kind=c.type==='list'?'リスト':'メモ';
+    if(c.type==='list'){
+      return `<div class="glib-memo" data-memo-idx="${i}">
+        <div class="glib-memo-top"><span class="glib-memo-kind">${kind}</span><button class="glib-memo-del" data-memo-del="${i}">削除</button></div>
+        <input data-memo-title="${i}" value="${esc(c.title||'')}" placeholder="リストのタイトル">
+        <textarea data-memo-items="${i}" placeholder="1行に1項目">${esc(gLibMemoText(c))}</textarea>
+      </div>`;
+    }
+    return `<div class="glib-memo" data-memo-idx="${i}">
+      <div class="glib-memo-top"><span class="glib-memo-kind">${kind}</span><button class="glib-memo-del" data-memo-del="${i}">削除</button></div>
+      <textarea data-memo-text="${i}" placeholder="メモの内容">${esc(c.text||'')}</textarea>
+    </div>`;
+  }).join('');
+  body.innerHTML=`
+    <div class="glib-field">
+      <label>ライブラリ名</label>
+      <input id="glib-name" value="${esc(g.name||'')}" placeholder="例: 新人向けマニュアル">
+    </div>
+    <div class="glib-field">
+      <label>説明 (任意)</label>
+      <input id="glib-desc" value="${esc(g.desc||'')}" placeholder="例: 入社時に読んでください">
+    </div>
+    <div class="glib-memos">
+      <div class="glib-memos-label">メモ</div>
+      ${memosHtml || '<div class="glib-empty" style="padding:6px 0;">下のボタンでメモを追加してください。</div>'}
+    </div>
+    <div class="glib-add-row">
+      <button data-action="glib-add-note">＋ メモを追加</button>
+      <button data-action="glib-add-list">＋ リストを追加</button>
+    </div>
+    ${g._new?'':'<button class="glib-del-lib" data-action="glib-delete">このライブラリを削除</button>'}
+  `;
+  // 入力バインド (再描画せず state を更新 → フォーカスを失わない)
+  const nameI=$('glib-name'); if(nameI)nameI.addEventListener('input',e=>{state.editingGLib.name=e.target.value;});
+  const descI=$('glib-desc'); if(descI)descI.addEventListener('input',e=>{state.editingGLib.desc=e.target.value;});
+  body.querySelectorAll('[data-memo-text]').forEach(t=>t.addEventListener('input',e=>{
+    const i=+t.dataset.memoText; if(state.editingGLib.cards[i])state.editingGLib.cards[i].text=e.target.value;
+  }));
+  body.querySelectorAll('[data-memo-title]').forEach(t=>t.addEventListener('input',e=>{
+    const i=+t.dataset.memoTitle; if(state.editingGLib.cards[i])state.editingGLib.cards[i].title=e.target.value;
+  }));
+  body.querySelectorAll('[data-memo-items]').forEach(t=>t.addEventListener('input',e=>{
+    const i=+t.dataset.memoItems; if(state.editingGLib.cards[i])state.editingGLib.cards[i]._itemsText=e.target.value;
+  }));
+  body.querySelectorAll('[data-memo-del]').forEach(b=>b.addEventListener('click',()=>{
+    const i=+b.dataset.memoDel; state.editingGLib.cards.splice(i,1); renderGLibEditor();
+  }));
+}
+
+function gLibAddNote(){
+  if(!state.editingGLib)return;
+  state.editingGLib.cards.push({id:'gc_'+Date.now().toString(36)+Math.floor(Math.random()*1000),type:'note',text:'',created:Date.now()});
+  renderGLibEditor();
+}
+function gLibAddList(){
+  if(!state.editingGLib)return;
+  state.editingGLib.cards.push({id:'gc_'+Date.now().toString(36)+Math.floor(Math.random()*1000),type:'list',title:'',items:[],_itemsText:'',created:Date.now()});
+  renderGLibEditor();
+}
+
+async function saveGroupLib(){
+  const g=state.editingGLib;
+  if(!g)return;
+  const name=(g.name||'').trim();
+  if(!name){toast('ライブラリ名を入れてください');return;}
+  const cards=[];
+  for(const c of (g.cards||[])){
+    if(c.type==='list'){
+      const src=(typeof c._itemsText==='string')?c._itemsText:(Array.isArray(c.items)?c.items.map(i=>i.t).join('\n'):'');
+      const lines=src.split('\n').map(s=>s.trim()).filter(Boolean);
+      if(!(c.title||'').trim() && lines.length===0)continue;
+      cards.push({id:c.id,type:'list',title:(c.title||'').trim(),items:lines.map(t=>({t,d:false})),created:c.created||Date.now()});
+    }else{
+      const text=(c.text||'').trim();
+      if(!text)continue;
+      cards.push({id:c.id,type:'note',text,created:c.created||Date.now()});
+    }
+  }
+  const shelf={name,desc:(g.desc||'').trim(),cards};
+  if(g.id)shelf.id=g.id;
+  const data=await groupShelfApi('POST',{shelf});
+  if(!data)return;
+  toast('保存しました');
+  await loadOfficialShelves();
+  renderGroupLibList();
+  back();
+}
+
+async function deleteGroupLib(){
+  const g=state.editingGLib;
+  if(!g||!g.id)return;
+  if(!confirm(`「${g.name}」を削除しますか?\nこのグループのメンバーから見えなくなります。`))return;
+  const data=await groupShelfApi('DELETE',{shelfId:g.id});
+  if(!data)return;
+  toast('削除しました');
+  await loadOfficialShelves();
+  renderGroupLibList();
+  back();
 }
 
 // ═══ SEARCH ═══
@@ -11119,6 +11413,12 @@ document.addEventListener('click',e=>{
     case 'login-personal':login('personal');break;
     case 'goto-claim':gotoClaim();break;
     case 'goto-join':gotoJoin();break;
+    case 'goto-glib':gotoGroupLib();break;
+    case 'glib-new':openGLibEditor(null);break;
+    case 'save-glib':saveGroupLib();break;
+    case 'glib-add-note':gLibAddNote();break;
+    case 'glib-add-list':gLibAddList();break;
+    case 'glib-delete':deleteGroupLib();break;
     case 'contact-inquiry':contactInquiry();break;
     case 'claim-submit':doClaimSubmit();break;
     case 'join-submit':doJoinSubmit();break;
