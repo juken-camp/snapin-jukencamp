@@ -387,7 +387,7 @@ async function tryYouTube(url) {
   if (info.listId) {
     const pl = await ytPlaylistInfo(info.listId);          // 正式タイトル+サムネ (キー有り)
     let image = pl && pl.image ? pl.image : null;
-    let title = pl && pl.title ? '[再生リスト] ' + pl.title : '';
+    let title = pl && pl.title ? pl.title : '';
 
     // サムネが無い/タイトルが無いとき、先頭動画で補う
     if (!image || !title) {
@@ -397,11 +397,11 @@ async function tryYouTube(url) {
         if (!image) image = ytThumb(firstVid);
         if (!title) {
           const oe = await ytOEmbed(firstVid);
-          if (oe && oe.title) title = '[再生リスト] ' + oe.title;
+          if (oe && oe.title) title = oe.title;
         }
       }
     }
-    if (!title) title = 'YouTube の再生リスト';
+    if (!title) title = '再生リスト';
     return { ...base, title, image: image || null };
   }
 
@@ -412,7 +412,7 @@ async function tryYouTube(url) {
       ...base,
       title: (oe && oe.title) ? oe.title : 'YouTube の動画',
       image: (oe && oe.image) ? oe.image : ytThumb(info.videoId),
-      siteName: (oe && oe.author) ? oe.author : 'YouTube',
+      siteName: 'YouTube', // チャンネル名は出さない (クライアント側で YouTube 表記は非表示)
     };
   }
   return null;
