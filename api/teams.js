@@ -124,6 +124,7 @@ export default async function handler(req, res) {
         code: genUniqueCode(teams),
         shelfIds: sanitizeShelfIds(body.shelfIds),
         aiEnabled: body.aiEnabled !== false,
+        multiDevice: body.multiDevice === true,
         secretDigits: Number(body.secretDigits) === 6 ? 6 : 4,
         note: String(body.note || '').slice(0, 500),
         disabled: false,
@@ -142,6 +143,7 @@ export default async function handler(req, res) {
       if (body.name !== undefined) t.name = String(body.name).trim().slice(0, 60);
       if (body.shelfIds !== undefined) t.shelfIds = sanitizeShelfIds(body.shelfIds);
       if (body.aiEnabled !== undefined) t.aiEnabled = body.aiEnabled === true;
+      if (body.multiDevice !== undefined) t.multiDevice = body.multiDevice === true;
       if (body.secretDigits !== undefined) t.secretDigits = Number(body.secretDigits) === 6 ? 6 : 4;
       if (body.note !== undefined) t.note = String(body.note).slice(0, 500);
       if (body.disabled !== undefined) t.disabled = body.disabled === true;
@@ -169,6 +171,7 @@ export default async function handler(req, res) {
         if (s && s.teamId === t.id) {
           s.shelfIds = Array.isArray(t.shelfIds) ? t.shelfIds.slice(0, 200) : [];
           s.aiEnabled = t.aiEnabled !== false;
+          s.multiDevice = t.multiDevice === true;
           s.group = t.name || s.group || '';
           updated++;
         }
