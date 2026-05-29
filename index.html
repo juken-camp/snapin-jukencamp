@@ -2422,6 +2422,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink2);
   text-align:center;
   margin-bottom:50px;
+  line-height:1.6;
+}
+.login-punch{
+  font-size:20px;
+  font-weight:700;
+  color:var(--ink);
+  text-align:center;
+  letter-spacing:.02em;
+  margin-bottom:8px;
 }
 .login-card{
   width:100%;
@@ -2546,6 +2555,30 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-radius:10px;
 }
 .lib-locked-banner .go-claim:active{background:var(--gd);}
+.lib-locked-banner .benefits{
+  text-align:left;
+  display:inline-block;
+  margin:0 auto 14px;
+  font-size:12.5px;
+  color:var(--ink2);
+  line-height:1.7;
+}
+.lib-locked-banner .benefits div{display:flex;gap:6px;}
+.lib-locked-banner .benefits div::before{content:"・";color:var(--g);}
+.lib-locked-banner .btn-row{
+  display:flex;flex-direction:column;gap:8px;align-items:center;
+}
+.lib-locked-banner .go-contact{
+  display:inline-block;
+  padding:9px 22px;
+  background:transparent;
+  color:var(--gd);
+  font-size:13px;
+  font-weight:600;
+  border-radius:10px;
+  border:1px solid var(--g);
+}
+.lib-locked-banner .go-contact:active{background:#D9EFE5;}
 .lib-item.locked .lib-action{
   background:transparent;
   color:var(--ink3);
@@ -2941,6 +2974,31 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   line-height:1.3;
 }
 .ai-note-chip:active{background:#d6ece2;}
+
+/* クラウドバックアップ欄 */
+.cloud-box{
+  padding:4px 0 14px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:6px;
+}
+.cloud-actions{
+  display:flex;gap:8px;margin-top:10px;
+}
+.cloud-btn{
+  flex:1;
+  padding:11px;
+  border-radius:11px;
+  background:var(--g);
+  color:#fff;
+  font-size:13px;font-weight:600;
+}
+.cloud-btn:active{background:var(--gd);}
+.cloud-btn.ghost{
+  background:transparent;
+  color:var(--gd);
+  border:1px solid var(--g);
+}
+.cloud-btn.ghost:active{background:#D9EFE5;}
 
 /* 保存容量メーター (設定シート上部) */
 .storage-meter{
@@ -3347,7 +3405,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="login-wrap">
     <div class="login-logo">Snap<em>In</em></div>
     <div class="login-by">by JUKEN CAMP</div>
-    <div class="login-tag">点数アップを逃さないメモ＆ライブラリ</div>
+    <div class="login-punch">ぜんぶ、ここに残す。</div>
+    <div class="login-tag">見たもの・思いついたこと・やること。<br>あとで効いてくる、自分だけのメモ。</div>
     <button class="login-card" data-action="login-personal">
       <div class="login-card-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
@@ -3357,7 +3416,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <button class="login-card login-card-juken" data-action="goto-claim">
       <div class="login-card-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        JUKEN CAMP 塾生はこちら
+        AI・ライブラリを使う
       </div>
     </button>
   </div>
@@ -3369,7 +3428,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <button class="bhdr-back" data-action="back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
-    <div class="bhdr-title">塾生として入る</div>
+    <div class="bhdr-title">アカウントで入る</div>
   </div>
   <div class="claim-wrap">
     <div class="claim-intro">
@@ -3389,7 +3448,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       入る
     </button>
     <div class="claim-help">
-      うまく入れない時は、塾の先生に確認してください。
+      うまく入れない時は、登録元の塾・団体にご確認ください。
     </div>
   </div>
 </div>
@@ -3397,7 +3456,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <!-- HOME -->
 <div class="screen" id="screen-home">
   <div class="hdr">
-    <div class="logo">Snap<em>In</em><span class="page-sub">おぼえたいメモ</span></div>
+    <div class="logo">Snap<em>In</em><span class="page-sub">のこすメモ</span></div>
     <div class="hdr-icons">
       <div class="view-tog view-tog-hdr">
         <button id="vt-grid" class="on" data-action="view-grid" aria-label="グリッド">
@@ -3819,6 +3878,21 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button class="ai-note-chip" data-ai-note-chip="関連する豆知識や覚え方も添えてほしい。">覚え方も</button>
     </div>
   </div>
+
+  <!-- クラウドバックアップ (アカウント保有者のみ表示) -->
+  <div class="cloud-box" id="cloud-box" style="display:none;">
+    <div class="ai-note-head">
+      <div class="ai-note-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+      </div>
+      <div class="ai-note-title">クラウドに保存</div>
+    </div>
+    <div class="ai-note-desc" id="cloud-status">メモを端末の外(クラウド)に保存します。機種変や再インストールでも復元できます。<br>※写真は対象外(テキスト・メモのみ)</div>
+    <div class="cloud-actions">
+      <button class="cloud-btn" data-action="cloud-backup">今すぐバックアップ</button>
+      <button class="cloud-btn ghost" data-action="cloud-restore">クラウドから復元</button>
+    </div>
+  </div>
   <div class="storage-meter hide" id="storage-meter">
     <div class="storage-meter-head">
       <span class="storage-meter-label">保存容量</span>
@@ -3909,6 +3983,8 @@ const state={
   searchTag:null,      // 探すページのタグフィルター
   staleDays:null,      // 「しばらく見ていないメモ」ページの日数 (null=未設定→デフォルト7)
   aiNote:'',           // 設定「AIへの希望」フリー記入。systemプロンプトに差し込む利用者の要望。
+  _savedAt:0,          // 直近の保存時刻 (localStorage と IDB 耐久コピーの新旧比較に使う)
+  lastCloudBackupAt:0, // 直近にクラウドへバックアップした時刻 (UI 表示用、ローカルのみ)
   tagEditMode:false,   // 探すページのタグ編集モード
   // ─── JUKEN CAMP 塾生認証 ───
   auth:null,           // { token, role, studentId, name, group, shelfIds, aiEnabled } または null
@@ -3942,19 +4018,36 @@ function buildLightPayload(){
     auth:state.auth,
     deviceId:state.deviceId,
     aiNote:state.aiNote,
+    lastCloudBackupAt:state.lastCloudBackupAt,
   };
 }
 
+// 軽量ペイロードを IndexedDB に書く処理を少しまとめる (キー入力ごとの save 連発で
+// IDB を叩きすぎないよう 800ms デバウンス)。localStorage が主、IDB は耐久コピー。
+let _metaMirrorTimer=null;
+function mirrorMetaToIDB(payload){
+  if(_metaMirrorTimer)clearTimeout(_metaMirrorTimer);
+  _metaMirrorTimer=setTimeout(()=>{
+    imgDB.putMeta(payload).catch(e=>console.warn('meta mirror failed:',e));
+  },800);
+}
+
 function save(){
-  // 画像なしの軽量カードのみ localStorage に書く。
-  // 画像 (c.image / _snap.image) は IndexedDB に別保存し、ここでは __hasImg だけ立てる。
-  // 失敗時 (容量オーバー等) は false を返す。
+  // 画像なしの軽量ペイロードを localStorage に書く (主) ＋ IndexedDB に耐久コピー。
+  // 画像 (c.image / _snap.image) は別途 IndexedDB に保存し、ここでは __hasImg だけ立てる。
+  // localStorage が満杯でも、IDB 側にペイロードが残るのでデータは失われない。
+  const payload=buildLightPayload();
+  payload._savedAt=Date.now();
+  state._savedAt=payload._savedAt;
+  mirrorMetaToIDB(payload);
   try{
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(buildLightPayload()));
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));
     return true;
   }catch(e){
-    // 容量オーバー (QuotaExceededError) など
-    console.error('save() failed:',e);
+    // 容量オーバー (QuotaExceededError) など → localStorage には書けないが、
+    // IDB 側へは確実に残したいのでデバウンスを待たず即時にも putMeta する。
+    console.error('save() failed (localStorage full?):',e);
+    imgDB.putMeta(payload).catch(err=>console.warn('meta mirror (fallback) failed:',err));
     return false;
   }
 }
@@ -3995,7 +4088,8 @@ const imgDB={
   _db:null,
   _DB_NAME:'snapin_db',
   _STORE:'images',
-  _VERSION:1,
+  _META_STORE:'meta',
+  _VERSION:2,
   async open(){
     if(this._db)return this._db;
     return new Promise((res,rej)=>{
@@ -4004,6 +4098,11 @@ const imgDB={
         const db=req.result;
         if(!db.objectStoreNames.contains(this._STORE)){
           db.createObjectStore(this._STORE);
+        }
+        // v2: 軽量ペイロード (画像なしの cards 等) の耐久コピー用ストア。
+        // localStorage が満杯/消去されても、ここに残っていれば失われない。
+        if(!db.objectStoreNames.contains(this._META_STORE)){
+          db.createObjectStore(this._META_STORE);
         }
       };
       req.onsuccess=()=>{
@@ -4053,6 +4152,26 @@ const imgDB={
       req.onerror=()=>rej(req.error);
     });
   },
+  // 軽量ペイロード (画像なし) の耐久コピーを保存/取得する。
+  // localStorage と同じ内容を二重に持つことで、localStorage が満杯/消去されても残る。
+  async putMeta(obj){
+    const db=await this.open();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(this._META_STORE,'readwrite');
+      tx.objectStore(this._META_STORE).put(obj,'payload');
+      tx.oncomplete=()=>res();
+      tx.onerror=()=>rej(tx.error);
+    });
+  },
+  async getMeta(){
+    const db=await this.open();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(this._META_STORE,'readonly');
+      const req=tx.objectStore(this._META_STORE).get('payload');
+      req.onsuccess=()=>res(req.result||null);
+      req.onerror=()=>rej(req.error);
+    });
+  },
 };
 
 // 起動時に state.cards の画像を IndexedDB から復元する。
@@ -4092,22 +4211,44 @@ async function hydrateCardImages(){
   // ※ 既存ユーザーの初回読み込み時に効くので、ここでは save() を呼んでも安全
   save();
 }
+// ペイロード(localStorage or IDB 由来)を state に反映する共通処理。
+function applyPayload(d){
+  if(!d)return;
+  state.user=d.user||null;
+  state.cards=d.cards||[];
+  state.subscribed=d.subscribed||[];
+  state.shelfLastSeen=d.shelfLastSeen||{};
+  state.cardLastSeen=d.cardLastSeen||{};
+  state.libraryOrder=d.libraryOrder||{};
+  state.auth=d.auth||null;
+  state.deviceId=d.deviceId||null;
+  state.aiNote=d.aiNote||'';
+  state._savedAt=d._savedAt||0;
+  state.lastCloudBackupAt=d.lastCloudBackupAt||0;
+}
+
 function load(){
   try{
     const raw=localStorage.getItem(STORAGE_KEY);
     if(!raw)return false;
-    const d=JSON.parse(raw);
-    state.user=d.user||null;
-    state.cards=d.cards||[];
-    state.subscribed=d.subscribed||[];
-    state.shelfLastSeen=d.shelfLastSeen||{};
-    state.cardLastSeen=d.cardLastSeen||{};
-    state.libraryOrder=d.libraryOrder||{};
-    state.auth=d.auth||null;
-    state.deviceId=d.deviceId||null;
-    state.aiNote=d.aiNote||'';
+    applyPayload(JSON.parse(raw));
     return true;
   }catch(e){return false;}
+}
+
+// IDB の耐久コピーが localStorage より新しければ state を差し替える。
+// 通常は localStorage が最新なので何もしない。localStorage が空/古い
+// (ブラウザの容量退避や手動クリア、保存失敗の後) の時だけ復旧として効く。
+// 戻り値: 差し替えたら true。
+async function reconcileFromIDB(){
+  try{
+    const idbMeta=await imgDB.getMeta();
+    if(idbMeta && (idbMeta._savedAt||0) > (state._savedAt||0)){
+      applyPayload(idbMeta);
+      return true;
+    }
+  }catch(e){console.warn('reconcileFromIDB failed:',e);}
+  return false;
 }
 
 // deviceId を初期化 (永続的にこの端末を識別)
@@ -4907,6 +5048,111 @@ function updateAiNoteCount(){
   cnt.classList.toggle('over',len>AI_NOTE_MAX);
 }
 
+// ═══ クラウドバックアップ (アカウント保有者のみ) ═══
+// 写真をのぞくメモ本体・付帯情報を /api/sync にユーザー単位で保存し、
+// 別端末や再インストール後に復元できるようにする第一歩 (push/pull のみ)。
+const SYNC_ENDPOINT='/api/sync';
+
+// クラウドに送るペイロード: localStorage 用から端末固有の情報(トークン等)を除く。
+function buildCloudPayload(){
+  const p=buildLightPayload();
+  delete p.auth;            // トークンはサーバーに置かない
+  delete p.deviceId;        // 端末IDは復元時に上書きしない
+  delete p.lastCloudBackupAt; // これはローカルのUI表示用
+  p._savedAt=state._savedAt||Date.now();
+  return p;
+}
+
+async function cloudBackup(){
+  if(!isStudent()){toast('クラウド保存はアカウントでログイン中のみ使えます');return;}
+  toast('バックアップ中…');
+  try{
+    const res=await fetch(SYNC_ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-snapin-token':state.auth.token},
+      body:JSON.stringify({action:'push', payload:buildCloudPayload(), savedAt:state._savedAt||Date.now()}),
+    });
+    if(res.status===413){toast('メモが多すぎて保存できませんでした');return;}
+    if(res.status===401||res.status===403){toast('認証が切れています。入り直してください');return;}
+    if(!res.ok)throw new Error('status '+res.status);
+    const data=await res.json();
+    state.lastCloudBackupAt=data.savedAt||Date.now();
+    save();
+    updateCloudStatus();
+    toast('クラウドに保存しました');
+  }catch(e){
+    console.warn('cloudBackup failed:',e);
+    toast('保存に失敗しました。通信環境を確認してください');
+  }
+}
+
+async function cloudRestore(){
+  if(!isStudent()){toast('クラウド復元はアカウントでログイン中のみ使えます');return;}
+  toast('確認中…');
+  let data;
+  try{
+    const res=await fetch(SYNC_ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-snapin-token':state.auth.token},
+      body:JSON.stringify({action:'pull'}),
+    });
+    if(res.status===401||res.status===403){toast('認証が切れています。入り直してください');return;}
+    if(!res.ok)throw new Error('status '+res.status);
+    data=await res.json();
+  }catch(e){
+    console.warn('cloudRestore failed:',e);
+    toast('復元に失敗しました。通信環境を確認してください');
+    return;
+  }
+  if(!data || !data.backup || !data.backup.payload){
+    toast('クラウドにバックアップがありません');
+    return;
+  }
+  if(!confirm('クラウドのバックアップでこの端末のメモを置き換えますか?\n\nこの端末の今のメモは上書きされます。\n(写真は同期対象外なので、この端末のものが残ります)'))return;
+  // 端末固有の情報は保持しつつ、メモ系を反映する
+  const keepAuth=state.auth, keepDev=state.deviceId, keepLast=state.lastCloudBackupAt;
+  applyPayload(data.backup.payload);
+  state.auth=keepAuth;
+  state.deviceId=keepDev;
+  state.lastCloudBackupAt=keepLast;
+  state._savedAt=Date.now();
+  save();
+  closeSettings();
+  goto('screen-home',false);
+  hydrateCardImages().then(()=>renderHome()).catch(()=>renderHome());
+  toast('クラウドから復元しました');
+}
+
+// 設定シートのクラウド欄の説明文 (前回バックアップ時刻を添える)
+function updateCloudStatus(){
+  const status=$('cloud-status');
+  if(!status)return;
+  let base='メモを端末の外(クラウド)に保存します。機種変や再インストールでも復元できます。<br>※写真は対象外(テキスト・メモのみ)';
+  if(state.lastCloudBackupAt){
+    const d=new Date(state.lastCloudBackupAt);
+    const z=n=>String(n).padStart(2,'0');
+    base+=`<br><span style="color:var(--g)">前回のバックアップ: ${d.getFullYear()}/${z(d.getMonth()+1)}/${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}</span>`;
+  }
+  status.innerHTML=base;
+}
+
+// 「使ってみたい・相談する」: 問い合わせ先。
+// ※ ここのメールアドレスを実際の問い合わせ先に差し替えてください。
+//   後で Google フォーム等にするなら CONTACT_URL を使う形に変えれば OK。
+const CONTACT_EMAIL='info@example.com'; // ← 要差し替え
+function contactInquiry(){
+  const subject=encodeURIComponent('SnapIn の利用・導入について');
+  const body=encodeURIComponent(
+    'SnapIn の AI・公式ライブラリの利用/導入について問い合わせます。\n\n'+
+    '・お名前 / 団体名:\n'+
+    '・ご利用の目的 (塾・学校・個人など):\n'+
+    '・人数 (おおよそ):\n'+
+    '・ご質問:\n'
+  );
+  // mailto はユーザーのメールアプリを開く (バックエンド不要)
+  window.location.href=`mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+}
+
 // 例文チップをタップしたとき、記入欄に追記する (既に同じ趣旨があっても単純追記でOK)。
 function insertAiNoteChip(text){
   const el=$('ai-note-input');
@@ -4933,6 +5179,12 @@ function openSettings(){
     noteEl.value=state.aiNote||'';
     updateAiNoteCount();
   }
+  // クラウドに保存: アカウント保有者(塾生/管理者)のみ表示
+  const cloudBox=$('cloud-box');
+  if(cloudBox){
+    cloudBox.style.display=isStudent()?'block':'none';
+    if(isStudent())updateCloudStatus();
+  }
   updateStorageMeter();
   $('settings-backdrop').classList.add('on');
   $('settings-sheet').classList.add('on');
@@ -4954,13 +5206,19 @@ async function updateStorageMeter(){
     return Math.round(b/1024)+'KB';
   };
   try{
-    // ── 実際に「保存できる/できない」を決めるのは localStorage の枠 (約5MB) ──
-    // ブラウザのディスク全体割当 (navigator.storage.estimate) は数十GB あるが、
-    // メモ本体は localStorage に書くため、こちらが先に枯渇する。
-    // メーターはこの 5MB 枠に対する使用率を表示する (保存失敗の予兆と一致させる)。
+    // メモ本体は localStorage(約5MB枠)に書くが、満杯でも IDB の耐久コピーに残るので
+    // すぐデータが消えるわけではない。なので普段は%メーターを出さず、
+    // 「ぜんぶ残す」体験を数値表示で削がない。増えてきた時だけそっと知らせる。
     const LS_LIMIT=5*1024*1024; // localStorage の実効上限の目安
     const used=estimateSaveBytes();
     const pct=Math.min(100, Math.round((used/LS_LIMIT)*1000)/10);
+
+    // 通常 (7割未満) はメーター自体を隠す
+    if(pct<70){
+      box.classList.add('hide');
+      return;
+    }
+
     box.classList.remove('hide','warn','danger');
     pctEl.textContent=pct+'%';
     fillEl.style.width=Math.max(2,pct)+'%';
@@ -4973,14 +5231,14 @@ async function updateStorageMeter(){
         imgCount++;
       }
     }
-    let note=`メモ保存枠: 約 ${mb(used)} / ${mb(LS_LIMIT)} を使用中`;
+    let note=`この端末のメモが増えてきました (約 ${mb(used)} 使用)`;
     if(imgCount>0)note+=`\n写真の実データ (別保存): 約 ${mb(imgBytes)} (${imgCount} 枚)`;
     if(pct>=90){
       box.classList.add('danger');
-      note+='\n保存枠が残りわずかです。古い写真メモを削除するか、バックアップを書き出してから整理してください。';
-    }else if(pct>=70){
+      note+='\n動作が重く感じたら、不要なメモを整理するか、バックアップを書き出しておくと安心です。';
+    }else{
       box.classList.add('warn');
-      note+='\n保存枠が増えてきました。不要な写真メモの削除をおすすめします。';
+      note+='\n念のため、ときどきバックアップを書き出しておくと安心です。';
     }
     subEl.textContent=note;
   }catch(e){
@@ -8588,7 +8846,7 @@ function recordViewExit(){
 function toggleAiMode(){
   // 塾生限定
   if(!canUseAI()){
-    toast('AIモードは JUKEN CAMP の塾生のみ利用できます');
+    toast('AIは「AI・ライブラリ」を使えるアカウントで利用できます');
     return;
   }
   state.detailAiMode=!state.detailAiMode;
@@ -8808,7 +9066,7 @@ function buildAiHistory(chat, placeholderIdx){
 async function callAI(userMessage,cardContext,history,replyRef){
   // 認証チェック (塾生限定)
   if(!canUseAI()){
-    return '[AIモードは JUKEN CAMP の塾生のみ利用できます。\nログイン画面から「JUKEN CAMP 塾生はこちら」で認証してください。]';
+    return '[AIは「AI・ライブラリ」を使えるアカウントで利用できます。\nログイン画面の「AI・ライブラリを使う」から登録してください。導入のご相談は公式ライブラリの「使ってみたい・相談する」からどうぞ。]';
   }
 
   // メッセージを組み立てる
@@ -8914,7 +9172,7 @@ async function callAI(userMessage,cardContext,history,replyRef){
       // 認証エラー: 塾生token が失効したかも
       state.auth=null;
       save();
-      return '[認証が切れました。ログアウトしてもう一度「塾生はこちら」から入り直してください。]';
+      return '[認証が切れました。ログアウトしてもう一度「AI・ライブラリを使う」から入り直してください。]';
     }
     if(!res.ok)throw new Error('API error: '+res.status);
     const data=await res.json();
@@ -9335,9 +9593,17 @@ function renderLibrary(){
   if(newSec && !isStudent()){
     newSec.innerHTML=`
       <div class="lib-locked-banner">
-        <div class="ttl">JUKEN CAMP 塾生のみ利用できます</div>
-        <div class="sub">塾生は名前と誕生日を入れて<br>公式ライブラリに登録できます。</div>
-        <button class="go-claim" data-action="goto-claim">塾生として入る</button>
+        <div class="ttl">AI質問 ＆ 公式ライブラリ</div>
+        <div class="benefits">
+          <div>保存したメモや写真を、その場でAIに質問して解決</div>
+          <div>講師が監修した教材・対策をいつでも閲覧</div>
+          <div>個人のメモや写真は、これまで通りずっと無料</div>
+        </div>
+        <div class="sub">塾・学校・部活・社内など団体での導入、個人での利用をご希望の方はお問い合わせください。</div>
+        <div class="btn-row">
+          <button class="go-claim" data-action="goto-claim">アカウントで入る</button>
+          <button class="go-contact" data-action="contact-inquiry">使ってみたい・相談する</button>
+        </div>
       </div>
     `;
   }
@@ -10424,12 +10690,15 @@ document.addEventListener('click',e=>{
   switch(a){
     case 'login-personal':login('personal');break;
     case 'goto-claim':gotoClaim();break;
+    case 'contact-inquiry':contactInquiry();break;
     case 'claim-submit':doClaimSubmit();break;
     case 'logout-confirm':logoutConfirm();break;
     case 'open-settings':openSettings();break;
     case 'close-settings':closeSettings();break;
     case 'export-backup':exportBackup();break;
     case 'import-backup':importBackup();break;
+    case 'cloud-backup':cloudBackup();break;
+    case 'cloud-restore':cloudRestore();break;
     case 'nav-home':goto('screen-home');break;
     case 'nav-today':goto('screen-today');break;
     case 'nav-library':goto('screen-library');break;
@@ -10755,23 +11024,38 @@ if(load() && state.user){
   refreshMe(true);
   // 起動時に古いゴミ箱を整理 (7日経過したカードは完全削除)
   purgeOldTrash().catch(e=>console.warn('purgeOldTrash failed:',e));
-  // 起動時に IndexedDB から画像を復元 (非同期、画像のあるカードだけ後から表示更新)
-  hydrateCardImages().then(()=>{
-    // 画像復元後、ホーム画面が表示中なら再描画して画像を表示
+  // 先に IDB の耐久コピーを確認 (localStorage が古ければ差し替え) → 画像を復元。
+  reconcileFromIDB().then(swapped=>hydrateCardImages().then(()=>{
+    // 画像復元後、表示中の画面を再描画して画像を表示
     const cur=document.querySelector('.screen.active');
     if(cur && cur.id==='screen-home')renderHome();
     if(cur && cur.id==='screen-today')renderToday();
     if(cur && cur.id==='screen-detail' && state.current){
-      // 詳細画面を再描画 (現在のカードの画像が復元されている可能性)
       const fresh=state.cards.find(x=>x.id===state.current.id);
       if(fresh){
         state.current=fresh;
         openDetail(fresh,state.current._origin||'mine');
       }
     }
-  }).catch(e=>console.warn('hydrateCardImages failed:',e));
+    // IDB の方が新しくて差し替えた場合は localStorage も最新化しておく
+    if(swapped)save();
+  })).catch(e=>console.warn('boot hydrate failed:',e));
 }else{
+  // localStorage に保存が無い → IDB の耐久コピーから復旧を試みる
+  // (ブラウザの容量退避や localStorage クリアでログイン情報ごと消えた場合の保険)
   goto('screen-login',false);
+  reconcileFromIDB().then(swapped=>{
+    if(!swapped || !state.user)return;
+    state.navStack=['screen-home'];
+    goto('screen-home',false);
+    refreshMe(true);
+    purgeOldTrash().catch(()=>{});
+    save(); // localStorage を復旧 (書ければ)
+    hydrateCardImages().then(()=>{
+      const cur=document.querySelector('.screen.active');
+      if(cur && cur.id==='screen-home')renderHome();
+    }).catch(()=>{});
+  }).catch(e=>console.warn('boot recover failed:',e));
 }
 
 // claim 入力フィールド: Enter で送信、誕生日は数字だけに
