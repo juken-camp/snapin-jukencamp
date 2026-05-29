@@ -1832,6 +1832,83 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .os-avatar.has-icon{background:transparent;}
 .os-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* ═══ アイコン拡大ライトボックス ═══ */
+#icon-lightbox{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:9000;
+  background:rgba(0,0,0,.72);
+  align-items:center;
+  justify-content:center;
+  animation:lb-fade-in .18s ease-out;
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
+}
+#icon-lightbox.open{display:flex;}
+@keyframes lb-fade-in{
+  from{opacity:0;}
+  to{opacity:1;}
+}
+#icon-lightbox-inner{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:12px;
+  animation:lb-pop-in .22s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes lb-pop-in{
+  from{transform:scale(.72);opacity:0;}
+  to{transform:scale(1);opacity:1;}
+}
+#icon-lightbox-img{
+  width:min(220px, 58vw);
+  height:min(220px, 58vw);
+  border-radius:22px;
+  object-fit:cover;
+  box-shadow:0 12px 48px rgba(0,0,0,.55);
+  display:block;
+}
+/* テキストアバター（画像なし）の拡大表示 */
+#icon-lightbox-text{
+  width:min(220px, 58vw);
+  height:min(220px, 58vw);
+  border-radius:22px;
+  background:var(--gl);
+  color:var(--gd);
+  font-size:min(110px, 28vw);
+  font-weight:700;
+  font-family:var(--font-en);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 12px 48px rgba(0,0,0,.55);
+}
+#icon-lightbox-name{
+  font-size:15px;
+  font-weight:600;
+  color:white;
+  text-align:center;
+}
+#icon-lightbox-handle{
+  font-size:12px;
+  color:rgba(255,255,255,.6);
+  font-family:var(--font-en);
+  margin-top:-8px;
+}
+/* タップ可能なアバターはほんの少し光らせてヒントを与える */
+.lib-avatar.tappable,
+.os-avatar.tappable{
+  cursor:pointer;
+  transition:opacity .15s, transform .15s;
+}
+.lib-avatar.tappable:active,
+.os-avatar.tappable:active{
+  opacity:.78;
+  transform:scale(.94);
+}
 .os-desc{font-size:12px;color:var(--ink2);line-height:1.6;margin-bottom:12px;}
 .os-meta{display:flex;gap:14px;font-size:10px;color:var(--ink3);font-family:var(--font-en);align-items:center;}
 .os-sub{
@@ -9537,8 +9614,8 @@ function libItem(s,subbed,group){
   const newN=subbed?newCountForShelf(s):0;
   const badge=newN>0?`<span class="lib-new-badge">${newN>99?'99+':newN}</span>`:'';
   const avatar=s.icon
-    ? `<div class="lib-avatar has-icon"><img src="${esc(s.icon)}" alt=""></div>`
-    : `<div class="lib-avatar">${esc((s.name||'?').slice(0,1))}</div>`;
+    ? `<div class="lib-avatar has-icon tappable"><img src="${esc(s.icon)}" alt=""></div>`
+    : `<div class="lib-avatar tappable">${esc((s.name||'?').slice(0,1))}</div>`;
   // 配布型（管理画面からアクセス権が付与されている）かどうか
   const isDistributed=!locked; // canSeeShelfId=true === 配布型
   let actionHtml;
@@ -10568,3 +10645,83 @@ window.addEventListener('resize',()=>{
 </script>
 </body>
 </html>
+<!-- ═══ アイコン拡大ライトボックス ═══ -->
+<div id="icon-lightbox" role="dialog" aria-modal="true">
+  <div id="icon-lightbox-inner">
+    <img id="icon-lightbox-img" src="" alt="">
+    <div id="icon-lightbox-text"></div>
+    <div id="icon-lightbox-name"></div>
+    <div id="icon-lightbox-handle"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const lb       = document.getElementById('icon-lightbox');
+  const lbImg    = document.getElementById('icon-lightbox-img');
+  const lbText   = document.getElementById('icon-lightbox-text');
+  const lbName   = document.getElementById('icon-lightbox-name');
+  const lbHandle = document.getElementById('icon-lightbox-handle');
+
+  function openIconLightbox(src, name, handle){
+    lbName.textContent   = name   || '';
+    lbHandle.textContent = handle || '';
+    if(src){
+      lbImg.src = src;
+      lbImg.style.display  = 'block';
+      lbText.style.display = 'none';
+    } else {
+      lbText.textContent   = (name||'?').slice(0,1);
+      lbImg.style.display  = 'none';
+      lbText.style.display = 'flex';
+    }
+    lb.classList.add('open');
+    if(navigator.vibrate) navigator.vibrate(8);
+  }
+
+  function closeIconLightbox(){
+    lb.classList.remove('open');
+  }
+
+  lb.addEventListener('click', e => {
+    if(e.target === lb) closeIconLightbox();
+  });
+  lbImg.addEventListener('click',  closeIconLightbox);
+  lbText.addEventListener('click', closeIconLightbox);
+
+  window._openIconLightbox = openIconLightbox;
+
+  // ライブラリ一覧: lib-listへ委任
+  const libList = document.getElementById('lib-list');
+  if(libList){
+    libList.addEventListener('click', e => {
+      const av = e.target.closest('.lib-avatar');
+      if(!av) return;
+      if(av.closest('.lib-item.locked')) return;
+      e.stopPropagation();
+      const item    = av.closest('.lib-item');
+      const shelfId = item && item.dataset.shelfId;
+      const shelf   = (typeof OFFICIAL_SHELVES !== 'undefined')
+                      ? OFFICIAL_SHELVES.find(s => s.id === shelfId) : null;
+      const src     = av.querySelector('img') ? av.querySelector('img').src : '';
+      const name    = shelf ? shelf.name   : av.textContent.trim();
+      const handle  = shelf ? shelf.handle : '';
+      openIconLightbox(src, name, handle);
+    });
+  }
+
+  // 棚詳細ページ: os-avatar
+  const osAvatar = document.getElementById('os-avatar');
+  if(osAvatar){
+    osAvatar.classList.add('tappable');
+    osAvatar.addEventListener('click', e => {
+      e.stopPropagation();
+      const img    = osAvatar.querySelector('img');
+      const src    = img ? img.src : '';
+      const name   = (document.getElementById('os-name')   ||{}).textContent || '';
+      const handle = (document.getElementById('os-handle') ||{}).textContent || '';
+      openIconLightbox(src, name, handle);
+    });
+  }
+})();
+</script>
