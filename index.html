@@ -3297,7 +3297,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-size:11.5px;
   font-weight:600;
   color:var(--ink);
-  line-height:1.3;
+  line-height:1.25;
   display:-webkit-box;
   -webkit-line-clamp:2;
   -webkit-box-orient:vertical;
@@ -3313,12 +3313,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .link-card-kind{
   display:flex;
   align-items:center;
-  gap:3px;
-  font-size:9.5px;
+  gap:2px;
+  font-size:9px;
   font-weight:700;
   color:var(--g);
+  line-height:1;
+  margin-bottom:1px;
 }
-.link-card-kind svg{width:11px;height:11px;flex:none;}
+.link-card-kind svg{width:10px;height:10px;flex:none;}
 
 /* 詳細画面のリンクカード (大きめ) */
 .link-detail{
@@ -4705,13 +4707,11 @@ function linkCardInner(c){
     ? `<div class="link-card-thumb"><img src="${esc(link.image)}" alt="" onerror="this.parentElement.classList.add('no-img');this.remove();this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' fill=none stroke=currentColor stroke-width=1.6><path d=\\'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\\'/><path d=\\'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\\'/></svg>';"></div>`
     : `<div class="link-card-thumb no-img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
   const title=esc(link.title||link.url||'(無題のリンク)');
-  let hostRaw=link.siteName||link.host||'';
-  if(/^youtube$/i.test(hostRaw))hostRaw=''; // 「YouTube」表記は冗長なので隠す
-  const host=esc(hostRaw);
+  // サイト名(host)はグリッドでは表示しない (たいてい個別ページなので不要、タイトルに高さを回す)
   const plLabel=(link.kind==='playlist')
     ? `<div class="link-card-kind"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h13M3 18h9"/><path d="M17 14l5 3-5 3z"/></svg>再生リスト</div>`
     : '';
-  return `<div class="link-card">${thumb}<div class="link-card-body">${plLabel}<div class="link-card-title">${title}</div>${host?`<div class="link-card-host">${host}</div>`:''}</div></div>`;
+  return `<div class="link-card">${thumb}<div class="link-card-body">${plLabel}<div class="link-card-title">${title}</div></div></div>`;
 }
 // グリッドのテキストメモ用: 文字数に応じてフォントサイズ・行高・行数制限を決める。
 // グリッドセルと今日のメモのカード両方で同じ寸法 (内側 ~100×100px) になるが、
