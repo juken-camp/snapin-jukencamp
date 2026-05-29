@@ -3307,6 +3307,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   overflow:hidden;
   text-overflow:ellipsis;
 }
+.link-card-kind{
+  display:flex;
+  align-items:center;
+  gap:3px;
+  font-size:9.5px;
+  font-weight:700;
+  color:var(--g);
+}
+.link-card-kind svg{width:11px;height:11px;flex:none;}
 
 /* 詳細画面のリンクカード (大きめ) */
 .link-detail{
@@ -4696,7 +4705,10 @@ function linkCardInner(c){
   let hostRaw=link.siteName||link.host||'';
   if(/^youtube$/i.test(hostRaw))hostRaw=''; // 「YouTube」表記は冗長なので隠す
   const host=esc(hostRaw);
-  return `<div class="link-card">${thumb}<div class="link-card-body"><div class="link-card-title">${title}</div>${host?`<div class="link-card-host">${host}</div>`:''}</div></div>`;
+  const plLabel=(link.kind==='playlist')
+    ? `<div class="link-card-kind"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h13M3 18h9"/><path d="M17 14l5 3-5 3z"/></svg>再生リスト</div>`
+    : '';
+  return `<div class="link-card">${thumb}<div class="link-card-body">${plLabel}<div class="link-card-title">${title}</div>${host?`<div class="link-card-host">${host}</div>`:''}</div></div>`;
 }
 // グリッドのテキストメモ用: 文字数に応じてフォントサイズ・行高・行数制限を決める。
 // グリッドセルと今日のメモのカード両方で同じ寸法 (内側 ~100×100px) になるが、
@@ -6927,6 +6939,7 @@ async function fetchUrlAndCreate(){
         image:img,
         host:data.host||'',
         siteName:data.siteName||data.host||'',
+        kind:data.kind||'',
       },
     };
     closeUrlModal();
