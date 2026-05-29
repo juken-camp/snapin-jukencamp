@@ -2702,6 +2702,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border:1px solid var(--g);
 }
 .lib-locked-banner .go-contact:active{background:#D9EFE5;}
+.lib-locked-banner .lib-login-link{
+  display:block;
+  width:100%;
+  margin-top:10px;
+  padding:8px;
+  background:transparent;
+  border:none;
+  color:var(--gd);
+  font-size:12px;
+  font-weight:600;
+  text-decoration:underline;
+}
+.lib-locked-banner .lib-login-link:active{opacity:.6;}
 .lib-item.locked .lib-action{
   background:transparent;
   color:var(--ink3);
@@ -4477,6 +4490,17 @@ async function hydrateCardImages(){
   // ※ 既存ユーザーの初回読み込み時に効くので、ここでは save() を呼んでも安全
   save();
 }
+
+// ログイン直後に、端末内(IndexedDB)の画像を復元してホームを再描画する。
+// ログアウト→アプリ再起動→再ログインの流れだと起動時の画像復元が走らず、
+// 投稿画像が白く表示される問題への対策。
+function hydrateThenRenderHome(){
+  hydrateCardImages().then(()=>{
+    const cur=document.querySelector('.screen.active');
+    if(cur && cur.id==='screen-home')renderHome();
+  }).catch(e=>console.warn('login hydrate failed:',e));
+}
+
 // ペイロード(localStorage or IDB 由来)を state に反映する共通処理。
 function applyPayload(d){
   if(!d)return;
@@ -5217,6 +5241,7 @@ function login(mode){
   save();
   state.navStack=['screen-home'];
   goto('screen-home',false);
+  hydrateThenRenderHome();
   // 一般ユーザーの初回ログイン時だけ、ウェルカムを一度だけ表示する
   if(mode==='personal' && !state.onboarded){
     setTimeout(openWelcome,260); // ホームへの遷移が落ち着いてからシートを出す
@@ -5325,6 +5350,7 @@ async function doClaimSubmit(force){
     save();
     state.navStack=['screen-home'];
     goto('screen-home',false);
+    hydrateThenRenderHome();
     toast(`ようこそ ${data.student.name} さん`);
   }catch(e){
     errEl.textContent='通信エラーです。電波の良い場所でもう一度お試しください。';
@@ -5441,6 +5467,7 @@ async function doJoinSubmit(force){
     save();
     state.navStack=['screen-home'];
     goto('screen-home',false);
+    hydrateThenRenderHome();
     toast(`ようこそ ${data.student.name} さん`);
   }catch(e){
     errEl.textContent='通信エラーです。電波の良い場所でもう一度お試しください。';
@@ -10125,7 +10152,7 @@ function renderLibrary(){
   if(newSec && !isStudent()){
     newSec.innerHTML=`
       <div class="lib-locked-banner">
-        <div class="ttl">AI機能の利用 ＆ 共有ライブラリ</div>
+        <div class="ttl">AI機能と共有ライブラリ</div>
         <div class="benefits">
           <div>保存したメモや写真を、その場でAIに質問して解決</div>
           <div>塾・会社・家族・グループなど、所属先が用意した資料や情報をいつでも閲覧</div>
@@ -10135,6 +10162,7 @@ function renderLibrary(){
         <div class="btn-row">
           <button class="go-contact" data-action="contact-inquiry">使ってみたい・相談する</button>
         </div>
+        <button class="lib-login-link" data-action="goto-login">すでに登録済み・コードをお持ちの方はログイン</button>
       </div>
     `;
   }
@@ -11422,6 +11450,7 @@ document.addEventListener('click',e=>{
     case 'login-personal':login('personal');break;
     case 'goto-claim':gotoClaim();break;
     case 'goto-join':gotoJoin();break;
+    case 'goto-login':goto('screen-login');break;
     case 'goto-glib':gotoGroupLib();break;
     case 'glib-new':openGLibEditor(null);break;
     case 'save-glib':saveGroupLib();break;
