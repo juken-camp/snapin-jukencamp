@@ -1775,8 +1775,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   box-shadow:0 6px 20px rgba(0,0,0,.18);
   border-radius:12px;
   border-color:transparent;
-  opacity:.96;
+  opacity:.97;
+  position:relative;
   z-index:5;
+  transition:none;
 }
 .shelf-item.dragging::before{transform:scaleY(0)!important;}
 .shelf-list.is-dragging .shelf-item{transition:transform .14s ease;}
@@ -3191,47 +3193,53 @@ function attachShelfDragHandle(handle,row,listEl){
     if(e.pointerType==='mouse' && e.button!==0)return;
     e.preventDefault();
     e.stopPropagation();
-    shelfDrag={row,listEl,pointerId:e.pointerId,moved:false};
+    shelfDrag={row,listEl,handle,pointerId:e.pointerId,moved:false,startY:e.clientY};
     row.classList.add('dragging');
     listEl.classList.add('is-dragging');
     try{handle.setPointerCapture(e.pointerId);}catch(_){}
-    handle.addEventListener('pointermove',onShelfDragMove);
-    handle.addEventListener('pointerup',onShelfDragEnd);
-    handle.addEventListener('pointercancel',onShelfDragEnd);
+    // documentで拾う (iOSでポインタ捕捉が効かない端末でも確実に動く)
+    document.addEventListener('pointermove',onShelfDragMove,{passive:false});
+    document.addEventListener('pointerup',onShelfDragEnd);
+    document.addEventListener('pointercancel',onShelfDragEnd);
   });
 }
 function onShelfDragMove(e){
   if(!shelfDrag)return;
   e.preventDefault();
-  shelfDrag.moved=true;
-  const {row,listEl}=shelfDrag;
+  const d=shelfDrag;
+  d.moved=true;
   const y=e.clientY;
-  const sibs=[...listEl.querySelectorAll('.shelf-item:not(.dragging)')];
-  let placed=false;
+  // ドラッグ中の行を指に追従させる
+  d.row.style.transform='translateY('+(y-d.startY)+'px)';
+  // 入れ替え先 (自分以外の行で、中心が指より下にある最初の行の前へ)
+  const sibs=[...d.listEl.querySelectorAll('.shelf-item:not(.dragging)')];
+  let before=null;
   for(const sib of sibs){
     const r=sib.getBoundingClientRect();
-    if(y < r.top + r.height/2){
-      listEl.insertBefore(row,sib);
-      placed=true;
-      break;
-    }
+    if(y < r.top + r.height/2){before=sib;break;}
   }
-  if(!placed)listEl.appendChild(row);
-  // 端に近いと自動スクロール
-  const margin=70, sp=12;
+  if(before!==d.row.nextElementSibling){
+    d.listEl.insertBefore(d.row,before); // before=null → 末尾へ
+    // 入れ替えたら追従の基準を取り直す
+    d.startY=y;
+    d.row.style.transform='translateY(0px)';
+  }
+  // 画面の端では自動スクロール (長い一覧でも端まで運べる)
+  const margin=90, sp=11;
   if(y<margin)window.scrollBy(0,-sp);
   else if(y>window.innerHeight-margin)window.scrollBy(0,sp);
 }
-function onShelfDragEnd(e){
+function onShelfDragEnd(){
   if(!shelfDrag)return;
-  const {row,listEl,pointerId,moved}=shelfDrag;
-  const handle=e.currentTarget;
-  try{handle.releasePointerCapture(pointerId);}catch(_){}
-  handle.removeEventListener('pointermove',onShelfDragMove);
-  handle.removeEventListener('pointerup',onShelfDragEnd);
-  handle.removeEventListener('pointercancel',onShelfDragEnd);
-  row.classList.remove('dragging');
-  listEl.classList.remove('is-dragging');
+  const d=shelfDrag;
+  document.removeEventListener('pointermove',onShelfDragMove);
+  document.removeEventListener('pointerup',onShelfDragEnd);
+  document.removeEventListener('pointercancel',onShelfDragEnd);
+  try{d.handle.releasePointerCapture(d.pointerId);}catch(_){}
+  d.row.style.transform='';
+  d.row.classList.remove('dragging');
+  d.listEl.classList.remove('is-dragging');
+  const moved=d.moved, listEl=d.listEl;
   shelfDrag=null;
   if(moved)commitShelfOrder(listEl);
 }
