@@ -65,7 +65,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: false, reason: 'revoked' });
     }
     // claim が他端末に取られている (機種変などで解除→再claimされた)
-    if (student.claimedBy !== auth.payload.did) {
+    // ただし、複数端末を許可しているメンバー(団体)は端末縛りをしない。
+    if (!student.multiDevice && student.claimedBy !== auth.payload.did) {
       return res.status(200).json({ ok: false, reason: 'claim_lost' });
     }
     return res.status(200).json({
