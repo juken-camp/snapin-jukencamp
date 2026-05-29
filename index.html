@@ -3256,8 +3256,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .link-card-thumb{
   width:100%;
-  aspect-ratio:2/1;
-  flex:none;
+  flex:1;
+  min-height:0;
   background:var(--bg);
   display:flex;
   align-items:center;
@@ -3284,14 +3284,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-radius:50%;
 }
 .link-card-body{
-  flex:1;
-  min-height:0;
-  padding:5px 9px 5px;
+  flex:none;
+  padding:6px 9px 7px;
   display:flex;
   flex-direction:column;
   gap:2px;
   min-width:0;
-  justify-content:center;
 }
 .link-card-title{
   font-size:11px;
