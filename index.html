@@ -4459,7 +4459,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </div>
-      <div class="sheet-opt-title">撮影</div>
+      <div class="sheet-opt-title">連続撮影</div>
     </button>
     <button class="sheet-opt" data-action="create-photo">
       <div class="sheet-opt-icon">
@@ -8014,13 +8014,11 @@ function startCreate(type){
     text:'',
   };
   if(type==='camera'){
-    // 「撮影」: 端末標準のカメラを起動 (capture 属性) → トリミング → 保存。
-    // getUserMedia を使わないので iOS でも確実に開き、フォールバックの黒トースト等は出ない。
-    // 連続撮影 (アプリ内カメラ) は取り込みトレイの「さらに追加」から (使える端末でのみ)。
-    state.current.type='photo';
-    state.photoMode='photo';
-    state.cameraCapture=true;
-    $('file-input-camera').click();
+    // 「連続撮影」: アプリ内カメラ (無音・連写可) を起動 → まとめて取り込み。
+    // 単写のワンタッチはホームの「いますぐメモする」のカメラ、または「写真」→iOSの"写真を撮る"から。
+    state.current=null;
+    batchStartCamera();
+    return;
   }else if(type==='photo' || type==='photonote'){
     // 「写真」: iOS標準ピッカーを複数選択可で開く (multiple)。
     //  1枚だけ → 従来どおり単体の保存画面へ。2枚以上 → まとめて取り込みトレイへ。
@@ -13460,9 +13458,9 @@ async function batchStartCamera(){
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
   }catch(err){
     console.warn('getUserMedia failed',err);
-    // 権限拒否/非対応など。画面は出していないので点滅しない。タップで複数選択へ進める。
-    toast('カメラを使えませんでした。「まとめて選択」で写真から選べます');
-    openBatchChoose();
+    // 権限拒否/一時的な不調など。画面は未表示なので点滅しない。
+    // 紛らわしいシートは出さず、短いトーストだけ。もう一度押せば再試行できる。
+    toast('カメラを開けませんでした。もう一度お試しください');
     return;
   }
   const cam=$('batch-cam');
