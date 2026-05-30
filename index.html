@@ -2223,11 +2223,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   width:30px;height:30px;border-radius:50%;flex-shrink:0;
   background:var(--g);color:#fff;display:flex;align-items:center;justify-content:center;
   box-shadow:0 3px 8px rgba(var(--g-rgb),.4);
+  cursor:pointer;transition:transform .12s;
 }
+.tp-icon:active{transform:scale(0.88) rotate(-40deg);}
 .tp-titles{flex:1;min-width:0;}
 .tp-title{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:.01em;}
 .tp-sub{font-size:11px;color:var(--ink2);margin-top:1px;}
-.tp-dots{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+.tp-dots{display:flex;gap:0;align-items:center;flex-shrink:0;}
+.tp-dot-hit{padding:6px 4px;display:flex;align-items:center;justify-content:center;background:none;}
 .tp-dot{width:6px;height:6px;border-radius:50%;background:var(--line2);transition:all .2s;}
 .tp-dot.on{background:var(--g);transform:scale(1.3);}
 /* カードは"medium"な固定高に。中身は上下中央へ寄せて間延びを防ぐ。 */
@@ -12664,11 +12667,11 @@ function renderSearchIdle(){
 let _todaysPick={day:null, ids:[], idx:0, revealed:false};
 
 // 候補: 自分のアクティブな写真/メモのうち、今日保存したもの以外。長く見ていない順。
-function getTodaysPickCards(max){
-  max=max||3;
+// 復習候補の全プール (ids)。自分のアクティブな写真/メモのうち今日保存分以外、長く見ていない順。
+function getTodaysPickPool(){
   const startOfToday=new Date(); startOfToday.setHours(0,0,0,0);
   const t0=startOfToday.getTime();
-  const pool=getActiveCards().filter(c=>{
+  return getActiveCards().filter(c=>{
     const dc=isLinkedCard(c)?resolveLiveCard(c):c;
     if(!(dc.type==='photo'||dc.type==='photonote'||dc.type==='note'))return false; // 復習向きの素材のみ
     if((c.created||0)>=t0)return false;                                            // 今日のは除外
@@ -12679,8 +12682,26 @@ function getTodaysPickCards(max){
     const la=a.lastViewed||a.lastReview||a.created||0;
     const lb=b.lastViewed||b.lastReview||b.created||0;
     return la-lb; // 長く見ていないものから先に
-  });
-  return pool.slice(0,max).map(c=>c.id);
+  }).map(c=>c.id);
+}
+function getTodaysPickCards(max){
+  return getTodaysPickPool().slice(0,max||3);
+}
+
+// 更新アイコン: いま表示中の数枚を避けて、別の数枚に入れ替える。
+function tpReroll(){
+  const pool=getTodaysPickPool();
+  if(pool.length===0)return;
+  const cur=new Set(_todaysPick.ids);
+  let cand=pool.filter(id=>!cur.has(id));   // まず今出ていない候補から
+  if(cand.length===0)cand=pool.slice();      // 出尽くしていたら全体から
+  // シャッフル (Fisher–Yates) して先頭3枚
+  for(let i=cand.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const tmp=cand[i];cand[i]=cand[j];cand[j]=tmp;}
+  _todaysPick.ids=cand.slice(0,3);
+  _todaysPick.idx=0;
+  _todaysPick.revealed=false;
+  if(navigator.vibrate)navigator.vibrate(10);
+  renderTodaysPick();
 }
 
 // その日の集合を確定 (日付が変わったら選び直す)。日中は固定して再シャッフルしない。
@@ -12721,7 +12742,7 @@ function renderTodaysPick(){
   if(_todaysPick.idx>ids.length-1)_todaysPick.idx=ids.length-1;
   const idx=_todaysPick.idx;
 
-  const dots=ids.map((_,i)=>`<span class="${i===idx?'tp-dot on':'tp-dot'}"></span>`).join('');
+  const dots=ids.map((_,i)=>`<button class="tp-dot-hit" data-tp-dot="${i}" aria-label="${i+1}枚目"><span class="${i===idx?'tp-dot on':'tp-dot'}"></span></button>`).join('');
 
   const id=ids[idx];
   const c0=state.cards.find(x=>x.id===id);
@@ -12739,7 +12760,7 @@ function renderTodaysPick(){
   host.innerHTML=`
     <div class="todays-pick">
       <div class="tp-head">
-        <div class="tp-icon">${refreshIcon}</div>
+        <button class="tp-icon" id="tp-refresh" aria-label="別の数枚に入れ替え">${refreshIcon}</button>
         <div class="tp-titles">
           <div class="tp-title">まだ覚えてる？</div>
           <div class="tp-sub">むかしの自分が残したメモ</div>
@@ -12762,9 +12783,34 @@ function renderTodaysPick(){
     </div>`;
 
   // ── 配線 ──
+  // 更新アイコン: 別の数枚に入れ替え
+  const refreshBtn=$('tp-refresh');
+  if(refreshBtn)refreshBtn.addEventListener('click',e=>{ e.stopPropagation(); tpReroll(); });
+
+  // ドット: タップでその枚目へジャンプ
+  const dotsWrap=host.querySelector('.tp-dots');
+  if(dotsWrap)dotsWrap.addEventListener('click',e=>{
+    const b=e.target.closest('[data-tp-dot]'); if(!b)return;
+    const i=parseInt(b.getAttribute('data-tp-dot'),10);
+    if(i>=0 && i<ids.length){ _todaysPick.idx=i; _todaysPick.revealed=false; renderTodaysPick(); }
+  });
+
   const card=$('tp-card');
   if(card){
+    // スワイプで前後移動 (横移動が縦より大きく、しきい値超え)。タップとは区別する。
+    let sx=0, sy=0, swiped=false;
+    card.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; swiped=false; },{passive:true});
+    card.addEventListener('touchend',e=>{
+      const t=e.changedTouches[0]; if(!t)return;
+      const dx=t.clientX-sx, dy=t.clientY-sy;
+      if(Math.abs(dx)>=40 && Math.abs(dx)>Math.abs(dy)){
+        swiped=true; // この後のクリックは抑制
+        if(dx<0 && _todaysPick.idx<ids.length-1){ _todaysPick.idx++; _todaysPick.revealed=false; renderTodaysPick(); }
+        else if(dx>0 && _todaysPick.idx>0){ _todaysPick.idx--; _todaysPick.revealed=false; renderTodaysPick(); }
+      }
+    });
     card.addEventListener('click',()=>{
+      if(swiped){ swiped=false; return; } // スワイプ直後のクリックは無視
       if(!_todaysPick.revealed){
         // 1タップ目: 答え合わせ (ぼかしを外す) + 復習済みに
         _todaysPick.revealed=true;
