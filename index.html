@@ -3777,6 +3777,124 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   transition:background .15s,transform .15s;
 }
 .crop-action:active{background:rgba(255,255,255,.1);transform:scale(0.94);}
+
+/* ═══ バッチ取り込み (複数画像 → 1枚ずつ別カードとして一括作成) ═══ */
+/* 取り込みトレイ: 撮影/選択した複数画像を溜めて、個別にトリミング・削除し、一括投稿する。
+   z-index は crop-modal(1000) より下に置き、トレイからクロップを開くと上に重なる。 */
+.batch-tray{
+  position:fixed; inset:0; z-index:980;
+  background:var(--bg);
+  display:none; flex-direction:column;
+  font-family:var(--font-jp); color:var(--ink);
+}
+.batch-tray.on{display:flex;}
+.batch-tray-hdr{
+  padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;
+  display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0; background:var(--bg);
+  border-bottom:1px solid var(--line);
+}
+.batch-tray-hdr-title{font-size:16px;font-weight:600;}
+.batch-tray-hdr-btn{
+  font-size:14px;font-weight:500;color:var(--ink2);
+  padding:8px 12px;border-radius:18px;transition:background .1s,transform .1s;
+  min-width:64px;text-align:left;
+}
+.batch-tray-hdr-btn:active{background:var(--line);transform:scale(0.94);}
+.batch-tray-scroll{flex:1;overflow-y:auto;min-height:0;padding:14px 14px 0;-webkit-overflow-scrolling:touch;}
+.batch-tray-hint{font-size:12.5px;color:var(--ink3);margin-bottom:14px;line-height:1.55;}
+.batch-tray-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;
+}
+.batch-thumb{
+  position:relative;aspect-ratio:1/1;border-radius:12px;overflow:hidden;
+  background:var(--gl);box-shadow:var(--shadow);
+}
+.batch-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.batch-thumb-del,.batch-thumb-crop{
+  position:absolute;width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.55);color:#fff;transition:transform .1s;
+}
+.batch-thumb-del:active,.batch-thumb-crop:active{transform:scale(0.86);}
+.batch-thumb-del{top:5px;right:5px;}
+.batch-thumb-crop{bottom:5px;right:5px;background:rgba(0,0,0,.5);}
+.batch-thumb-num{
+  position:absolute;top:5px;left:5px;min-width:20px;height:20px;padding:0 6px;
+  border-radius:10px;background:rgba(0,0,0,.5);color:#fff;
+  font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;
+}
+.batch-tray-empty{text-align:center;color:var(--ink3);font-size:13px;padding:36px 0;line-height:1.6;}
+.batch-tray-foot{
+  flex-shrink:0;padding:12px 14px calc(env(safe-area-inset-bottom) + 12px);
+  background:var(--surface);border-top:1px solid var(--line);
+  box-shadow:0 -2px 12px rgba(0,0,0,.04);
+}
+.batch-tray-add{
+  width:100%;padding:11px;border-radius:12px;border:1.5px dashed var(--line2);
+  color:var(--ink2);font-size:13.5px;font-weight:500;margin-bottom:10px;
+  display:flex;align-items:center;justify-content:center;gap:6px;transition:background .1s;
+}
+.batch-tray-add:active{background:var(--gl);}
+.batch-tray-commit{
+  width:100%;padding:14px;border-radius:14px;background:var(--g);color:#fff;
+  font-size:15px;font-weight:600;transition:background .1s,transform .1s;
+}
+.batch-tray-commit:active{background:var(--gd);transform:scale(0.99);}
+.batch-tray-commit:disabled{opacity:.5;}
+/* トレイ内のタグエディタは既存 .up-tags-wrap をそのまま流用 */
+
+/* 連続撮影カメラ (アプリ内カメラで次々にシャッター) */
+.batch-cam{
+  position:fixed;inset:0;z-index:990;background:#000;
+  display:none;flex-direction:column;font-family:var(--font-jp);color:#fff;
+}
+.batch-cam.on{display:flex;}
+.batch-cam-hdr{
+  padding:calc(env(safe-area-inset-top) + 8px) 14px 8px;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+  position:relative;z-index:2;
+}
+.batch-cam-hdr-btn{font-size:14px;font-weight:500;color:#fff;padding:8px 12px;border-radius:18px;transition:background .1s,transform .1s;}
+.batch-cam-hdr-btn:active{background:rgba(255,255,255,.15);transform:scale(0.94);}
+.batch-cam-hdr-btn.primary{background:var(--g);font-weight:600;}
+.batch-cam-hdr-btn.primary:active{background:var(--gd);}
+.batch-cam-hdr-btn.primary:disabled{opacity:.4;}
+.batch-cam-stage{flex:1;position:relative;overflow:hidden;min-height:0;background:#000;}
+.batch-cam-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
+.batch-cam-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;}
+.batch-cam-flash.fire{animation:batchFlash .3s ease-out;}
+@keyframes batchFlash{0%{opacity:.85;}100%{opacity:0;}}
+.batch-cam-msg{
+  position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+  text-align:center;font-size:14px;color:rgba(255,255,255,.85);padding:0 30px;
+  pointer-events:none;line-height:1.6;
+}
+.batch-cam-bar{
+  flex-shrink:0;padding:14px 22px calc(env(safe-area-inset-bottom) + 18px);
+  display:flex;align-items:center;justify-content:space-between;gap:14px;background:#000;
+}
+.batch-cam-strip{
+  width:54px;height:54px;border-radius:10px;overflow:hidden;flex-shrink:0;
+  background:#1a1a1a;position:relative;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(255,255,255,.18);
+}
+.batch-cam-strip img{width:100%;height:100%;object-fit:cover;}
+.batch-cam-strip-count{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.45);font-size:15px;font-weight:700;color:#fff;
+}
+.batch-cam-shutter{
+  width:72px;height:72px;border-radius:50%;background:#fff;
+  border:5px solid rgba(255,255,255,.45);flex-shrink:0;transition:transform .1s;
+}
+.batch-cam-shutter:active{transform:scale(0.9);}
+.batch-cam-shutter:disabled{opacity:.4;}
+.batch-cam-spacer{width:54px;flex-shrink:0;}
+/* 取り込み方法の選択シートは、トレイ(980)/カメラ(990)の上・クロップ(1000)の下に重ねる
+   (トレイの「さらに追加」から開いても前面に出るように) */
+#batch-choose-mask{z-index:993;}
+#batch-choose-sheet{z-index:994;}
 </style>
 </head>
 <body>
@@ -4280,6 +4398,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       </div>
       <div class="sheet-opt-title">URL</div>
     </button>
+    <button class="sheet-opt" data-action="batch-open">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16V4a2 2 0 0 1 2-2h10"/></svg>
+      </div>
+      <div class="sheet-opt-title">まとめて</div>
+    </button>
   </div>
 </div>
 
@@ -4460,6 +4584,75 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
         <span>リセット</span>
       </button>
     </div>
+  </div>
+</div>
+
+<!-- ═══ まとめて取り込み ═══ -->
+<!-- 取り込み方法の選択シート (連続撮影 / カメラロールから複数選択) -->
+<div class="sheet-mask" id="batch-choose-mask" data-action="batch-choose-close"></div>
+<div class="sheet" id="batch-choose-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">まとめて取り込み</div>
+  <div class="sheet-options">
+    <button class="sheet-opt" data-action="batch-camera">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+      <div class="sheet-opt-title">連続撮影</div>
+      <div class="sheet-opt-desc">カメラで次々に撮って、1枚ずつ別の投稿に</div>
+    </button>
+    <button class="sheet-opt" data-action="batch-pick">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16V4a2 2 0 0 1 2-2h10"/></svg>
+      </div>
+      <div class="sheet-opt-title">まとめて選択</div>
+      <div class="sheet-opt-desc">カメラロールから複数枚を選ぶ</div>
+    </button>
+  </div>
+</div>
+
+<!-- 複数選択用の input (カメラロールから複数枚) -->
+<input type="file" id="file-input-batch" accept="image/*" multiple style="display:none;">
+
+<!-- 連続撮影カメラ -->
+<div class="batch-cam" id="batch-cam" aria-hidden="true">
+  <div class="batch-cam-hdr">
+    <button class="batch-cam-hdr-btn" data-action="batch-cam-close">キャンセル</button>
+    <div></div>
+    <button class="batch-cam-hdr-btn primary" id="batch-cam-done" data-action="batch-cam-done">完了</button>
+  </div>
+  <div class="batch-cam-stage" id="batch-cam-stage">
+    <video class="batch-cam-video" id="batch-cam-video" playsinline muted></video>
+    <div class="batch-cam-flash" id="batch-cam-flash"></div>
+    <div class="batch-cam-msg" id="batch-cam-msg">カメラを準備中…</div>
+  </div>
+  <div class="batch-cam-bar">
+    <div class="batch-cam-strip" id="batch-cam-strip" data-action="batch-cam-done">
+      <div class="batch-cam-strip-count" id="batch-cam-strip-count">0</div>
+    </div>
+    <button class="batch-cam-shutter" id="batch-cam-shutter" data-action="batch-cam-shot" aria-label="撮影"></button>
+    <div class="batch-cam-spacer"></div>
+  </div>
+</div>
+
+<!-- 取り込みトレイ (複数画像を溜めて個別トリミング → 一括投稿) -->
+<div class="batch-tray" id="batch-tray" aria-hidden="true">
+  <div class="batch-tray-hdr">
+    <button class="batch-tray-hdr-btn" data-action="batch-close">キャンセル</button>
+    <div class="batch-tray-hdr-title">取り込み</div>
+    <div style="width:64px;"></div>
+  </div>
+  <div class="batch-tray-scroll">
+    <div class="batch-tray-hint">この後、1枚ずつ別の投稿として保存します。各サムネイルの〈✕〉で削除、〈□〉でトリミングできます。タグはすべての投稿にまとめて付きます（任意）。</div>
+    <div class="batch-tray-grid" id="batch-tray-grid"></div>
+    <div id="batch-tags-host"></div>
+  </div>
+  <div class="batch-tray-foot">
+    <button class="batch-tray-add" data-action="batch-add-more">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      <span>さらに追加</span>
+    </button>
+    <button class="batch-tray-commit" id="batch-commit-btn" data-action="batch-commit">アップ</button>
   </div>
 </div>
 
@@ -4955,6 +5148,28 @@ function canUseAI(){
   if(!state.auth || !state.auth.token)return false;
   if(state.auth.role==='admin')return true;
   return state.auth.aiEnabled === true;
+}
+
+// 有料プランの表示名。文言を揃えるため一元管理する。
+// 「有料版」「AIプラン」等に変えたいときは、この値と、共有ライブラリ紹介ページの
+// 2か所 (lib-feat-label / sub の "Proプラン") を差し替えればアプリ全体で統一される。
+const PLAN_NAME='Proプラン';
+
+// AIが使えないときに出す案内文を、相手に応じて出し分ける。
+//   - 未ログイン (無料・匿名)        → Proプランの案内 (登録/相談へ誘導)
+//   - ログイン済みだがAIオフ (塾生等) → 本人ではなく塾・管理者に有効化を依頼する案内
+//     (塾生本人は課金者ではないので「有料版でご利用に」は出さない)
+// short=true でトースト用の一行、false でAIチャット内に表示する詳しめの文を返す。
+function aiGateText(short){
+  const loggedIn = !!(state.auth && state.auth.token);
+  if(!loggedIn){
+    return short
+      ? 'AI機能は'+PLAN_NAME+'でご利用になれます'
+      : '[AI機能は'+PLAN_NAME+'でご利用になれます。\nログイン画面の「AI機能と共有ライブラリを使う」から登録してください。導入のご相談は共有ライブラリの「使ってみたい・相談する」からどうぞ。]';
+  }
+  return short
+    ? 'このアカウントではAIがまだオフです。塾・管理者にご相談ください'
+    : '[このアカウントではAIがまだオフになっています。\n塾・管理者にAIの有効化をご相談ください。]';
 }
 function canSeeShelfId(shelfId){
   if(!state.auth || !state.auth.token)return false;
@@ -10411,7 +10626,7 @@ function recordViewExit(){
 function toggleAiMode(){
   // 塾生限定
   if(!canUseAI()){
-    toast('AIは「AI・ライブラリ」を使えるアカウントで利用できます');
+    toast(aiGateText(true));
     return;
   }
   state.detailAiMode=!state.detailAiMode;
@@ -10631,7 +10846,7 @@ function buildAiHistory(chat, placeholderIdx){
 async function callAI(userMessage,cardContext,history,replyRef){
   // 認証チェック (塾生限定)
   if(!canUseAI()){
-    return '[AIは「AI・ライブラリ」を使えるアカウントで利用できます。\nログイン画面の「AI機能と共有ライブラリを使う」から登録してください。導入のご相談は共有ライブラリの「使ってみたい・相談する」からどうぞ。]';
+    return aiGateText(false);
   }
 
   // メッセージを組み立てる
@@ -11188,13 +11403,13 @@ function renderLibrary(){
           <div>ホーム画面に置けばネットがなくても開ける</div>
           <div>バックアップで保存、機種変更のときも安心</div>
         </div>
-        <div class="lib-feat-label">有料版（個人・塾・会社・家族・グループ向け）</div>
+        <div class="lib-feat-label">Proプラン（個人・塾・会社・家族・グループ向け）</div>
         <div class="benefits numbered">
           <div>メモや写真を即分析、その場でAIに質問して解決</div>
           <div>AIとのチャット履歴を、個人間でも共有できる</div>
           <div>グループのメモを、ライブラリから自分のメモへ</div>
         </div>
-        <div class="sub">有料版は、個人・塾・会社などでご利用もできます。</div>
+        <div class="sub">Proプランは、個人・塾・会社などでもご利用になれます。</div>
         <div class="btn-row">
           <button class="go-contact" data-action="contact-inquiry">使ってみたい・相談する</button>
         </div>
@@ -12574,6 +12789,16 @@ document.addEventListener('click',e=>{
     case 'create-note':startCreate('note');break;
     case 'create-list':startCreate('list');break;
     case 'create-url':startCreate('url');break;
+    case 'batch-open':openBatchChoose();break;
+    case 'batch-choose-close':closeBatchChoose();break;
+    case 'batch-camera':batchStartCamera();break;
+    case 'batch-pick':batchStartPick();break;
+    case 'batch-add-more':openBatchChoose(true);break;
+    case 'batch-cam-shot':batchCamShoot();break;
+    case 'batch-cam-done':batchCamDone();break;
+    case 'batch-cam-close':batchCamClose();break;
+    case 'batch-close':closeBatchTray();break;
+    case 'batch-commit':commitBatch();break;
     case 'save-card':saveCard();break;
     case 'cancel-upload':cancelUpload();break;
     case 'goto-search':goto('screen-search');break;
@@ -13032,6 +13257,428 @@ window.addEventListener('resize',()=>{
     if(typeof applyDetailNoteStyle==='function')applyDetailNoteStyle();
   });
 });
+
+// ═══════════════════════════════════════════════════════════════
+// まとめて取り込み (複数画像 → 1枚ずつ別カードとして一括作成)
+//   A) アプリ内カメラで連続撮影 (batchStartCamera)
+//   B) カメラロールから複数選択 (batchStartPick)
+// どちらも同じ「取り込みトレイ」(_batch.items) に溜め、個別にトリミング/削除し、
+// 「アップ」で全件をそれぞれ別の photo カードとして保存する。
+// 保存後の各カードは通常の写真メモと同一構造なので、既存の AI 質問/OCR がそのまま効く。
+// ═══════════════════════════════════════════════════════════════
+const _batch={
+  items:[],        // [{ id, src }]  src は圧縮済み dataURL (トレイ表示・保存に使う)
+  tags:[],         // この束に共通で付けるタグ
+  camStream:null,  // 連続撮影中の MediaStream
+  committing:false,// 二重投稿防止
+  _seq:0,          // トレイ内アイテムの一意キー
+};
+
+// ─── 取り込み方法の選択シート ───
+// fromTray=true のときはトレイ(z980)の上に重ねて出す。
+function openBatchChoose(fromTray){
+  closeAddSheet();
+  $('batch-choose-mask').classList.add('on');
+  $('batch-choose-sheet').classList.add('on');
+}
+function closeBatchChoose(){
+  $('batch-choose-mask').classList.remove('on');
+  $('batch-choose-sheet').classList.remove('on');
+}
+
+// ─── B) カメラロールから複数選択 ───
+function batchStartPick(){
+  closeBatchChoose();
+  const inp=$('file-input-batch');
+  inp.value='';        // 同じファイルを再選択しても change が発火するように
+  inp.click();
+}
+
+async function onBatchFilesPicked(e){
+  const files=Array.from(e.target.files||[]);
+  e.target.value='';
+  if(files.length===0)return;
+  const imgs=files.filter(f=>f.type && f.type.startsWith('image/'));
+  if(imgs.length===0){toast('画像ファイルを選んでください');return;}
+  // 取り込み中の簡易フィードバック
+  toast(imgs.length+'枚を読み込み中…');
+  for(const f of imgs){
+    try{
+      const src=await smartCompressImage(f); // 既存の賢い圧縮 (~400KB目標)
+      _batch.items.push({id:'b_'+(++_batch._seq),src});
+    }catch(err){
+      console.warn('batch pick compress failed',err);
+    }
+  }
+  if(_batch.items.length===0){toast('画像を読み込めませんでした');return;}
+  openBatchTray();
+}
+
+// ─── A) アプリ内カメラで連続撮影 ───
+// getUserMedia はユーザー操作起点・HTTPS 必須。使えない時 (非対応 / 非セキュア /
+// iOS standalone PWA での制限 / 権限拒否) は自動で B (複数選択) にフォールバックする。
+async function batchStartCamera(){
+  closeBatchChoose();
+  const secure=window.isSecureContext || location.protocol==='https:' || location.hostname==='localhost';
+  if(!secure || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast('カメラを使えないため、写真を選ぶ画面を開きます');
+    batchStartPick();
+    return;
+  }
+  const cam=$('batch-cam');
+  const msg=$('batch-cam-msg');
+  const shutter=$('batch-cam-shutter');
+  cam.classList.add('on');
+  cam.setAttribute('aria-hidden','false');
+  if(msg){msg.style.display='block';msg.textContent='カメラを準備中…';}
+  if(shutter)shutter.disabled=true;
+  updateBatchCamStrip();
+  let stream=null;
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+  }catch(err){
+    console.warn('getUserMedia failed',err);
+    // 権限拒否/ハード不調など。カメラ画面を閉じる。
+    // ここでの input.click() はユーザー操作の枠外になり iOS でブロックされ得るので、
+    // 自動で開かず「取り込み方法の選択」をもう一度出して、利用者のタップで複数選択へ進めてもらう。
+    batchCamCloseStream();
+    cam.classList.remove('on');
+    cam.setAttribute('aria-hidden','true');
+    toast('カメラを使えませんでした。「まとめて選択」で写真から選べます');
+    openBatchChoose();
+    return;
+  }
+  _batch.camStream=stream;
+  const video=$('batch-cam-video');
+  video.srcObject=stream;
+  try{await video.play();}catch(e){}
+  if(msg)msg.style.display='none';
+  if(shutter)shutter.disabled=false;
+}
+
+// シャッター: 現在のフレームを切り出して圧縮し、トレイ配列に積む
+async function batchCamShoot(){
+  const video=$('batch-cam-video');
+  if(!video || !video.videoWidth){return;}
+  const w=video.videoWidth, h=video.videoHeight;
+  const canvas=document.createElement('canvas');
+  canvas.width=w; canvas.height=h;
+  const ctx=canvas.getContext('2d');
+  ctx.drawImage(video,0,0,w,h);
+  // フラッシュ演出 + 触覚
+  const flash=$('batch-cam-flash');
+  if(flash){flash.classList.remove('fire');void flash.offsetWidth;flash.classList.add('fire');}
+  if(navigator.vibrate)navigator.vibrate(12);
+  let raw;
+  try{raw=canvas.toDataURL('image/jpeg',0.92);}
+  catch(e){toast('撮影に失敗しました');return;}
+  try{
+    const src=await smartCompressDataUrl(raw); // 既存ヘルパで ~400KB に
+    _batch.items.push({id:'b_'+(++_batch._seq),src});
+  }catch(e){
+    _batch.items.push({id:'b_'+(++_batch._seq),src:raw});
+  }
+  updateBatchCamStrip();
+}
+
+// 撮影バー左下のサムネ + 枚数バッジを更新
+function updateBatchCamStrip(){
+  const strip=$('batch-cam-strip');
+  const count=$('batch-cam-strip-count');
+  const done=$('batch-cam-done');
+  if(!strip)return;
+  const n=_batch.items.length;
+  // 既存の img を消して最新の1枚を表示
+  strip.querySelectorAll('img').forEach(im=>im.remove());
+  if(n>0){
+    const last=_batch.items[n-1];
+    const im=document.createElement('img');
+    im.src=last.src;
+    strip.insertBefore(im,count);
+    count.style.display='flex';
+    count.textContent=String(n);
+  }else{
+    count.style.display='flex';
+    count.textContent='0';
+  }
+  if(done)done.disabled=(n===0);
+}
+
+// MediaStream だけ止める (画面表示はそのまま)
+function batchCamCloseStream(){
+  if(_batch.camStream){
+    try{_batch.camStream.getTracks().forEach(t=>t.stop());}catch(e){}
+    _batch.camStream=null;
+  }
+  const video=$('batch-cam-video');
+  if(video)video.srcObject=null;
+}
+
+// 「完了」: カメラを閉じてトレイへ
+function batchCamDone(){
+  batchCamCloseStream();
+  const cam=$('batch-cam');
+  cam.classList.remove('on');
+  cam.setAttribute('aria-hidden','true');
+  if(_batch.items.length===0){
+    // 1枚も撮らずに完了 → 何もしない (トレイは開かない)
+    return;
+  }
+  openBatchTray();
+}
+
+// 「キャンセル」: カメラを閉じる
+function batchCamClose(){
+  batchCamCloseStream();
+  const cam=$('batch-cam');
+  cam.classList.remove('on');
+  cam.setAttribute('aria-hidden','true');
+  // トレイの「さらに撮る」から来た場合 (トレイが開いている) は、撮った分を残してトレイへ戻すだけ。
+  if($('batch-tray').classList.contains('on')){
+    renderBatchTray();
+    return;
+  }
+  // 新規にカメラから始めてキャンセルした場合は、溜めたものを破棄。
+  _batch.items=[];
+  _batch.tags=[];
+}
+
+// ─── 取り込みトレイ ───
+function openBatchTray(){
+  closeBatchChoose();
+  const tray=$('batch-tray');
+  tray.classList.add('on');
+  tray.setAttribute('aria-hidden','false');
+  renderBatchTray();
+  renderBatchTags();
+}
+
+function closeBatchTray(){
+  const tray=$('batch-tray');
+  tray.classList.remove('on');
+  tray.setAttribute('aria-hidden','true');
+  _batch.items=[];
+  _batch.tags=[];
+  _batch.committing=false;
+}
+
+function renderBatchTray(){
+  const grid=$('batch-tray-grid');
+  const commit=$('batch-commit-btn');
+  if(!grid)return;
+  const n=_batch.items.length;
+  if(n===0){
+    grid.innerHTML='<div class="batch-tray-empty">画像がありません。<br>「さらに追加」から撮影・選択してください。</div>';
+  }else{
+    grid.innerHTML='';
+    _batch.items.forEach((it,i)=>{
+      const cell=document.createElement('div');
+      cell.className='batch-thumb';
+      cell.innerHTML=`
+        <img src="${it.src}" alt="">
+        <div class="batch-thumb-num">${i+1}</div>
+        <button class="batch-thumb-del" data-batch-del="${it.id}" aria-label="削除">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+        <button class="batch-thumb-crop" data-batch-crop="${it.id}" aria-label="トリミング">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>
+        </button>`;
+      grid.appendChild(cell);
+    });
+  }
+  if(commit){
+    commit.disabled=(n===0);
+    commit.textContent=n>0?('アップ ('+n+')'):'アップ';
+  }
+}
+
+// トレイ内サムネの削除・トリミング (委任)
+function onBatchTrayClick(e){
+  const delBtn=e.target.closest('[data-batch-del]');
+  if(delBtn){
+    const id=delBtn.getAttribute('data-batch-del');
+    _batch.items=_batch.items.filter(it=>it.id!==id);
+    renderBatchTray();
+    return;
+  }
+  const cropBtn=e.target.closest('[data-batch-crop]');
+  if(cropBtn){
+    const id=cropBtn.getAttribute('data-batch-crop');
+    const it=_batch.items.find(x=>x.id===id);
+    if(!it)return;
+    // 既存のクロップ画面を再利用。完了したら圧縮して差し替え。
+    openCropModal(it.src,(cropped)=>{
+      smartCompressDataUrl(cropped).then(src=>{
+        it.src=src;
+        renderBatchTray();
+      }).catch(()=>{
+        it.src=cropped;
+        renderBatchTray();
+      });
+    },()=>{ /* キャンセル: 変更なし */ });
+    return;
+  }
+}
+
+// トレイ内タグエディタ。既存の投稿画面用 .up-tags-wrap と同じ見た目・操作。
+// state.current ではなく _batch.tags を編集する点だけが違う。
+function renderBatchTags(){
+  const host=$('batch-tags-host');
+  if(!host)return;
+  host.innerHTML='';
+
+  const wrap=document.createElement('div');
+  wrap.className='up-tags-wrap';
+
+  const tagsArea=document.createElement('div');
+  tagsArea.className='detail-tags up-tags-area';
+
+  const inputRow=document.createElement('div');
+  inputRow.className='detail-tag-input-row up-tag-input-row';
+  inputRow.innerHTML=`
+    <div class="detail-tag-input-wrap">
+      <span>#</span>
+      <input class="detail-tag-input" id="batch-tag-input" placeholder="タグを追加…" maxlength="20">
+    </div>
+    <button class="detail-tag-add-btn" id="batch-tag-add-btn" aria-label="タグ追加">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+    </button>`;
+
+  const suggestRow=document.createElement('div');
+  suggestRow.className='tag-suggest hide';
+  suggestRow.id='batch-tag-suggest';
+
+  wrap.appendChild(tagsArea);
+  wrap.appendChild(inputRow);
+  wrap.appendChild(suggestRow);
+  host.appendChild(wrap);
+
+  let suggestApi=null;
+  const renderChips=()=>{
+    const tags=_batch.tags||[];
+    if(tags.length===0){
+      tagsArea.innerHTML='';
+      tagsArea.classList.add('empty');
+    }else{
+      tagsArea.classList.remove('empty');
+      tagsArea.innerHTML=tags.map((t,i)=>
+        `<span class="detail-tag" data-tag-idx="${i}">#${esc(t)} <span class="detail-tag-del" data-tag-idx="${i}">✕</span></span>`
+      ).join('');
+      tagsArea.querySelectorAll('.detail-tag-del').forEach(btn=>{
+        btn.addEventListener('click',ev=>{
+          ev.stopPropagation();
+          const idx=parseInt(btn.dataset.tagIdx,10);
+          _batch.tags.splice(idx,1);
+          renderChips();
+          if(suggestApi)suggestApi.refresh();
+        });
+      });
+    }
+  };
+  renderChips();
+
+  const input=document.getElementById('batch-tag-input');
+  const addBtn=document.getElementById('batch-tag-add-btn');
+  const commit=(rawTag)=>{
+    const source=(rawTag!==undefined)?rawTag:input.value;
+    const v=String(source).replace(/^#+/,'').trim().replace(/\s+/g,'');
+    if(!v)return;
+    if((_batch.tags||[]).some(t=>t.toLowerCase()===v.toLowerCase())){
+      toast('すでに追加されています');
+      input.value='';
+      return;
+    }
+    _batch.tags.push(v);
+    input.value='';
+    renderChips();
+    if(suggestApi)suggestApi.refresh();
+  };
+  addBtn.addEventListener('click',()=>commit());
+  input.addEventListener('keydown',ev=>{
+    if(ev.key==='Enter'){ev.preventDefault();commit();}
+  });
+  // 過去タグからのサジェストも既存ヘルパを流用
+  if(typeof setupTagSuggest==='function'){
+    suggestApi=setupTagSuggest(suggestRow,input,()=>_batch.tags||[],commit);
+  }
+}
+
+// ─── 一括投稿 ───
+// トレイの各画像を、それぞれ独立した photo カードとして保存する。
+// 保存処理は saveCard() と同じ作法: 画像は imgDB.put を await → state.cards.unshift → save()。
+async function commitBatch(){
+  if(_batch.committing)return;
+  const items=_batch.items.slice();
+  if(items.length===0){toast('画像がありません');return;}
+  _batch.committing=true;
+  const btn=$('batch-commit-btn');
+  if(btn){btn.disabled=true;btn.textContent='保存中…';}
+
+  const today=new Date().toISOString().slice(0,10);
+  const baseTags=(_batch.tags||[]).slice();
+  const added=[]; // ロールバック用に積んだカードIDを記録
+
+  try{
+    // グリッドは state.cards の配列順で並ぶ (先頭が上)。
+    // 1枚目を一番上に出したいので、逆順に unshift していく。
+    for(let i=items.length-1;i>=0;i--){
+      const it=items[i];
+      // 同一ミリ秒でも衝突しない一意な ID
+      const id='c_'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,6);
+      const card={
+        id,
+        type:'photo',
+        date:today,
+        created:Date.now()+i, // 取り込み順を保つ (1枚目が最新)
+        text:'',
+        image:it.src,
+      };
+      if(baseTags.length)card.tags=baseTags.slice();
+      // 画像を IndexedDB に確実に書いてから state に積む
+      await imgDB.put(id,it.src);
+      state.cards.unshift(card);
+      added.push(id);
+    }
+  }catch(err){
+    console.error('batch commit: imgDB write failed',err);
+    // ロールバック: 積んだカードと画像を取り消す
+    const addedSet=new Set(added);
+    state.cards=state.cards.filter(c=>!addedSet.has(c.id));
+    added.forEach(id=>imgDB.delete(id).catch(()=>{}));
+    _batch.committing=false;
+    if(btn){btn.disabled=false;btn.textContent='アップ ('+items.length+')';}
+    if(typeof showSaveError==='function')showSaveError();
+    else toast('保存できませんでした');
+    return;
+  }
+
+  // localStorage への軽量ペイロード保存
+  const ok=save();
+  if(!ok){
+    // 容量オーバー: 画像は IDB にあるが localStorage に書けなかった。
+    // 孤児を残さないようロールバックしてエラー表示。
+    const addedSet=new Set(added);
+    state.cards=state.cards.filter(c=>!addedSet.has(c.id));
+    added.forEach(id=>imgDB.delete(id).catch(()=>{}));
+    _batch.committing=false;
+    if(btn){btn.disabled=false;btn.textContent='アップ ('+items.length+')';}
+    if(typeof showSaveError==='function')showSaveError();
+    return;
+  }
+
+  // 成功
+  if(navigator.vibrate)navigator.vibrate(15);
+  const n=items.length;
+  closeBatchTray();
+  // ホームへ (新しいカードがグリッドに並ぶ)。goto 内で renderHome も走る。
+  goto('screen-home');
+  toast(n+'件を保存しました');
+}
+
+// ファイル複数選択の change 配線
+$('file-input-batch').addEventListener('change',onBatchFilesPicked);
+// トレイ内サムネ操作の委任
+$('batch-tray-grid').addEventListener('click',onBatchTrayClick);
 
 })();
 </script>
