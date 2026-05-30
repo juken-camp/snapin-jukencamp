@@ -2205,6 +2205,72 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .search-extra-chev{color:var(--ink3);flex-shrink:0;}
 
+/* ═══ 今日の数枚 (探すページ最上部・自分の過去を1枚ずつ"答え合わせ") ═══ */
+/* 横スクロール列にせず、周囲から浮く"特別パネル"として重要感を出す。 */
+.todays-pick{
+  margin:2px 16px 20px;
+  border-radius:20px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  box-shadow:0 2px 4px rgba(0,0,0,.04), 0 8px 22px rgba(0,0,0,.06);
+  padding:14px 14px 16px;
+  position:relative;
+  overflow:hidden;
+}
+.todays-pick::before{
+  content:'';position:absolute;left:0;right:0;top:0;height:72px;
+  background:var(--mosaic-veil-soft);pointer-events:none;
+}
+.tp-head{display:flex;align-items:center;gap:10px;position:relative;margin-bottom:12px;}
+.tp-icon{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  background:var(--g);color:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 8px rgba(var(--g-rgb),.4);
+}
+.tp-titles{flex:1;min-width:0;}
+.tp-title{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:.01em;}
+.tp-sub{font-size:11px;color:var(--ink2);margin-top:1px;}
+.tp-dots{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+.tp-dot{width:6px;height:6px;border-radius:50%;background:var(--line2);transition:background .2s;}
+.tp-dot.on{background:var(--g);transform:scale(1.25);}
+.tp-dot.done{background:var(--gd);}
+.tp-card{
+  position:relative;width:100%;aspect-ratio:4/3;border-radius:14px;overflow:hidden;
+  background:var(--bg);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.tp-card img{width:100%;height:100%;object-fit:cover;display:block;}
+.tp-note{
+  width:100%;height:100%;padding:16px;overflow:hidden;
+  font-size:15px;line-height:1.6;color:var(--ink);white-space:pre-wrap;word-break:break-word;
+  display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;
+}
+/* 答え合わせ前: ぼかし + ベール (暗記モードと同じ質感) */
+.tp-card.veiled img,.tp-card.veiled .tp-note{filter:blur(7px) saturate(.9);}
+.tp-card.veiled::after{content:'';position:absolute;inset:0;background:var(--mosaic-veil);}
+.tp-hint{
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  color:#fff;font-size:13px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.35);
+}
+.tp-card.revealed .tp-hint{display:none;}
+.tp-actions{display:flex;gap:8px;margin-top:12px;}
+.tp-btn{
+  flex:1;padding:12px;border-radius:12px;font-size:13.5px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s,background .1s;
+}
+.tp-btn:active{transform:scale(0.98);}
+.tp-btn.ghost{background:var(--gl);color:var(--gd);}
+.tp-btn.primary{background:var(--g);color:#fff;}
+.tp-btn.primary:active{background:var(--gd);}
+.tp-meta{font-size:11px;color:var(--ink3);margin-top:10px;text-align:center;letter-spacing:.04em;}
+.tp-done{text-align:center;padding:20px 8px 8px;color:var(--ink2);font-size:14px;line-height:1.7;}
+.tp-done .tp-done-emoji{font-size:26px;display:block;margin-bottom:6px;}
+.tp-restart{margin-top:10px;color:var(--g);font-size:12.5px;font-weight:700;padding:6px;}
+.tp-restart:active{opacity:.6;}
+
+.search-extra-chev{color:var(--ink3);flex-shrink:0;}
+
 /* アーカイブ画面 / ゴミ箱画面共通 */
 .bin-empty{
   padding:80px 24px;
@@ -12593,7 +12659,150 @@ function renderSearchIdle(){
     </button>
   </div>`;
 
-  idle.innerHTML=html;
+  // 最上部に「今日の数枚」(自分の過去を1枚ずつ答え合わせ) の差し込み口を置く
+  idle.innerHTML='<div id="todays-pick-host"></div>'+html;
+  renderTodaysPick();
+}
+
+// ═══ 今日の数枚 (探すページ最上部) ═══
+// 自分の過去メモを毎日少しだけ浮かせ、1枚ずつ"答え合わせ"する間隔反復の仕組み。
+// SNS的なフィードの安全な代替: 他人ではなく自分の蓄積が返ってくるので、見栄えも比較も生まれない。
+let _todaysPick={day:null, ids:[], idx:0, revealed:false};
+
+// 候補: 自分のアクティブな写真/メモのうち、今日保存したもの以外。長く見ていない順。
+function getTodaysPickCards(max){
+  max=max||3;
+  const startOfToday=new Date(); startOfToday.setHours(0,0,0,0);
+  const t0=startOfToday.getTime();
+  const pool=getActiveCards().filter(c=>{
+    const dc=isLinkedCard(c)?resolveLiveCard(c):c;
+    if(!(dc.type==='photo'||dc.type==='photonote'||dc.type==='note'))return false; // 復習向きの素材のみ
+    if((c.created||0)>=t0)return false;                                            // 今日のは除外
+    if(dc.type==='note' && !(dc.text && dc.text.trim()))return false;              // 空メモ除外
+    if((dc.type==='photo'||dc.type==='photonote') && !dc.image)return false;
+    return true;
+  }).sort((a,b)=>{
+    const la=a.lastViewed||a.lastReview||a.created||0;
+    const lb=b.lastViewed||b.lastReview||b.created||0;
+    return la-lb; // 長く見ていないものから先に
+  });
+  return pool.slice(0,max).map(c=>c.id);
+}
+
+// その日の集合を確定 (日付が変わったら選び直す)。日中は固定して再シャッフルしない。
+function ensureTodaysPickSet(){
+  const d=new Date(); d.setHours(0,0,0,0);
+  const key=d.getTime();
+  if(_todaysPick.day!==key){
+    _todaysPick.day=key;
+    _todaysPick.ids=getTodaysPickCards(3);
+    _todaysPick.idx=0;
+    _todaysPick.revealed=false;
+  }else{
+    // 削除されたカードを除去
+    _todaysPick.ids=_todaysPick.ids.filter(id=>state.cards.some(c=>c.id===id && isActiveCard(c)));
+    if(_todaysPick.idx>_todaysPick.ids.length)_todaysPick.idx=_todaysPick.ids.length;
+  }
+}
+
+// "答え合わせ"したら復習済みとして lastViewed を更新 → 翌日は別の数枚が自然に巡回する
+function tpMarkReviewed(id){
+  const i=state.cards.findIndex(x=>x.id===id);
+  if(i>=0){ state.cards[i].lastViewed=Date.now(); save(); }
+}
+
+function renderTodaysPick(){
+  const host=$('todays-pick-host');
+  if(!host)return;
+  ensureTodaysPickSet();
+  const ids=_todaysPick.ids;
+  if(!ids.length){ host.innerHTML=''; return; } // 候補ゼロ(新規ユーザー等)はパネルごと出さない
+
+  const refreshIcon='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>';
+  const dots=ids.map((_,i)=>{
+    const cls=i<_todaysPick.idx?'tp-dot done':(i===_todaysPick.idx?'tp-dot on':'tp-dot');
+    return `<span class="${cls}"></span>`;
+  }).join('');
+
+  const done=_todaysPick.idx>=ids.length;
+  let body;
+  if(done){
+    body=`<div class="tp-done"><span class="tp-done-emoji">🌱</span>今日はここまで。<br>また明日、別の数枚が出ます。<br><button class="tp-restart" id="tp-restart">もう一度見る</button></div>`;
+  }else{
+    const id=ids[_todaysPick.idx];
+    const c0=state.cards.find(x=>x.id===id);
+    const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
+    let inner='';
+    if(c.type==='photo'||c.type==='photonote'){
+      inner=`<img src="${c.image||''}" alt="" decoding="async">`;
+    }else{
+      const col=colorById(c.color);
+      inner=`<div class="tp-note" style="background:${col.bg};">${esc(c.text||'')}</div>`;
+    }
+    const rv=_todaysPick.revealed;
+    const lastOne=_todaysPick.idx>=ids.length-1;
+    body=`
+      <div class="tp-card ${rv?'revealed':'veiled'}" id="tp-card">
+        ${inner}
+        <div class="tp-hint">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>タップして答え合わせ</span>
+        </div>
+      </div>
+      ${rv
+        ? `<div class="tp-actions">
+             <button class="tp-btn ghost" id="tp-open">開く</button>
+             <button class="tp-btn primary" id="tp-next">${lastOne?'おしまい':'次へ →'}</button>
+           </div>`
+        : `<div class="tp-meta">${_todaysPick.idx+1} / ${ids.length}</div>`}
+    `;
+  }
+
+  host.innerHTML=`
+    <div class="todays-pick">
+      <div class="tp-head">
+        <div class="tp-icon">${refreshIcon}</div>
+        <div class="tp-titles">
+          <div class="tp-title">まだ覚えてる？</div>
+          <div class="tp-sub">むかしの自分が残した数枚</div>
+        </div>
+        <div class="tp-dots">${dots}</div>
+      </div>
+      ${body}
+    </div>`;
+
+  // ── 配線 ──
+  if(done){
+    const rs=$('tp-restart');
+    if(rs)rs.addEventListener('click',()=>{ _todaysPick.idx=0; _todaysPick.revealed=false; renderTodaysPick(); });
+    return;
+  }
+  const card=$('tp-card');
+  const curId=ids[_todaysPick.idx];
+  const c0=state.cards.find(x=>x.id===curId);
+  if(card){
+    card.addEventListener('click',()=>{
+      if(!_todaysPick.revealed){
+        // 1タップ目: 答え合わせ (ぼかしを外す) + 復習済みに
+        _todaysPick.revealed=true;
+        if(navigator.vibrate)navigator.vibrate(8);
+        tpMarkReviewed(curId);
+        renderTodaysPick();
+      }else{
+        // 表示済みの本体タップは詳細を開く (=「開く」と同じ)
+        if(c0)openDetail(c0,'mine');
+      }
+    });
+  }
+  const openBtn=$('tp-open');
+  if(openBtn)openBtn.addEventListener('click',e=>{ e.stopPropagation(); if(c0)openDetail(c0,'mine'); });
+  const nextBtn=$('tp-next');
+  if(nextBtn)nextBtn.addEventListener('click',e=>{
+    e.stopPropagation();
+    _todaysPick.idx++;            // 最後なら idx===ids.length となり done 表示へ
+    _todaysPick.revealed=false;
+    renderTodaysPick();
+  });
 }
 
 // ═══ UTILS ═══
