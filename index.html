@@ -3070,6 +3070,34 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .confirm-modal-btn.primary{background:var(--g);color:#fff;}
 .confirm-modal-btn.danger{background:var(--rose);color:#fff;}
 .confirm-modal-badge.danger{background:rgba(214,96,77,.14);}
+.share-link-box{
+  font-size:12px;color:var(--ink2);
+  background:var(--bg);border-radius:12px;
+  padding:10px 12px;margin:0 0 16px;
+  word-break:break-all;text-align:left;line-height:1.5;
+  -webkit-user-select:all;user-select:all;
+}
+.share-recv{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);
+  z-index:1100;display:none;align-items:center;justify-content:center;
+  padding:20px;font-family:var(--font-jp);
+}
+.share-recv.on{display:flex;}
+.share-recv-card{
+  background:var(--surface);border-radius:20px;
+  width:100%;max-width:360px;max-height:80vh;
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 12px 40px rgba(0,0,0,.25);
+}
+.share-recv-head{font-size:15px;font-weight:600;color:var(--ink);padding:18px 18px 12px;text-align:center;}
+.share-recv-body{overflow-y:auto;padding:0 18px;flex:1;}
+.share-recv-body img{width:100%;border-radius:12px;display:block;margin-bottom:10px;}
+.share-recv-preview-text{font-size:14px;color:var(--ink);line-height:1.6;white-space:pre-wrap;word-break:break-word;}
+.share-recv-link{display:flex;gap:8px;align-items:center;background:var(--gl);border-radius:12px;padding:10px 12px;color:var(--gd);font-size:13px;}
+.share-recv-list-item{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--ink);padding:4px 0;}
+.share-recv-note{font-size:12px;color:var(--ink3);margin:10px 0;line-height:1.5;}
+.share-recv-actions{display:flex;gap:10px;padding:14px 18px;border-top:0.5px solid var(--line);}
+.share-recv-actions .confirm-modal-btn{flex:1;}
 .settings-title{
   font-size:13px;color:var(--ink3);
   padding:0 4px 8px;
@@ -3976,6 +4004,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
         編集
       </button>
+      <button class="menu-item" data-action="share-card">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+        リンクで共有
+      </button>
       <button class="menu-item" data-action="toggle-pin" id="menu-pin-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
         <span id="menu-pin-label">ピン留め</span>
@@ -4145,6 +4177,55 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </div>
 </div>
+
+<!-- 共有: チャットも含めるか選ぶシート -->
+<div class="sheet-mask" id="share-choice-mask" data-action="close-share-choice"></div>
+<div class="sheet" id="share-choice-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">リンクで共有</div>
+  <div class="sheet-options">
+    <button class="sheet-opt" data-action="share-memo-only">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </div>
+      <div class="sheet-opt-title">メモだけ共有</div>
+      <div class="sheet-opt-desc">本文や写真だけを共有します</div>
+    </button>
+    <button class="sheet-opt" data-action="share-with-chat">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>
+      </div>
+      <div class="sheet-opt-title">チャットも含めて共有</div>
+      <div class="sheet-opt-desc">この投稿のやり取りも一緒に共有します</div>
+    </button>
+  </div>
+</div>
+
+<!-- 共有: 出来上がったリンク -->
+<div class="confirm-modal" id="share-link-modal" aria-hidden="true">
+  <div class="confirm-modal-card">
+    <div class="confirm-modal-badge">🔗</div>
+    <div class="confirm-modal-title">共有リンクができました</div>
+    <div class="confirm-modal-msg">このリンクは10分で自動的に消えます。相手がその間に開くと、メモを取り込めます。</div>
+    <div class="share-link-box" id="share-link-box"></div>
+    <div class="confirm-modal-actions">
+      <button class="confirm-modal-btn" data-action="share-link-close">閉じる</button>
+      <button class="confirm-modal-btn primary" data-action="share-link-copy">コピー</button>
+    </div>
+  </div>
+</div>
+
+<!-- 共有: 受け取った投稿のプレビュー -->
+<div class="share-recv" id="share-recv-modal" aria-hidden="true">
+  <div class="share-recv-card">
+    <div class="share-recv-head">共有された投稿</div>
+    <div class="share-recv-body" id="share-recv-body"></div>
+    <div class="share-recv-actions">
+      <button class="confirm-modal-btn" data-action="share-recv-close">閉じる</button>
+      <button class="confirm-modal-btn primary" data-action="share-recv-import">取り込む</button>
+    </div>
+  </div>
+</div>
 <input type="file" id="file-input" accept="image/*" style="display:none;">
 <input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none;">
 <input type="file" id="file-input-any" accept=".png,.jpg,.jpeg,.gif,.webp,.heic,.heif" style="display:none;">
@@ -4278,7 +4359,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </button>
   <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
-  <div class="settings-ver">SnapIn ver. 2026.05.30-2</div>
+  <div class="settings-ver">SnapIn ver. 2026.05.30-3</div>
 </div>
 
 <!-- バブル長押しメニュー (コピー/部分コピー/リプライ/削除) -->
@@ -5628,6 +5709,184 @@ function closeAskModal(result){
   $('ask-modal').setAttribute('aria-hidden','true');
   const r=_askResolve; _askResolve=null;
   if(r)r(result);
+}
+
+// ═══ 共有リンク (投稿を10分だけ有効なリンクで他の人に渡す) ═══
+let _shareCardId=null;
+let _incomingShare=null;
+
+function shareCard(){
+  $('detail-menu').classList.remove('on');
+  if(!state.current){toast('共有できません');return;}
+  _shareCardId=state.current.id;
+  // チャットがあるなら「メモだけ / チャットも」を選ばせる。無ければそのまま。
+  const real=state.cards.find(x=>x.id===_shareCardId)||state.current;
+  const chat=getChatMessages(real).filter(m=>m && !m.deleted);
+  if(chat.length>0){
+    $('share-choice-mask').classList.add('on');
+    $('share-choice-sheet').classList.add('on');
+  }else{
+    doCreateShare(false);
+  }
+}
+function closeShareChoice(){
+  $('share-choice-mask').classList.remove('on');
+  $('share-choice-sheet').classList.remove('on');
+}
+async function buildSharePayload(includeChat){
+  const id=_shareCardId;
+  const real=state.cards.find(x=>x.id===id)||state.current;
+  if(!real)return null;
+  const type=real.type||'note';
+  let image=real.image||((state.current&&state.current.id===id)?state.current.image:null)||null;
+  if((type==='photo'||type==='photonote') && !image && id){
+    try{ image=await imgDB.get(id); }catch(e){ image=null; }
+  }
+  const payload={
+    v:1,
+    type:(type==='photonote')?'photonote':(['photo','note','list','link'].includes(type)?type:'note'),
+    text:real.text||'',
+  };
+  if(image)payload.image=image;
+  if(real.link)payload.link=real.link;
+  if(Array.isArray(real.items))payload.items=real.items.map(it=>({t:String(it.t||''),mark:it.mark||'check',d:!!it.d}));
+  if(real.color)payload.color=real.color;
+  if(Array.isArray(real.tags)&&real.tags.length)payload.tags=real.tags.slice(0,20);
+  if(includeChat){
+    const chat=getChatMessages(real).filter(m=>m && !m.deleted)
+      .map(m=>({role:m.role==='user'?'user':'ai',text:String(m.text||''),t:m.t||Date.now()}));
+    if(chat.length)payload.chat=chat;
+  }
+  return payload;
+}
+async function doCreateShare(includeChat){
+  closeShareChoice();
+  const payload=await buildSharePayload(includeChat);
+  if(!payload){toast('共有できません');return;}
+  toast('リンクを作成中…');
+  try{
+    const res=await fetch('/api/teams?share=1',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({payload}),
+    });
+    const data=await res.json();
+    if(!data||!data.ok){
+      if(data&&data.reason==='too_large')toast('写真が大きすぎて共有できませんでした');
+      else toast('リンクを作成できませんでした');
+      return;
+    }
+    showShareLinkModal(`${location.origin}/?s=${data.token}`);
+  }catch(e){
+    toast('通信エラーです');
+  }
+}
+function showShareLinkModal(url){
+  const box=$('share-link-box');
+  box.textContent=url;
+  box.dataset.url=url;
+  $('share-link-modal').classList.add('on');
+  $('share-link-modal').setAttribute('aria-hidden','false');
+  copyShareLink(true); // 自動コピーを試みる
+}
+function closeShareLinkModal(){
+  $('share-link-modal').classList.remove('on');
+  $('share-link-modal').setAttribute('aria-hidden','true');
+}
+function copyShareLink(silent){
+  const url=$('share-link-box').dataset.url||'';
+  if(!url)return;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url)
+      .then(()=>{ if(!silent)toast('コピーしました'); })
+      .catch(()=>{ if(!silent)toast('リンクを長押しでコピーしてください'); });
+  }else if(!silent){
+    toast('リンクを長押しでコピーしてください');
+  }
+}
+
+// ── 受け取り側: ?s=トークン で開かれたとき ──
+async function checkIncomingShare(){
+  let token=null;
+  try{ token=new URLSearchParams(location.search).get('s'); }catch(e){}
+  if(!token)return;
+  // URL からパラメータを消す (リロードや再共有で再発火しないように)
+  try{ history.replaceState({}, '', location.pathname); }catch(e){}
+  try{
+    const res=await fetch('/api/teams?share=1&t='+encodeURIComponent(token));
+    const data=await res.json();
+    if(!data||!data.ok){ showShareRecvError(); return; }
+    _incomingShare=data.share;
+    renderShareRecv(data.share);
+  }catch(e){
+    showShareRecvError();
+  }
+}
+function showShareRecvError(){
+  _incomingShare=null;
+  $('share-recv-body').innerHTML='<div class="share-recv-note">このリンクは期限切れか無効です。共有リンクは作成から10分で消えます。</div>';
+  const imp=$('share-recv-modal').querySelector('[data-action="share-recv-import"]');
+  if(imp)imp.style.display='none';
+  $('share-recv-modal').classList.add('on');
+  $('share-recv-modal').setAttribute('aria-hidden','false');
+}
+function renderShareRecv(p){
+  const body=$('share-recv-body');
+  let html='';
+  if(p.image)html+=`<img src="${p.image}" alt="">`;
+  if(p.type==='link' && p.link){
+    html+=`<div class="share-recv-link"><span>🔗</span><span>${esc(p.link.title||p.link.url||'')}</span></div>`;
+  }
+  if(Array.isArray(p.items)){
+    p.items.forEach(it=>{ html+=`<div class="share-recv-list-item"><span>${it.d?'☑':'☐'}</span><span>${esc(it.t||'')}</span></div>`; });
+  }
+  if(p.text){
+    html+=`<div class="share-recv-preview-text">${esc(p.text)}</div>`;
+  }
+  if(Array.isArray(p.chat)&&p.chat.length){
+    html+=`<div class="share-recv-note">💬 チャット ${p.chat.length}件 も含まれています</div>`;
+  }
+  body.innerHTML=html||'<div class="share-recv-note">内容がありません</div>';
+  const imp=$('share-recv-modal').querySelector('[data-action="share-recv-import"]');
+  if(imp)imp.style.display='';
+  $('share-recv-modal').classList.add('on');
+  $('share-recv-modal').setAttribute('aria-hidden','false');
+}
+function closeShareRecv(){
+  $('share-recv-modal').classList.remove('on');
+  $('share-recv-modal').setAttribute('aria-hidden','true');
+  _incomingShare=null;
+}
+async function importSharedCard(){
+  const p=_incomingShare;
+  if(!p){closeShareRecv();return;}
+  if(!state.user){
+    // 未ログインなら個人モードで始める
+    state.user={mode:'personal',name:'あなた',handle:'private'};
+    state.onboarded=true;
+  }
+  const id='c_'+Date.now();
+  const nc={
+    id,
+    type:(p.type==='photonote')?'photonote':(['photo','note','list','link'].includes(p.type)?p.type:'note'),
+    text:p.text||'',
+    date:new Date().toISOString().slice(0,10),
+    created:Date.now(),
+  };
+  if(p.image)nc.image=p.image;
+  if(p.link)nc.link=p.link;
+  if(Array.isArray(p.items))nc.items=p.items;
+  if(p.color)nc.color=p.color;
+  if(Array.isArray(p.tags)&&p.tags.length)nc.tags=p.tags;
+  if(Array.isArray(p.chat)&&p.chat.length)nc.chat=p.chat;
+  state.cards.unshift(nc);
+  if(nc.image){ try{ await imgDB.put(id,nc.image); }catch(e){} }
+  save();
+  closeShareRecv();
+  state.navStack=['screen-home'];
+  goto('screen-home',false);
+  renderHome();
+  toast('取り込みました');
 }
 
 // ═══ 設定シート (バックアップ/復元) ═══
@@ -11777,6 +12036,14 @@ document.addEventListener('click',e=>{
     case 'toggle-detail-mosaic':toggleDetailMosaic();break;    case 'toggle-menu':$('detail-menu').classList.toggle('on');e.stopPropagation();break;
     case 'edit-card':editCard();break;
     case 'delete-card':deleteCard();break;
+    case 'share-card':shareCard();break;
+    case 'close-share-choice':closeShareChoice();break;
+    case 'share-memo-only':doCreateShare(false);break;
+    case 'share-with-chat':doCreateShare(true);break;
+    case 'share-link-copy':copyShareLink(false);break;
+    case 'share-link-close':closeShareLinkModal();break;
+    case 'share-recv-import':importSharedCard();break;
+    case 'share-recv-close':closeShareRecv();break;
     case 'archive-card':archiveCard();break;
     case 'open-archive':goto('screen-archive');break;
     case 'open-trash':goto('screen-trash');break;
@@ -11999,6 +12266,12 @@ $('ask-cancel').addEventListener('click',()=>closeAskModal(false));
 $('ask-modal').addEventListener('click',e=>{
   if(e.target.id==='ask-modal')closeAskModal(false);
 });
+$('share-link-modal').addEventListener('click',e=>{
+  if(e.target.id==='share-link-modal')closeShareLinkModal();
+});
+$('share-recv-modal').addEventListener('click',e=>{
+  if(e.target.id==='share-recv-modal')closeShareRecv();
+});
 $('restore-input').addEventListener('change',handleRestoreFile);
 
 // ═══ 画面の更新処理 (SnapInロゴタップで呼ばれる) ═══
@@ -12139,6 +12412,9 @@ if(load() && state.user){
     }).catch(()=>{});
   }).catch(e=>console.warn('boot recover failed:',e));
 }
+
+// 共有リンク (?s=トークン) で開かれていたら、受け取り画面を出す (ログイン状態に関わらず)
+checkIncomingShare();
 
 // アプリを閉じる/バックグラウンドに回した瞬間に、未送信の変更があればクラウドへ送る
 document.addEventListener('visibilitychange',()=>{
