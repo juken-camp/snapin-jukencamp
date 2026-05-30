@@ -4459,7 +4459,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </div>
-      <div class="sheet-opt-title">連続撮影</div>
+      <div class="sheet-opt-title">撮影</div>
     </button>
     <button class="sheet-opt" data-action="create-photo">
       <div class="sheet-opt-icon">
@@ -8014,13 +8014,13 @@ function startCreate(type){
     text:'',
   };
   if(type==='camera'){
-    // 「連続撮影」: アプリ内カメラを直接起動し、続けて何枚でも撮って→まとめて取り込み。
-    // 単写のワンタッチはホームの「いますぐメモする」のカメラ、または「写真」→iOSの"写真を撮る"から。
-    // ※ getUserMedia が使えない環境 (iOS のホーム追加=standalone PWA 等) では
-    //   batchStartCamera 内で自動的に「写真を複数選ぶ」へフォールバックする。
-    state.current=null;
-    batchStartCamera();
-    return;
+    // 「撮影」: 端末標準のカメラを起動 (capture 属性) → トリミング → 保存。
+    // getUserMedia を使わないので iOS でも確実に開き、フォールバックの黒トースト等は出ない。
+    // 連続撮影 (アプリ内カメラ) は取り込みトレイの「さらに追加」から (使える端末でのみ)。
+    state.current.type='photo';
+    state.photoMode='photo';
+    state.cameraCapture=true;
+    $('file-input-camera').click();
   }else if(type==='photo' || type==='photonote'){
     // 「写真」: iOS標準ピッカーを複数選択可で開く (multiple)。
     //  1枚だけ → 従来どおり単体の保存画面へ。2枚以上 → まとめて取り込みトレイへ。
@@ -13454,35 +13454,29 @@ async function batchStartCamera(){
     batchStartPick();
     return;
   }
-  const cam=$('batch-cam');
-  const msg=$('batch-cam-msg');
-  const shutter=$('batch-cam-shutter');
-  cam.classList.add('on');
-  cam.setAttribute('aria-hidden','false');
-  if(msg){msg.style.display='block';msg.textContent='カメラを準備中…';}
-  if(shutter)shutter.disabled=true;
-  updateBatchCamStrip();
+  // 先にストリームを取得し、成功してからカメラ画面を出す (黒画面の点滅を防ぐ)。
   let stream=null;
   try{
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
   }catch(err){
     console.warn('getUserMedia failed',err);
-    // 権限拒否/ハード不調など。カメラ画面を閉じる。
-    // ここでの input.click() はユーザー操作の枠外になり iOS でブロックされ得るので、
-    // 自動で開かず「取り込み方法の選択」をもう一度出して、利用者のタップで複数選択へ進めてもらう。
-    batchCamCloseStream();
-    cam.classList.remove('on');
-    cam.setAttribute('aria-hidden','true');
+    // 権限拒否/非対応など。画面は出していないので点滅しない。タップで複数選択へ進める。
     toast('カメラを使えませんでした。「まとめて選択」で写真から選べます');
     openBatchChoose();
     return;
   }
+  const cam=$('batch-cam');
+  const msg=$('batch-cam-msg');
+  const shutter=$('batch-cam-shutter');
   _batch.camStream=stream;
+  cam.classList.add('on');
+  cam.setAttribute('aria-hidden','false');
+  updateBatchCamStrip();
   const video=$('batch-cam-video');
   video.srcObject=stream;
-  try{await video.play();}catch(e){}
   if(msg)msg.style.display='none';
   if(shutter)shutter.disabled=false;
+  try{await video.play();}catch(e){}
 }
 
 // シャッター: 現在のフレームを切り出して圧縮し、トレイ配列に積む
