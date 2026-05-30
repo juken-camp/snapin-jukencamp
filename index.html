@@ -721,11 +721,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .empty-action-label{font-size:11px;font-weight:600;color:var(--ink2);white-space:nowrap;}
 
 /* グループ管理者: 自前ライブラリ */
-.glib-entry-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:calc(100% - 32px);margin:12px 16px 4px;padding:14px 16px;background:var(--gl);border:none;border-radius:13px;color:var(--gd);font-weight:700;font-size:14px;}
+.glib-entry-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:calc(100% - 32px);margin:12px 16px 4px;padding:11px 16px;background:var(--gl);border:none;border-radius:12px;color:var(--gd);font-weight:700;font-size:14px;}
 .glib-entry-btn:active{transform:scale(.98);}
 .glib-intro{font-size:13px;color:var(--ink2);line-height:1.7;padding:16px 18px 6px;}
 .glib-empty{font-size:13px;color:var(--ink3);padding:16px 18px;line-height:1.7;}
-.new-glib-btn{margin:14px 18px;padding:14px;width:calc(100% - 36px);background:transparent;border:1.5px dashed var(--line2);border-radius:12px;color:var(--ink2);font-weight:600;font-size:14px;}
+.new-glib-btn{margin:14px 18px;padding:11px;width:calc(100% - 36px);background:transparent;border:1.5px dashed var(--line2);border-radius:12px;color:var(--ink2);font-weight:600;font-size:14px;}
 .new-glib-btn:active{background:var(--gl);}
 .glib-row{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);}
 .glib-row-main{flex:1;min-width:0;}
@@ -854,10 +854,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 #add-sheet.on{transform:translateY(0);}
 #add-sheet .sheet-handle{display:none;}
 #add-sheet .sheet-options{
-  display:grid;
-  grid-template-columns:repeat(3, auto);
+  display:flex;
   justify-content:center;
-  gap:20px 30px;
+  gap:12px;
   padding:0;
 }
 #add-sheet .sheet-opt{
@@ -3906,10 +3905,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .batch-tray-add:active{background:var(--gl);}
 .batch-tray-commit{
-  width:100%;padding:12px;border-radius:12px;background:var(--g);color:#fff;
-  font-size:15px;font-weight:600;transition:background .1s,transform .1s;
+  width:100%;padding:11px;border-radius:12px;background:var(--g);color:#fff;
+  font-size:14.5px;font-weight:600;letter-spacing:.02em;
+  box-shadow:0 4px 14px rgba(var(--g-rgb),.30);
+  transition:background .1s,transform .1s,box-shadow .1s;
 }
-.batch-tray-commit:active{background:var(--gd);transform:scale(0.99);}
+.batch-tray-commit:active{background:var(--gd);transform:translateY(1px);box-shadow:0 2px 8px rgba(var(--g-rgb),.26);}
 .batch-tray-commit:disabled{opacity:.5;}
 /* トレイ内のタグエディタは既存 .up-tags-wrap をそのまま流用 */
 
@@ -4483,12 +4484,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
       </div>
       <div class="sheet-opt-title">URL</div>
-    </button>
-    <button class="sheet-opt" data-action="batch-open">
-      <div class="sheet-opt-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16V4a2 2 0 0 1 2-2h10"/></svg>
-      </div>
-      <div class="sheet-opt-title">まとめて</div>
     </button>
   </div>
 </div>
@@ -8023,12 +8018,15 @@ function startCreate(type){
     state.cameraCapture=true;
     $('file-input-camera').click();
   }else if(type==='photo' || type==='photonote'){
-    // 「写真・ファイル」: 元仕様どおり accept="image/*" の input を直接開く。
-    // iOS 標準シート (写真ライブラリ / 写真を撮る / ファイルを選択) が出る。トリミングなし。
-    // add-sheet は開いたまま残し、画面選択後の遷移時 or キャンセル時に閉じる。
+    // 「写真」: iOS標準ピッカーを複数選択可で開く (multiple)。
+    //  1枚だけ → 従来どおり単体の保存画面へ。2枚以上 → まとめて取り込みトレイへ。
+    // ※ 専用の「まとめて」ボタンは廃止し、ネイティブの複数選択で兼ねる。
     state.photoMode=type;
     state.cameraCapture=false;
-    $('file-input').click();
+    _photoPickFresh=true;
+    const inp=$('file-input-batch');
+    inp.value='';   // 同じ写真を再選択しても change が発火するように
+    inp.click();
   }else if(type==='file'){
     // 「ファイル」: Files アプリから画像を選ぶ(カメラロール以外の画像)
     // 拡張子指定にすることで iOS は写真ライブラリ経由ではなく Files を直接開く
@@ -13373,6 +13371,8 @@ const _batch={
   committing:false,// 二重投稿防止
   _seq:0,          // トレイ内アイテムの一意キー
 };
+// 「写真」ボタン由来のピックかどうか。true かつ1枚だけなら単体の保存画面へ振り分ける。
+let _photoPickFresh=false;
 
 // ─── 取り込み方法の選択シート ───
 // fromTray=true のときはトレイ(z980)の上に重ねて出す。
@@ -13397,10 +13397,26 @@ function batchStartPick(){
 async function onBatchFilesPicked(e){
   const files=Array.from(e.target.files||[]);
   e.target.value='';
+  const fresh=_photoPickFresh; _photoPickFresh=false;
   if(files.length===0)return;
   const imgs=files.filter(f=>f.type && f.type.startsWith('image/'));
   if(imgs.length===0){toast('画像ファイルを選んでください');return;}
-  // 取り込み中の簡易フィードバック
+  // 「写真」ボタンから1枚だけ選んだ (トレイ未起動) → 従来どおり単体の保存画面へ。
+  if(fresh && imgs.length===1 && _batch.items.length===0){
+    try{
+      const compressed=await smartCompressImage(imgs[0]);
+      state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:new Date().toISOString().slice(0,10),_new:true,text:'',image:compressed};
+      state.photoMode=null;
+      closeAddSheet();
+      renderUpload();
+      goto('screen-upload');
+    }catch(err){
+      toast('画像の読み込みに失敗しました');
+      state.current=null; state.photoMode=null;
+    }
+    return;
+  }
+  // 2枚以上、または「さらに追加」からの追加 → まとめて取り込みトレイへ。
   toast(imgs.length+'枚を読み込み中…');
   for(const f of imgs){
     try{
@@ -13545,6 +13561,7 @@ function batchCamClose(){
 
 // ─── 取り込みトレイ ───
 function openBatchTray(){
+  closeAddSheet();
   closeBatchChoose();
   const tray=$('batch-tray');
   tray.classList.add('on');
