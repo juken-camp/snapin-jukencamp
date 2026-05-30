@@ -38,6 +38,19 @@ const TEAMS_KEY = 'snapin:teams';
 const STUDENTS_KEY = 'snapin:students';
 const MAX_SHELVES_PER_TEAM = 100;
 const MAX_CARDS_PER_SHELF = 500;
+
+// ── 個人の投稿の共有リンク (?share=1 で相乗り) ──
+// 認証不要。投稿の中身をランダムなトークンで Redis に保存し、10分で自動消滅させる。
+// 受け取った人はトークンで中身を取得して「自分のメモに取り込む」だけ。
+// アプリ内に受信箱・相手検索は作らないので、知らない人から接触される経路は無い。
+const SHARE_TTL_SEC = 600;                 // 10分
+const MAX_SHARE_BYTES = 4 * 1024 * 1024;   // 画像つきメモ対策の上限 (約4MB)
+function shareKey(token) { return 'snapin:share:' + token; }
+function newShareToken() {
+  return (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID().replace(/-/g, '')
+    : (Math.random().toString(36).slice(2) + Date.now().toString(36));
+}
 function teamShelfKey(teamId) { return 'snapin:gshelf:team:' + teamId; }
 function newShelfId() {
   const rnd = (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -190,9 +203,49 @@ async function handleGroupShelf(req, res) {
   }
 }
 
+// 共有リンク: POST=作成(トークン発行・10分TTL) / GET=取得(?t=トークン)
+async function handleShare(req, res) {
+  try {
+    if (req.method === 'GET') {
+      const token = String((req.query && (req.query.t || req.query.token)) || '');
+      if (!token || !/^[a-zA-Z0-9]{8,64}$/.test(token)) {
+        return res.status(200).json({ ok: false, reason: 'bad_token' });
+      }
+      const data = await redis.get(shareKey(token));
+      if (!data) return res.status(200).json({ ok: false, reason: 'expired' });
+      return res.status(200).json({ ok: true, share: data });
+    }
+    if (req.method === 'POST') {
+      const body = typeof req.body === 'string' ? (safeParse(req.body) || {}) : (req.body || {});
+      const payload = body.payload;
+      if (!payload || typeof payload !== 'object') {
+        return res.status(400).json({ ok: false, reason: 'bad_payload' });
+      }
+      let size = 0;
+      try { size = JSON.stringify(payload).length; }
+      catch { return res.status(400).json({ ok: false, reason: 'bad_payload' }); }
+      if (size > MAX_SHARE_BYTES) {
+        return res.status(200).json({ ok: false, reason: 'too_large' });
+      }
+      const token = newShareToken();
+      await redis.set(shareKey(token), payload, { ex: SHARE_TTL_SEC });
+      return res.status(200).json({ ok: true, token, ttl: SHARE_TTL_SEC });
+    }
+    return res.status(405).json({ ok: false, reason: 'method_not_allowed' });
+  } catch (err) {
+    console.error('share (via teams) error:', err);
+    return res.status(500).json({ ok: false, reason: 'server_error' });
+  }
+}
+
 export default async function handler(req, res) {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // 個人の投稿の共有リンク (認証不要・10分TTL)。関数数を増やさないため相乗り。
+  if (req.query && (req.query.share === '1' || req.query.share === 'true')) {
+    return handleShare(req, res);
+  }
 
   // グループ管理者の自前ライブラリは、関数数を増やさないためこのエンドポイントに相乗り。
   if (req.query && (req.query.gshelf === '1' || req.query.gshelf === 'true')) {
