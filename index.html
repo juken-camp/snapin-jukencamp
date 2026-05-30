@@ -5359,7 +5359,10 @@ function linkCardInner(c){
     : `<div class="link-card-thumb no-img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
   const title=esc(link.title||link.url||'(無題のリンク)');
   // サイト名(host)はグリッドでは表示しない (たいてい個別ページなので不要、タイトルに高さを回す)
-  const plLabel=(link.kind==='playlist')
+  // 「再生リスト」ラベル: link.kind が 'playlist' のとき。
+  // 共有ライブラリ投稿などで kind が欠落しても、URL から再生リストを判定して同じ表示にする。
+  const isPlaylist=(link.kind==='playlist') || isYouTubePlaylistUrl(link.url||link.originalUrl);
+  const plLabel=isPlaylist
     ? `<div class="link-card-kind"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h13M3 18h9"/><path d="M17 14l5 3-5 3z"/></svg>再生リスト</div>`
     : '';
   // 白枠を固定高さにしたため、タイトルは全て2行で統一
@@ -8102,6 +8105,15 @@ function isYouTubeUrl(url){
   try{
     const u=new URL(/^https?:\/\//i.test(url)?url:('https://'+url));
     return /(^|\.)youtube\.com$|(^|\.)youtu\.be$/i.test(u.hostname);
+  }catch(_){return false;}
+}
+// YouTube の「再生リスト」URLか (youtube.com/playlist?list=...)。
+// 共有ライブラリ経由などで link.kind が欠落しても、URL から再生リストを判定するための保険。
+function isYouTubePlaylistUrl(url){
+  if(!isYouTubeUrl(url))return false;
+  try{
+    const u=new URL(/^https?:\/\//i.test(url)?url:('https://'+url));
+    return /^\/playlist\/?$/i.test(u.pathname) && !!u.searchParams.get('list');
   }catch(_){return false;}
 }
 // 動画IDからサムネ画像URL (規則的に決まるので確実)
