@@ -4390,7 +4390,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </button>
   <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
-  <div class="settings-ver">SnapIn ver. 2026.05.30-5</div>
+  <div class="settings-ver">SnapIn ver. 2026.05.30-6</div>
 </div>
 
 <!-- バブル長押しメニュー (コピー/部分コピー/リプライ/削除) -->
@@ -5882,13 +5882,21 @@ function copyShareLink(silent){
   }
 }
 
-// ── 受け取り側: ?s=トークン で開かれたとき ──
-async function checkIncomingShare(){
-  let token=null;
-  try{ token=new URLSearchParams(location.search).get('s'); }catch(e){}
-  if(!token)return;
-  // URL からパラメータを消す (リロードや再共有で再発火しないように)
-  try{ history.replaceState({}, '', location.pathname); }catch(e){}
+// 貼られた/開かれたURLが SnapIn の共有リンクなら、そのトークンを取り出す
+function parseShareToken(raw){
+  try{
+    let u;
+    try{ u=new URL(raw); }catch{ u=new URL(/^https?:\/\//i.test(raw)?raw:('https://'+raw)); }
+    const host=(u.host||'').toLowerCase();
+    const sameApp = host===location.host.toLowerCase() || host.includes('snapin');
+    if(!sameApp)return null;
+    const s=u.searchParams.get('s');
+    if(s && /^[a-zA-Z0-9]{8,64}$/.test(s))return s;
+  }catch(e){}
+  return null;
+}
+// トークンから共有内容を取得して受け取り画面を出す (?s= で開いた時/URL投稿で貼った時の共通処理)
+async function loadAndShowShare(token){
   try{
     const res=await fetch('/api/teams?share=1&t='+encodeURIComponent(token));
     const data=await res.json();
@@ -5898,6 +5906,15 @@ async function checkIncomingShare(){
   }catch(e){
     showShareRecvError();
   }
+}
+// 受け取り側: ?s=トークン で開かれたとき
+async function checkIncomingShare(){
+  let token=null;
+  try{ token=new URLSearchParams(location.search).get('s'); }catch(e){}
+  if(!token)return;
+  // URL からパラメータを消す (リロードや再共有で再発火しないように)
+  try{ history.replaceState({}, '', location.pathname); }catch(e){}
+  loadAndShowShare(token);
 }
 function showShareRecvError(){
   _incomingShare=null;
@@ -7561,6 +7578,14 @@ async function fetchUrlAndCreate(){
   const raw=$('url-input').value.trim();
   if(!raw){
     setUrlMsg('URLを入力してください','err');
+    return;
+  }
+  // SnapIn の共有リンクが貼られたら、Webページとして読まずに「共有された投稿」として取り込む
+  const _shareTok=parseShareToken(raw);
+  if(_shareTok){
+    $('url-input').value='';
+    closeUrlModal();
+    loadAndShowShare(_shareTok);
     return;
   }
   // 簡易バリデーション (スキーマなしでも許容、サーバ側で https を補う)
