@@ -4459,7 +4459,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </div>
-      <div class="sheet-opt-title">撮影する</div>
+      <div class="sheet-opt-title">連続撮影</div>
     </button>
     <button class="sheet-opt" data-action="create-photo">
       <div class="sheet-opt-icon">
@@ -8011,12 +8011,13 @@ function startCreate(type){
     text:'',
   };
   if(type==='camera'){
-    // 「撮影する」: カメラ専用 input を直接起動 → 撮影後にトリミング画面
-    // state.current.type は 'photo' に揃える (保存後の扱いは通常の写真メモと同じ)
-    state.current.type='photo';
-    state.photoMode='photo';
-    state.cameraCapture=true;
-    $('file-input-camera').click();
+    // 「連続撮影」: アプリ内カメラを直接起動し、続けて何枚でも撮って→まとめて取り込み。
+    // 単写のワンタッチはホームの「いますぐメモする」のカメラ、または「写真」→iOSの"写真を撮る"から。
+    // ※ getUserMedia が使えない環境 (iOS のホーム追加=standalone PWA 等) では
+    //   batchStartCamera 内で自動的に「写真を複数選ぶ」へフォールバックする。
+    state.current=null;
+    batchStartCamera();
+    return;
   }else if(type==='photo' || type==='photonote'){
     // 「写真」: iOS標準ピッカーを複数選択可で開く (multiple)。
     //  1枚だけ → 従来どおり単体の保存画面へ。2枚以上 → まとめて取り込みトレイへ。
