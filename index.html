@@ -1584,6 +1584,23 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-left:3px solid var(--g);
 }
 .source-tag svg{flex-shrink:0;}
+/* 「自分のメモに保存」ボタン (共有棚カード詳細内) */
+.copy-to-shelf-btn{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:20px;
+  padding:10px 14px;
+  border-radius:10px;
+  border:1px solid var(--g);
+  color:var(--gd);
+  font-size:13px;
+  font-weight:600;
+  width:100%;
+  text-align:left;
+  transition:background .12s;
+}
+.copy-to-shelf-btn:active{background:var(--gl);}
 
 /* 共有メモが取得できない時の注意書き (削除/オフライン時) */
 .link-stale-note{
@@ -1790,8 +1807,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .lib-item{
   display:flex;
   align-items:center;
-  gap:12px;
-  padding:12px 18px;
+  gap:14px;
+  padding:14px 18px;
   background:var(--surface);
   border-bottom:0.5px solid var(--line);
 }
@@ -1799,8 +1816,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .lib-item:active{background:var(--bg);}
 #lib-list{margin-top:8px;}
 .lib-avatar{
-  width:44px;height:44px;
-  border-radius:50%;
+  width:46px;height:46px;
+  border-radius:12px;
   background:var(--gl);
   display:flex;align-items:center;justify-content:center;
   color:var(--gd);
@@ -1813,7 +1830,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .lib-avatar.has-icon{background:transparent;}
 .lib-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
 .lib-info{flex:1;min-width:0;}
-.lib-name{font-size:14px;font-weight:600;}
+.lib-name{font-size:14px;font-weight:600;margin-bottom:2px;}
+.lib-desc{font-size:12px;color:var(--ink2);line-height:1.4;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
 .lib-handle{font-size:11px;color:var(--ink3);font-family:var(--font-en);}
 .lib-action{
   padding:6px 14px;
@@ -1952,19 +1971,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 /* 共有棚詳細 */
 .official-simple-hdr{
-  padding:18px;
+  padding:20px 18px 16px;
   background:var(--surface);
   border-bottom:0.5px solid var(--line);
 }
 .os-name{font-size:18px;font-weight:600;margin-bottom:3px;}
 .os-handle{font-size:11px;color:var(--ink3);font-family:var(--font-en);margin-bottom:8px;}
 .os-avatar{
-  width:64px;height:64px;
-  border-radius:50%;
+  width:56px;height:56px;
+  border-radius:14px;
   background:var(--gl);
   color:var(--gd);
   display:flex;align-items:center;justify-content:center;
-  font-size:24px;font-weight:700;
+  font-size:22px;font-weight:700;
   margin-bottom:12px;
   overflow:hidden;
 }
@@ -2642,6 +2661,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--gd);
 }
 .login-card-juken:active{background:#D9EFE5;}
+.login-pwa{
+  font-size:11px;
+  color:var(--ink3);
+  text-align:center;
+  margin-bottom:18px;
+  letter-spacing:0.01em;
+  line-height:1.6;
+}
 
 /* ════════════════════════════════════════════
    CLAIM (塾生認証)
@@ -3959,6 +3986,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <div class="login-by">by JUKEN CAMP</div>
     <div class="login-punch">ぜんぶ、ここに残す。</div>
     <div class="login-tag">見たもの・思いついたこと・やること。<br>覚えておかなくていい、自分だけのメモ。</div>
+    <div class="login-pwa">ブラウザだと使いにくいので、「ホーム画面に追加」してアプリとして使ってください</div>
     <button class="login-card" data-action="login-personal">
       <div class="login-card-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
@@ -10369,9 +10397,6 @@ function openDetail(c,origin){
   $('detail-img').classList.add('hide');
 
   let metaHtml=`<span>${fmtDate(c.date)}</span>`;
-  if(isOfficial && state.currentOfficial && state.currentOfficial.handle){
-    metaHtml=`<span class="src">${esc(state.currentOfficial.handle)}</span>`+metaHtml;
-  }
   $('detail-meta').innerHTML=metaHtml;
 
   let contentHtml='';
@@ -10476,11 +10501,9 @@ function openDetail(c,origin){
 
   // 共有コピーボタン (共有棚カード時のみ表示)
   if(isOfficial){
-    contentHtml+=`<button class="login-card" style="margin-top:18px;background:var(--gl);" data-action="copy-to-shelf">
-      <div class="login-card-title" style="color:var(--gd);">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        自分のメモに保存
-      </div>
+    contentHtml+=`<button class="copy-to-shelf-btn" data-action="copy-to-shelf">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      自分のメモに保存
     </button>`;
   }
 
@@ -11927,7 +11950,7 @@ function libItem(s,subbed,group){
     ${avatar}
     <div class="lib-info">
       <div class="lib-name">${esc(s.name)}${badge}</div>
-      <div class="lib-handle">${esc(s.handle)}</div>
+      ${s.desc?`<div class="lib-desc">${esc(s.desc)}</div>`:`<div class="lib-handle">${esc(s.handle)}</div>`}
     </div>
     ${actionHtml}
   `;
