@@ -51,6 +51,14 @@ function newShareToken() {
     ? crypto.randomUUID().replace(/-/g, '')
     : (Math.random().toString(36).slice(2) + Date.now().toString(36));
 }
+
+// ── グループの受信箱 (?ginbox=1 で相乗り) ──
+// メンバーが自分のメモを「グループに送る」と、グループ管理者だけが見える受信箱に届く。
+// 管理者は一件ずつ「自分のメモに取り込む(クライアント側)／みんなに公開(publish)／削除(reject)」を選ぶ。
+// メンバー側には何も公開されない (管理者が publish したものだけが みんなの投稿 棚に出る)。
+const MAX_INBOX = 200;
+const PUBLIC_SHELF_NAME = 'みんなの投稿';
+function teamInboxKey(teamId) { return 'snapin:ginbox:team:' + teamId; }
 function teamShelfKey(teamId) { return 'snapin:gshelf:team:' + teamId; }
 function newShelfId() {
   const rnd = (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -203,6 +211,101 @@ async function handleGroupShelf(req, res) {
   }
 }
 
+// グループ受信箱: メンバー送信 / 管理者の一覧・公開・削除
+async function handleInbox(req, res) {
+  const auth = authFromReq(req);
+  if (!auth.ok || auth.payload.role !== 'student') {
+    return res.status(401).json({ ok: false, reason: 'invalid_token' });
+  }
+  try {
+    const students = (await redis.get(STUDENTS_KEY)) || [];
+    const member = students.find(s => s && s.id === auth.payload.sub);
+    if (!member) return res.status(200).json({ ok: false, reason: 'student_not_found' });
+    if (member.revoked) return res.status(200).json({ ok: false, reason: 'revoked' });
+    const teamId = member.teamId;
+    if (!teamId) return res.status(200).json({ ok: false, reason: 'no_team' });
+    if (!member.multiDevice && member.claimedBy !== auth.payload.did) {
+      return res.status(200).json({ ok: false, reason: 'claim_lost' });
+    }
+    const teams = (await redis.get(TEAMS_KEY)) || [];
+    const team = teams.find(t => t && t.id === teamId);
+    const isGAdmin = !!(team && team.adminName &&
+      normalizeName(team.adminName) === normalizeName(member.name || ''));
+    const KEY = teamInboxKey(teamId);
+    const body = typeof req.body === 'string' ? (safeParse(req.body) || {}) : (req.body || {});
+
+    // メンバーが管理者へメモを送る (グループの誰でも)
+    if (req.method === 'POST' && (!body.action || body.action === 'submit')) {
+      const card = body.card;
+      if (!card || typeof card !== 'object') return res.status(400).json({ ok: false, reason: 'bad_card' });
+      let size = 0;
+      try { size = JSON.stringify(card).length; }
+      catch { return res.status(400).json({ ok: false, reason: 'bad_card' }); }
+      if (size > MAX_SHARE_BYTES) return res.status(200).json({ ok: false, reason: 'too_large' });
+      const list = (await redis.get(KEY)) || [];
+      if (list.length >= MAX_INBOX) list.shift(); // 上限を超えたら古いものから捨てる
+      list.push({
+        id: 'in_' + newShareToken().slice(0, 16),
+        card,
+        fromName: String(member.name || '').slice(0, 40),
+        fromId: member.id,
+        createdAt: Date.now(),
+      });
+      await redis.set(KEY, list);
+      return res.status(200).json({ ok: true });
+    }
+
+    // ここから先は管理者のみ
+    if (!isGAdmin) return res.status(403).json({ ok: false, reason: 'not_group_admin' });
+
+    if (req.method === 'GET') {
+      const list = (await redis.get(KEY)) || [];
+      return res.status(200).json({ ok: true, items: list });
+    }
+
+    if (req.method === 'POST' && body.action === 'reject') {
+      const list = (await redis.get(KEY)) || [];
+      const next = list.filter(x => x && x.id !== body.itemId);
+      await redis.set(KEY, next);
+      return res.status(200).json({ ok: true });
+    }
+
+    if (req.method === 'POST' && body.action === 'publish') {
+      const list = (await redis.get(KEY)) || [];
+      const item = list.find(x => x && x.id === body.itemId);
+      if (!item) return res.status(200).json({ ok: false, reason: 'not_found' });
+      const SKEY = teamShelfKey(teamId);
+      const shelves = (await redis.get(SKEY)) || [];
+      const now = Date.now();
+      const newCard = Object.assign({}, item.card, {
+        id: 'gc_' + newShareToken().slice(0, 12),
+        submittedBy: item.fromName || '',
+        created: now,
+      });
+      let shelf = shelves.find(s => s && s.name === PUBLIC_SHELF_NAME);
+      if (!shelf) {
+        if (shelves.length >= MAX_SHELVES_PER_TEAM) return res.status(200).json({ ok: false, reason: 'limit_reached' });
+        shelf = { id: newShelfId(), name: PUBLIC_SHELF_NAME, handle: '', desc: '', icon: '', cards: [newCard], ownerTeamId: teamId, createdAt: now, updatedAt: now };
+        shelves.push(shelf);
+      } else {
+        shelf.cards = Array.isArray(shelf.cards) ? shelf.cards : [];
+        shelf.cards.unshift(newCard);
+        if (shelf.cards.length > MAX_CARDS_PER_SHELF) shelf.cards = shelf.cards.slice(0, MAX_CARDS_PER_SHELF);
+        shelf.updatedAt = now;
+      }
+      await redis.set(SKEY, shelves);
+      const next = list.filter(x => x && x.id !== body.itemId);
+      await redis.set(KEY, next);
+      return res.status(200).json({ ok: true, shelfId: shelf.id });
+    }
+
+    return res.status(405).json({ ok: false, reason: 'method_not_allowed' });
+  } catch (err) {
+    console.error('inbox (via teams) error:', err);
+    return res.status(500).json({ ok: false, reason: 'server_error' });
+  }
+}
+
 // 共有リンク: POST=作成(トークン発行・10分TTL) / GET=取得(?t=トークン)
 async function handleShare(req, res) {
   try {
@@ -245,6 +348,11 @@ export default async function handler(req, res) {
   // 個人の投稿の共有リンク (認証不要・10分TTL)。関数数を増やさないため相乗り。
   if (req.query && (req.query.share === '1' || req.query.share === 'true')) {
     return handleShare(req, res);
+  }
+
+  // グループの受信箱 (メンバー→管理者)。関数数を増やさないため相乗り。
+  if (req.query && (req.query.ginbox === '1' || req.query.ginbox === 'true')) {
+    return handleInbox(req, res);
   }
 
   // グループ管理者の自前ライブラリは、関数数を増やさないためこのエンドポイントに相乗り。
