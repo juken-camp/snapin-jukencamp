@@ -2240,10 +2240,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .tp-titles{flex:1;min-width:0;}
 .tp-title{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:.01em;}
 .tp-sub{font-size:11px;color:var(--ink2);margin-top:1px;}
-.tp-dots{display:flex;gap:0;align-items:center;flex-shrink:0;}
-.tp-dot-hit{padding:6px 4px;display:flex;align-items:center;justify-content:center;background:none;}
-.tp-dot{width:6px;height:6px;border-radius:50%;background:var(--line2);transition:all .2s;}
-.tp-dot.on{background:var(--g);transform:scale(1.3);}
 /* カードは"medium"な固定高に。中身は上下中央へ寄せて間延びを防ぐ。 */
 .tp-card{
   position:relative;width:100%;height:172px;border-radius:14px;overflow:hidden;
@@ -2259,23 +2255,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 /* 答え合わせ前: ぼかし + ベール (暗記モードと同じ質感) */
 .tp-card.veiled img,.tp-card.veiled .tp-note{filter:blur(7px) saturate(.9);}
 .tp-card.veiled::after{content:'';position:absolute;inset:0;background:var(--mosaic-veil);}
-.tp-hint{
-  position:absolute;inset:0;z-index:2;pointer-events:none;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
-  color:#fff;font-size:13px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.35);
-}
-.tp-card.revealed .tp-hint{display:none;}
-/* 下部ナビ: 複数枚を行き来できる ‹ n / N › (答え合わせ前でも移動可) */
-.tp-nav{display:flex;align-items:center;justify-content:center;gap:20px;margin-top:11px;}
-.tp-nav-btn{
-  width:34px;height:34px;border-radius:50%;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  background:var(--gl);color:var(--gd);transition:transform .1s,opacity .1s;
-}
-.tp-nav-btn:active{transform:scale(0.9);}
-.tp-nav-btn:disabled{opacity:.35;background:var(--bg);color:var(--ink3);}
-.tp-counter{font-size:12.5px;color:var(--ink2);letter-spacing:.06em;min-width:48px;text-align:center;font-family:var(--font-en);}
-.tp-open-hint{text-align:center;font-size:11px;color:var(--ink3);margin-top:8px;}
 
 .search-extra-chev{color:var(--ink3);flex-shrink:0;}
 
@@ -12745,15 +12724,11 @@ function renderTodaysPick(){
   if(!ids.length){ host.innerHTML=''; return; } // 候補ゼロ(新規ユーザー等)はパネルごと出さない
 
   const refreshIcon='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>';
-  const chevL='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
-  const chevR='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
 
-  // idx を範囲内に収める (終了状態は持たず、常に 1〜N の1枚を表示)
+  // 常に1枚だけ表示。更新アイコン/横スワイプで別の1枚に入れ替える (複数枚をめくる UI は持たない)。
   if(_todaysPick.idx<0)_todaysPick.idx=0;
   if(_todaysPick.idx>ids.length-1)_todaysPick.idx=ids.length-1;
   const idx=_todaysPick.idx;
-
-  const dots=ids.map((_,i)=>`<button class="tp-dot-hit" data-tp-dot="${i}" aria-label="${i+1}枚目"><span class="${i===idx?'tp-dot on':'tp-dot'}"></span></button>`).join('');
 
   const id=ids[idx];
   const c0=state.cards.find(x=>x.id===id);
@@ -12772,7 +12747,7 @@ function renderTodaysPick(){
   host.innerHTML=`
     <div class="todays-pick">
       <div class="tp-head">
-        <button class="tp-icon" id="tp-refresh" aria-label="別の数枚に入れ替え">${refreshIcon}</button>
+        <button class="tp-icon" id="tp-refresh" aria-label="別のメモに入れ替え">${refreshIcon}</button>
         <div class="tp-titles">
           <div class="tp-title">まだ覚えてる？</div>
           <div class="tp-sub">むかしの自分が残したメモ</div>
@@ -12781,21 +12756,10 @@ function renderTodaysPick(){
           <svg class="eye-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h7M7 14h4"/></svg>
           <svg class="eye-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2" fill="currentColor" stroke="none"/><path d="M7 10h7M7 14h4" stroke="var(--bg)"/></svg>
         </button>
-        <div class="tp-dots">${dots}</div>
       </div>
       <div class="tp-card ${veiled?'veiled':'revealed'}" id="tp-card"${cardBg}>
         ${inner}
-        <div class="tp-hint">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-          <span>タップして答え合わせ</span>
-        </div>
       </div>
-      <div class="tp-nav">
-        <button class="tp-nav-btn" id="tp-prev" aria-label="前へ" ${idx<=0?'disabled':''}>${chevL}</button>
-        <span class="tp-counter">${idx+1} / ${ids.length}</span>
-        <button class="tp-nav-btn" id="tp-next" aria-label="次へ" ${idx>=ids.length-1?'disabled':''}>${chevR}</button>
-      </div>
-      ${veiled?'':'<div class="tp-open-hint">タップで開く</div>'}
     </div>`;
 
   // ── 配線 ──
@@ -12814,17 +12778,9 @@ function renderTodaysPick(){
     renderTodaysPick();
   });
 
-  // ドット: タップでその枚目へジャンプ
-  const dotsWrap=host.querySelector('.tp-dots');
-  if(dotsWrap)dotsWrap.addEventListener('click',e=>{
-    const b=e.target.closest('[data-tp-dot]'); if(!b)return;
-    const i=parseInt(b.getAttribute('data-tp-dot'),10);
-    if(i>=0 && i<ids.length){ _todaysPick.idx=i; _todaysPick.revealed=false; renderTodaysPick(); }
-  });
-
   const card=$('tp-card');
   if(card){
-    // スワイプで前後移動 (横移動が縦より大きく、しきい値超え)。タップとは区別する。
+    // 横スワイプで別の1枚に入れ替え (横移動が縦より大きく、しきい値超え)。タップとは区別する。
     let sx=0, sy=0, swiped=false;
     card.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; swiped=false; },{passive:true});
     card.addEventListener('touchend',e=>{
@@ -12832,8 +12788,7 @@ function renderTodaysPick(){
       const dx=t.clientX-sx, dy=t.clientY-sy;
       if(Math.abs(dx)>=40 && Math.abs(dx)>Math.abs(dy)){
         swiped=true; // この後のクリックは抑制
-        if(dx<0 && _todaysPick.idx<ids.length-1){ _todaysPick.idx++; _todaysPick.revealed=false; renderTodaysPick(); }
-        else if(dx>0 && _todaysPick.idx>0){ _todaysPick.idx--; _todaysPick.revealed=false; renderTodaysPick(); }
+        tpReroll();  // 左右どちらでも別のメモへ
       }
     });
     card.addEventListener('click',()=>{
@@ -12850,16 +12805,6 @@ function renderTodaysPick(){
       }
     });
   }
-  const prevBtn=$('tp-prev');
-  if(prevBtn)prevBtn.addEventListener('click',e=>{
-    e.stopPropagation();
-    if(_todaysPick.idx>0){ _todaysPick.idx--; _todaysPick.revealed=false; renderTodaysPick(); }
-  });
-  const nextBtn=$('tp-next');
-  if(nextBtn)nextBtn.addEventListener('click',e=>{
-    e.stopPropagation();
-    if(_todaysPick.idx<ids.length-1){ _todaysPick.idx++; _todaysPick.revealed=false; renderTodaysPick(); }
-  });
 }
 
 // ═══ UTILS ═══
