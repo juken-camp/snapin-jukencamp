@@ -2662,10 +2662,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .login-card-juken:active{background:#D9EFE5;}
 .login-pwa{
+  position:absolute;
+  bottom:max(24px, env(safe-area-inset-bottom));
+  left:0;right:0;
   font-size:11px;
   color:var(--ink3);
   text-align:center;
-  margin-top:18px;
   letter-spacing:0.01em;
   line-height:1.8;
 }
@@ -3364,6 +3366,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   padding:10px 4px 4px;
   letter-spacing:.3px;
 }
+.settings-item-logout{border-top:1px solid var(--line);margin-top:8px;}
+.settings-item-icon-logout{background:#FDECEA;color:var(--rose);}
+.settings-item-title-logout{color:var(--rose);}
 
 /* AIへの希望 (フリー記入) */
 .ai-note-box{
@@ -4197,9 +4202,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button data-action="open-settings" aria-label="設定">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/></svg>
       </button>
-      <button data-action="logout-confirm" aria-label="ログアウト">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
-      </button>
     </div>
   </div>
   <div class="scroll" id="lib-scroll">
@@ -4836,6 +4838,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </button>
   <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
+  <button class="settings-item settings-item-logout" data-action="logout-confirm" id="settings-logout-btn" style="display:none;">
+    <div class="settings-item-icon settings-item-icon-logout">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+    </div>
+    <div class="settings-item-text">
+      <div class="settings-item-title settings-item-title-logout">ログアウト</div>
+    </div>
+  </button>
   <div class="settings-ver">SnapIn ver. 2026.05.30-15</div>
 </div>
 
@@ -6907,6 +6917,12 @@ function openSettings(){
   if(cloudBox){
     cloudBox.style.display=isStudent()?'block':'none';
     if(isStudent())updateCloudStatus();
+  }
+  // ログアウト: ログイン済み（塾生/管理者/グループ）のみ表示
+  const logoutBtn=$('settings-logout-btn');
+  if(logoutBtn){
+    const loggedIn=!!(state.auth && state.auth.mode && state.auth.mode!=='personal');
+    logoutBtn.style.display=loggedIn?'flex':'none';
   }
   updateStorageMeter();
   applyTheme(); // テーマチップの選択状態を反映
