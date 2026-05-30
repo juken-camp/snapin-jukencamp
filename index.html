@@ -2233,18 +2233,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .search-extra-chev{color:var(--ink3);flex-shrink:0;}
 
-/* ═══ まだ覚えてる？ (探すページ最上部・自分の過去を1枚ずつ"答え合わせ") ═══ */
-/* 横スクロール列にせず、周囲から浮く"特別パネル"として重要感を出す。 */
+/* ═══ まだ覚えてる？ (探すページ最下部・自分の過去を1枚ずつ"答え合わせ") ═══ */
+/* 検索の入口より下に置く控えめなセクション。カードはグリッド/今日のメモと同寸。 */
 .todays-pick{
-  margin:2px 16px 20px;
-  border-radius:20px;
-  /* 継ぎ目が出ないよう、パネル全体をうっすらアクセントで一様に染める */
-  background:linear-gradient(180deg, rgba(var(--g-rgb),.07), rgba(var(--g-rgb),.015)), var(--surface);
-  border:1px solid var(--line);
-  box-shadow:0 2px 4px rgba(0,0,0,.04), 0 8px 22px rgba(0,0,0,.06);
-  padding:13px 13px 14px;
+  margin:0 16px calc(env(safe-area-inset-bottom) + 28px);
+  padding:14px 0 0;
+  border-top:0.5px solid var(--line);
   position:relative;
-  overflow:hidden;
 }
 .tp-head{display:flex;align-items:center;gap:10px;margin-bottom:11px;}
 .tp-icon{
@@ -2257,22 +2252,29 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .tp-titles{flex:1;min-width:0;}
 .tp-title{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:.01em;}
 .tp-sub{font-size:11px;color:var(--ink2);margin-top:1px;}
-/* カードは"medium"な固定高に。中身は上下中央へ寄せて間延びを防ぐ。 */
+/* カードはグリッド/今日のメモと同じセルサイズ(正方形・約140px)に揃える。 */
 .tp-card{
-  position:relative;width:100%;aspect-ratio:1;max-height:340px;border-radius:14px;overflow:hidden;
-  background:var(--bg);display:flex;align-items:center;justify-content:center;
+  position:relative;
+  width:min(140px, calc((100vw - 12px) / 3));
+  aspect-ratio:1;
+  border-radius:10px;
+  overflow:hidden;
+  background:var(--bg);
+  box-shadow:0 1px 3px rgba(0,0,0,.04);
   cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
 /* 同じ画像をぼかして背面に敷く → contain で出る余白が"間延び"せず、写真は一切切れない */
 .tp-blur{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(20px) saturate(1.05);transform:scale(1.2);}
 .tp-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;}
-.tp-note{
-  max-width:100%;max-height:100%;padding:16px 20px;
-  font-size:15px;line-height:1.6;color:var(--ink);white-space:pre-wrap;word-break:break-word;text-align:left;
-  display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;
+/* メモ(note)は .card / .today-newcard と同じ .ctxt/.ctxt-inner 構造を使い、
+   枠に対するテキスト比率をグリッド・編集画面と完全一致させる (applyGridNoteScale が実寸で確定)。 */
+.tp-card.note .ctxt{padding:0;position:relative;display:block;overflow:hidden;height:100%;background:#FFFDF5;}
+.tp-card.note .ctxt-inner{
+  position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;
+  display:flex;flex-direction:column;overflow:hidden;white-space:pre-wrap;word-break:break-word;
 }
 /* 答え合わせ前: ぼかし + ベール (暗記モードと同じ質感) */
-.tp-card.veiled img,.tp-card.veiled .tp-note{filter:blur(7px) saturate(.9);}
+.tp-card.veiled img,.tp-card.veiled .ctxt{filter:blur(7px) saturate(.9);}
 .tp-card.veiled::after{content:'';position:absolute;inset:0;background:var(--mosaic-veil);}
 
 .search-extra-chev{color:var(--ink3);flex-shrink:0;}
@@ -5511,7 +5513,7 @@ function noteCardStyle(card,col,containerWidth){
 // (HTML 生成時点では幅が分からないので、レンダリング後にこの関数を呼んで実寸で確定させる)
 function applyGridNoteScale(root){
   const scope=root||document;
-  const nodes=scope.querySelectorAll('.card.note .ctxt-inner, .today-newcard.note .ctxt-inner');
+  const nodes=scope.querySelectorAll('.card.note .ctxt-inner, .today-newcard.note .ctxt-inner, .tp-card.note .ctxt-inner');
   nodes.forEach(inner=>{
     const ctxt=inner.parentElement;
     if(!ctxt)return;
@@ -5520,7 +5522,7 @@ function applyGridNoteScale(root){
     // カード ID から元データを取りに行く必要があるが、ここではテキストとカラーだけ
     // 取り出して noteCardStyle を呼び直す。
     // 親 .card / .today-newcard から data-id でカードを引く。
-    const cardEl=ctxt.closest('.card,.today-newcard');
+    const cardEl=ctxt.closest('.card,.today-newcard,.tp-card');
     const cardId=cardEl?cardEl.dataset.id:null;
     let c=null;
     if(cardId){
@@ -12697,8 +12699,9 @@ function renderSearchIdle(){
     </button>
   </div>`;
 
-  // 最上部に「今日の数枚」(自分の過去を1枚ずつ答え合わせ) の差し込み口を置く
-  idle.innerHTML='<div id="todays-pick-host"></div>'+html;
+  // 「まだ覚えてる?」(自分の過去を1枚ずつ答え合わせ) は最下部に置く。
+  // ここは「メモを探す」ページなので、検索の入口より下、捨てたメモのさらに下に。
+  idle.innerHTML=html+'<div id="todays-pick-host"></div>';
   renderTodaysPick();
 }
 
@@ -12784,13 +12787,15 @@ function renderTodaysPick(){
   const id=ids[idx];
   const c0=state.cards.find(x=>x.id===id);
   const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
-  let inner='', cardBg='';
+  let inner='', cardType='';
   if(c.type==='photo'||c.type==='photonote'){
     inner=`<div class="tp-blur" style="background-image:url('${c.image||''}')"></div><img src="${c.image||''}" alt="" decoding="async">`;
   }else{
+    // メモはグリッド/今日のメモと同じ .ctxt/.ctxt-inner + noteCardStyle で描画。
+    // レンダリング後に applyGridNoteScale が枠の実寸でフォントサイズを確定させる。
     const col=colorById(c.color);
-    cardBg=` style="background:${col.bg};"`;       // メモは色をカード全体に敷き、文字は中央へ
-    inner=`<div class="tp-note">${esc(c.text||'')}</div>`;
+    cardType=' note';
+    inner=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${noteCardStyle(c,col)}">${esc(c.text||'')}</div></div>`;
   }
   // 暗記モード(ボカシ): 探すページ共通トグル(state.searchMosaic)に従う。ON なら未公開はぼかす。
   const veiled=state.searchMosaic && !_todaysPick.revealed;
@@ -12804,10 +12809,14 @@ function renderTodaysPick(){
           <div class="tp-sub">むかしの自分が残したメモ</div>
         </div>
       </div>
-      <div class="tp-card ${veiled?'veiled':'revealed'}" id="tp-card"${cardBg}>
+      <div class="tp-card${cardType} ${veiled?'veiled':'revealed'}" id="tp-card" data-id="${id}">
         ${inner}
       </div>
     </div>`;
+
+  // メモの「枠に対するテキスト比率」をグリッド/編集画面と完全一致させる (実寸で確定)。
+  applyGridNoteScale(host);
+  requestAnimationFrame(()=>applyGridNoteScale(host));
 
   // ── 配線 ──
   // 更新アイコン: 別の数枚に入れ替え
