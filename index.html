@@ -3096,6 +3096,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .share-qr{display:flex;justify-content:center;margin:2px 0 14px;}
 .share-qr img{width:200px;height:200px;border-radius:10px;background:#fff;padding:8px;box-sizing:border-box;image-rendering:pixelated;box-shadow:0 2px 10px rgba(0,0,0,.08);}
+.url-qr-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:4px 0 14px;padding:12px;background:var(--gl);color:var(--gd);border:none;border-radius:12px;font-size:14px;font-weight:600;font-family:var(--font-jp);}
+.url-qr-btn:active{transform:scale(.98);}
+.qr-scan{position:fixed;inset:0;z-index:1300;background:#000;display:none;}
+.qr-scan.on{display:block;}
+.qr-scan video{width:100%;height:100%;object-fit:cover;}
+.qr-scan-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+.qr-scan-frame{width:64vw;max-width:280px;aspect-ratio:1;border:3px solid #fff;border-radius:20px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45);}
+.qr-scan-hint{margin-top:26px;color:#fff;font-size:14px;background:rgba(0,0,0,.5);padding:8px 16px;border-radius:20px;font-family:var(--font-jp);text-align:center;}
+.qr-scan-close{position:absolute;top:calc(env(safe-area-inset-top, 0px) + 14px);right:16px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;border:none;}
 .share-recv{
   position:fixed;inset:0;background:rgba(0,0,0,.4);
   z-index:1100;display:none;align-items:center;justify-content:center;
@@ -3779,6 +3788,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <div class="quick-add">
       <input id="quick-input" placeholder="今すぐメモする">
       <div class="quick-add-icons" id="quick-icons">
+        <button class="quick-add-icon" data-action="open-qr-scan" aria-label="QRコードを読み取る">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 21v.01M17 21h.01M21 17h.01"/></svg>
+        </button>
         <button class="quick-add-icon" data-action="quick-photo" aria-label="写真">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </button>
@@ -4263,6 +4275,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </div>
 </div>
+
+<!-- QRスキャナー (共有QRをアプリ内で読み取る) -->
+<div class="qr-scan" id="qr-scanner" aria-hidden="true">
+  <video id="qr-video" playsinline muted autoplay></video>
+  <div class="qr-scan-overlay">
+    <div class="qr-scan-frame"></div>
+    <div class="qr-scan-hint" id="qr-scan-hint">共有QRコードを枠に合わせてください</div>
+  </div>
+  <button class="qr-scan-close" data-action="qr-scan-close" aria-label="閉じる">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+  </button>
+</div>
 <input type="file" id="file-input" accept="image/*" style="display:none;">
 <input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none;">
 <input type="file" id="file-input-any" accept=".png,.jpg,.jpeg,.gif,.webp,.heic,.heif" style="display:none;">
@@ -4274,6 +4298,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <div class="url-modal-title">URLを保存</div>
     <input type="url" id="url-input" placeholder="https://..." autocomplete="off" autocapitalize="off" spellcheck="false">
     <div class="url-modal-msg" id="url-modal-msg"></div>
+    <button class="url-qr-btn" data-action="open-qr-scan">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 21v.01M17 21h.01M21 17h.01"/></svg>
+      QRコードを読み取る
+    </button>
     <div class="url-modal-actions">
       <button class="url-modal-btn" id="url-cancel">キャンセル</button>
       <button class="url-modal-btn primary" id="url-fetch">取得</button>
@@ -4396,7 +4424,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </button>
   <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
-  <div class="settings-ver">SnapIn ver. 2026.05.30-10</div>
+  <div class="settings-ver">SnapIn ver. 2026.05.30-12</div>
 </div>
 
 <!-- バブル長押しメニュー (コピー/部分コピー/リプライ/削除) -->
@@ -5889,6 +5917,84 @@ function renderShareQr(url){
     qr.make();
     el.innerHTML=`<img src="${qr.createDataURL(5,4)}" alt="QRコード">`;
   }catch(e){ el.innerHTML=''; }
+}
+
+// ═══ QRスキャナー (共有QRをアプリ内で読み取って取り込む) ═══
+let _qrStream=null, _qrRAF=null, _qrCanvas=null, _qrScanning=false, _qrLastDecode=0;
+// 読み取りライブラリ(jsqr.js)は使う時だけ読み込む (index.html を太らせない)
+function loadJsQR(){
+  if(window.jsQR)return Promise.resolve(window.jsQR);
+  if(window._jsqrLoading)return window._jsqrLoading;
+  window._jsqrLoading=new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='jsqr.js';
+    s.onload=()=>res(window.jsQR);
+    s.onerror=()=>{ window._jsqrLoading=null; rej(new Error('load failed')); };
+    document.head.appendChild(s);
+  });
+  return window._jsqrLoading;
+}
+async function openQrScanner(){
+  if($('url-modal'))closeUrlModal();
+  const ov=$('qr-scanner'); const hint=$('qr-scan-hint');
+  if(!ov)return;
+  ov.classList.add('on'); ov.setAttribute('aria-hidden','false');
+  if(hint)hint.textContent='カメラを準備中…';
+  let jsQRfn;
+  try{ jsQRfn=await loadJsQR(); }
+  catch(e){ if(hint)hint.textContent='読み取り機能を読み込めませんでした'; return; }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    if(hint)hint.textContent='この端末ではカメラを使えません'; return;
+  }
+  try{
+    _qrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  }catch(e){
+    if(hint)hint.textContent='カメラを使えませんでした。設定でカメラを許可してください';
+    return;
+  }
+  const video=$('qr-video');
+  video.srcObject=_qrStream;
+  try{ await video.play(); }catch(e){}
+  if(hint)hint.textContent='共有QRコードを枠に合わせてください';
+  if(!_qrCanvas)_qrCanvas=document.createElement('canvas');
+  const ctx=_qrCanvas.getContext('2d',{willReadFrequently:true});
+  _qrScanning=true; _qrLastDecode=0;
+  const tick=()=>{
+    if(!_qrScanning)return;
+    const now=performance.now();
+    if(video.readyState===video.HAVE_ENOUGH_DATA && (now-_qrLastDecode)>=110){
+      _qrLastDecode=now;
+      const w=video.videoWidth, h=video.videoHeight;
+      if(w && h){
+        _qrCanvas.width=w; _qrCanvas.height=h;
+        ctx.drawImage(video,0,0,w,h);
+        let img=null;
+        try{ img=ctx.getImageData(0,0,w,h); }catch(e){ img=null; }
+        if(img){
+          let code=null;
+          try{ code=jsQRfn(img.data,w,h,{inversionAttempts:'dontInvert'}); }catch(e){ code=null; }
+          if(code && code.data){
+            const tok=parseShareToken(code.data);
+            if(tok){ closeQrScanner(); loadAndShowShare(tok); return; }
+            else{ const hh=$('qr-scan-hint'); if(hh)hh.textContent='SnapInの共有QRではありません'; }
+          }
+        }
+      }
+    }
+    _qrRAF=requestAnimationFrame(tick);
+  };
+  _qrRAF=requestAnimationFrame(tick);
+}
+function stopQrScanner(){
+  _qrScanning=false;
+  if(_qrRAF){ cancelAnimationFrame(_qrRAF); _qrRAF=null; }
+  if(_qrStream){ try{ _qrStream.getTracks().forEach(t=>t.stop()); }catch(e){} _qrStream=null; }
+  const video=$('qr-video'); if(video)video.srcObject=null;
+}
+function closeQrScanner(){
+  stopQrScanner();
+  const ov=$('qr-scanner');
+  if(ov){ ov.classList.remove('on'); ov.setAttribute('aria-hidden','true'); }
 }
 function closeShareLinkModal(){
   $('share-link-modal').classList.remove('on');
@@ -12318,6 +12424,8 @@ document.addEventListener('click',e=>{
     case 'share-link-close':closeShareLinkModal();break;
     case 'share-recv-import':importSharedCard();break;
     case 'share-recv-close':closeShareRecv();break;
+    case 'open-qr-scan':openQrScanner();break;
+    case 'qr-scan-close':closeQrScanner();break;
     case 'goto-ginbox':gotoInbox();break;
     case 'inbox-keep':inboxKeep(t.dataset.inboxId);break;
     case 'inbox-publish':inboxPublish(t.dataset.inboxId);break;
