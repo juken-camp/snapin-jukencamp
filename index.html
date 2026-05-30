@@ -2784,6 +2784,57 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   content:"✓";color:var(--g);font-weight:700;flex-shrink:0;
 }
 .lib-locked-banner .lib-trust .trust-item.strong{color:var(--ink2);font-weight:600;}
+/* 開発ストーリー / 設計の背景 */
+.lib-locked-banner .lib-story{
+  margin-top:20px;
+  padding-top:16px;
+  border-top:1px solid rgba(0,0,0,.06);
+  text-align:left;
+}
+.lib-locked-banner .lib-story .story-ttl{
+  font-size:13px;font-weight:700;color:var(--gd);
+  text-align:center;margin-bottom:10px;letter-spacing:.02em;
+}
+.lib-locked-banner .lib-story .story-body p{
+  font-size:12px;color:var(--ink2);line-height:1.78;margin-bottom:10px;
+}
+.lib-locked-banner .lib-story details{
+  margin-top:4px;
+  background:rgba(255,255,255,.55);
+  border:1px solid var(--line);
+  border-radius:10px;
+  overflow:hidden;
+}
+.lib-locked-banner .lib-story summary{
+  list-style:none;cursor:pointer;
+  padding:11px 13px;
+  font-size:12px;font-weight:700;color:var(--gd);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.lib-locked-banner .lib-story summary::-webkit-details-marker{display:none;}
+.lib-locked-banner .lib-story summary::after{
+  content:"＋";color:var(--g);font-weight:700;font-size:14px;flex-shrink:0;line-height:1;
+}
+.lib-locked-banner .lib-story details[open] summary::after{content:"−";}
+.lib-locked-banner .lib-story .why-intro{
+  font-size:11.5px;color:var(--ink2);line-height:1.65;
+  padding:0 13px 9px;
+}
+.lib-locked-banner .lib-story .why-item{
+  font-size:11.5px;color:var(--ink2);line-height:1.65;
+  padding:9px 13px;border-top:1px solid var(--line);
+}
+.lib-locked-banner .lib-story .why-item b{
+  color:var(--gd);font-size:12px;
+}
+.lib-locked-banner .lib-story .why-item .term{
+  margin-left:6px;color:var(--ink3);font-weight:400;font-size:9.5px;
+  font-family:var(--font-en);font-style:italic;letter-spacing:.01em;
+}
+.lib-locked-banner .lib-story .story-close{
+  font-size:12px;color:var(--ink2);line-height:1.7;
+  margin-top:13px;text-align:center;
+}
 /* 製作者クレジット (さりげなく) */
 .lib-locked-banner .lib-credit{
   margin-top:18px;
@@ -11148,12 +11199,31 @@ function renderLibrary(){
           <button class="go-contact" data-action="contact-inquiry">使ってみたい・相談する</button>
         </div>
         <button class="lib-login-link" data-action="goto-login">すでに登録済み・コードをお持ちの方はログイン</button>
+        <div class="lib-story">
+          <div class="story-ttl">SnapInのなりたち</div>
+          <div class="story-body">
+            <p>もとは、テスト勉強のための道具でした。解けなかった問題、覚えておきたい公式、間違えやすいところを、自分ひとりのLINEグループに写真やメモで送り、あとからスクロールして見返す。この使い方を、そのままアプリにしました。</p>
+            <p>入れるものは、次第に問題だけではなくなりました。やることリスト、買い物メモ、目標。別々の場所に書いていたものが、ひとつの流れに集まります。メモは、あとで見つけられて初めて役に立ちます。一か所にまとまっていれば、どこに書いたかを思い出す手間がありません。</p>
+            <p>放り込み方に決まりはありません。思いついた順に入れるだけで、取りこぼしがありません。整理が必要になったら、タグをつける。それだけで十分です。</p>
+            <p>グリッド表示は、SNSを流して必要な情報だけを選び取る見方から取りました。並べて見渡せると、探す途中で別のメモが目に入り、見返すつもりがなくても復習になります。</p>
+          </div>
+          <details>
+            <summary>なぜ「メモする」だけでうまくいくのか</summary>
+            <div class="why-intro">人は忘れます。頭で抱えようとせず、書いて外に出す。それがうまくいく理由は、いくつかあります。</div>
+            <div class="why-item"><b>忘れるのが普通<span class="term">forgetting curve</span></b><br>古典的な実験では、人は1時間で約56%、1日で約74%を忘れるとされます。「あとでやろう」が消えるのは、意志ではなく記憶のしくみ。書いておけば、忘れても残ります。</div>
+            <div class="why-item"><b>頭から降ろすと、軽くなる<span class="term">Zeigarnik effect</span></b><br>やるべきことを抱えていると、頭の片隅がふさがります。書いて預けると、その分を目の前のことに使えます。</div>
+            <div class="why-item"><b>目に入るほど、行動が変わる<span class="term">cueing</span></b><br>目標や予定は、見える場所にあるほど行動のきっかけになります。頭の中だけの目標は、思い出されないまま過ぎていきます。</div>
+            <div class="why-item"><b>撮るだけなら、続く<span class="term">low friction</span></b><br>記録の手間が小さいほど、取りこぼしは減ります。買い物も、覚えずに済む分だけ無駄が減ります。</div>
+            <div class="why-item"><b>残せば、あとで確かめられる<span class="term">external record</span></b><br>記録があれば、自分で見直せます。仕事なら、共有しておくほど「言った・言わない」が減ります。</div>
+          </details>
+          <div class="story-close">子どもは勉強に、大人は暮らしや仕事のメモに。</div>
+        </div>
         <div class="lib-trust">
           <div class="trust-ttl">見えないところも、安心設計</div>
           <div class="trust-item strong">あなたのメモは、他の人には見られません</div>
           <div class="trust-item">メモはあなたの端末の中に保存されます</div>
-          <div class="trust-item">あなたに届くのは「共有された資料」だけで、やりとりは一方通行です</div>
-          <div class="trust-item">バックアップを選べば、機種変更や再インストールでも元どおりです</div>
+          <div class="trust-item">届くのは「共有された資料」だけ。一方通行です</div>
+          <div class="trust-item">バックアップを選べば、機種変更でも元どおりです</div>
           <div class="trust-item">うっかり消してもゴミ箱から元に戻せます</div>
           <div class="trust-item">通信はすべて暗号化（HTTPS）でやりとりされます</div>
           <div class="trust-item">AIの鍵はサーバーの中にあり、アプリ側には持たせません</div>
