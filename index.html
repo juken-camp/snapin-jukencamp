@@ -854,9 +854,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 #add-sheet.on{transform:translateY(0);}
 #add-sheet .sheet-handle{display:none;}
 #add-sheet .sheet-options{
-  display:flex;
+  display:grid;
+  grid-template-columns:repeat(3, auto);
   justify-content:center;
-  gap:12px;
+  gap:20px 30px;
   padding:0;
 }
 #add-sheet .sheet-opt{
@@ -910,6 +911,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .sheet-opt-title{font-size:13px;font-weight:600;color:var(--ink);}
 .sheet-opt-desc{font-size:10px;color:var(--ink3);line-height:1.4;}
 #share-choice-sheet .sheet-options{grid-template-columns:1fr 1fr;}
+#batch-choose-sheet .sheet-options{grid-template-columns:1fr 1fr;}
 
 /* UPLOAD / EDIT */
 .upload-body{
@@ -3893,18 +3895,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .batch-tray-empty{text-align:center;color:var(--ink3);font-size:13px;padding:36px 0;line-height:1.6;}
 .batch-tray-foot{
-  flex-shrink:0;padding:12px 14px calc(env(safe-area-inset-bottom) + 12px);
+  flex-shrink:0;padding:12px 16px calc(env(safe-area-inset-bottom) + 26px);
   background:var(--surface);border-top:1px solid var(--line);
   box-shadow:0 -2px 12px rgba(0,0,0,.04);
 }
 .batch-tray-add{
-  width:100%;padding:11px;border-radius:12px;border:1.5px dashed var(--line2);
-  color:var(--ink2);font-size:13.5px;font-weight:500;margin-bottom:10px;
+  width:100%;padding:9px;border-radius:11px;border:1.5px dashed var(--line2);
+  color:var(--ink2);font-size:13.5px;font-weight:500;margin-bottom:9px;
   display:flex;align-items:center;justify-content:center;gap:6px;transition:background .1s;
 }
 .batch-tray-add:active{background:var(--gl);}
 .batch-tray-commit{
-  width:100%;padding:14px;border-radius:14px;background:var(--g);color:#fff;
+  width:100%;padding:12px;border-radius:12px;background:var(--g);color:#fff;
   font-size:15px;font-weight:600;transition:background .1s,transform .1s;
 }
 .batch-tray-commit:active{background:var(--gd);transform:scale(0.99);}
