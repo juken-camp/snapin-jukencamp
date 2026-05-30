@@ -111,10 +111,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 #mosaic-btn.on .eye-on{display:none;}
 #mosaic-btn.on .eye-off{display:block;}
 /* 探す/しばらく見ていないメモ の暗記モード(ボカシ)ボタンも同じ規約 */
-#search-mosaic-btn .eye-off,#stale-mosaic-btn .eye-off{display:none;}
-#search-mosaic-btn.on .eye-on,#stale-mosaic-btn.on .eye-on{display:none;}
-#search-mosaic-btn.on .eye-off,#stale-mosaic-btn.on .eye-off{display:block;}
-#search-mosaic-btn.on{color:var(--g);background:var(--gl);}
+#search-mosaic-btn .eye-off,#stale-mosaic-btn .eye-off,#today-mosaic-btn .eye-off{display:none;}
+#search-mosaic-btn.on .eye-on,#stale-mosaic-btn.on .eye-on,#today-mosaic-btn.on .eye-on{display:none;}
+#search-mosaic-btn.on .eye-off,#stale-mosaic-btn.on .eye-off,#today-mosaic-btn.on .eye-off{display:block;}
+#search-mosaic-btn.on,#today-mosaic-btn.on{color:var(--g);background:var(--gl);}
 #stale-mosaic-btn.on{color:var(--g);background:var(--gl);}
 
 /* 戻るヘッダー */
@@ -586,21 +586,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .today-newcards.mosaic .today-newcard.tapped .link-card-host,
 .today-newcards.mosaic .today-newcard.tapped img{filter:none;}
 .today-newcards.mosaic .today-newcard.tapped::before{display:none;}
-
-/* セクション見出しの「目」ボタン */
-.today-block-eye{
-  width:30px;height:30px;
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--ink3);
-  flex-shrink:0;
-  transition:color .15s, background-color .15s, transform .15s;
-}
-.today-block-eye:active{transform:scale(0.9);}
-.today-block-eye.on{color:var(--g);background:var(--gl);}
-.today-block-eye .eye-off{display:none;}
-.today-block-eye.on .eye-on{display:none;}
-.today-block-eye.on .eye-off{display:block;}
 
 /* 詳細画面のモザイク (思い出すモード)。メモ本体(画像・テキスト・リスト)をぼかし、タップで一時表示。 */
 #detail-mosaic-btn .eye-off{display:none;}
@@ -4146,6 +4131,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <div class="screen" id="screen-today">
   <div class="hdr">
     <div class="logo">Snap<em>In</em><span class="page-sub">今日のメモ</span></div>
+    <div class="hdr-icons">
+      <button data-action="toggle-today-mosaic" id="today-mosaic-btn" aria-label="思い出す">
+        <svg class="eye-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h7M7 14h4"/></svg>
+        <svg class="eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2" fill="currentColor" stroke="none"/><path d="M7 10h7M7 14h4" stroke="var(--bg)"/></svg>
+      </button>
+    </div>
   </div>
   <div class="scroll" id="today-scroll">
     <div class="today-hero">
@@ -4852,7 +4843,7 @@ const state={
   chatRef:null,
   currentOfficial:null,
   mosaicMode:false,
-  todayMosaic:{},      // 「今日」ページのセクション別モザイク状態 {sectionKey:true/false}
+  todayMosaic:false,   // 「今日」ページの暗記モード(ボカシ)。昨日以降の過去メモに適用 (今日のメモは除外)
   detailMosaic:false,  // 詳細画面のモザイク状態
   detailAiMode:false,  // 詳細画面でAI送信モードか
   replyTo:null,        // 現在リプライ中の対象 {cardId, msgIdx, text, role} | null
@@ -7235,38 +7226,8 @@ function pickTodayMessage(band,now){
   return pool[seed%pool.length];
 }
 
-// 「今日」ページのセクション見出しに置く「目」ボタンのHTML。
-// data-today-eye にセクションキー、data-eye-target に対象 today-newcards の id を持たせる。
-function todayEyeBtnHtml(sectionKey, targetId){
-  const on=!!state.todayMosaic[sectionKey];
-  return `<button class="today-block-eye${on?' on':''}" data-today-eye="${esc(sectionKey)}" data-eye-target="${esc(targetId)}" aria-label="思い出す">
-    <svg class="eye-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h7M7 14h4"/></svg>
-    <svg class="eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2" fill="currentColor" stroke="none"/><path d="M7 10h7M7 14h4" stroke="var(--bg)"/></svg>
-  </button>`;
-}
-
-// 「今日」ページの目ボタン・カードのタップ挙動を配線する (renderToday の最後で呼ぶ)。
-function wireTodayMosaic(){
-  const screen=$('screen-today');
-  if(!screen)return;
-  // 目ボタン: セクションのモザイクをトグル
-  screen.querySelectorAll('[data-today-eye]').forEach(btn=>{
-    btn.addEventListener('click',(e)=>{
-      e.stopPropagation();
-      const key=btn.dataset.todayEye;
-      const targetId=btn.dataset.eyeTarget;
-      const next=!state.todayMosaic[key];
-      state.todayMosaic[key]=next;
-      btn.classList.toggle('on',next);
-      const row=$(targetId);
-      if(row){
-        row.classList.toggle('mosaic',next);
-        // モザイク解除時は各カードの一時表示(tapped)もリセット
-        if(!next)row.querySelectorAll('.today-newcard.tapped').forEach(c=>c.classList.remove('tapped'));
-      }
-    });
-  });
-}
+// 「今日」ページの暗記モードは、ヘッダー右上の #today-mosaic-btn による
+// ページ共通トグル (state.todayMosaic) に統一。各セクション個別の目ボタンは廃止。
 
 function renderToday(){
   const now=new Date();
@@ -7314,10 +7275,9 @@ function renderToday(){
             今日のメモ
           </div>
           <div class="today-block-count">${todayCards.length}</div>
-          ${todayEyeBtnHtml('today','today-newcards')}
         </div>
       </div>
-      <div class="today-newcards${state.todayMosaic['today']?' mosaic':''}" id="today-newcards"></div>
+      <div class="today-newcards" id="today-newcards"></div>
     `;
     const wrap=$('today-newcards');
     todayCards.forEach(c0=>{
@@ -7339,8 +7299,7 @@ function renderToday(){
       }
       if(cardHasUpdate(c0))el.innerHTML+=`<div class="card-update-badge">更新</div>`;
       el.addEventListener('click',()=>{
-        // モザイク中はタップで表示/再ぼかしをトグル (開かない)
-        if(state.todayMosaic['today']){el.classList.toggle('tapped');return;}
+        // 今日のメモはぼかさない (思い出す練習の対象外) → 常に詳細を開く
         openDetail(c0,'mine');
       });
       wrap.appendChild(el);
@@ -7362,8 +7321,8 @@ function renderToday(){
   requestAnimationFrame(()=>applyGridNoteScale(todayScreen));
   // 画像を事前デコード (PTRやスクロール時のメインスレッドブロック防止)
   precacheCardImages(todayScreen);
-  // セクション別モザイクの目ボタン・タップ挙動を配線
-  wireTodayMosaic();
+  // ヘッダーの暗記モードトグルの表示状態を同期
+  syncTodayMosaicBtn();
 }
 
 // 「N日以上見ていないメモ」を返す ("探す"の未閲覧フィルタで使用)。
@@ -7423,10 +7382,9 @@ function renderPastDaySection(daysAgo){
           ${label}
         </div>
         <div class="today-block-count">${cards.length}</div>
-        ${todayEyeBtnHtml(secKey, rowId)}
       </div>
     </div>
-    <div class="today-newcards${state.todayMosaic[secKey]?' mosaic':''}" id="${rowId}"></div>
+    <div class="today-newcards${state.todayMosaic?' mosaic':''}" id="${rowId}"></div>
   `;
   const wrap=$(rowId);
   cards.forEach(c0=>{
@@ -7448,7 +7406,7 @@ function renderPastDaySection(daysAgo){
     }
     if(cardHasUpdate(c0))el.innerHTML+=`<div class="card-update-badge">更新</div>`;
     el.addEventListener('click',()=>{
-      if(state.todayMosaic[secKey]){el.classList.toggle('tapped');return;}
+      if(state.todayMosaic){el.classList.toggle('tapped');return;}
       openDetail(c0,'mine');
     });
     wrap.appendChild(el);
@@ -7529,10 +7487,9 @@ function renderPastMoreSection(){
             ${label}
           </div>
           <div class="today-block-count">${g.cards.length}</div>
-          ${todayEyeBtnHtml(secKey, rowId)}
         </div>
       </div>
-      <div class="today-newcards${state.todayMosaic[secKey]?' mosaic':''}" id="${rowId}">${cardsHtml}</div>
+      <div class="today-newcards${state.todayMosaic?' mosaic':''}" id="${rowId}">${cardsHtml}</div>
     `;
   }
   html+=`
@@ -7555,8 +7512,6 @@ function renderPastMoreSection(){
       });
     });
   });
-  // 目ボタンを配線
-  wireTodayMosaic();
 }
 
 // ═══ HOME ═══
@@ -12955,6 +12910,17 @@ function syncSearchMosaicBtns(){
   $('stale-mosaic-btn')?.classList.toggle('on',state.searchMosaic);
 }
 
+// 「今日」ページの暗記モード(ボカシ) を切り替え。昨日以降の過去メモに適用 (今日のメモは除外)。
+function toggleTodayMosaic(){
+  state.todayMosaic=!state.todayMosaic;
+  if(navigator.vibrate)navigator.vibrate(8);
+  if($('screen-today')?.classList.contains('active'))renderToday();
+  syncTodayMosaicBtn();
+}
+function syncTodayMosaicBtn(){
+  $('today-mosaic-btn')?.classList.toggle('on',state.todayMosaic);
+}
+
 // 詳細画面のモザイク(思い出すモード)をトグル
 function toggleDetailMosaic(){
   state.detailMosaic=!state.detailMosaic;
@@ -13034,6 +13000,7 @@ document.addEventListener('click',e=>{
     case 'view-reel':setView('reel');break;
     case 'toggle-mosaic':toggleMosaic();break;
     case 'toggle-search-mosaic':toggleSearchMosaic();break;
+    case 'toggle-today-mosaic':toggleTodayMosaic();break;
     case 'toggle-detail-mosaic':toggleDetailMosaic();break;    case 'toggle-menu':$('detail-menu').classList.toggle('on');e.stopPropagation();break;
     case 'edit-card':editCard();break;
     case 'delete-card':deleteCard();break;
