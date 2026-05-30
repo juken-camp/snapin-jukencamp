@@ -733,6 +733,20 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .glib-memo-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .glib-memo-kind{font-size:11px;font-weight:700;color:var(--g);background:var(--gl);padding:3px 8px;border-radius:7px;}
 .glib-memo-del{font-size:12px;color:var(--rose);font-weight:600;padding:4px 8px;background:transparent;}
+.ginbox-item{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 18px 12px;box-shadow:var(--shadow);}
+.ginbox-from{font-size:12px;font-weight:700;color:var(--gd);margin-bottom:8px;}
+.ginbox-preview img{width:100%;border-radius:10px;display:block;margin-bottom:8px;}
+.ginbox-preview-text{font-size:14px;color:var(--ink);line-height:1.55;white-space:pre-wrap;word-break:break-word;}
+.ginbox-preview-link{display:flex;gap:8px;align-items:center;background:var(--gl);border-radius:10px;padding:8px 10px;color:var(--gd);font-size:13px;}
+.ginbox-preview-li{display:flex;gap:8px;font-size:14px;color:var(--ink);padding:3px 0;}
+.ginbox-note{font-size:12px;color:var(--ink3);margin-top:6px;}
+.ginbox-acts{display:flex;gap:8px;margin-top:12px;}
+.ginbox-acts button{flex:1;font-size:13px;font-weight:600;border-radius:10px;padding:10px 6px;border:none;}
+.ginbox-act-keep{background:var(--gl);color:var(--gd);}
+.ginbox-act-pub{background:var(--g);color:#fff;}
+.ginbox-act-del{background:transparent;color:var(--rose);border:1px solid var(--line2) !important;}
+.ginbox-acts button:active{transform:scale(.97);}
+.ginbox-empty{font-size:13px;color:var(--ink3);padding:24px 18px;text-align:center;line-height:1.7;}
 .glib-memo textarea,.glib-memo input{width:100%;border:1px solid var(--line2);border-radius:10px;padding:11px 12px;font-size:15px;font-family:inherit;background:var(--surface);color:var(--ink);}
 .glib-memo textarea{min-height:64px;resize:vertical;}
 .glib-memo input{margin-bottom:8px;}
@@ -3867,6 +3881,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
 </div>
 
+<div class="screen" id="screen-ginbox">
+  <div class="bhdr">
+    <button class="bhdr-back" data-action="back">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div class="bhdr-title">届いたメモ</div>
+  </div>
+  <div class="scroll" id="ginbox-scroll">
+    <div class="glib-intro">メンバーから届いたメモです。あなたにしか見えません。一件ずつ「自分のメモに取り込む（自分だけ）／みんなに公開する／削除」を選べます。</div>
+    <div id="ginbox-list"></div>
+  </div>
+</div>
+
 <!-- GROUP LIBRARY EDITOR -->
 <div class="screen" id="screen-glib-edit">
   <div class="bhdr">
@@ -4007,6 +4034,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button class="menu-item" data-action="share-card">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
         リンクで共有
+      </button>
+      <button class="menu-item" data-action="send-to-group" id="menu-sendgroup-btn" style="display:none;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        グループに送る
       </button>
       <button class="menu-item" data-action="toggle-pin" id="menu-pin-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
@@ -4359,7 +4390,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </button>
   <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
-  <div class="settings-ver">SnapIn ver. 2026.05.30-3</div>
+  <div class="settings-ver">SnapIn ver. 2026.05.30-5</div>
 </div>
 
 <!-- バブル長押しメニュー (コピー/部分コピー/リプライ/削除) -->
@@ -5713,11 +5744,13 @@ function closeAskModal(result){
 
 // ═══ 共有リンク (投稿を10分だけ有効なリンクで他の人に渡す) ═══
 let _shareCardId=null;
+let _shareMode='link'; // 'link' = 共有リンク / 'group' = グループに送る
 let _incomingShare=null;
 
 function shareCard(){
   $('detail-menu').classList.remove('on');
   if(!state.current){toast('共有できません');return;}
+  _shareMode='link';
   _shareCardId=state.current.id;
   // チャットがあるなら「メモだけ / チャットも」を選ばせる。無ければそのまま。
   const real=state.cards.find(x=>x.id===_shareCardId)||state.current;
@@ -5729,9 +5762,50 @@ function shareCard(){
     doCreateShare(false);
   }
 }
+// グループ管理者へ送る
+function sendToGroup(){
+  $('detail-menu').classList.remove('on');
+  if(!state.current){toast('送れません');return;}
+  if(!(state.auth && state.auth.teamId)){toast('グループに参加していません');return;}
+  _shareMode='group';
+  _shareCardId=state.current.id;
+  const real=state.cards.find(x=>x.id===_shareCardId)||state.current;
+  const chat=getChatMessages(real).filter(m=>m && !m.deleted);
+  if(chat.length>0){
+    $('share-choice-mask').classList.add('on');
+    $('share-choice-sheet').classList.add('on');
+  }else{
+    doSendToGroup(false);
+  }
+}
+// チャット選択シートの2ボタンは、モードに応じて分岐
+function shareChoicePick(includeChat){
+  if(_shareMode==='group')doSendToGroup(includeChat);
+  else doCreateShare(includeChat);
+}
+async function doSendToGroup(includeChat){
+  closeShareChoice();
+  const payload=await buildSharePayload(includeChat);
+  if(!payload){toast('送れません');return;}
+  toast('送信中…');
+  const data=await inboxApi('POST',{action:'submit',card:payload});
+  if(data && data.ok){
+    toast('グループの管理者に届きました');
+  }else{
+    if(data && data.reason==='too_large')toast('写真が大きすぎて送れませんでした');
+    else if(data && data.reason==='no_team')toast('グループに参加していません');
+    else toast('送れませんでした');
+  }
+}
 function closeShareChoice(){
   $('share-choice-mask').classList.remove('on');
   $('share-choice-sheet').classList.remove('on');
+}
+// 送り主の表示名を決める: 塾生/メンバーは名前、JUKEN CAMP や将来の有料アカウントも名前、無料の匿名ユーザーは空。
+function shareSenderName(){
+  if(state.auth && state.auth.name) return String(state.auth.name).trim();
+  if(state.user && state.user.name && state.user.name!=='あなた') return String(state.user.name).trim();
+  return '';
 }
 async function buildSharePayload(includeChat){
   const id=_shareCardId;
@@ -5757,6 +5831,9 @@ async function buildSharePayload(includeChat){
       .map(m=>({role:m.role==='user'?'user':'ai',text:String(m.text||''),t:m.t||Date.now()}));
     if(chat.length)payload.chat=chat;
   }
+  // 送り主の表示名。名前があれば(塾生/メンバー/将来の有料アカウント)それを、無ければ匿名(=お友達)。
+  const fromName=shareSenderName();
+  payload.from=fromName?{name:fromName}:{anon:true};
   return payload;
 }
 async function doCreateShare(includeChat){
@@ -5879,6 +5956,9 @@ async function importSharedCard(){
   if(p.color)nc.color=p.color;
   if(Array.isArray(p.tags)&&p.tags.length)nc.tags=p.tags;
   if(Array.isArray(p.chat)&&p.chat.length)nc.chat=p.chat;
+  // 送り主の表示 (○○さんのメモより / お友達のメモより)
+  if(p.from && p.from.name) nc.sharedFrom=String(p.from.name).slice(0,40);
+  else if(p.from && p.from.anon) nc.sharedFromAnon=true;
   state.cards.unshift(nc);
   if(nc.image){ try{ await imgDB.put(id,nc.image); }catch(e){} }
   save();
@@ -5887,6 +5967,113 @@ async function importSharedCard(){
   goto('screen-home',false);
   renderHome();
   toast('取り込みました');
+}
+
+// ═══ グループ受信箱 (管理者が、届いたメモを一件ずつ処理する) ═══
+let _ginbox=[];
+async function inboxApi(method,body){
+  if(!state.auth || !state.auth.token)return null;
+  try{
+    const res=await fetch('/api/teams?ginbox=1',{
+      method,
+      headers:{'Content-Type':'application/json','x-snapin-token':state.auth.token},
+      body:body?JSON.stringify(body):undefined,
+    });
+    return await res.json().catch(()=>null);
+  }catch(e){
+    toast('通信エラーです');
+    return null;
+  }
+}
+// 共有/ライブラリ画面を開いたとき、管理者なら受信件数を取って「届いたメモ(N)」を出す
+async function refreshInboxCount(){
+  if(!(state.auth && state.auth.isGroupAdmin))return;
+  const data=await inboxApi('GET',null);
+  if(data && data.ok && Array.isArray(data.items)){
+    _ginbox=data.items;
+    const btn=$('ginbox-entry-count');
+    if(btn)btn.textContent=_ginbox.length?(' ('+_ginbox.length+')'):'';
+  }
+}
+function gotoInbox(){
+  goto('screen-ginbox');
+  renderInboxList(); // まず手元の分を描画
+  inboxApi('GET',null).then(data=>{
+    if(data && data.ok && Array.isArray(data.items)){ _ginbox=data.items; renderInboxList(); }
+    else if(data && data.reason==='not_group_admin'){ toast('権限がありません'); back(); }
+  });
+}
+function inboxPreviewHTML(card){
+  let h='';
+  if(card.image)h+=`<img src="${card.image}" alt="">`;
+  if(card.type==='link' && card.link)h+=`<div class="ginbox-preview-link"><span>🔗</span><span>${esc(card.link.title||card.link.url||'')}</span></div>`;
+  if(Array.isArray(card.items))card.items.forEach(it=>{ h+=`<div class="ginbox-preview-li"><span>${it.d?'☑':'☐'}</span><span>${esc(it.t||'')}</span></div>`; });
+  if(card.text)h+=`<div class="ginbox-preview-text">${esc(card.text)}</div>`;
+  if(Array.isArray(card.chat)&&card.chat.length)h+=`<div class="ginbox-note">💬 チャット ${card.chat.length}件 も含まれています</div>`;
+  return h||'<div class="ginbox-note">（内容なし）</div>';
+}
+function renderInboxList(){
+  const el=$('ginbox-list');
+  if(!el)return;
+  if(!_ginbox.length){
+    el.innerHTML='<div class="ginbox-empty">まだ届いたメモはありません。</div>';
+    return;
+  }
+  el.innerHTML=_ginbox.map(it=>`
+    <div class="ginbox-item" data-inbox-id="${esc(it.id)}">
+      <div class="ginbox-from">${esc(it.fromName||'メンバー')}さんより</div>
+      <div class="ginbox-preview">${inboxPreviewHTML(it.card||{})}</div>
+      <div class="ginbox-acts">
+        <button class="ginbox-act-keep" data-action="inbox-keep" data-inbox-id="${esc(it.id)}">自分のメモに</button>
+        <button class="ginbox-act-pub" data-action="inbox-publish" data-inbox-id="${esc(it.id)}">みんなに公開</button>
+        <button class="ginbox-act-del" data-action="inbox-del" data-inbox-id="${esc(it.id)}">削除</button>
+      </div>
+    </div>`).join('');
+}
+function inboxFind(id){ return _ginbox.find(x=>x && x.id===id); }
+// 自分のメモに取り込む (自分のグリッドに並べる・自分だけ)
+async function inboxKeep(id){
+  const it=inboxFind(id);
+  if(!it){return;}
+  const p=it.card||{};
+  const cid='c_'+Date.now();
+  const nc={
+    id:cid,
+    type:(p.type==='photonote')?'photonote':(['photo','note','list','link'].includes(p.type)?p.type:'note'),
+    text:p.text||'',
+    date:new Date().toISOString().slice(0,10),
+    created:Date.now(),
+  };
+  if(p.image)nc.image=p.image;
+  if(p.link)nc.link=p.link;
+  if(Array.isArray(p.items))nc.items=p.items;
+  if(p.color)nc.color=p.color;
+  if(Array.isArray(p.tags)&&p.tags.length)nc.tags=p.tags;
+  if(Array.isArray(p.chat)&&p.chat.length)nc.chat=p.chat;
+  if(it.fromName)nc.sharedFrom=String(it.fromName).slice(0,40);
+  state.cards.unshift(nc);
+  if(nc.image){ try{ await imgDB.put(cid,nc.image); }catch(e){} }
+  save();
+  const data=await inboxApi('POST',{action:'reject',itemId:id});
+  if(data && data.ok){ _ginbox=_ginbox.filter(x=>x.id!==id); renderInboxList(); toast('自分のメモに取り込みました'); }
+  else{ toast('取り込めませんでした'); }
+}
+// みんなに公開 (みんなの投稿 棚へ)
+async function inboxPublish(id){
+  const data=await inboxApi('POST',{action:'publish',itemId:id});
+  if(data && data.ok){
+    _ginbox=_ginbox.filter(x=>x.id!==id);
+    renderInboxList();
+    if(typeof mergeGroupShelves==='function')mergeGroupShelves().catch(()=>{});
+    toast('みんなに公開しました');
+  }else{
+    toast('公開できませんでした');
+  }
+}
+async function inboxDelete(id){
+  const data=await inboxApi('POST',{action:'reject',itemId:id});
+  if(data && data.ok){ _ginbox=_ginbox.filter(x=>x.id!==id); renderInboxList(); toast('削除しました'); }
+  else{ toast('削除できませんでした'); }
 }
 
 // ═══ 設定シート (バックアップ/復元) ═══
@@ -9642,12 +9829,21 @@ function openDetail(c,origin){
   clearReplyTo();
   closePartialCopy();
   const isOfficial=origin==='official';
+  // 「グループに送る」は、自分のメモ かつ グループ参加中のときだけ出す
+  const _sg=$('menu-sendgroup-btn');
+  if(_sg)_sg.style.display=(origin!=='official' && state.auth && state.auth.teamId)?'':'none';
 
   $('detail-img').classList.add('hide');
 
   let metaHtml=`<span>${fmtDate(c.date)}</span>`;
-  if(isOfficial && state.currentOfficial){
+  if(c.submittedBy){
+    metaHtml=`<span class="src">${esc(c.submittedBy)}さんより</span>`+metaHtml;
+  }else if(isOfficial && state.currentOfficial){
     metaHtml=`<span class="src">${esc(state.currentOfficial.handle)}</span>`+metaHtml;
+  }else if(c.sharedFrom){
+    metaHtml=`<span class="src">${esc(c.sharedFrom)}さんのメモより</span>`+metaHtml;
+  }else if(c.sharedFromAnon){
+    metaHtml=`<span class="src">お友達のメモより</span>`+metaHtml;
   }
   $('detail-meta').innerHTML=metaHtml;
 
@@ -11235,10 +11431,15 @@ function renderGroupLibEntry(){
   const el=$('lib-gadmin-entry');
   if(!el)return;
   if(state.auth && state.auth.isGroupAdmin){
-    el.innerHTML=`<button class="glib-entry-btn" data-action="goto-glib">
+    el.innerHTML=`<button class="glib-entry-btn" data-action="goto-ginbox">
+      <span>届いたメモ<span id="ginbox-entry-count"></span></span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="glib-entry-btn" data-action="goto-glib">
       <span>グループのライブラリを作る・編集する</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>`;
+    refreshInboxCount();
   }else{
     el.innerHTML='';
   }
@@ -12037,13 +12238,18 @@ document.addEventListener('click',e=>{
     case 'edit-card':editCard();break;
     case 'delete-card':deleteCard();break;
     case 'share-card':shareCard();break;
+    case 'send-to-group':sendToGroup();break;
     case 'close-share-choice':closeShareChoice();break;
-    case 'share-memo-only':doCreateShare(false);break;
-    case 'share-with-chat':doCreateShare(true);break;
+    case 'share-memo-only':shareChoicePick(false);break;
+    case 'share-with-chat':shareChoicePick(true);break;
     case 'share-link-copy':copyShareLink(false);break;
     case 'share-link-close':closeShareLinkModal();break;
     case 'share-recv-import':importSharedCard();break;
     case 'share-recv-close':closeShareRecv();break;
+    case 'goto-ginbox':gotoInbox();break;
+    case 'inbox-keep':inboxKeep(t.dataset.inboxId);break;
+    case 'inbox-publish':inboxPublish(t.dataset.inboxId);break;
+    case 'inbox-del':inboxDelete(t.dataset.inboxId);break;
     case 'archive-card':archiveCard();break;
     case 'open-archive':goto('screen-archive');break;
     case 'open-trash':goto('screen-trash');break;
