@@ -116,6 +116,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 #search-mosaic-btn.on .eye-off,#stale-mosaic-btn.on .eye-off,#today-mosaic-btn.on .eye-off{display:block;}
 #search-mosaic-btn.on,#today-mosaic-btn.on{color:var(--g);background:var(--gl);}
 #stale-mosaic-btn.on{color:var(--g);background:var(--gl);}
+/* 戻りヘッダー(.bhdr)は右パディングが8px、メモ/今日ページ(.hdr)は14px。
+   しばらく見ていないメモのぼかしボタンを他ページと同じ右端位置に揃える。 */
+#stale-mosaic-btn{margin-right:6px;}
 
 /* 戻るヘッダー */
 .bhdr{
@@ -2233,52 +2236,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .search-extra-chev{color:var(--ink3);flex-shrink:0;}
 
-/* ═══ まだ覚えてる？ (探すページ最下部・自分の過去を1枚ずつ"答え合わせ") ═══ */
-/* 検索の入口より下に置く控えめなセクション。カードは幅いっぱいの正方形。 */
-.todays-pick{
-  margin:0 16px calc(env(safe-area-inset-bottom) + 28px);
-  padding:14px 0 0;
-  border-top:0.5px solid var(--line);
-  position:relative;
-}
-.tp-head{display:flex;align-items:center;gap:10px;margin-bottom:11px;}
-.tp-icon{
-  width:30px;height:30px;border-radius:50%;flex-shrink:0;
-  background:var(--g);color:#fff;display:flex;align-items:center;justify-content:center;
-  box-shadow:0 3px 8px rgba(var(--g-rgb),.4);
-  cursor:pointer;transition:transform .12s;
-}
-.tp-icon:active{transform:scale(0.88) rotate(-40deg);}
-.tp-icon svg{display:block;} /* インラインSVGの余白で中心から下にずれるのを防ぐ */
-.tp-titles{flex:1;min-width:0;}
-.tp-title{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:.01em;}
-.tp-sub{font-size:11px;color:var(--ink2);margin-top:1px;}
-/* カードは幅いっぱいの正方形。横に余白を残さない。 */
-.tp-card{
-  position:relative;
-  width:100%;
-  aspect-ratio:1;
-  border-radius:14px;
-  overflow:hidden;
-  background:var(--bg);
-  cursor:pointer;-webkit-tap-highlight-color:transparent;
-}
-/* 同じ画像をぼかして背面に敷く → contain で出る余白が"間延び"せず、写真は一切切れない */
-.tp-blur{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(20px) saturate(1.05);transform:scale(1.2);}
-.tp-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;}
-/* メモ(note)は .card / .today-newcard と同じ .ctxt/.ctxt-inner 構造を使い、
-   枠に対するテキスト比率をグリッド・編集画面と完全一致させる (applyGridNoteScale が実寸で確定)。 */
-.tp-card.note .ctxt{padding:0;position:relative;display:block;overflow:hidden;height:100%;background:#FFFDF5;}
-.tp-card.note .ctxt-inner{
-  position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;
-  display:flex;flex-direction:column;overflow:hidden;white-space:pre-wrap;word-break:break-word;
-}
-/* 答え合わせ前: ぼかし + ベール (暗記モードと同じ質感) */
-.tp-card.veiled img,.tp-card.veiled .ctxt{filter:blur(7px) saturate(.9);}
-.tp-card.veiled::after{content:'';position:absolute;inset:0;background:var(--mosaic-veil);}
-
-.search-extra-chev{color:var(--ink3);flex-shrink:0;}
-
 /* アーカイブ画面 / ゴミ箱画面共通 */
 .bin-empty{
   padding:80px 24px;
@@ -4309,12 +4266,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <div class="screen" id="screen-search">
   <div class="hdr">
     <div class="logo">Snap<em>In</em><span class="page-sub">メモを探す</span></div>
-    <div class="hdr-icons">
-      <button data-action="toggle-search-mosaic" id="search-mosaic-btn" aria-label="思い出す">
-        <svg class="eye-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h7M7 14h4"/></svg>
-        <svg class="eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2" fill="currentColor" stroke="none"/><path d="M7 10h7M7 14h4" stroke="var(--bg)"/></svg>
-      </button>
-    </div>
   </div>
   <div class="scroll" id="search-scroll">
     <div class="search-input-block">
@@ -4939,7 +4890,7 @@ const state={
   libraryOrder:{},     // 共有ライブラリ一覧の手動並び順 { distributed:[id...], subbed:[id...], avail:[id...] }
   searchColor:null,    // 探すページの色フィルター
   searchTag:null,      // 探すページのタグフィルター
-  searchMosaic:false,  // 探すページの暗記モード(ボカシ)。検索結果/まだ覚えてる?/しばらく見ていないメモに共通で効く。
+  searchMosaic:false,  // 探すページの暗記モード(ボカシ)。検索結果/しばらく見ていないメモに共通で効く。
   staleDays:null,      // 「しばらく見ていないメモ」ページの日数 (null=未設定→デフォルト7)
   aiNote:'',           // 設定「AIへの希望」フリー記入。systemプロンプトに差し込む利用者の要望。
   onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
@@ -5513,7 +5464,7 @@ function noteCardStyle(card,col,containerWidth){
 // (HTML 生成時点では幅が分からないので、レンダリング後にこの関数を呼んで実寸で確定させる)
 function applyGridNoteScale(root){
   const scope=root||document;
-  const nodes=scope.querySelectorAll('.card.note .ctxt-inner, .today-newcard.note .ctxt-inner, .tp-card.note .ctxt-inner');
+  const nodes=scope.querySelectorAll('.card.note .ctxt-inner, .today-newcard.note .ctxt-inner');
   nodes.forEach(inner=>{
     const ctxt=inner.parentElement;
     if(!ctxt)return;
@@ -5522,7 +5473,7 @@ function applyGridNoteScale(root){
     // カード ID から元データを取りに行く必要があるが、ここではテキストとカラーだけ
     // 取り出して noteCardStyle を呼び直す。
     // 親 .card / .today-newcard から data-id でカードを引く。
-    const cardEl=ctxt.closest('.card,.today-newcard,.tp-card');
+    const cardEl=ctxt.closest('.card,.today-newcard');
     const cardId=cardEl?cardEl.dataset.id:null;
     let c=null;
     if(cardId){
@@ -12699,158 +12650,9 @@ function renderSearchIdle(){
     </button>
   </div>`;
 
-  // 「まだ覚えてる?」(自分の過去を1枚ずつ答え合わせ) は最下部に置く。
-  // ここは「メモを探す」ページなので、検索の入口より下、捨てたメモのさらに下に。
-  idle.innerHTML=html+'<div id="todays-pick-host"></div>';
-  renderTodaysPick();
+  idle.innerHTML=html;
 }
 
-// ═══ 今日の数枚 (探すページ最上部) ═══
-// 自分の過去メモを毎日少しだけ浮かせ、1枚ずつ"答え合わせ"する間隔反復の仕組み。
-// SNS的なフィードの安全な代替: 他人ではなく自分の蓄積が返ってくるので、見栄えも比較も生まれない。
-let _todaysPick={day:null, ids:[], idx:0, revealed:false};
-
-// 候補: 自分のアクティブな写真/メモのうち、今日保存したもの以外。長く見ていない順。
-// 復習候補の全プール (ids)。自分のアクティブな写真/メモのうち今日保存分以外、長く見ていない順。
-function getTodaysPickPool(){
-  const startOfToday=new Date(); startOfToday.setHours(0,0,0,0);
-  const t0=startOfToday.getTime();
-  return getActiveCards().filter(c=>{
-    const dc=isLinkedCard(c)?resolveLiveCard(c):c;
-    if(!(dc.type==='photo'||dc.type==='photonote'||dc.type==='note'))return false; // 復習向きの素材のみ
-    if((c.created||0)>=t0)return false;                                            // 今日のは除外
-    if(dc.type==='note' && !(dc.text && dc.text.trim()))return false;              // 空メモ除外
-    if((dc.type==='photo'||dc.type==='photonote') && !dc.image)return false;
-    return true;
-  }).sort((a,b)=>{
-    const la=a.lastViewed||a.lastReview||a.created||0;
-    const lb=b.lastViewed||b.lastReview||b.created||0;
-    return la-lb; // 長く見ていないものから先に
-  }).map(c=>c.id);
-}
-function getTodaysPickCards(max){
-  return getTodaysPickPool().slice(0,max||3);
-}
-
-// 更新アイコン: いま表示中の数枚を避けて、別の数枚に入れ替える。
-function tpReroll(){
-  const pool=getTodaysPickPool();
-  if(pool.length===0)return;
-  const cur=new Set(_todaysPick.ids);
-  let cand=pool.filter(id=>!cur.has(id));   // まず今出ていない候補から
-  if(cand.length===0)cand=pool.slice();      // 出尽くしていたら全体から
-  // シャッフル (Fisher–Yates) して先頭3枚
-  for(let i=cand.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const tmp=cand[i];cand[i]=cand[j];cand[j]=tmp;}
-  _todaysPick.ids=cand.slice(0,3);
-  _todaysPick.idx=0;
-  _todaysPick.revealed=false;
-  if(navigator.vibrate)navigator.vibrate(10);
-  renderTodaysPick();
-}
-
-// その日の集合を確定 (日付が変わったら選び直す)。日中は固定して再シャッフルしない。
-function ensureTodaysPickSet(){
-  const d=new Date(); d.setHours(0,0,0,0);
-  const key=d.getTime();
-  if(_todaysPick.day!==key){
-    _todaysPick.day=key;
-    _todaysPick.ids=getTodaysPickCards(3);
-    _todaysPick.idx=0;
-    _todaysPick.revealed=false;
-  }else{
-    // 削除されたカードを除去
-    _todaysPick.ids=_todaysPick.ids.filter(id=>state.cards.some(c=>c.id===id && isActiveCard(c)));
-    if(_todaysPick.idx>_todaysPick.ids.length-1)_todaysPick.idx=Math.max(0,_todaysPick.ids.length-1);
-  }
-}
-
-// "答え合わせ"したら復習済みとして lastViewed を更新 → 翌日は別の数枚が自然に巡回する
-function tpMarkReviewed(id){
-  const i=state.cards.findIndex(x=>x.id===id);
-  if(i>=0){ state.cards[i].lastViewed=Date.now(); save(); }
-}
-
-function renderTodaysPick(){
-  const host=$('todays-pick-host');
-  if(!host)return;
-  ensureTodaysPickSet();
-  const ids=_todaysPick.ids;
-  if(!ids.length){ host.innerHTML=''; return; } // 候補ゼロ(新規ユーザー等)はパネルごと出さない
-
-  const refreshIcon='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>';
-
-  // 常に1枚だけ表示。更新アイコン/横スワイプで別の1枚に入れ替える (複数枚をめくる UI は持たない)。
-  if(_todaysPick.idx<0)_todaysPick.idx=0;
-  if(_todaysPick.idx>ids.length-1)_todaysPick.idx=ids.length-1;
-  const idx=_todaysPick.idx;
-
-  const id=ids[idx];
-  const c0=state.cards.find(x=>x.id===id);
-  const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
-  let inner='', cardType='';
-  if(c.type==='photo'||c.type==='photonote'){
-    inner=`<div class="tp-blur" style="background-image:url('${c.image||''}')"></div><img src="${c.image||''}" alt="" decoding="async">`;
-  }else{
-    // メモはグリッド/今日のメモと同じ .ctxt/.ctxt-inner + noteCardStyle で描画。
-    // レンダリング後に applyGridNoteScale が枠の実寸でフォントサイズを確定させる。
-    const col=colorById(c.color);
-    cardType=' note';
-    inner=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${noteCardStyle(c,col)}">${esc(c.text||'')}</div></div>`;
-  }
-  // 暗記モード(ボカシ): 探すページ共通トグル(state.searchMosaic)に従う。ON なら未公開はぼかす。
-  const veiled=state.searchMosaic && !_todaysPick.revealed;
-
-  host.innerHTML=`
-    <div class="todays-pick">
-      <div class="tp-head">
-        <div class="tp-titles">
-          <div class="tp-title">まだ覚えてる？</div>
-          <div class="tp-sub">むかし残したメモ</div>
-        </div>
-        <button class="tp-icon" id="tp-refresh" aria-label="別のメモに入れ替え">${refreshIcon}</button>
-      </div>
-      <div class="tp-card${cardType} ${veiled?'veiled':'revealed'}" id="tp-card" data-id="${id}">
-        ${inner}
-      </div>
-    </div>`;
-
-  // メモの「枠に対するテキスト比率」をグリッド/編集画面と完全一致させる (実寸で確定)。
-  applyGridNoteScale(host);
-  requestAnimationFrame(()=>applyGridNoteScale(host));
-
-  // ── 配線 ──
-  // 更新アイコン: 別の数枚に入れ替え
-  const refreshBtn=$('tp-refresh');
-  if(refreshBtn)refreshBtn.addEventListener('click',e=>{ e.stopPropagation(); tpReroll(); });
-
-  const card=$('tp-card');
-  if(card){
-    // 横スワイプで別の1枚に入れ替え (横移動が縦より大きく、しきい値超え)。タップとは区別する。
-    let sx=0, sy=0, swiped=false;
-    card.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; swiped=false; },{passive:true});
-    card.addEventListener('touchend',e=>{
-      const t=e.changedTouches[0]; if(!t)return;
-      const dx=t.clientX-sx, dy=t.clientY-sy;
-      if(Math.abs(dx)>=40 && Math.abs(dx)>Math.abs(dy)){
-        swiped=true; // この後のクリックは抑制
-        tpReroll();  // 左右どちらでも別のメモへ
-      }
-    });
-    card.addEventListener('click',()=>{
-      if(swiped){ swiped=false; return; } // スワイプ直後のクリックは無視
-      if(veiled){
-        // モザイクON & 未公開 → 答え合わせ (ぼかしを外す) + 復習済みに
-        _todaysPick.revealed=true;
-        if(navigator.vibrate)navigator.vibrate(8);
-        tpMarkReviewed(id);
-        renderTodaysPick();
-      }else{
-        // 既に見えている (モザイクOFF or 公開済み) → 詳細を開く
-        if(c0)openDetail(c0,'mine');
-      }
-    });
-  }
-}
 
 // ═══ UTILS ═══
 function esc(s){
@@ -12983,7 +12785,7 @@ function toggleMosaic(){
   renderHome();
 }
 
-// 探すページの暗記モード(ボカシ) を切り替え。検索結果・まだ覚えてる?・しばらく見ていないメモに共通。
+// 探すページの暗記モード(ボカシ) を切り替え。検索結果・しばらく見ていないメモに共通。
 function toggleSearchMosaic(){
   state.searchMosaic=!state.searchMosaic;
   if(navigator.vibrate)navigator.vibrate(8);
