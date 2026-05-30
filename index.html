@@ -536,6 +536,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 /* モザイク (思い出すモード): うっすらヒントが見える程度 */
 /* リンクカードはタイトル/ホスト名が .ctxt の中に入っていないので、
    .link-card-title / .link-card-host も明示的にぼかし対象に含める。 */
+/* iOS WebKit 対策: 子の filter:blur で overflow:hidden の角丸クリップが無効化されるのを、
+   mask でカードを独立レイヤー化して角丸クリップし直す (today-newcards と同じ理由)。 */
+.card.mosaic{
+  -webkit-mask-image:-webkit-radial-gradient(white,black);
+  mask-image:radial-gradient(white,black);
+}
 .card.mosaic .ctxt,
 .card.mosaic .link-card-title,
 .card.mosaic .link-card-host,
@@ -568,7 +574,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .feed.mosaic .feed-item.tapped .feed-meta{filter:none;}
 .feed.mosaic .feed-item.tapped::before{display:none;}
 
-/* 「今日」ページ: セクション単位のモザイク (横スクロールの today-newcards 行) */
+/* 「今日」ページ: 暗記モード(ボカシ)。昨日以降の横スクロール行 (today-newcards) に適用 */
+/* iOS WebKit では子に filter:blur がかかると親の overflow:hidden の角丸クリップが無効化され、
+   ボカシが正方形にはみ出す。mask を当ててカードを独立レイヤー化し、角丸でクリップし直す。 */
+.today-newcards.mosaic .today-newcard{
+  -webkit-mask-image:-webkit-radial-gradient(white,black);
+  mask-image:radial-gradient(white,black);
+}
 .today-newcards.mosaic .today-newcard .ctxt,
 .today-newcards.mosaic .today-newcard .link-card-title,
 .today-newcards.mosaic .today-newcard .link-card-host,
