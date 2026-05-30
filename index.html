@@ -2068,7 +2068,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   opacity:.78;
   transform:scale(.94);
 }
-.os-desc{font-size:12px;color:var(--ink2);line-height:1.6;margin-top:14px;margin-bottom:0;}
+.os-desc{font-size:12px;color:var(--ink2);line-height:1.6;margin-top:14px;margin-bottom:0;white-space:pre-line;}
 .os-desc:empty{display:none;}
 /* 共有ライブラリ詳細のカードからはリンクバッジを消す */
 #off-grid .link-card-thumb::after{display:none;}
@@ -11967,7 +11967,7 @@ function libItem(s,subbed,group){
     ${avatar}
     <div class="lib-info">
       <div class="lib-name">${esc(s.name)}${badge}</div>
-      ${s.desc?`<div class="lib-desc">${esc(s.desc)}</div>`:`<div class="lib-handle">${esc(s.handle)}</div>`}
+      <div class="lib-handle">${esc(s.handle)}</div>
     </div>
     ${actionHtml}
   `;
