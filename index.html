@@ -3240,19 +3240,38 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   left:0;right:0;bottom:0;
   background:var(--surface);
   border-radius:18px 18px 0 0;
-  padding:8px 16px calc(20px + env(safe-area-inset-bottom)) 16px;
+  padding:0 16px calc(16px + env(safe-area-inset-bottom)) 16px;
   z-index:410;
   transform:translateY(110%);
   transition:transform .26s cubic-bezier(.32,.72,.34,1);
   box-shadow:0 -8px 28px rgba(0,0,0,.12);
+  max-height:calc(100dvh - 24px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
 }
 .settings-sheet.on{transform:translateY(0);}
 .settings-handle{
   width:36px;height:4px;border-radius:2px;
   background:var(--line2);
-  margin:6px auto 14px;
+  margin:8px auto 4px;
 }
-.theme-pick{margin:2px 0 18px;}
+.settings-top{
+  position:sticky;top:0;
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface);
+  padding:6px 0 8px;
+  margin-bottom:4px;
+  z-index:5;
+}
+.settings-top .settings-title{padding:0;}
+.settings-close{
+  width:32px;height:32px;border-radius:50%;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ink2);background:var(--bg);
+}
+.settings-close:active{transform:scale(.94);opacity:.8;}
+.theme-pick{margin:2px 0 12px;}
 .theme-pick-label{font-size:13px;color:var(--ink2);margin-bottom:8px;}
 .theme-pick-row{display:flex;gap:8px;}
 .theme-chip{
@@ -3342,7 +3361,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   align-items:center;
   gap:14px;
   width:100%;
-  padding:13px 4px;
+  padding:9px 4px;
   text-align:left;
   border-bottom:none;
 }
@@ -3360,7 +3379,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .settings-item-sub{font-size:12px;color:var(--ink3);margin-top:2px;}
 .settings-note{
   font-size:11.5px;color:var(--ink3);
-  padding:2px 4px 12px;
+  padding:2px 4px 8px;
   line-height:1.5;
 }
 .settings-ver{
@@ -3375,7 +3394,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 /* AIへの希望 (フリー記入) */
 .ai-note-box{
-  padding:4px 0 18px;
+  padding:2px 0 10px;
   border-bottom:none;
   margin-bottom:0;
 }
@@ -3429,12 +3448,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 /* クラウドバックアップ欄 */
 .cloud-box{
-  padding:4px 0 18px;
+  padding:2px 0 10px;
   border-bottom:none;
   margin-bottom:0;
 }
 .cloud-actions{
-  display:flex;gap:8px;margin-top:10px;
+  display:flex;gap:8px;margin-top:8px;
 }
 .cloud-btn{
   flex:1;
@@ -4764,7 +4783,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <div class="settings-backdrop" id="settings-backdrop" data-action="close-settings"></div>
 <div class="settings-sheet" id="settings-sheet" aria-hidden="true">
   <div class="settings-handle"></div>
-  <div class="settings-title">設定</div>
+  <div class="settings-top">
+    <div class="settings-title">設定</div>
+    <button class="settings-close" data-action="close-settings" aria-label="閉じる">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
 
   <!-- 着せ替え (テーマカラー): みどり / さくら。--g/--gl/--gd を上書きするだけ。 -->
   <div class="theme-pick">
@@ -4850,7 +4874,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="settings-item-title settings-item-title-logout">ログアウト</div>
     </div>
   </button>
-  <div class="settings-ver">SnapIn ver. 2026.05.30-15</div>
 </div>
 
 <!-- バブル長押しメニュー (コピー/部分コピー/リプライ/削除) -->
