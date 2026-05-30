@@ -1975,8 +1975,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--surface);
   border-bottom:0.5px solid var(--line);
 }
-.os-name{font-size:18px;font-weight:600;margin-bottom:3px;}
-.os-handle{font-size:11px;color:var(--ink3);font-family:var(--font-en);margin-bottom:8px;}
+.os-top{display:flex;align-items:center;gap:14px;}
+.os-id{flex:1;min-width:0;}
+.os-name{font-size:18px;font-weight:600;margin-bottom:2px;line-height:1.3;}
+.os-handle{font-size:11px;color:var(--ink3);font-family:var(--font-en);margin-bottom:0;}
 .os-avatar{
   width:56px;height:56px;
   border-radius:50%;
@@ -1985,7 +1987,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;align-items:center;justify-content:center;
   font-size:22px;font-weight:700;
   font-family:var(--font-jp);
-  margin-bottom:12px;
+  flex-shrink:0;
   overflow:hidden;
 }
 .os-avatar.has-icon{background:transparent;}
@@ -2066,7 +2068,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   opacity:.78;
   transform:scale(.94);
 }
-.os-desc{font-size:12px;color:var(--ink2);line-height:1.6;margin-bottom:12px;}
+.os-desc{font-size:12px;color:var(--ink2);line-height:1.6;margin-top:14px;margin-bottom:0;}
+.os-desc:empty{display:none;}
+/* 共有ライブラリ詳細のカードからはリンクバッジを消す */
+#off-grid .link-card-thumb::after{display:none;}
 .os-meta{display:flex;gap:14px;font-size:10px;color:var(--ink3);font-family:var(--font-en);align-items:center;}
 .os-sub{
   margin-left:auto;
@@ -4262,14 +4267,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
   <div class="scroll" id="off-scroll">
     <div class="official-simple-hdr">
-      <div class="os-avatar" id="os-avatar"></div>
-      <div class="os-name" id="os-name">―</div>
-      <div class="os-handle" id="os-handle">―</div>
-      <div class="os-desc" id="os-desc">―</div>
-      <div class="os-meta">
-        <span><b id="os-count" style="color:var(--ink);font-family:var(--font-en);">0</b> CARDS</span>
+      <div class="os-top">
+        <div class="os-avatar" id="os-avatar"></div>
+        <div class="os-id">
+          <div class="os-name" id="os-name">―</div>
+          <div class="os-handle" id="os-handle">―</div>
+        </div>
         <button class="os-sub" id="os-sub" data-action="toggle-sub">登録</button>
       </div>
+      <div class="os-desc" id="os-desc">―</div>
     </div>
     <div class="grid" id="off-grid"></div>
   </div>
@@ -12008,8 +12014,7 @@ function openOfficial(s){
   $('off-bhdr-title').textContent=s.name;
   $('os-name').textContent=s.name;
   $('os-handle').textContent=s.handle;
-  $('os-desc').textContent=s.desc;
-  $('os-count').textContent=s.cards.length;
+  $('os-desc').textContent=s.desc||'';
   const av=$('os-avatar');
   if(av){
     if(s.icon){
