@@ -2662,12 +2662,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .login-card-juken:active{background:#D9EFE5;}
 .login-pwa{
-  position:absolute;
-  bottom:max(24px, env(safe-area-inset-bottom));
-  left:0;right:0;
   font-size:11px;
   color:var(--ink3);
   text-align:center;
+  margin-top:28px;
   letter-spacing:0.01em;
   line-height:1.8;
 }
@@ -4838,7 +4836,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </button>
   <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
-  <button class="settings-item settings-item-logout" data-action="logout-confirm" id="settings-logout-btn" style="display:none;">
+  <button class="settings-item settings-item-logout" data-action="logout-confirm" id="settings-logout-btn">
     <div class="settings-item-icon settings-item-icon-logout">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
     </div>
@@ -6918,12 +6916,9 @@ function openSettings(){
     cloudBox.style.display=isStudent()?'block':'none';
     if(isStudent())updateCloudStatus();
   }
-  // ログアウト: ログイン済み（塾生/管理者/グループ）のみ表示
+  // ログアウト: 常に表示
   const logoutBtn=$('settings-logout-btn');
-  if(logoutBtn){
-    const loggedIn=!!(state.auth && state.auth.mode && state.auth.mode!=='personal');
-    logoutBtn.style.display=loggedIn?'flex':'none';
-  }
+  if(logoutBtn) logoutBtn.style.display='flex';
   updateStorageMeter();
   applyTheme(); // テーマチップの選択状態を反映
   $('settings-backdrop').classList.add('on');
