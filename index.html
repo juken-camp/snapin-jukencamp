@@ -23,11 +23,17 @@
   --font-jp:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium",sans-serif;
   --font-en:"Charter","Iowan Old Style","Georgia",serif;
   --shadow:0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+  --mosaic-veil:linear-gradient(135deg,rgba(29,158,117,.15),rgba(15,110,86,.18));
+  --mosaic-veil-soft:linear-gradient(135deg,rgba(29,158,117,.12),rgba(15,110,86,.15));
+  --g-rgb:29,158,117; --gd-rgb:15,110,86;
 }
 
 /* さくらテーマ: アクセント3変数を上書きするだけで全体が切り替わる */
 html[data-theme="sakura"]{
   --g:#DB5089; --gl:#FCE7F0; --gd:#AB3A6B;
+  --mosaic-veil:linear-gradient(135deg,rgba(219,80,137,.15),rgba(171,58,107,.18));
+  --mosaic-veil-soft:linear-gradient(135deg,rgba(219,80,137,.12),rgba(171,58,107,.15));
+  --g-rgb:219,80,137; --gd-rgb:171,58,107;
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -203,7 +209,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;
   align-items:center;
   justify-content:center;
-  box-shadow:0 4px 14px rgba(29,158,117,.4);
+  box-shadow:0 4px 14px rgba(var(--g-rgb),.4);
   transition:transform .15s;
   position:relative;
   z-index:12;
@@ -529,7 +535,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .card.mosaic::before{
   content:"";
   position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(29,158,117,.15),rgba(15,110,86,.18));
+  background:var(--mosaic-veil);
   pointer-events:none;
   z-index:1;
 }
@@ -544,7 +550,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .feed.mosaic .feed-item::before{
   content:"";
   position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(29,158,117,.12),rgba(15,110,86,.15));
+  background:var(--mosaic-veil-soft);
   pointer-events:none;
   z-index:1;
 }
@@ -562,7 +568,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .today-newcards.mosaic .today-newcard::before{
   content:"";
   position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(29,158,117,.15),rgba(15,110,86,.18));
+  background:var(--mosaic-veil);
   pointer-events:none;
   z-index:1;
   border-radius:inherit;
@@ -1690,7 +1696,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   opacity:0;
   pointer-events:none;
   border-radius:0 2px 2px 0;
-  box-shadow:0 0 6px rgba(29,158,117,.45);
+  box-shadow:0 0 6px rgba(var(--g-rgb),.45);
 }
 #refresh-bar.on{
   opacity:1;
@@ -2323,7 +2329,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;align-items:center;justify-content:center;
   width:14px;height:14px;
   border-radius:50%;
-  background:rgba(15,110,86,.15);
+  background:rgba(var(--gd-rgb),.15);
   color:var(--gd);
   font-size:10px;
   line-height:1;
@@ -2994,35 +3000,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   cursor:pointer;
 }
 .undo-toast-btn:active{transform:scale(0.94);}
-
-/* 保存成功オーバーレイ: 画面中央に大きなチェック */
-.save-ok{
-  position:absolute;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:300;
-  pointer-events:none;
-  opacity:0;
-  transition:opacity .18s ease;
-  background:rgba(0,0,0,0);
-}
-.save-ok.on{opacity:1;}
-.save-ok-circle{
-  width:96px;
-  height:96px;
-  border-radius:50%;
-  background:var(--g);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:white;
-  box-shadow:0 12px 32px rgba(29,158,117,.35), 0 4px 12px rgba(0,0,0,.12);
-  transform:scale(0.6);
-  transition:transform .28s cubic-bezier(.34,1.56,.64,1);
-}
-.save-ok.on .save-ok-circle{transform:scale(1);}
 
 /* 設定シート (ボトムシート風): バックアップ/復元のメニュー */
 .settings-backdrop{
@@ -4142,7 +4119,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="confirm-modal-card">
     <div class="confirm-modal-badge">👋</div>
     <div class="confirm-modal-title">またね</div>
-    <div class="confirm-modal-msg">ログアウトしても、この端末のメモはちゃんと残っています。<br>また、いつでも戻ってきてくださいね。</div>
+    <div class="confirm-modal-msg">ログアウトしても、この端末のメモはちゃんと残っています。また、いつでも戻ってきてくださいね。</div>
     <div class="confirm-modal-actions">
       <button class="confirm-modal-btn" data-action="logout-cancel">やめる</button>
       <button class="confirm-modal-btn primary" data-action="logout-do">ログアウト</button>
@@ -4160,11 +4137,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button class="confirm-modal-btn" id="ask-cancel">やめる</button>
       <button class="confirm-modal-btn primary" id="ask-ok">OK</button>
     </div>
-  </div>
-</div>
-<div class="save-ok" id="save-ok" aria-hidden="true">
-  <div class="save-ok-circle">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
   </div>
 </div>
 <input type="file" id="file-input" accept="image/*" style="display:none;">
@@ -5439,7 +5411,7 @@ async function doClaimSubmit(force){
         forceBtn.style.cssText='margin-top:10px;background:var(--ink2);';
         forceBtn.textContent='この端末で使う';
         forceBtn.addEventListener('click',()=>{
-          if(!confirm('別の端末からこのアカウントを引き継ぎますか?\n(元の端末からは使えなくなります)'))return;
+          if(!confirm('別の端末からこのアカウントを引き継ぎますか?(元の端末からは使えなくなります)'))return;
           forceBtn.remove();
           doClaimSubmit(true);
         });
@@ -5558,7 +5530,7 @@ async function doJoinSubmit(force){
         forceBtn.style.cssText='margin-top:10px;background:var(--ink2);';
         forceBtn.textContent='この端末で使う';
         forceBtn.addEventListener('click',()=>{
-          if(!confirm('別の端末からこのアカウントを引き継ぎますか?\n(元の端末からは使えなくなります)'))return;
+          if(!confirm('別の端末からこのアカウントを引き継ぎますか?(元の端末からは使えなくなります)'))return;
           forceBtn.remove();
           doJoinSubmit(true);
         });
@@ -5770,7 +5742,7 @@ async function cloudRestore(){
     toast('クラウドにバックアップがありません');
     return;
   }
-  if(!confirm('クラウドのバックアップでこの端末のメモを置き換えますか?\n\nこの端末の今のメモは上書きされ、クラウドに保存された内容(写真を含む)で置き換わります。'))return;
+  if(!confirm('クラウドのバックアップでこの端末のメモを置き換えますか?この端末の今のメモは上書きされ、クラウドに保存された内容(写真を含む)で置き換わります。'))return;
   // 端末固有の情報は保持しつつ、メモ系を反映する
   const keepAuth=state.auth, keepDev=state.deviceId;
   applyPayload(data.backup.payload);
@@ -6005,12 +5977,11 @@ async function exportBackup(){
     setTimeout(()=>URL.revokeObjectURL(url),1000);
 
     closeSettings();
-    showSaveOk();
     const mb=(blob.size/1024/1024).toFixed(1);
     toast(`バックアップを書き出しました (${personalCards.length}件 / ${mb}MB)`);
   }catch(e){
     console.error('export failed:',e);
-    alert('バックアップの書き出しに失敗しました。\n\n'+(e.message||e));
+    alert('バックアップの書き出しに失敗しました。 '+(e.message||e));
   }
 }
 
@@ -6030,7 +6001,7 @@ async function handleRestoreFile(e){
     let payload;
     try{payload=JSON.parse(text);}
     catch(parseErr){
-      alert('このファイルは SnapIn のバックアップとして読み込めませんでした。\n(JSON として解釈できません)');
+      alert('このファイルは SnapIn のバックアップとして読み込めませんでした。(JSON として解釈できません)');
       return;
     }
     if(!payload || payload.app!=='SnapIn' || !Array.isArray(payload.cards)){
@@ -6168,11 +6139,10 @@ async function handleRestoreFile(e){
     msg+=')';
     if(imgFailed)msg+=` ※画像 ${imgFailed} 件に問題`;
     toast(msg);
-    showSaveOk();
 
   }catch(err){
     console.error('restore failed:',err);
-    alert('復元中にエラーが発生しました。\n\n'+(err.message||err));
+    alert('復元中にエラーが発生しました。 '+(err.message||err));
   }
 }
 
@@ -8492,9 +8462,7 @@ function saveCard(){
     btn.classList.add('saved');
     btn.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
     if(navigator.vibrate)navigator.vibrate(15);
-    // ★ 画面中央に大きな✓オーバーレイを出す (見落とし防止)
-    showSaveOk();
-    // チェックマークを十分目視できる時間を確保してから遷移
+    // 保存ボタンが✓に変わる + 触覚で完了を伝える。短い間を置いてから遷移。
     setTimeout(()=>{
       state.current=null;
       finishAndLeave();
@@ -8503,7 +8471,7 @@ function saveCard(){
       btn.classList.remove('saved');
       btn.disabled=false;
       delete btn.dataset.saving;
-    },1100);
+    },300);
   }
 
   function finishAndLeave(){
@@ -10115,7 +10083,7 @@ async function purgeOne(id){
 async function emptyTrash(){
   const trashed=state.cards.filter(isTrashedCard);
   if(trashed.length===0)return;
-  if(!(await confirmModal({title:'ゴミ箱を空にする',msg:`捨てたメモ ${trashed.length}件 を完全に削除します。<br>この操作は取り消せません。`,okText:'すべて削除',danger:true})))return;
+  if(!(await confirmModal({title:'ゴミ箱を空にする',msg:`捨てたメモ ${trashed.length}件 を完全に削除します。この操作は取り消せません。`,okText:'すべて削除',danger:true})))return;
   for(const c of trashed){
     if(c.id){try{await imgDB.delete(c.id);}catch(e){/* ignore */}}
   }
@@ -10331,7 +10299,7 @@ function trashFromStale(id){
 
 // 完全削除 (確認付き)
 async function purgeOneConfirm(id){
-  if(!(await confirmModal({title:'完全に削除',msg:'このメモを完全に削除します。<br>この操作は取り消せません。',okText:'完全に削除',danger:true})))return;
+  if(!(await confirmModal({title:'完全に削除',msg:'このメモを完全に削除します。この操作は取り消せません。',okText:'完全に削除',danger:true})))return;
   await purgeOne(id);
   renderTrashScreen();
 }
@@ -11184,7 +11152,7 @@ async function saveGroupLib(){
 async function deleteGroupLib(){
   const g=state.editingGLib;
   if(!g||!g.id)return;
-  if(!(await confirmModal({title:'グループを削除',msg:`「${esc(g.name||'')}」を削除します。<br>このグループのメンバーから見えなくなります。`,okText:'削除',danger:true})))return;
+  if(!(await confirmModal({title:'グループを削除',msg:`「${esc(g.name||'')}」を削除します。このグループのメンバーから見えなくなります。`,okText:'削除',danger:true})))return;
   const data=await groupShelfApi('DELETE',{shelfId:g.id});
   if(!data)return;
   toast('削除しました');
@@ -11501,7 +11469,7 @@ function renderTagFilterBar(){
 
 // タグを全メモから削除する (貼り付けたメモのタグも消える)
 async function deleteTagEverywhere(tag){
-  if(!(await confirmModal({title:'タグを削除',msg:`タグ「#${esc(tag)}」をすべてのメモから外します。<br>(メモ自体は消えません)`,okText:'削除',danger:true})))return;
+  if(!(await confirmModal({title:'タグを削除',msg:`タグ「#${esc(tag)}」をすべてのメモから外します。(メモ自体は消えません)`,okText:'削除',danger:true})))return;
   let count=0;
   state.cards.forEach(c=>{
     if(Array.isArray(c.tags) && c.tags.includes(tag)){
@@ -11692,19 +11660,6 @@ function toast(msg){
 
 // 保存成功時の大きなチェックマーク。ボタン上の小さなチェックと併用して、
 // 「保存された感」を絶対に見落とさないようにする。
-let saveOkT=null;
-function showSaveOk(){
-  const el=$('save-ok');
-  if(!el)return;
-  // 既に表示中なら一度クリアして再演出
-  el.classList.remove('on');
-  // void el.offsetWidth; // reflowを強制 (アニメーション再生のため)
-  requestAnimationFrame(()=>{
-    el.classList.add('on');
-  });
-  if(saveOkT)clearTimeout(saveOkT);
-  saveOkT=setTimeout(()=>{el.classList.remove('on');},900);
-}
 
 // 保存失敗 (主に localStorage 容量オーバー) 時のアラート。
 // ユーザーがデータを失っていないこと、対処法を明確に伝える。
