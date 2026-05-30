@@ -7543,7 +7543,8 @@ function setCropRatio(ratio){
 }
 
 function rotateCrop90(){
-  _cropState.rotation=(_cropState.rotation+90)%360;
+  // 反時計回り (iPhone の写真アプリと同じ向き)。+270 = -90 を 0〜359 に収める。
+  _cropState.rotation=(_cropState.rotation+270)%360;
   // 回転すると画像の縦横が入れ替わるので、レイアウトと枠を作り直す
   layoutCropStage();
   resetCropBox();
