@@ -25,6 +25,11 @@
   --shadow:0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
 }
 
+/* さくらテーマ: アクセント3変数を上書きするだけで全体が切り替わる */
+html[data-theme="sakura"]{
+  --g:#DB5089; --gl:#FCE7F0; --gd:#AB3A6B;
+}
+
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;background:var(--bg);font-family:var(--font-jp);color:var(--ink);overscroll-behavior:none;-webkit-font-smoothing:antialiased;}
 button{font-family:inherit;background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;}
@@ -804,18 +809,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .sheet.on{transform:translateY(0);}
 
-/* 写真ソース選択シートはフローティングカード風 (ラベル+説明があるので枠を残す) */
-#photo-source-sheet{
-  left:12px;
-  right:12px;
-  bottom:calc(80px + env(safe-area-inset-bottom));
-  border-radius:20px;
-  box-shadow:0 12px 32px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.08);
-  padding-bottom:8px;
-  transform:translateY(calc(100% + 96px));
-}
-#photo-source-sheet.on{transform:translateY(0);}
-
 /* 「＋」メニューは丸アイコンを中央にまとめて浮かべる (案F)。
    外側の白カードは無し。各ボタンが丸く独立して浮く。背景は透明。 */
 #add-sheet{
@@ -1468,7 +1461,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   cursor:text;
 }
 .msg.u .bubble{
-  background:#1D9E75;
+  background:var(--g);
   color:white;
   border-bottom-right-radius:5px;
 }
@@ -1523,7 +1516,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   text-underline-offset:2px;
   word-break:break-all;
 }
-.msg.u .bubble-link{color:#E8F5EF;}
+.msg.u .bubble-link{color:var(--gl);}
 .detail-text .bubble-link{color:var(--g);text-decoration:underline;}
 
 /* AI 返信待機中のタイピングインジケーター (3つのドットがふわっと跳ねる) */
@@ -2967,6 +2960,41 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
 
+/* 「元に戻す」ボタン付きトースト (可逆な削除/アーカイブ用) */
+.undo-toast{
+  position:absolute;
+  bottom:90px;
+  left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:rgba(26,26,26,.92);
+  color:white;
+  padding:7px 7px 7px 18px;
+  border-radius:22px;
+  font-size:13px;
+  z-index:201;
+  opacity:0;
+  pointer-events:none;
+  transition:all .25s;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  max-width:calc(100% - 32px);
+}
+.undo-toast.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+.undo-toast-msg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.undo-toast-btn{
+  flex:none;
+  background:rgba(255,255,255,.16);
+  color:#fff;
+  border:none;
+  border-radius:16px;
+  padding:6px 14px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+}
+.undo-toast-btn:active{transform:scale(0.94);}
+
 /* 保存成功オーバーレイ: 画面中央に大きなチェック */
 .save-ok{
   position:absolute;
@@ -3024,6 +3052,47 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--line2);
   margin:6px auto 14px;
 }
+.theme-pick{margin:2px 0 18px;}
+.theme-pick-label{font-size:13px;color:var(--ink2);margin-bottom:8px;}
+.theme-pick-row{display:flex;gap:8px;}
+.theme-chip{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
+  font-size:13px;color:var(--ink2);
+  background:var(--bg);
+  border:1.5px solid var(--line2);
+  border-radius:14px;padding:11px;
+  transition:all .15s;
+}
+.theme-chip.on{border-color:var(--g);color:var(--gd);background:var(--gl);font-weight:600;}
+.theme-chip:active{transform:scale(0.97);}
+.theme-chip-dot{width:14px;height:14px;border-radius:50%;display:inline-block;flex:none;}
+.confirm-modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.28);
+  z-index:1100;display:none;align-items:center;justify-content:center;
+  padding:24px;font-family:var(--font-jp);
+}
+.confirm-modal.on{display:flex;}
+.confirm-modal-card{
+  background:var(--surface);border-radius:20px;
+  padding:26px 22px 18px;width:100%;max-width:330px;
+  box-shadow:0 12px 40px rgba(0,0,0,.25);text-align:center;
+}
+.confirm-modal-badge{
+  width:54px;height:54px;border-radius:50%;background:var(--gl);
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;margin:0 auto 14px;
+}
+.confirm-modal-title{font-size:18px;font-weight:600;color:var(--ink);margin-bottom:8px;}
+.confirm-modal-msg{font-size:13px;line-height:1.7;color:var(--ink2);margin-bottom:20px;}
+.confirm-modal-actions{display:flex;gap:10px;}
+.confirm-modal-btn{
+  flex:1;font-size:14px;font-weight:600;padding:12px;
+  border-radius:14px;background:var(--bg);color:var(--ink2);
+}
+.confirm-modal-btn:active{transform:scale(0.97);}
+.confirm-modal-btn.primary{background:var(--g);color:#fff;}
+.confirm-modal-btn.danger{background:var(--rose);color:#fff;}
+.confirm-modal-badge.danger{background:rgba(214,96,77,.14);}
 .settings-title{
   font-size:13px;color:var(--ink3);
   padding:0 4px 8px;
@@ -3271,7 +3340,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:block;
 }
 .link-card-thumb.no-img{
-  background:linear-gradient(135deg,#E8F5EF 0%,#F4FAF7 100%);
+  background:linear-gradient(135deg,var(--gl) 0%,#F4FAF7 100%);
   color:var(--g);
 }
 .link-card-thumb.no-img svg{width:36px;height:36px;}
@@ -3343,7 +3412,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   justify-content:center;
 }
 .link-detail-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-.link-detail-thumb.no-img{background:linear-gradient(135deg,#E8F5EF 0%,#F4FAF7 100%);color:var(--g);}
+.link-detail-thumb.no-img{background:linear-gradient(135deg,var(--gl) 0%,#F4FAF7 100%);color:var(--g);}
 .link-detail-thumb.no-img svg{width:48px;height:48px;}
 .link-detail-body{padding:12px 14px 14px;}
 .link-detail-host{font-size:11px;color:var(--ink3);margin-bottom:4px;}
@@ -4030,29 +4099,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   </div>
 </div>
 
-<!-- 写真ソース選択シート (create-photo時に表示。撮影かライブラリ/ファイルかをユーザーに選ばせる) -->
-<div class="sheet-mask" id="photo-src-mask" data-action="close-photo-src"></div>
-<div class="sheet" id="photo-source-sheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-title">写真を追加</div>
-  <div class="sheet-options">
-    <button class="sheet-opt" data-action="photo-src-camera">
-      <div class="sheet-opt-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      </div>
-      <div class="sheet-opt-title">撮影する</div>
-      <div class="sheet-opt-desc">カメラで撮ってトリミング</div>
-    </button>
-    <button class="sheet-opt" data-action="photo-src-library">
-      <div class="sheet-opt-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-      </div>
-      <div class="sheet-opt-title">写真・ファイル</div>
-      <div class="sheet-opt-desc">写真ライブラリやファイルから選ぶ</div>
-    </button>
-  </div>
-</div>
-
 <!-- 初回ウェルカム (一般ユーザーの初回ログイン時に一度だけ表示) -->
 <div class="sheet-mask" id="welcome-mask" data-action="close-welcome"></div>
 <div class="sheet" id="welcome-sheet" aria-hidden="true">
@@ -4086,6 +4132,36 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 </div>
 
 <div class="toast" id="toast">保存しました</div>
+<div class="undo-toast" id="undo-toast" aria-hidden="true">
+  <span class="undo-toast-msg" id="undo-toast-msg"></span>
+  <button class="undo-toast-btn" id="undo-toast-btn">元に戻す</button>
+</div>
+
+<!-- ログアウト確認 (ブラウザ標準の confirm を使わず、アプリ統一デザインで) -->
+<div class="confirm-modal" id="logout-modal" aria-hidden="true">
+  <div class="confirm-modal-card">
+    <div class="confirm-modal-badge">👋</div>
+    <div class="confirm-modal-title">またね</div>
+    <div class="confirm-modal-msg">ログアウトしても、この端末のメモはちゃんと残っています。<br>また、いつでも戻ってきてくださいね。</div>
+    <div class="confirm-modal-actions">
+      <button class="confirm-modal-btn" data-action="logout-cancel">やめる</button>
+      <button class="confirm-modal-btn primary" data-action="logout-do">ログアウト</button>
+    </div>
+  </div>
+</div>
+
+<!-- 汎用確認モーダル (各種「削除しますか?」をアプリ統一デザインで。confirmModal() が使う) -->
+<div class="confirm-modal" id="ask-modal" aria-hidden="true">
+  <div class="confirm-modal-card">
+    <div class="confirm-modal-badge" id="ask-badge">🗑️</div>
+    <div class="confirm-modal-title" id="ask-title"></div>
+    <div class="confirm-modal-msg" id="ask-msg"></div>
+    <div class="confirm-modal-actions">
+      <button class="confirm-modal-btn" id="ask-cancel">やめる</button>
+      <button class="confirm-modal-btn primary" id="ask-ok">OK</button>
+    </div>
+  </div>
+</div>
 <div class="save-ok" id="save-ok" aria-hidden="true">
   <div class="save-ok-circle">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
@@ -4147,6 +4223,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <div class="settings-sheet" id="settings-sheet" aria-hidden="true">
   <div class="settings-handle"></div>
   <div class="settings-title">設定</div>
+
+  <!-- 着せ替え (テーマカラー): みどり / さくら。--g/--gl/--gd を上書きするだけ。 -->
+  <div class="theme-pick">
+    <div class="theme-pick-label">着せ替え</div>
+    <div class="theme-pick-row">
+      <button class="theme-chip" data-action="theme-green" aria-label="みどり">
+        <span class="theme-chip-dot" style="background:#1D9E75;"></span>みどり
+      </button>
+      <button class="theme-chip" data-action="theme-sakura" aria-label="さくら">
+        <span class="theme-chip-dot" style="background:#DB5089;"></span>さくら
+      </button>
+    </div>
+  </div>
 
   <!-- AIへの希望 (フリー記入): 利用者が自分の言葉で学習スタイルや要望を書く。
        systemプロンプトの「核ルール」の後ろに『利用者からの希望』として差し込まれる。 -->
@@ -4275,6 +4364,7 @@ const state={
   staleDays:null,      // 「しばらく見ていないメモ」ページの日数 (null=未設定→デフォルト7)
   aiNote:'',           // 設定「AIへの希望」フリー記入。systemプロンプトに差し込む利用者の要望。
   onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
+  theme:'green',       // 着せ替えテーマ 'green' | 'sakura'
   _savedAt:0,          // 直近の保存時刻 (localStorage と IDB 耐久コピーの新旧比較に使う)
   lastCloudBackupAt:0, // 直近にクラウドへバックアップした時刻 (UI 表示用、ローカルのみ)
   tagEditMode:false,   // 探すページのタグ編集モード
@@ -4313,6 +4403,7 @@ function buildLightPayload(){
     deviceId:state.deviceId,
     aiNote:state.aiNote,
     onboarded:state.onboarded,
+    theme:state.theme,
     lastCloudBackupAt:state.lastCloudBackupAt,
   };
 }
@@ -4531,8 +4622,10 @@ function applyPayload(d){
   state.deviceId=d.deviceId||null;
   state.aiNote=d.aiNote||'';
   state.onboarded=d.onboarded||false;
+  state.theme=(d.theme==='sakura')?'sakura':'green';
   state._savedAt=d._savedAt||0;
   state.lastCloudBackupAt=d.lastCloudBackupAt||0;
+  applyTheme();
 }
 
 function load(){
@@ -5499,13 +5592,63 @@ async function doJoinSubmit(force){
   }
 }
 
+// ═══ 着せ替え (テーマカラー) ═══
+function applyTheme(){
+  const t=(state.theme==='sakura')?'sakura':'green';
+  if(t==='green')document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme',t);
+  // 設定シートのチップ表示も同期
+  document.querySelectorAll('.theme-chip').forEach(el=>{
+    el.classList.toggle('on',el.dataset.action===('theme-'+t));
+  });
+}
+function setTheme(t){
+  state.theme=(t==='sakura')?'sakura':'green';
+  save();
+  applyTheme();
+}
+
+// ═══ ログアウト (アプリ統一デザインの確認モーダル) ═══
 function logoutConfirm(){
-  if(!confirm('ログアウトしますか?\n端末のデータは残ります。'))return;
+  $('logout-modal').classList.add('on');
+  $('logout-modal').setAttribute('aria-hidden','false');
+}
+function closeLogoutModal(){
+  $('logout-modal').classList.remove('on');
+  $('logout-modal').setAttribute('aria-hidden','true');
+}
+function doLogout(){
+  closeLogoutModal();
   state.user=null;
   state.auth=null; // 塾生情報もクリア (再ログインで再claim)
   save();
   state.navStack=['screen-login'];
   goto('screen-login',false);
+}
+
+// ═══ 汎用確認モーダル (Promise) ═══
+// confirm() の置き換え。await confirmModal({...}) が true/false を返す。
+let _askResolve=null;
+function confirmModal(opts){
+  const o=opts||{};
+  return new Promise(resolve=>{
+    _askResolve=resolve;
+    $('ask-badge').textContent=o.emoji||'🗑️';
+    $('ask-badge').classList.toggle('danger',!!o.danger);
+    $('ask-title').textContent=o.title||'';
+    $('ask-msg').innerHTML=o.msg||'';
+    $('ask-ok').textContent=o.okText||'OK';
+    $('ask-cancel').textContent=o.cancelText||'やめる';
+    $('ask-ok').classList.toggle('danger',!!o.danger);
+    $('ask-modal').classList.add('on');
+    $('ask-modal').setAttribute('aria-hidden','false');
+  });
+}
+function closeAskModal(result){
+  $('ask-modal').classList.remove('on');
+  $('ask-modal').setAttribute('aria-hidden','true');
+  const r=_askResolve; _askResolve=null;
+  if(r)r(result);
 }
 
 // ═══ 設定シート (バックアップ/復元) ═══
@@ -5757,6 +5900,7 @@ function openSettings(){
     if(isStudent())updateCloudStatus();
   }
   updateStorageMeter();
+  applyTheme(); // テーマチップの選択状態を反映
   $('settings-backdrop').classList.add('on');
   $('settings-sheet').classList.add('on');
   $('settings-sheet').setAttribute('aria-hidden','false');
@@ -6545,6 +6689,7 @@ function renderGrid(el,cards,origin){
       card.addEventListener('click',()=>{
         // 選択モード中はタップでトグル
         if(isHome && state.selectMode){
+          if(suppressGridClick)return; // なぞり選択直後のタップは無視
           toggleSelect(c.id);
           return;
         }
@@ -6635,6 +6780,70 @@ function attachGridLongPress(cardEl,c){
   cardEl.addEventListener('mouseleave',onEnd);
 }
 
+// なぞって複数選択 (iPhoneの写真アプリと同じ感覚)。選択モード中のみ有効。
+// グリッド要素に一度だけバインドする (renderHome で中身が作り替えられても要素自体は残る)。
+let suppressGridClick=false;
+function attachGridPaintSelect(){
+  const grid=$('grid-home');
+  if(!grid || grid.dataset.paintBound)return;
+  grid.dataset.paintBound='1';
+  let startId=null, committed=false, mode='add', lastId=null, sx=0, sy=0;
+  const cardAt=(x,y)=>{
+    const el=document.elementFromPoint(x,y);
+    return el?el.closest('.card[data-id]'):null;
+  };
+  const paint=(card)=>{
+    if(!card)return;
+    const id=card.dataset.id;
+    if(id===lastId)return;
+    lastId=id;
+    if(mode==='add'){ state.selectedIds.add(id); card.classList.add('selected'); }
+    else { state.selectedIds.delete(id); card.classList.remove('selected'); }
+    updateSelectBarCount();
+  };
+  const onStart=ev=>{
+    if(!state.selectMode){startId=null;return;}
+    const t=ev.touches?ev.touches[0]:ev;
+    const card=cardAt(t.clientX,t.clientY);
+    if(!card){startId=null;return;}
+    startId=card.dataset.id; committed=false; lastId=null; sx=t.clientX; sy=t.clientY;
+  };
+  const onMove=ev=>{
+    if(!state.selectMode || startId===null)return;
+    const t=ev.touches?ev.touches[0]:ev;
+    if(!committed){
+      // 動きが小さいうちはスクロール優先 (誤爆防止)
+      if(Math.abs(t.clientX-sx)<12 && Math.abs(t.clientY-sy)<12)return;
+      committed=true;
+      // 最初に触れたカードの状態で「追加」か「解除」かを決める
+      mode=state.selectedIds.has(startId)?'remove':'add';
+      const sc=grid.querySelector(`.card[data-id="${CSS.escape(startId)}"]`);
+      paint(sc);
+      if(navigator.vibrate)navigator.vibrate(8);
+    }
+    if(committed){
+      ev.preventDefault(); // なぞっている間はスクロールを止める
+      paint(cardAt(t.clientX,t.clientY));
+    }
+  };
+  const onEnd=()=>{
+    if(committed){
+      // 直後の click がカードをもう一度トグルしてしまうのを防ぐ
+      suppressGridClick=true;
+      setTimeout(()=>{suppressGridClick=false;},350);
+      if(state.selectedIds.size===0)exitSelectMode();
+    }
+    startId=null; committed=false; lastId=null;
+  };
+  grid.addEventListener('touchstart',onStart,{passive:true});
+  grid.addEventListener('touchmove',onMove,{passive:false});
+  grid.addEventListener('touchend',onEnd);
+  grid.addEventListener('touchcancel',onEnd);
+  grid.addEventListener('mousedown',onStart);
+  grid.addEventListener('mousemove',ev=>{ if(ev.buttons)onMove(ev); });
+  grid.addEventListener('mouseup',onEnd);
+}
+
 function enterSelectMode(firstId){
   state.selectMode=true;
   state.selectedIds=new Set([firstId]);
@@ -6687,7 +6896,11 @@ function updateSelectBarCount(){
 function deleteSelected(){
   const n=state.selectedIds.size;
   if(n===0)return;
-  if(!confirm(`${n}件を捨てますか?\n7日間は「捨てたメモ」から戻せます。`)){return;}
+  // 元に戻す用に、変更前の pinned を控える
+  const prev=[...state.selectedIds].map(id=>{
+    const c=state.cards.find(x=>x.id===id);
+    return c?{id,pinned:c.pinned}:null;
+  }).filter(Boolean);
   const ids=new Set(state.selectedIds);
   const now=Date.now();
   state.cards.forEach(c=>{
@@ -6697,8 +6910,16 @@ function deleteSelected(){
     }
   });
   save();
-  toast(`${n}件消しました`);
   exitSelectMode();
+  toastUndo(`${n}件を捨てました`,()=>{
+    prev.forEach(p=>{
+      const c=state.cards.find(x=>x.id===p.id);
+      if(c){delete c.deletedAt;c.pinned=p.pinned;}
+    });
+    save();
+    renderHome();
+    toast('元に戻しました');
+  });
 }
 
 // 選択した複数のメモをまとめてリストから外す (= archive)
@@ -6706,7 +6927,11 @@ function deleteSelected(){
 function archiveSelected(){
   const n=state.selectedIds.size;
   if(n===0)return;
-  if(!confirm(`${n}件をリストから外しますか?\n「リストから外したメモ」からいつでも戻せます。`)){return;}
+  // 元に戻す用に、変更前の pinned を控える
+  const prev=[...state.selectedIds].map(id=>{
+    const c=state.cards.find(x=>x.id===id);
+    return c?{id,pinned:c.pinned}:null;
+  }).filter(Boolean);
   const ids=new Set(state.selectedIds);
   const now=Date.now();
   state.cards.forEach(c=>{
@@ -6716,8 +6941,16 @@ function archiveSelected(){
     }
   });
   save();
-  toast(`${n}件をリストから外しました`);
   exitSelectMode();
+  toastUndo(`${n}件をリストから外しました`,()=>{
+    prev.forEach(p=>{
+      const c=state.cards.find(x=>x.id===p.id);
+      if(c){delete c.archivedAt;c.pinned=p.pinned;}
+    });
+    save();
+    renderHome();
+    toast('元に戻しました');
+  });
 }
 
 // ═══ FEED ═══
@@ -6759,7 +6992,7 @@ function renderFeed(el,cards){
       const link=c.link||{};
       const img=link.image
         ? `<img src="${esc(link.image)}" alt="" decoding="async" loading="eager">`
-        : `<div class="feed-note" style="background:linear-gradient(135deg,#E8F5EF,#F4FAF7);color:var(--g);display:flex;align-items:center;justify-content:center;font-size:48px;">🔗</div>`;
+        : `<div class="feed-note" style="background:linear-gradient(135deg,var(--gl),#F4FAF7);color:var(--g);display:flex;align-items:center;justify-content:center;font-size:48px;">🔗</div>`;
       inner=img;
       const title=esc(link.title||link.url||'');
       let hostRaw2=link.siteName||link.host||'';
@@ -6856,7 +7089,7 @@ function openUrlModal(){
   const inp=$('url-input');
   const msg=$('url-modal-msg');
   inp.value='';
-  msg.textContent='URLを貼り付けてから「取得」を押してください';
+  msg.textContent='URLを貼り付けると自動で読み込みます';
   msg.className='url-modal-msg';
   $('url-fetch').disabled=false;
   $('url-modal').classList.add('on');
@@ -6963,31 +7196,6 @@ function setUrlMsg(text,kind){
   const msg=$('url-modal-msg');
   msg.textContent=text;
   msg.className='url-modal-msg'+(kind?' '+kind:'');
-}
-
-function openPhotoSourceSheet(){
-  $('photo-src-mask').classList.add('on');
-  $('photo-source-sheet').classList.add('on');
-}
-function closePhotoSourceSheet(){
-  $('photo-src-mask').classList.remove('on');
-  $('photo-source-sheet').classList.remove('on');
-}
-// 写真ソースシートからの選択ハンドラ。
-// state.photoMode (photo / photonote) は startCreate で既にセット済み。
-function pickPhotoSource(src){
-  closePhotoSourceSheet();
-  if(src==='camera'){
-    // カメラ撮影: 撮影専用 input (capture="environment") を開き、撮影後にトリミング画面を出す
-    state.cameraCapture=true;
-    $('file-input-camera').click();
-  }else if(src==='library'){
-    // 「写真・ファイル」: 元仕様どおり accept="image/*" の input を開いて iOS 標準シートに任せる。
-    // iOS のシート(写真ライブラリ / 写真を撮る / ファイルを選択) はユーザーに馴染みがあるので、
-    // ここではアプリ側で分岐させずそのまま使う。トリミングは行わない。
-    state.cameraCapture=false;
-    $('file-input').click();
-  }
 }
 
 function onFilePick(e){
@@ -8887,21 +9095,33 @@ function bubbleReply(){
 function bubbleDelete(){
   const t=_bubbleMenuTarget;
   if(!t)return;
-  if(!confirm('このメッセージを削除しますか?')){closeBubbleMenu(true);return;}
   const cIdx=state.cards.findIndex(x=>x.id===t.cardId);
   if(cIdx<0){closeBubbleMenu(true);return;}
   const c=state.cards[cIdx];
   if(!c.chat){c.chat=getChatMessages(c);delete c.aiLog;}
   if(!c.chat[t.msgIdx]){closeBubbleMenu(true);return;}
-  c.chat[t.msgIdx].deleted=true;
+  const cardId=t.cardId, msgIdx=t.msgIdx;
+  const origin=state.current?state.current._origin:'mine';
+  c.chat[msgIdx].deleted=true;
   // 削除したメッセージを今リプライ対象にしていたら解除
-  if(state.replyTo && state.replyTo.cardId===t.cardId && state.replyTo.msgIdx===t.msgIdx){
+  if(state.replyTo && state.replyTo.cardId===cardId && state.replyTo.msgIdx===msgIdx){
     clearReplyTo();
   }
   save();
-  state.current=Object.assign({},c,{_origin:state.current._origin});
+  state.current=Object.assign({},c,{_origin:origin});
   closeBubbleMenu(true);
   renderChatLog(c);
+  toastUndo('削除しました',()=>{
+    const ci=state.cards.findIndex(x=>x.id===cardId);
+    if(ci<0)return;
+    const cc=state.cards[ci];
+    if(!cc.chat || !cc.chat[msgIdx])return;
+    delete cc.chat[msgIdx].deleted;
+    save();
+    state.current=Object.assign({},cc,{_origin:origin});
+    renderChatLog(cc);
+    toast('元に戻しました');
+  });
 }
 
 function bubblePartialCopy(){
@@ -9829,16 +10049,24 @@ function editCard(){
 function deleteCard(){
   $('detail-menu').classList.remove('on');
   if(state.current._origin==='official'){toast('共有メモは削除できません');return;}
-  if(!confirm('このメモを捨てますか?\n\n7日間は探すページの「捨てたメモ」から戻せます。\nその後、完全に削除されます。'))return;
   const id=state.current.id;
   const idx=state.cards.findIndex(x=>x.id===id);
   if(idx<0)return;
+  const prevPinned=state.cards[idx].pinned;
   state.cards[idx].deletedAt=Date.now();
   // 捨てたらピンは外す (画面に出てこないので意味がない)
   state.cards[idx].pinned=false;
   save();
-  toast('捨てたメモに移動しました');
   back();
+  toastUndo('捨てたメモに移動しました',()=>{
+    const i=state.cards.findIndex(x=>x.id===id);
+    if(i<0)return;
+    delete state.cards[i].deletedAt;
+    state.cards[i].pinned=prevPinned;
+    save();
+    renderHome();
+    toast('元に戻しました');
+  });
 }
 
 // リストから外す: 暗記練習等で一時的に視界から消したいとき用
@@ -9887,7 +10115,7 @@ async function purgeOne(id){
 async function emptyTrash(){
   const trashed=state.cards.filter(isTrashedCard);
   if(trashed.length===0)return;
-  if(!confirm(`捨てたメモ ${trashed.length}件 をすべて削除しますか?\nこの操作は取り消せません。`))return;
+  if(!(await confirmModal({title:'ゴミ箱を空にする',msg:`捨てたメモ ${trashed.length}件 を完全に削除します。<br>この操作は取り消せません。`,okText:'すべて削除',danger:true})))return;
   for(const c of trashed){
     if(c.id){try{await imgDB.delete(c.id);}catch(e){/* ignore */}}
   }
@@ -9922,7 +10150,7 @@ function binRowHtml(c,kind){
     if(link.image){
       thumb=`<img src="${esc(link.image)}" alt="">`;
     }else{
-      thumb=`<div style="background:linear-gradient(135deg,#E8F5EF,#F4FAF7);width:100%;height:100%;color:var(--g);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
+      thumb=`<div style="background:linear-gradient(135deg,var(--gl),#F4FAF7);width:100%;height:100%;color:var(--g);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
     }
   }else{
     thumb='<div style="background:var(--bg);width:100%;height:100%;"></div>';
@@ -10085,17 +10313,25 @@ function trashFromArchive(id){
 function trashFromStale(id){
   const idx=state.cards.findIndex(x=>x.id===id);
   if(idx<0)return;
-  if(!confirm('このメモを捨てますか?\n(捨てたメモに移動します)'))return;
+  const prevArchivedAt=state.cards[idx].archivedAt;
   state.cards[idx].deletedAt=Date.now();
   delete state.cards[idx].archivedAt;
   save();
-  toast('捨てたメモに移動しました');
   renderStaleList();
+  toastUndo('捨てたメモに移動しました',()=>{
+    const i=state.cards.findIndex(x=>x.id===id);
+    if(i<0)return;
+    delete state.cards[i].deletedAt;
+    if(prevArchivedAt!==undefined)state.cards[i].archivedAt=prevArchivedAt;
+    save();
+    renderStaleList();
+    toast('元に戻しました');
+  });
 }
 
 // 完全削除 (確認付き)
 async function purgeOneConfirm(id){
-  if(!confirm('このメモを完全に削除しますか?\nこの操作は取り消せません。'))return;
+  if(!(await confirmModal({title:'完全に削除',msg:'このメモを完全に削除します。<br>この操作は取り消せません。',okText:'完全に削除',danger:true})))return;
   await purgeOne(id);
   renderTrashScreen();
 }
@@ -10948,7 +11184,7 @@ async function saveGroupLib(){
 async function deleteGroupLib(){
   const g=state.editingGLib;
   if(!g||!g.id)return;
-  if(!confirm(`「${g.name}」を削除しますか?\nこのグループのメンバーから見えなくなります。`))return;
+  if(!(await confirmModal({title:'グループを削除',msg:`「${esc(g.name||'')}」を削除します。<br>このグループのメンバーから見えなくなります。`,okText:'削除',danger:true})))return;
   const data=await groupShelfApi('DELETE',{shelfId:g.id});
   if(!data)return;
   toast('削除しました');
@@ -11264,8 +11500,8 @@ function renderTagFilterBar(){
 }
 
 // タグを全メモから削除する (貼り付けたメモのタグも消える)
-function deleteTagEverywhere(tag){
-  if(!confirm(`タグ「#${tag}」をすべてのメモから削除しますか?\n(メモ自体は消えません)`))return;
+async function deleteTagEverywhere(tag){
+  if(!(await confirmModal({title:'タグを削除',msg:`タグ「#${esc(tag)}」をすべてのメモから外します。<br>(メモ自体は消えません)`,okText:'削除',danger:true})))return;
   let count=0;
   state.cards.forEach(c=>{
     if(Array.isArray(c.tags) && c.tags.includes(tag)){
@@ -11425,6 +11661,27 @@ function linkify(s){
 }
 function fmtDate(d){return d?d.replace(/-/g,'.'):'';}
 let toastT=null;
+// 「元に戻す」付きトースト。可逆な削除/アーカイブで confirm の代わりに使う。
+// 5秒間 表示し、その間に「元に戻す」を押すと undoFn が走る。押さずに消えたら確定。
+let undoToastT=null, _undoFn=null;
+function toastUndo(msg, undoFn){
+  // 通常トーストが出ていたら隠して重ならないようにする
+  $('toast').classList.remove('on');
+  _undoFn=(typeof undoFn==='function')?undoFn:null;
+  $('undo-toast-msg').textContent=msg;
+  const el=$('undo-toast');
+  el.classList.add('on');
+  el.setAttribute('aria-hidden','false');
+  clearTimeout(undoToastT);
+  undoToastT=setTimeout(hideUndoToast,5000);
+}
+function hideUndoToast(){
+  const el=$('undo-toast');
+  el.classList.remove('on');
+  el.setAttribute('aria-hidden','true');
+  _undoFn=null;
+  clearTimeout(undoToastT);
+}
 function toast(msg){
   const t=$('toast');
   t.textContent=msg;
@@ -11525,6 +11782,10 @@ document.addEventListener('click',e=>{
     case 'claim-submit':doClaimSubmit();break;
     case 'join-submit':doJoinSubmit();break;
     case 'logout-confirm':logoutConfirm();break;
+    case 'logout-cancel':closeLogoutModal();break;
+    case 'logout-do':doLogout();break;
+    case 'theme-green':setTheme('green');break;
+    case 'theme-sakura':setTheme('sakura');break;
     case 'open-settings':openSettings();break;
     case 'close-settings':closeSettings();break;
     case 'export-backup':exportBackup();break;
@@ -11544,9 +11805,6 @@ document.addEventListener('click',e=>{
     case 'create-note':startCreate('note');break;
     case 'create-list':startCreate('list');break;
     case 'create-url':startCreate('url');break;
-    case 'photo-src-camera':pickPhotoSource('camera');break;
-    case 'photo-src-library':pickPhotoSource('library');break;
-    case 'close-photo-src':closePhotoSourceSheet();break;
     case 'save-card':saveCard();break;
     case 'cancel-upload':cancelUpload();break;
     case 'goto-search':goto('screen-search');break;
@@ -11735,6 +11993,15 @@ $('detail-scroll').addEventListener('click',e=>{
   scroll.classList.toggle('revealed');
 },true);
 
+// 「元に戻す」トーストのボタン
+$('undo-toast-btn').addEventListener('click',()=>{
+  const fn=_undoFn;
+  hideUndoToast();
+  if(fn)fn();
+});
+// グリッドのなぞり複数選択をバインド (一度だけ)
+attachGridPaintSelect();
+
 // URL モーダルのイベント登録
 $('url-cancel').addEventListener('click',closeUrlModal);
 $('url-fetch').addEventListener('click',fetchUrlAndCreate);
@@ -11746,9 +12013,28 @@ $('url-input').addEventListener('keydown',e=>{
     closeUrlModal();
   }
 });
+// 貼り付け自動判定: URLらしき文字列を貼ったら「取得」を押さずに自動で読み込む
+$('url-input').addEventListener('paste',()=>{
+  // paste 直後は input.value がまだ更新されていないので次フレームで判定する
+  setTimeout(()=>{
+    if($('url-fetch').disabled)return; // 取得処理中は何もしない
+    const raw=$('url-input').value.trim();
+    if(/^(https?:\/\/)?[^\s]+\.[^\s]+/i.test(raw)){
+      fetchUrlAndCreate();
+    }
+  },0);
+});
 // 背景タップで閉じる
 $('url-modal').addEventListener('click',e=>{
   if(e.target.id==='url-modal')closeUrlModal();
+});
+$('logout-modal').addEventListener('click',e=>{
+  if(e.target.id==='logout-modal')closeLogoutModal();
+});
+$('ask-ok').addEventListener('click',()=>closeAskModal(true));
+$('ask-cancel').addEventListener('click',()=>closeAskModal(false));
+$('ask-modal').addEventListener('click',e=>{
+  if(e.target.id==='ask-modal')closeAskModal(false);
 });
 $('restore-input').addEventListener('change',handleRestoreFile);
 
