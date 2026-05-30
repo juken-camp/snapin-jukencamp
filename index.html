@@ -2783,6 +2783,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .lib-locked-banner .lib-trust .trust-item::before{
   content:"✓";color:var(--g);font-weight:700;flex-shrink:0;
 }
+.lib-locked-banner .lib-trust .trust-item.strong{color:var(--ink2);font-weight:600;}
 /* 製作者クレジット (さりげなく) */
 .lib-locked-banner .lib-credit{
   margin-top:18px;
@@ -11149,13 +11150,13 @@ function renderLibrary(){
         <button class="lib-login-link" data-action="goto-login">すでに登録済み・コードをお持ちの方はログイン</button>
         <div class="lib-trust">
           <div class="trust-ttl">見えないところも、安心設計</div>
-          <div class="trust-item">メモはあなたの端末の中に保存。勝手にどこへも送りません</div>
+          <div class="trust-item strong">あなたのメモは、塾や先生には見られません</div>
+          <div class="trust-item">理由はシンプル。メモはあなたの端末の中に保存されるから</div>
+          <div class="trust-item">塾から届くのは「配られた資料」だけ。やり取りは一方通行です</div>
           <div class="trust-item">バックアップを選べば、機種変更や再インストールでも元どおり</div>
-          <div class="trust-item">メモはJSONで書き出して、いつでも自分で持ち出せる</div>
           <div class="trust-item">うっかり消してもゴミ箱から元に戻せる</div>
           <div class="trust-item">通信はすべて暗号化（HTTPS）でやり取り</div>
           <div class="trust-item">AIの鍵はサーバーの中。アプリ側には持たせません</div>
-          <div class="trust-item">パスワード不要。コードで安全につながります</div>
         </div>
         <div class="lib-credit">Snap<span class="in">In</span><span class="by">by</span><span class="maker">JUKEN CAMP</span></div>
       </div>
