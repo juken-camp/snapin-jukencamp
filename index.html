@@ -11295,9 +11295,13 @@ function renderStaleList(){
     if(cardHasUpdate(c0))inner+=`<div class="card-update-badge">更新</div>`;
     card.innerHTML=inner;
     card.addEventListener('click',()=>{
-      // 暗記モードでぼかし中なら、まず公開 (タップで答え合わせ)
-      if(card.classList.contains('mosaic')){ card.classList.remove('mosaic'); return; }
-      openDetail(c0,'mine');
+      if(state.searchMosaic){
+        // 暗記モード中: タップで「見える/隠れる」をトグル (詳細は開かない)。
+        // 通常表示に戻すには右上のぼかしボタンをオフにする。メモページのグリッドと同じ挙動。
+        card.classList.toggle('mosaic');
+      }else{
+        openDetail(c0,'mine');
+      }
     });
     grid.appendChild(card);
   });
