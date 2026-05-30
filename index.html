@@ -2234,7 +2234,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .search-extra-chev{color:var(--ink3);flex-shrink:0;}
 
 /* ═══ まだ覚えてる？ (探すページ最下部・自分の過去を1枚ずつ"答え合わせ") ═══ */
-/* 検索の入口より下に置く控えめなセクション。カードはグリッド/今日のメモと同寸。 */
+/* 検索の入口より下に置く控えめなセクション。カードは幅いっぱいの正方形。 */
 .todays-pick{
   margin:0 16px calc(env(safe-area-inset-bottom) + 28px);
   padding:14px 0 0;
@@ -2249,18 +2249,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   cursor:pointer;transition:transform .12s;
 }
 .tp-icon:active{transform:scale(0.88) rotate(-40deg);}
+.tp-icon svg{display:block;} /* インラインSVGの余白で中心から下にずれるのを防ぐ */
 .tp-titles{flex:1;min-width:0;}
 .tp-title{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:.01em;}
 .tp-sub{font-size:11px;color:var(--ink2);margin-top:1px;}
-/* カードはグリッド/今日のメモと同じセルサイズ(正方形・約140px)に揃える。 */
+/* カードは幅いっぱいの正方形。横に余白を残さない。 */
 .tp-card{
   position:relative;
-  width:min(140px, calc((100vw - 12px) / 3));
+  width:100%;
   aspect-ratio:1;
-  border-radius:10px;
+  border-radius:14px;
   overflow:hidden;
   background:var(--bg);
-  box-shadow:0 1px 3px rgba(0,0,0,.04);
   cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
 /* 同じ画像をぼかして背面に敷く → contain で出る余白が"間延び"せず、写真は一切切れない */
@@ -12803,11 +12803,11 @@ function renderTodaysPick(){
   host.innerHTML=`
     <div class="todays-pick">
       <div class="tp-head">
-        <button class="tp-icon" id="tp-refresh" aria-label="別のメモに入れ替え">${refreshIcon}</button>
         <div class="tp-titles">
           <div class="tp-title">まだ覚えてる？</div>
-          <div class="tp-sub">むかしの自分が残したメモ</div>
+          <div class="tp-sub">むかし残したメモ</div>
         </div>
+        <button class="tp-icon" id="tp-refresh" aria-label="別のメモに入れ替え">${refreshIcon}</button>
       </div>
       <div class="tp-card${cardType} ${veiled?'veiled':'revealed'}" id="tp-card" data-id="${id}">
         ${inner}
