@@ -11269,7 +11269,40 @@ function renderStaleList(){
     </div>`;
     return;
   }
-  wrap.innerHTML=`<div class="bin-list${state.searchMosaic?' mosaic':''}">${items.map(c=>binRowHtml(c,'stale')).join('')}</div>`;
+  // メモページのグリッド / 探すページの検索結果と同じグリッド表示にする。
+  wrap.innerHTML='';
+  const grid=document.createElement('div');
+  grid.className='grid';
+  wrap.appendChild(grid);
+  items.forEach(c0=>{
+    const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
+    const card=document.createElement('div');
+    card.className='card '+c.type;
+    card.dataset.id=c0.id;
+    if(state.searchMosaic)card.classList.add('mosaic'); // 暗記モード: ぼかし表示
+    let inner='';
+    if(c.type==='photo'||c.type==='photonote'){
+      inner=`<img src="${c.image||''}" decoding="async" loading="eager">`;
+    }else if(c.type==='note'){
+      const col=colorById(c.color);
+      const style=noteCardStyle(c,col);
+      inner=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
+    }else if(c.type==='list'){
+      inner=listCardInner(c);
+    }else if(c.type==='link'){
+      inner=linkCardInner(c);
+    }
+    if(cardHasUpdate(c0))inner+=`<div class="card-update-badge">更新</div>`;
+    card.innerHTML=inner;
+    card.addEventListener('click',()=>{
+      // 暗記モードでぼかし中なら、まず公開 (タップで答え合わせ)
+      if(card.classList.contains('mosaic')){ card.classList.remove('mosaic'); return; }
+      openDetail(c0,'mine');
+    });
+    grid.appendChild(card);
+  });
+  applyGridNoteScale(grid);
+  requestAnimationFrame(()=>applyGridNoteScale(grid));
   syncSearchMosaicBtns();
 }
 
