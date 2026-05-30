@@ -2259,11 +2259,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .tp-sub{font-size:11px;color:var(--ink2);margin-top:1px;}
 /* カードは"medium"な固定高に。中身は上下中央へ寄せて間延びを防ぐ。 */
 .tp-card{
-  position:relative;width:100%;height:172px;border-radius:14px;overflow:hidden;
+  position:relative;width:100%;aspect-ratio:1;max-height:340px;border-radius:14px;overflow:hidden;
   background:var(--bg);display:flex;align-items:center;justify-content:center;
   cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
-.tp-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+/* 同じ画像をぼかして背面に敷く → contain で出る余白が"間延び"せず、写真は一切切れない */
+.tp-blur{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(20px) saturate(1.05);transform:scale(1.2);}
+.tp-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;}
 .tp-note{
   max-width:100%;max-height:100%;padding:16px 20px;
   font-size:15px;line-height:1.6;color:var(--ink);white-space:pre-wrap;word-break:break-word;text-align:left;
@@ -12784,7 +12786,7 @@ function renderTodaysPick(){
   const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
   let inner='', cardBg='';
   if(c.type==='photo'||c.type==='photonote'){
-    inner=`<img src="${c.image||''}" alt="" decoding="async">`;
+    inner=`<div class="tp-blur" style="background-image:url('${c.image||''}')"></div><img src="${c.image||''}" alt="" decoding="async">`;
   }else{
     const col=colorById(c.color);
     cardBg=` style="background:${col.bg};"`;       // メモは色をカード全体に敷き、文字は中央へ
