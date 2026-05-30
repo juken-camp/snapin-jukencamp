@@ -2698,8 +2698,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .lib-locked-banner .go-claim:active{background:var(--gd);}
 .lib-locked-banner .benefits{
   text-align:left;
-  display:inline-block;
-  margin:0 auto 14px;
+  display:block;
+  margin:0 0 14px;
   font-size:12.5px;
   color:var(--ink2);
   line-height:1.7;
@@ -2765,6 +2765,41 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   text-decoration:underline;
 }
 .lib-locked-banner .lib-login-link:active{opacity:.6;}
+/* 安心の裏側 (簡潔・小さめ) */
+.lib-locked-banner .lib-trust{
+  margin-top:18px;
+  padding-top:14px;
+  border-top:1px solid rgba(0,0,0,.06);
+  text-align:left;
+}
+.lib-locked-banner .lib-trust .trust-ttl{
+  font-size:11px;font-weight:700;color:var(--gd);
+  letter-spacing:.03em;text-align:center;margin-bottom:9px;
+}
+.lib-locked-banner .lib-trust .trust-item{
+  display:flex;gap:7px;align-items:flex-start;
+  font-size:10.5px;color:var(--ink3);line-height:1.55;margin-bottom:5px;
+}
+.lib-locked-banner .lib-trust .trust-item::before{
+  content:"✓";color:var(--g);font-weight:700;flex-shrink:0;
+}
+/* 製作者クレジット (さりげなく) */
+.lib-locked-banner .lib-credit{
+  margin-top:18px;
+  padding-top:14px;
+  border-top:1px solid rgba(0,0,0,.05);
+  text-align:center;
+  font-size:11.5px;
+  font-weight:700;
+  color:var(--ink2);
+  font-family:-apple-system,"Helvetica Neue",sans-serif;
+}
+.lib-locked-banner .lib-credit .in{color:var(--g);}
+.lib-locked-banner .lib-credit .by{
+  font-family:var(--font-en);font-style:italic;font-weight:400;
+  color:var(--ink3);margin:0 3px;
+}
+.lib-locked-banner .lib-credit .maker{letter-spacing:.1em;}
 .lib-item.locked .lib-action{
   background:transparent;
   color:var(--ink3);
@@ -11112,6 +11147,15 @@ function renderLibrary(){
           <button class="go-contact" data-action="contact-inquiry">使ってみたい・相談する</button>
         </div>
         <button class="lib-login-link" data-action="goto-login">すでに登録済み・コードをお持ちの方はログイン</button>
+        <div class="lib-trust">
+          <div class="trust-ttl">見えないところも、安心設計</div>
+          <div class="trust-item">メモはあなたの端末の中に保存。勝手にどこへも送りません</div>
+          <div class="trust-item">バックアップを選べば、機種変更や再インストールでも元どおり</div>
+          <div class="trust-item">通信はすべて暗号化（HTTPS）でやり取り</div>
+          <div class="trust-item">AIの鍵はサーバーの中。アプリ側には持たせません</div>
+          <div class="trust-item">パスワード不要。コードで安全につながります</div>
+        </div>
+        <div class="lib-credit">Snap<span class="in">In</span><span class="by">by</span><span class="maker">JUKEN CAMP</span></div>
       </div>
     `;
   }
