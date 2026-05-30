@@ -110,6 +110,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 #mosaic-btn .eye-off{display:none;}
 #mosaic-btn.on .eye-on{display:none;}
 #mosaic-btn.on .eye-off{display:block;}
+/* 探す/しばらく見ていないメモ の暗記モード(ボカシ)ボタンも同じ規約 */
+#search-mosaic-btn .eye-off,#stale-mosaic-btn .eye-off{display:none;}
+#search-mosaic-btn.on .eye-on,#stale-mosaic-btn.on .eye-on{display:none;}
+#search-mosaic-btn.on .eye-off,#stale-mosaic-btn.on .eye-off{display:block;}
+#search-mosaic-btn.on{color:var(--g);background:var(--gl);}
+#stale-mosaic-btn.on{color:var(--g);background:var(--gl);}
 
 /* 戻るヘッダー */
 .bhdr{
@@ -2226,17 +2232,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   cursor:pointer;transition:transform .12s;
 }
 .tp-icon:active{transform:scale(0.88) rotate(-40deg);}
-/* モザイク(思い出す)切替: 既存の #mosaic-btn と同じ eye-on/eye-off 規約。.on=モザイク有効 */
-.tp-mosaic{
-  width:30px;height:30px;border-radius:50%;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--ink3);background:none;transition:transform .12s,color .12s;
-}
-.tp-mosaic:active{transform:scale(0.9);}
-.tp-mosaic.on{color:var(--g);}
-.tp-mosaic .eye-off{display:none;}
-.tp-mosaic.on .eye-on{display:none;}
-.tp-mosaic.on .eye-off{display:block;}
 .tp-titles{flex:1;min-width:0;}
 .tp-title{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:.01em;}
 .tp-sub{font-size:11px;color:var(--ink2);margin-top:1px;}
@@ -2273,6 +2268,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   opacity:.4;
 }
 .bin-list{padding:8px 0 24px;}
+/* 暗記モード(ボカシ): サムネとタイトル(=答え)をぼかす。行タップで1件ずつ公開。 */
+.bin-list.mosaic .bin-row-thumb img,
+.bin-list.mosaic .bin-row-thumb>div,
+.bin-list.mosaic .bin-row-title{filter:blur(5px) saturate(.9);transition:filter .15s;}
+.bin-list.mosaic .bin-row.revealed .bin-row-thumb img,
+.bin-list.mosaic .bin-row.revealed .bin-row-thumb>div,
+.bin-list.mosaic .bin-row.revealed .bin-row-title{filter:none;}
 .bin-row{
   display:flex;
   align-items:center;
@@ -4245,6 +4247,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <div class="screen" id="screen-search">
   <div class="hdr">
     <div class="logo">Snap<em>In</em><span class="page-sub">メモを探す</span></div>
+    <div class="hdr-icons">
+      <button data-action="toggle-search-mosaic" id="search-mosaic-btn" aria-label="思い出す">
+        <svg class="eye-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h7M7 14h4"/></svg>
+        <svg class="eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2" fill="currentColor" stroke="none"/><path d="M7 10h7M7 14h4" stroke="var(--bg)"/></svg>
+      </button>
+    </div>
   </div>
   <div class="scroll" id="search-scroll">
     <div class="search-input-block">
@@ -4288,6 +4296,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
     <div class="bhdr-title">しばらく見ていないメモ</div>
+    <button class="bhdr-action bhdr-icon" data-action="toggle-search-mosaic" id="stale-mosaic-btn" aria-label="思い出す">
+      <svg class="eye-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h7M7 14h4"/></svg>
+      <svg class="eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2" fill="currentColor" stroke="none"/><path d="M7 10h7M7 14h4" stroke="var(--bg)"/></svg>
+    </button>
   </div>
   <div class="scroll" id="stale-scroll">
     <div class="stale-picker" id="stale-page-picker"></div>
@@ -4853,6 +4865,7 @@ const state={
   libraryOrder:{},     // 共有ライブラリ一覧の手動並び順 { distributed:[id...], subbed:[id...], avail:[id...] }
   searchColor:null,    // 探すページの色フィルター
   searchTag:null,      // 探すページのタグフィルター
+  searchMosaic:false,  // 探すページの暗記モード(ボカシ)。検索結果/まだ覚えてる?/しばらく見ていないメモに共通で効く。
   staleDays:null,      // 「しばらく見ていないメモ」ページの日数 (null=未設定→デフォルト7)
   aiNote:'',           // 設定「AIへの希望」フリー記入。systemプロンプトに差し込む利用者の要望。
   onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
@@ -11252,7 +11265,8 @@ function renderStaleList(){
     </div>`;
     return;
   }
-  wrap.innerHTML=`<div class="bin-list">${items.map(c=>binRowHtml(c,'stale')).join('')}</div>`;
+  wrap.innerHTML=`<div class="bin-list${state.searchMosaic?' mosaic':''}">${items.map(c=>binRowHtml(c,'stale')).join('')}</div>`;
+  syncSearchMosaicBtns();
 }
 
 function renderArchiveScreen(){
@@ -12267,6 +12281,7 @@ function doSearch(){
 
   // 色フィルターバーは常に描画 (タグバーも内部で呼ばれる)
   renderColorFilterBar();
+  syncSearchMosaicBtns();
 
   // キーワード・色・タグ・絞り込みチップ いずれもなし → 待機画面
   // (scope!=='all' は「自分/共有/写真/メモ/リスト」で絞っている状態なので結果を出す)
@@ -12335,6 +12350,7 @@ function doSearch(){
       const c=(r.origin!=='official' && isLinkedCard(c0))?resolveLiveCard(c0):c0;
       const card=document.createElement('div');
       card.className='card '+c.type;
+      if(state.searchMosaic)card.classList.add('mosaic'); // 暗記モード: ぼかし表示
       let inner='';
       if(c.type==='photo'||c.type==='photonote')inner=`<img src="${c.image||''}" decoding="async" loading="eager">`;
       else if(c.type==='note'){
@@ -12351,6 +12367,8 @@ function doSearch(){
       if(r.origin!=='official' && cardHasUpdate(c0))inner+=`<div class="card-update-badge">更新</div>`;
       card.innerHTML=inner;
       card.addEventListener('click',()=>{
+        // 暗記モードでぼかし中なら、まず公開 (タップで答え合わせ)
+        if(card.classList.contains('mosaic')){ card.classList.remove('mosaic'); return; }
         if(r.origin==='official')state.currentOfficial=r.shelf;
         openDetail(c0,r.origin);
       });
@@ -12654,7 +12672,7 @@ function renderSearchIdle(){
 // ═══ 今日の数枚 (探すページ最上部) ═══
 // 自分の過去メモを毎日少しだけ浮かせ、1枚ずつ"答え合わせ"する間隔反復の仕組み。
 // SNS的なフィードの安全な代替: 他人ではなく自分の蓄積が返ってくるので、見栄えも比較も生まれない。
-let _todaysPick={day:null, ids:[], idx:0, revealed:false, mosaic:true};
+let _todaysPick={day:null, ids:[], idx:0, revealed:false};
 
 // 候補: 自分のアクティブな写真/メモのうち、今日保存したもの以外。長く見ていない順。
 // 復習候補の全プール (ids)。自分のアクティブな写真/メモのうち今日保存分以外、長く見ていない順。
@@ -12741,8 +12759,8 @@ function renderTodaysPick(){
     cardBg=` style="background:${col.bg};"`;       // メモは色をカード全体に敷き、文字は中央へ
     inner=`<div class="tp-note">${esc(c.text||'')}</div>`;
   }
-  // モザイク(思い出す)モード: ON なら未公開カードはぼかす。スライドしても状態は維持される。
-  const veiled=_todaysPick.mosaic && !_todaysPick.revealed;
+  // 暗記モード(ボカシ): 探すページ共通トグル(state.searchMosaic)に従う。ON なら未公開はぼかす。
+  const veiled=state.searchMosaic && !_todaysPick.revealed;
 
   host.innerHTML=`
     <div class="todays-pick">
@@ -12752,10 +12770,6 @@ function renderTodaysPick(){
           <div class="tp-title">まだ覚えてる？</div>
           <div class="tp-sub">むかしの自分が残したメモ</div>
         </div>
-        <button class="tp-mosaic ${_todaysPick.mosaic?'on':''}" id="tp-mosaic" aria-label="モザイク">
-          <svg class="eye-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h7M7 14h4"/></svg>
-          <svg class="eye-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2" fill="currentColor" stroke="none"/><path d="M7 10h7M7 14h4" stroke="var(--bg)"/></svg>
-        </button>
       </div>
       <div class="tp-card ${veiled?'veiled':'revealed'}" id="tp-card"${cardBg}>
         ${inner}
@@ -12766,17 +12780,6 @@ function renderTodaysPick(){
   // 更新アイコン: 別の数枚に入れ替え
   const refreshBtn=$('tp-refresh');
   if(refreshBtn)refreshBtn.addEventListener('click',e=>{ e.stopPropagation(); tpReroll(); });
-
-  // モザイク切替: ON↔OFF。状態はスライドしても維持され、再度押すまで続く。
-  const mosBtn=$('tp-mosaic');
-  if(mosBtn)mosBtn.addEventListener('click',e=>{
-    e.stopPropagation();
-    _todaysPick.mosaic=!_todaysPick.mosaic;
-    _todaysPick.revealed=false;          // ONにしたら再ぼかし / OFFなら不要
-    if(!_todaysPick.mosaic)tpMarkReviewed(id); // OFFにした瞬間、今の1枚は見えるので復習済みに
-    if(navigator.vibrate)navigator.vibrate(8);
-    renderTodaysPick();
-  });
 
   const card=$('tp-card');
   if(card){
@@ -12938,6 +12941,20 @@ function toggleMosaic(){
   renderHome();
 }
 
+// 探すページの暗記モード(ボカシ) を切り替え。検索結果・まだ覚えてる?・しばらく見ていないメモに共通。
+function toggleSearchMosaic(){
+  state.searchMosaic=!state.searchMosaic;
+  if(navigator.vibrate)navigator.vibrate(8);
+  // 開いている画面を再描画して反映 (ボタン同期は各 render 内で行う)
+  if($('screen-search')?.classList.contains('active'))doSearch();
+  if($('screen-stale')?.classList.contains('active'))renderStaleList();
+  syncSearchMosaicBtns();
+}
+function syncSearchMosaicBtns(){
+  $('search-mosaic-btn')?.classList.toggle('on',state.searchMosaic);
+  $('stale-mosaic-btn')?.classList.toggle('on',state.searchMosaic);
+}
+
 // 詳細画面のモザイク(思い出すモード)をトグル
 function toggleDetailMosaic(){
   state.detailMosaic=!state.detailMosaic;
@@ -13016,6 +13033,7 @@ document.addEventListener('click',e=>{
     case 'view-grid':setView('grid');break;
     case 'view-reel':setView('reel');break;
     case 'toggle-mosaic':toggleMosaic();break;
+    case 'toggle-search-mosaic':toggleSearchMosaic();break;
     case 'toggle-detail-mosaic':toggleDetailMosaic();break;    case 'toggle-menu':$('detail-menu').classList.toggle('on');e.stopPropagation();break;
     case 'edit-card':editCard();break;
     case 'delete-card':deleteCard();break;
@@ -13136,6 +13154,13 @@ document.addEventListener('click',e=>{
   // 「しばらく見ていないメモ」ページ: 行の本体タップで詳細を開く (ボタン以外)
   const staleRow=e.target.closest('#screen-stale .bin-row');
   if(staleRow){
+    // 暗記モードでぼかし中なら、まず公開 (タップで答え合わせ)
+    const list=staleRow.closest('.bin-list');
+    if(list && list.classList.contains('mosaic') && !staleRow.classList.contains('revealed')){
+      staleRow.classList.add('revealed');
+      if(navigator.vibrate)navigator.vibrate(8);
+      return;
+    }
     const id=staleRow.dataset.cardId;
     const c=state.cards.find(x=>x.id===id);
     if(c)openDetail(c,'mine');
