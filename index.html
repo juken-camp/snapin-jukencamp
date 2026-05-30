@@ -4390,7 +4390,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </button>
   <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
-  <div class="settings-ver">SnapIn ver. 2026.05.30-6</div>
+  <div class="settings-ver">SnapIn ver. 2026.05.30-7</div>
 </div>
 
 <!-- バブル長押しメニュー (コピー/部分コピー/リプライ/削除) -->
@@ -9861,14 +9861,8 @@ function openDetail(c,origin){
   $('detail-img').classList.add('hide');
 
   let metaHtml=`<span>${fmtDate(c.date)}</span>`;
-  if(c.submittedBy){
-    metaHtml=`<span class="src">${esc(c.submittedBy)}さんより</span>`+metaHtml;
-  }else if(isOfficial && state.currentOfficial){
+  if(isOfficial && state.currentOfficial && state.currentOfficial.handle){
     metaHtml=`<span class="src">${esc(state.currentOfficial.handle)}</span>`+metaHtml;
-  }else if(c.sharedFrom){
-    metaHtml=`<span class="src">${esc(c.sharedFrom)}さんのメモより</span>`+metaHtml;
-  }else if(c.sharedFromAnon){
-    metaHtml=`<span class="src">お友達のメモより</span>`+metaHtml;
   }
   $('detail-meta').innerHTML=metaHtml;
 
@@ -9999,6 +9993,22 @@ function openDetail(c,origin){
         <div class="link-stale-note">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span>この共有メモは現在取得できません。保存した時点の内容を表示しています。あなたの追記は下に残っています。</span>
+        </div>
+      `;
+    }
+  }
+
+  // 共有リンク/グループで受け取ったメモの出典。共有ライブラリと同じ source-tag に揃える。
+  {
+    let srcLabel='';
+    if(c.submittedBy)srcLabel=`${esc(c.submittedBy)}さんより`;
+    else if(!isOfficial && c.sharedFrom)srcLabel=`${esc(c.sharedFrom)}さんのメモより`;
+    else if(!isOfficial && c.sharedFromAnon)srcLabel='お友達のメモより';
+    if(srcLabel){
+      contentHtml+=`
+        <div class="source-tag">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>${srcLabel}</span>
         </div>
       `;
     }
