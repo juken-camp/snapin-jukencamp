@@ -2704,6 +2704,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink2);
   line-height:1.7;
 }
+.lib-locked-banner .lib-feat-label{
+  font-size:11px;font-weight:700;color:var(--gd);
+  letter-spacing:.03em;margin:12px 0 6px;
+}
 .lib-locked-banner .benefits div{display:flex;gap:6px;}
 .lib-locked-banner .benefits div::before{content:"・";color:var(--g);}
 .lib-locked-banner .btn-row{
@@ -4426,7 +4430,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </button>
   <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
-  <div class="settings-ver">SnapIn ver. 2026.05.30-14</div>
+  <div class="settings-ver">SnapIn ver. 2026.05.30-15</div>
 </div>
 
 <!-- バブル長押しメニュー (コピー/部分コピー/リプライ/削除) -->
@@ -11057,11 +11061,20 @@ function renderLibrary(){
   if(newSec && !isStudent()){
     newSec.innerHTML=`
       <div class="lib-locked-banner">
-        <div class="ttl">AI機能と共有ライブラリ</div>
+        <div class="ttl">SnapInでできること</div>
+        <div class="lib-feat-label">無料でずっと使えます</div>
+        <div class="benefits">
+          <div>メモ・写真・リスト・URLをすぐ保存して整理</div>
+          <div>タグ・検索・「今日」で後から見返す</div>
+          <div>写真メモを「思い出す」で隠して暗記に使う</div>
+          <div>テーマの切り替え（緑・さくら）</div>
+          <div>メモをリンクやQRコードで渡す・受け取る</div>
+        </div>
+        <div class="lib-feat-label">有料版（塾・会社・家族・グループ向け）</div>
         <div class="benefits">
           <div>保存したメモや写真を、その場でAIに質問して解決</div>
-          <div>塾・会社・家族・グループなど、所属先が用意した資料や情報をいつでも閲覧</div>
-          <div>個人のメモや写真は、これまで通りずっと無料</div>
+          <div>所属先が用意した資料や情報をいつでも閲覧</div>
+          <div>グループ内でメモを共有（管理者が見守る形で安全に）</div>
         </div>
         <div class="sub">導入や、個人でのご利用をご希望の方は、お問い合わせください。</div>
         <div class="btn-row">
