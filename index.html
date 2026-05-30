@@ -4424,7 +4424,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </button>
   <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
-  <div class="settings-ver">SnapIn ver. 2026.05.30-12</div>
+  <div class="settings-ver">SnapIn ver. 2026.05.30-13</div>
 </div>
 
 <!-- バブル長押しメニュー (コピー/部分コピー/リプライ/削除) -->
@@ -5962,7 +5962,7 @@ async function openQrScanner(){
   const tick=()=>{
     if(!_qrScanning)return;
     const now=performance.now();
-    if(video.readyState===video.HAVE_ENOUGH_DATA && (now-_qrLastDecode)>=110){
+    if((now-_qrLastDecode)>=110){
       _qrLastDecode=now;
       const w=video.videoWidth, h=video.videoHeight;
       if(w && h){
@@ -9431,16 +9431,21 @@ function renderChatLog(c){
   if(msgs.length===0)return;
 
   let lastDate='';
+  let section=null;
   msgs.forEach((m,idx)=>{
     if(m.deleted)return;
     const t=m.t||Date.now();
     const dateLabel=chatDateLabel(t);
-    // 日付が変わったらセパレーター挿入
-    if(dateLabel!==lastDate){
+    // 日付が変わったら新しい日付セクションを作る。ラベルはセクション内でstickyにするので、
+    // 次の日付セクションが来ると前のラベルが押し出され、ラベル同士が重ならない (LINE方式)。
+    if(dateLabel!==lastDate || !section){
+      section=document.createElement('div');
+      section.className='chat-day-section';
       const sep=document.createElement('div');
       sep.className='chat-date-sep';
       sep.innerHTML=`<span>${dateLabel}</span>`;
-      log.appendChild(sep);
+      section.appendChild(sep);
+      log.appendChild(section);
       lastDate=dateLabel;
     }
     const div=document.createElement('div');
@@ -9488,7 +9493,7 @@ function renderChatLog(c){
         `;
       }
     }
-    log.appendChild(div);
+    (section||log).appendChild(div);
 
     // pending 中のメッセージにはメニューを出さない。
     // それ以外 (ユーザー / AI 両方) は長押しでアクションメニューを出す。
