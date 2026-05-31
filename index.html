@@ -6285,7 +6285,7 @@ async function doClaimSubmit(force){
       errEl.textContent=msg;
       errEl.classList.remove('hide');
       btn.disabled=false;
-      btn.textContent='入る';
+      btn.textContent='ログインする';
 
       // 「他の端末で使われています」の時だけ、「この端末で使う」ボタンを出す。
       // 押すと force:true で再リクエスト。サーバー側で 名前+誕生日 が一致すれば deviceId を上書きする。
@@ -6330,7 +6330,7 @@ async function doClaimSubmit(force){
     errEl.textContent='通信エラーです。電波の良い場所でもう一度お試しください。';
     errEl.classList.remove('hide');
     btn.disabled=false;
-    btn.textContent='入る';
+    btn.textContent='ログインする';
   }
 }
 
@@ -6339,7 +6339,7 @@ function gotoClaim(){
   $('claim-bd').value='';
   $('claim-error').classList.add('hide');
   $('claim-submit').disabled=false;
-  $('claim-submit').textContent='入る';
+  $('claim-submit').textContent='ログインする';
   goto('screen-claim');
 }
 
@@ -6349,7 +6349,7 @@ function gotoJoin(){
   $('join-secret').value='';
   $('join-error').classList.add('hide');
   $('join-submit').disabled=false;
-  $('join-submit').textContent='入る';
+  $('join-submit').textContent='参加する';
   const old=document.getElementById('join-force-btn');
   if(old)old.remove();
   goto('screen-join');
@@ -6407,7 +6407,7 @@ async function doJoinSubmit(force){
       errEl.textContent=msg;
       errEl.classList.remove('hide');
       btn.disabled=false;
-      btn.textContent='入る';
+      btn.textContent='参加する';
 
       // 別端末で使用中の時だけ「この端末で使う」ボタンを出す (force:true で再送信)
       if(data.reason==='already_claimed'){
@@ -6449,7 +6449,7 @@ async function doJoinSubmit(force){
     errEl.textContent='通信エラーです。電波の良い場所でもう一度お試しください。';
     errEl.classList.remove('hide');
     btn.disabled=false;
-    btn.textContent='入る';
+    btn.textContent='参加する';
   }
 }
 
@@ -6547,7 +6547,9 @@ function shareCard(){
 function sendToGroup(){
   $('detail-menu').classList.remove('on');
   if(!state.current){toast('送れません');return;}
-  if(!(state.auth && state.auth.teamId)){toast('グループに参加していません');return;}
+  if(!isStudent()){toast('アカウントでログインしてください');return;}
+  // チーム所属の有無はサーバーが判定する。未所属なら送信時に no_team が返り、
+  // doSendToGroup 側で「グループに参加していません」と案内する。
   _shareMode='group';
   _shareCardId=state.current.id;
   const real=state.cards.find(x=>x.id===_shareCardId)||state.current;
@@ -11046,9 +11048,10 @@ function openDetail(c,origin){
   closePartialCopy();
   if(typeof clearPendingChatImg==='function')clearPendingChatImg();
   const isOfficial=origin==='official';
-  // 「グループに送る」は、自分のメモ かつ グループ参加中のときだけ出す
+  // 「グループに送る」は、自分のメモ かつ ログイン中の生徒なら出す。
+  // 実際にどのグループ宛かはサーバーがトークンで判定する (未所属なら no_team を返す)。
   const _sg=$('menu-sendgroup-btn');
-  if(_sg)_sg.style.display=(origin!=='official' && state.auth && state.auth.teamId)?'':'none';
+  if(_sg)_sg.style.display=(origin!=='official' && isStudent())?'':'none';
 
   $('detail-img').classList.add('hide');
   $('detail-img').onclick=null;
