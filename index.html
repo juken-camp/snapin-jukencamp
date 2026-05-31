@@ -1314,16 +1314,38 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .detail-input-img:active{background:rgba(0,0,0,.06);}
 /* 送信前の画像プレビュー (入力バーの上) */
 .chat-image-preview{
-  display:flex;align-items:center;gap:8px;
-  padding:8px 14px;
+  position:relative;
+  margin:0 14px 8px;
+  padding:10px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  box-shadow:0 2px 10px rgba(0,0,0,.06);
+  display:flex;
+  align-items:center;
+  gap:12px;
 }
 .chat-image-preview img{
-  width:54px;height:54px;object-fit:cover;border-radius:8px;
+  width:88px;height:88px;object-fit:cover;border-radius:10px;flex-shrink:0;
+  background:rgba(0,0,0,.04);
 }
+.chat-image-preview-actions{
+  flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;align-items:flex-start;
+}
+.chat-image-preview-hint{
+  font-size:12px;color:var(--ink2);line-height:1.4;
+}
+.chat-image-preview-send{
+  background:var(--g);color:#fff;font-size:14px;font-weight:600;
+  padding:9px 22px;border-radius:20px;
+}
+.chat-image-preview-send:active{background:var(--gd);transform:scale(0.97);}
 .chat-image-preview-x{
-  width:24px;height:24px;border-radius:50%;
-  background:rgba(0,0,0,.5);color:#fff;
+  position:absolute;top:-8px;left:-8px;z-index:2;
+  width:26px;height:26px;border-radius:50%;
+  background:rgba(0,0,0,.6);color:#fff;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  box-shadow:0 1px 4px rgba(0,0,0,.25);
 }
 /* チャットバブル内に表示する送信済み画像 */
 .chat-msg-img{
@@ -4504,10 +4526,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </button>
   </div>
   <div class="chat-image-preview" id="chat-image-preview" style="display:none;">
-    <img id="chat-image-preview-img" alt="">
     <button class="chat-image-preview-x" data-action="chat-clear-image" aria-label="画像をやめる">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>
+    <img id="chat-image-preview-img" alt="">
+    <div class="chat-image-preview-actions">
+      <div class="chat-image-preview-hint">この画像を送ります（下に文章を足してもOK）</div>
+      <button class="chat-image-preview-send" data-action="detail-send">送信</button>
+    </div>
   </div>
   <div class="detail-input" id="detail-input-bar">
     <button class="detail-input-ai" id="detail-ai-toggle" data-action="toggle-ai-mode" aria-label="AIに送る">
