@@ -1126,8 +1126,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   pointer-events:none; /* タッチは親 .detail-img で拾う */
 }
 .detail-img.zoomed img{cursor:grab;}
-/* 動画は縦ドラッグをスクロール(バウンド)に渡す。これがないと動画上で上下スクロールできない。 */
-.detail-img video{touch-action:pan-y;max-height:55vh;}
+/* 動画は写真と同じく指の操作を親スクロールに渡す (pointer-events:none)。タップは親で拾う。 */
+.detail-img video{max-height:55vh;pointer-events:none;}
 .detail-body{padding:18px 18px 24px;}
 .detail-meta{
   display:flex;
@@ -10788,6 +10788,7 @@ function openDetail(c,origin){
   if(_sg)_sg.style.display=(origin!=='official' && state.auth && state.auth.teamId)?'':'none';
 
   $('detail-img').classList.add('hide');
+  $('detail-img').onclick=null;
 
   let metaHtml=`<span>${fmtDate(c.date)}</span>`;
   $('detail-meta').innerHTML=metaHtml;
@@ -10800,8 +10801,21 @@ function openDetail(c,origin){
     $('detail-img').style.border='none';
     $('detail-img').style.boxSizing='border-box';
     if(vurl){
-      // 詳細では controls 付き・音あり。最初は自動再生(ミュート)してすぐ見えるようにする。
-      $('detail-img').innerHTML=`<video src="${vurl}" controls playsinline webkit-playsinline preload="metadata" ${c.poster?`poster="${c.poster}"`:''} autoplay muted loop style="width:100%;height:100%;object-fit:contain;background:#000;touch-action:pan-y;"></video>`;
+      // 写真と同じく pointer-events:none にして、指の上下ドラッグは親スクロール(バウンド)に渡す。
+      // controls は使わず、自動再生(無音ループ)。タップで音のオン/オフを切り替える。
+      // height:100% をやめ、写真と同じく自然サイズ(最大55vh)にして黒塗りを防ぐ。
+      $('detail-img').innerHTML=`<video src="${vurl}" playsinline webkit-playsinline preload="metadata" ${c.poster?`poster="${c.poster}"`:''} autoplay muted loop style="max-width:100%;max-height:55vh;width:auto;height:auto;object-fit:contain;background:#000;pointer-events:none;"></video>`;
+      const _v=$('detail-img').querySelector('video');
+      if(_v){
+        try{ const pp=_v.play(); if(pp&&pp.catch)pp.catch(()=>{}); }catch(e){}
+        // タップで音のオン/オフ (pointer-events:none の video の代わりに親で拾う)
+        $('detail-img').style.cursor='pointer';
+        $('detail-img').onclick=()=>{
+          _v.muted=!_v.muted;
+          if(_v.paused){ const p=_v.play(); if(p&&p.catch)p.catch(()=>{}); }
+          toast(_v.muted?'🔇 ミュート':'🔊 音声オン');
+        };
+      }
     }else{
       $('detail-img').innerHTML=c.poster
         ? `<img src="${c.poster}" alt="">`
