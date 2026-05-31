@@ -1314,17 +1314,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .detail-input-img:active{background:rgba(0,0,0,.06);}
 /* 送信前の画像プレビュー (入力バーの上) */
 .chat-image-preview{
-  display:flex;justify-content:flex-end;
-  padding:8px 14px 4px;
-  background:transparent;
+  position:absolute;right:14px;z-index:6;
+  padding:0;background:transparent;
+  /* bottom は表示時に JS で入力バーの真上へ合わせる */
 }
 .chat-image-preview-thumb{
   position:relative;width:64px;height:64px;flex-shrink:0;
 }
 .chat-image-preview-thumb img{
   width:100%;height:100%;object-fit:cover;border-radius:10px;
-  background:rgba(0,0,0,.04);
-  box-shadow:0 1px 6px rgba(0,0,0,.18);
+  box-shadow:0 2px 8px rgba(0,0,0,.28);
 }
 .chat-image-preview-x{
   position:absolute;top:-6px;right:-6px;z-index:2;
@@ -11413,10 +11412,23 @@ async function onChatImagePick(e){
     _pendingChatImg={ id:'ci_'+Date.now().toString(36)+Math.floor(Math.random()*1000), dataUrl };
     const pv=$('chat-image-preview');
     $('chat-image-preview-img').src=dataUrl;
-    pv.style.display='flex';
+    pv.style.display='block';
+    positionChatPreview();
     dbg('imgPick OK, preview shown, id='+_pendingChatImg.id);
   }catch(err){ dbg('imgPick compress FAIL: '+(err&&err.message||err)); toast('画像の読み込みに失敗しました'); }
 }
+// プレビューを入力バーのすぐ上に浮かせて配置 (レイアウトを押さない=チャットを隠さない)
+function positionChatPreview(){
+  const pv=$('chat-image-preview');
+  const bar=$('detail-input-bar');
+  const screen=document.getElementById('screen-detail');
+  if(!pv||!bar||!screen)return;
+  const srect=screen.getBoundingClientRect();
+  const brect=bar.getBoundingClientRect();
+  // 画面下端から入力バー上端までの距離 + 余白8px
+  pv.style.bottom=(srect.bottom - brect.top + 8)+'px';
+}
+
 function clearPendingChatImg(){
   _pendingChatImg=null;
   const pv=$('chat-image-preview');
