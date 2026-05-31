@@ -7462,8 +7462,7 @@ function renderToday(){
         if(!isNoColor(c.color)){const col=colorById(c.color);el.style.border='2.5px solid '+col.bd;el.style.boxSizing='border-box';}
       }else if(c.type==='video'){
         el.style.background='#000';
-        el.innerHTML=(c.poster?`<img src="${c.poster}" decoding="async" loading="eager">`:'')
-          +`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
+        el.innerHTML=videoCardInner(c);
       }else if(c.type==='note'){
         const col=colorById(c.color);
         const style=noteCardStyle(c,col);
@@ -7499,6 +7498,7 @@ function renderToday(){
   precacheCardImages(todayScreen);
   // ヘッダーの暗記モードトグルの表示状態を同期
   syncTodayMosaicBtn();
+  requestAnimationFrame(refreshVideoThumbs);
 }
 
 // 「N日以上見ていないメモ」を返す ("探す"の未閲覧フィルタで使用)。
@@ -7573,8 +7573,7 @@ function renderPastDaySection(daysAgo){
       if(!isNoColor(c.color)){const col=colorById(c.color);el.style.border='2.5px solid '+col.bd;el.style.boxSizing='border-box';}
     }else if(c.type==='video'){
       el.style.background='#000';
-      el.innerHTML=(c.poster?`<img src="${c.poster}" decoding="async" loading="eager">`:'')
-        +`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
+      el.innerHTML=videoCardInner(c);
     }else if(c.type==='note'){
       const col=colorById(c.color);
       const style=noteCardStyle(c,col);
@@ -7645,8 +7644,7 @@ function renderPastMoreSection(){
       if(c.type==='photo'||c.type==='photonote'){
         body=`<img src="${c.image||''}" decoding="async" loading="eager">`;
       }else if(c.type==='video'){
-        body=(c.poster?`<img src="${c.poster}" decoding="async" loading="eager">`:'')
-          +`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
+        body=videoCardInner(c);
       }else if(c.type==='note'){
         const col=colorById(c.color);
         const style=noteCardStyle(c,col);
@@ -7730,6 +7728,7 @@ function renderHome(){
     }
   }
   $('mosaic-btn').classList.toggle('on',state.mosaicMode);
+  requestAnimationFrame(refreshVideoThumbs);
 }
 
 // ═══ GRID ═══
@@ -7760,8 +7759,7 @@ function renderGrid(el,cards,origin){
       if(dc.text)inner+=`<div class="card-source">${esc(dc.text.slice(0,30))}</div>`;
     }else if(dc.type==='video'){
       card.style.background='#000';
-      inner=(dc.poster?`<img src="${dc.poster}" alt="" decoding="async" loading="eager">`:'')
-          +`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
+      inner=videoCardInner(dc);
       if(dc.text)inner+=`<div class="card-source">${esc(dc.text.slice(0,30))}</div>`;
     }else if(dc.type==='note'){
       const col=colorById(dc.color);
@@ -8172,6 +8170,37 @@ function setupFeedVideoAutoplay(el){
   },{root:el,threshold:[0,0.6,1]});
   el.querySelectorAll('video.feed-video').forEach(v=>io.observe(v));
   el._videoIO=io;
+}
+
+// グリッド/今日/検索などのサムネ用: ポスターに頼らず動画を直接表示する。
+// ポスターがあればそれを poster 属性に使い、表示中だけ短く再生して確実にフレームを見せる。
+function videoCardInner(c){
+  const badge=`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
+  if(c && c._videoUrl){
+    return `<video class="grid-video-thumb" src="${c._videoUrl}" muted loop autoplay playsinline webkit-playsinline preload="metadata" ${c.poster?`poster="${c.poster}"`:''} style="width:100%;height:100%;object-fit:cover;background:#000;pointer-events:none;"></video>`+badge;
+  }
+  // _videoUrl がまだ無い(復元前など)場合はポスターか黒地+再生マーク
+  return (c&&c.poster?`<img src="${c.poster}" alt="" decoding="async" loading="eager">`:'')+badge;
+}
+
+// サムネ動画を「画面に入っているものだけ」再生する (黒塗り防止 + 省電力)。
+// 再描画ごとに作り直すグローバル Observer。iOS は同時再生数に制限があるため可視分だけ play する。
+let _thumbVideoIO=null;
+function refreshVideoThumbs(){
+  if(_thumbVideoIO)_thumbVideoIO.disconnect();
+  _thumbVideoIO=new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      const v=entry.target;
+      if(entry.isIntersecting){
+        v.muted=true;
+        const p=v.play();
+        if(p && p.catch)p.catch(()=>{});
+      }else{
+        try{v.pause();}catch(e){}
+      }
+    });
+  },{threshold:0.1});
+  document.querySelectorAll('video.grid-video-thumb').forEach(v=>_thumbVideoIO.observe(v));
 }
 function openAddSheet(){
   $('add-mask').classList.add('on');
@@ -11717,8 +11746,7 @@ function renderStaleList(){
       inner=`<img src="${c.image||''}" decoding="async" loading="eager">`;
     }else if(c.type==='video'){
       card.style.background='#000';
-      inner=(c.poster?`<img src="${c.poster}" decoding="async" loading="eager">`:'')
-        +`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
+      inner=videoCardInner(c);
     }else if(c.type==='note'){
       const col=colorById(c.color);
       const style=noteCardStyle(c,col);
@@ -12831,8 +12859,7 @@ function doSearch(){
       if(c.type==='photo'||c.type==='photonote')inner=`<img src="${c.image||''}" decoding="async" loading="eager">`;
       else if(c.type==='video'){
         card.style.background='#000';
-        inner=(c.poster?`<img src="${c.poster}" decoding="async" loading="eager">`:'')
-          +`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
+        inner=videoCardInner(c);
       }
       else if(c.type==='note'){
         const col=colorById(c.color);
