@@ -3597,14 +3597,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink);
   line-height:1.25;
   display:-webkit-box;
-  -webkit-line-clamp:2;
+  -webkit-line-clamp:3;
   -webkit-box-orient:vertical;
   overflow:hidden;
 }
 .link-card-title--3{-webkit-line-clamp:3;}
-/* ラベル(再生リスト等)がある場合は、同じ白帯の中に収めるためタイトルを1行に。
-   白帯の高さは全カード共通なので、画像と白帯の境界線がどのカードでも揃う。 */
-.link-card-body.has-kind .link-card-title{-webkit-line-clamp:1;}
+/* ラベル(再生リスト等)がある場合は、ラベルぶん1行ぶん減らして2行に。
+   白帯の高さは全カード共通なので、画像と白帯の境界線はどのカードでも揃ったまま。 */
+.link-card-body.has-kind .link-card-title{-webkit-line-clamp:2;}
 .link-card-host{
   font-size:10.5px;
   color:var(--ink3);
