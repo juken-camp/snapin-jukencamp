@@ -557,7 +557,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .card.mosaic .ctxt,
 .card.mosaic .link-card-title,
 .card.mosaic .link-card-host,
-.card.mosaic img{filter:blur(5px) saturate(0.9);}
+.card.mosaic img,
+.card.mosaic video{filter:blur(5px) saturate(0.9);}
 .card.mosaic::before{
   content:"";
   position:absolute;inset:0;
@@ -570,6 +571,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 /* フィードでは URL カードのタイトル/ホストは .feed-meta に入っているので、
    .feed-meta もぼかし対象に含める。 */
 .feed.mosaic .feed-item img,
+.feed.mosaic .feed-item video,
 .feed.mosaic .feed-note,
 .feed.mosaic .feed-list,
 .feed.mosaic .feed-meta{filter:blur(8px) saturate(0.9);}
@@ -581,6 +583,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   z-index:1;
 }
 .feed.mosaic .feed-item.tapped img,
+.feed.mosaic .feed-item.tapped video,
 .feed.mosaic .feed-item.tapped .feed-note,
 .feed.mosaic .feed-item.tapped .feed-list,
 .feed.mosaic .feed-item.tapped .feed-meta{filter:none;}
@@ -596,7 +599,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .today-newcards.mosaic .today-newcard .ctxt,
 .today-newcards.mosaic .today-newcard .link-card-title,
 .today-newcards.mosaic .today-newcard .link-card-host,
-.today-newcards.mosaic .today-newcard img{filter:blur(5px) saturate(0.9);}
+.today-newcards.mosaic .today-newcard img,
+.today-newcards.mosaic .today-newcard video{filter:blur(5px) saturate(0.9);}
 .today-newcards.mosaic .today-newcard::before{
   content:"";
   position:absolute;inset:0;
@@ -608,7 +612,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .today-newcards.mosaic .today-newcard.tapped .ctxt,
 .today-newcards.mosaic .today-newcard.tapped .link-card-title,
 .today-newcards.mosaic .today-newcard.tapped .link-card-host,
-.today-newcards.mosaic .today-newcard.tapped img{filter:none;}
+.today-newcards.mosaic .today-newcard.tapped img,
+.today-newcards.mosaic .today-newcard.tapped video{filter:none;}
 .today-newcards.mosaic .today-newcard.tapped::before{display:none;}
 
 /* 詳細画面のモザイク (思い出すモード)。メモ本体(画像・テキスト・リスト)をぼかし、タップで一時表示。 */
@@ -4354,8 +4359,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button class="scope-chip" data-scope="mine">自分</button>
       <button class="scope-chip" data-scope="official">共有</button>
       <button class="scope-chip" data-scope="photo">写真</button>
+      <button class="scope-chip" data-scope="video">動画</button>
       <button class="scope-chip" data-scope="note">メモ</button>
       <button class="scope-chip" data-scope="list">リスト</button>
+      <button class="scope-chip" data-scope="link">リンク</button>
     </div>
     <div class="color-filter-row-wrap" id="color-filter-row"></div>
     <div class="tag-filter-row-wrap" id="tag-filter-row"></div>
@@ -10322,6 +10329,25 @@ function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 // renderChatLog がこのメッセージを通常描画しないようにするため。
 let _animatingAiMsg=null;
 
+// 詳細スクロールの中身が画面より短いと iOS のバウンドが効かない。
+// 足りないぶんだけ透明スペーサーを足して、必ず少し(40px)スクロールできるようにする。
+function ensureDetailBounce(){
+  const s=$('detail-scroll'), b=$('detail-body');
+  if(!s||!b)return;
+  let sp=document.getElementById('detail-bounce-spacer');
+  if(!sp){
+    sp=document.createElement('div');
+    sp.id='detail-bounce-spacer';
+    sp.style.cssText='width:100%;pointer-events:none;flex-shrink:0;';
+    b.appendChild(sp);
+  }
+  sp.style.height='0px';
+  requestAnimationFrame(()=>{
+    const need = s.clientHeight + 40 - s.scrollHeight; // 画面高+40 に届かせる
+    sp.style.height = (need>0 ? need : 0) + 'px';
+  });
+}
+
 function renderChatLog(c){
   const log=$('detail-chat-log');
   // 時間差マルチバブル表示中は、この関数を呼ばれても DOM を上書きしない。
@@ -10427,6 +10453,7 @@ function renderChatLog(c){
       if(im.src && window._openIconLightbox)window._openIconLightbox(im.src,'','');
     });
   });
+  ensureDetailBounce();
 }
 
 // 引用に詰めるテキストを短く整形 (改行を空白に潰し、長すぎる場合は省略)
@@ -11120,6 +11147,7 @@ function openDetail(c,origin){
 
   // チャット(AI会話 + 追記メモ)を時系列表示
   renderChatLog(c);
+  ensureDetailBounce();
 
   // リスト項目クリック (自分の棚のみ、check モードの項目のみ)
   // 共有由来カードのリストは共有本文なので操作不可 (チェック状態は共有管理)
@@ -12985,15 +13013,17 @@ function doSearch(){
   idle.innerHTML='';
 
   let results=[];
-  if(scope==='all'||scope==='mine'||scope==='photo'||scope==='note'||scope==='list'||scope==='official'){
+  if(scope==='all'||scope==='mine'||scope==='photo'||scope==='video'||scope==='note'||scope==='list'||scope==='link'||scope==='official'){
     getActiveCards().forEach(c=>{
       // 「共有」スコープ: 自分が共有から保存したメモ (linkカード) だけに絞る
       if(scope==='official' && !isLinkedCard(c))return;
       // 共有由来カードは本文を最新マスターに解決して検索対象にする (個人の追記/チャットも対象)
       const dc=isLinkedCard(c)?resolveLiveCard(c):c;
       if(scope==='photo' && dc.type!=='photo' && dc.type!=='photonote')return;
+      if(scope==='video' && dc.type!=='video')return;
       if(scope==='note' && dc.type!=='note')return;
       if(scope==='list' && dc.type!=='list')return;
+      if(scope==='link' && dc.type!=='link')return;
       if(colorFilter && (isNoColor(dc.color)?'none':dc.color)!==colorFilter)return;
       if(tagFilter && !(c.tags||[]).includes(tagFilter))return;
       if(q){
