@@ -1264,9 +1264,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-top:0.5px solid var(--line);
   padding:7px 10px;
   display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:7px;
+  flex-shrink:0;
+}
+.detail-input-row{
+  display:flex;
   align-items:center;
   gap:8px;
-  flex-shrink:0;
 }
 .detail-input-ai{
   width:38px;height:38px;
@@ -1312,18 +1318,42 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-radius:50%;color:var(--ink2);
 }
 .detail-input-img:active{background:rgba(0,0,0,.06);}
+/* 画像添付時はキャプション欄を白背景にしてカード内で目立たせる */
+.detail-input.composing .detail-input textarea,
+.detail-input.composing textarea#detail-input{
+  background:var(--surface);
+  border:1px solid var(--line);
+}
+.detail-input.composing .detail-input-ai:not(.on){
+  background:var(--surface);
+}
+/* 通常時の入力欄を包む枠 (画像なしのときは枠なし=従来どおり) */
+.compose-frame{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+/* 画像を添付すると、ショートメール風に送信枠がカード状に拡張される。
+   画像はこの枠の中に大きく表示され、下にキャプション入力＋送信が並ぶ。 */
+.detail-input.composing .compose-frame{
+  background:var(--bg);
+  border:1px solid var(--line2);
+  border-radius:22px;
+  padding:10px 10px 8px;
+  gap:9px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
+}
+
 /* 送信前の画像プレビュー (入力バーの上) */
 .chat-image-preview{
-  position:absolute;right:14px;z-index:6;
-  padding:0;background:transparent;
-  /* bottom は表示時に JS で入力バーの真上へ合わせる */
+  display:flex;
+  padding:2px 2px 0;
 }
 .chat-image-preview-thumb{
-  position:relative;width:64px;height:64px;flex-shrink:0;
+  position:relative;width:60px;height:60px;flex-shrink:0;
 }
 .chat-image-preview-thumb img{
   width:100%;height:100%;object-fit:cover;border-radius:10px;
-  box-shadow:0 2px 8px rgba(0,0,0,.28);
 }
 .chat-image-preview-x{
   position:absolute;top:-6px;right:-6px;z-index:2;
@@ -1332,6 +1362,44 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 1px 4px rgba(0,0,0,.25);
 }
+
+/* ── 画像添付モード: 大きなプレビュー＋ヒント ── */
+.detail-input.composing .chat-image-preview{
+  flex-direction:column;
+  align-items:stretch;
+  padding:0;
+  gap:8px;
+}
+.detail-input.composing .chat-image-preview-thumb{
+  width:100%;
+  max-width:220px;
+  height:auto;
+  max-height:240px;
+  border-radius:16px;
+  overflow:visible;
+}
+.detail-input.composing .chat-image-preview-thumb img{
+  width:auto;
+  max-width:220px;
+  height:auto;
+  max-height:240px;
+  border-radius:16px;
+  box-shadow:0 2px 10px rgba(0,0,0,.12);
+}
+.detail-input.composing .chat-image-preview-x{
+  top:-8px;right:-8px;
+  width:26px;height:26px;
+  background:rgba(0,0,0,.7);
+}
+/* このまま送る／メッセージを足す、を案内する小さなヒント */
+.compose-hint{
+  display:none;
+  font-size:11.5px;
+  color:var(--ink3);
+  padding:0 2px;
+  letter-spacing:.01em;
+}
+.detail-input.composing .compose-hint{display:block;}
 /* チャットバブル内に表示する送信済み画像 */
 .chat-msg-img{
   display:block;max-width:100%;width:200px;max-height:260px;
@@ -4510,25 +4578,30 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>
   </div>
-  <div class="chat-image-preview" id="chat-image-preview" style="display:none;">
-    <div class="chat-image-preview-thumb">
-      <img id="chat-image-preview-img" alt="">
-      <button class="chat-image-preview-x" data-action="chat-clear-image" aria-label="やめる">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+  <div class="detail-input" id="detail-input-bar">
+    <div class="compose-frame" id="compose-frame">
+    <div class="chat-image-preview" id="chat-image-preview" style="display:none;">
+      <div class="chat-image-preview-thumb">
+        <img id="chat-image-preview-img" alt="">
+        <button class="chat-image-preview-x" data-action="chat-clear-image" aria-label="やめる">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="compose-hint" id="compose-hint">このまま送信、またはメッセージを添えて送れます</div>
+    </div>
+    <div class="detail-input-row">
+      <button class="detail-input-ai" id="detail-ai-toggle" data-action="toggle-ai-mode" aria-label="AIに送る">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      </button>
+      <button class="detail-input-img" id="chat-img-btn" data-action="chat-pick-image" aria-label="画像を送る">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      </button>
+      <textarea id="detail-input" placeholder="メモを書く…" rows="1"></textarea>
+      <button class="detail-input-send" id="detail-input-send" data-action="detail-send" aria-label="送信">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
       </button>
     </div>
-  </div>
-  <div class="detail-input" id="detail-input-bar">
-    <button class="detail-input-ai" id="detail-ai-toggle" data-action="toggle-ai-mode" aria-label="AIに送る">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-    </button>
-    <button class="detail-input-img" id="chat-img-btn" data-action="chat-pick-image" aria-label="画像を送る">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-    </button>
-    <textarea id="detail-input" placeholder="メモを書く…" rows="1"></textarea>
-    <button class="detail-input-send" id="detail-input-send" data-action="detail-send" aria-label="送信">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
-    </button>
+    </div>
   </div>
   <input type="file" id="chat-image-input" accept="image/*" style="display:none;">
   <div class="bnav" data-bnav="home"></div>
@@ -4971,9 +5044,6 @@ const $=id=>document.getElementById(id);
 // ── デバッグ表示 (URL に #debug を付けたときだけ画面に状態を出す) ──
 // 通常は何もしない。問題の特定用。例: https://...app/#debug
 const _DBG = (typeof location!=='undefined') && /debug/i.test(location.hash||'');
-// ビルド印: どの版が表示されているか一目で分かるように。デプロイ反映の確認用。
-const BUILD_TAG = 'BUILD 2026-06-01-d (画像=右に浮く)';
-try{ console.log('SnapIn ' + BUILD_TAG); }catch(e){}
 let _dbgBox=null; const _dbgLines=[];
 function dbg(msg){
   if(!_DBG)return;
@@ -4983,7 +5053,6 @@ function dbg(msg){
       _dbgBox.style.cssText='position:fixed;left:6px;right:6px;bottom:6px;z-index:99999;max-height:36vh;overflow:auto;background:rgba(0,0,0,.82);color:#0f0;font:11px/1.35 monospace;padding:8px 10px;border-radius:8px;white-space:pre-wrap;pointer-events:auto;';
       _dbgBox.addEventListener('click',()=>{_dbgBox.style.display='none';});
       document.body.appendChild(_dbgBox);
-      _dbgLines.push(BUILD_TAG);
     }
     const t=new Date().toLocaleTimeString();
     _dbgLines.push(t+'  '+msg);
@@ -11306,7 +11375,11 @@ function toggleAiMode(){
   state.detailAiMode=!state.detailAiMode;
   $('detail-ai-toggle').classList.toggle('on',state.detailAiMode);
   const inp=$('detail-input');
-  inp.placeholder=state.detailAiMode?'AIに質問して送信…':'メモを書く…';
+  if(_pendingChatImg){
+    inp.placeholder='メッセージを添える…（任意）';
+  }else{
+    inp.placeholder=state.detailAiMode?'AIに質問して送信…':'メモを書く…';
+  }
   // 送信ボタンは常に緑のまま (AIモードのトグル自体で状態は分かる)
   inp.focus();
 }
@@ -11416,28 +11489,29 @@ async function onChatImagePick(e){
     _pendingChatImg={ id:'ci_'+Date.now().toString(36)+Math.floor(Math.random()*1000), dataUrl };
     const pv=$('chat-image-preview');
     $('chat-image-preview-img').src=dataUrl;
-    pv.style.display='block';
-    positionChatPreview();
+    pv.style.display='flex';
+    // ショートメール風に入力枠をカード状へ拡張し、キャプションを促す
+    const bar=$('detail-input-bar');
+    if(bar)bar.classList.add('composing');
+    const inp=$('detail-input');
+    if(inp){
+      inp.placeholder='メッセージを添える…（任意）';
+      inp.focus();
+    }
     dbg('imgPick OK, preview shown, id='+_pendingChatImg.id);
   }catch(err){ dbg('imgPick compress FAIL: '+(err&&err.message||err)); toast('画像の読み込みに失敗しました'); }
 }
-// プレビューを入力バーのすぐ上に浮かせて配置 (レイアウトを押さない=チャットを隠さない)
-function positionChatPreview(){
-  const pv=$('chat-image-preview');
-  const bar=$('detail-input-bar');
-  const screen=document.getElementById('screen-detail');
-  if(!pv||!bar||!screen)return;
-  const srect=screen.getBoundingClientRect();
-  const brect=bar.getBoundingClientRect();
-  pv.style.bottom=(srect.bottom - brect.top + 8)+'px';
-}
-
 function clearPendingChatImg(){
   _pendingChatImg=null;
   const pv=$('chat-image-preview');
   if(pv)pv.style.display='none';
   const im=$('chat-image-preview-img');
   if(im)im.src='';
+  // カード状の拡張を解除し、入力欄を通常表示へ戻す
+  const bar=$('detail-input-bar');
+  if(bar)bar.classList.remove('composing');
+  const inp=$('detail-input');
+  if(inp)inp.placeholder=state.detailAiMode?'AIに質問して送信…':'メモを書く…';
 }
 
 async function detailSend(){
