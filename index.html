@@ -1301,6 +1301,31 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--ink3);
   opacity:0.5;
 }
+.detail-input-img{
+  width:34px;height:34px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50%;color:var(--ink2);
+}
+.detail-input-img:active{background:rgba(0,0,0,.06);}
+/* 送信前の画像プレビュー (入力バーの上) */
+.chat-image-preview{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 14px;
+}
+.chat-image-preview img{
+  width:54px;height:54px;object-fit:cover;border-radius:8px;
+}
+.chat-image-preview-x{
+  width:24px;height:24px;border-radius:50%;
+  background:rgba(0,0,0,.5);color:#fff;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+/* チャットバブル内に表示する送信済み画像 */
+.chat-msg-img{
+  display:block;max-width:100%;width:200px;max-height:260px;
+  object-fit:cover;border-radius:12px;margin-bottom:4px;cursor:pointer;
+  background:rgba(0,0,0,.04);
+}
 
 /* MENU */
 .menu{
@@ -4471,15 +4496,25 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>
   </div>
+  <div class="chat-image-preview" id="chat-image-preview" style="display:none;">
+    <img id="chat-image-preview-img" alt="">
+    <button class="chat-image-preview-x" data-action="chat-clear-image" aria-label="画像をやめる">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
   <div class="detail-input" id="detail-input-bar">
     <button class="detail-input-ai" id="detail-ai-toggle" data-action="toggle-ai-mode" aria-label="AIに送る">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    </button>
+    <button class="detail-input-img" id="chat-img-btn" data-action="chat-pick-image" aria-label="画像を送る">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
     </button>
     <textarea id="detail-input" placeholder="メモを書く…" rows="1"></textarea>
     <button class="detail-input-send" id="detail-input-send" data-action="detail-send" aria-label="送信">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
     </button>
   </div>
+  <input type="file" id="chat-image-input" accept="image/*" style="display:none;">
   <div class="bnav" data-bnav="home"></div>
 </div>
 
@@ -4977,6 +5012,14 @@ function buildLightPayload(){
       const {image,...snapRest}=lc._snap;
       lc={...lc,_snap:{...snapRest,__hasImg:true}};
     }
+    // チャット添付画像の実行時 dataURL(_img) は永続化しない。
+    // 画像本体は chatimgs ストアに保存され、メッセージには chatImg(id) だけ残す。
+    if(Array.isArray(lc.chat) && lc.chat.some(m=>m && m._img)){
+      lc={...lc, chat: lc.chat.map(m=>{
+        if(m && m._img){ const {_img,...mrest}=m; return mrest; }
+        return m;
+      })};
+    }
     return lc;
   });
   return {
@@ -5064,7 +5107,8 @@ const imgDB={
   _STORE:'images',
   _META_STORE:'meta',
   _VIDEO_STORE:'videos',
-  _VERSION:3,
+  _CHATIMG_STORE:'chatimgs',
+  _VERSION:4,
   async open(){
     if(this._db)return this._db;
     return new Promise((res,rej)=>{
@@ -5084,6 +5128,10 @@ const imgDB={
         // クラウドには上げず端末ローカル専用 (無料運用)。
         if(!db.objectStoreNames.contains(this._VIDEO_STORE)){
           db.createObjectStore(this._VIDEO_STORE);
+        }
+        // v4: チャットに添付した画像 (base64 dataURL)。端末ローカル専用 (クラウド非同期)。
+        if(!db.objectStoreNames.contains(this._CHATIMG_STORE)){
+          db.createObjectStore(this._CHATIMG_STORE);
         }
       };
       req.onsuccess=()=>{
@@ -5159,6 +5207,34 @@ const imgDB={
     return new Promise((res,rej)=>{
       const tx=db.transaction(this._VIDEO_STORE,'readwrite');
       const req=tx.objectStore(this._VIDEO_STORE).delete(id);
+      req.onsuccess=()=>res();
+      req.onerror=()=>rej(req.error);
+    });
+  },
+  // ── チャット添付画像 (dataURL) 用 ───────────────
+  async putChatImg(id,dataUrl){
+    const db=await this.open();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(this._CHATIMG_STORE,'readwrite');
+      const req=tx.objectStore(this._CHATIMG_STORE).put(dataUrl,id);
+      req.onsuccess=()=>res();
+      req.onerror=()=>rej(req.error);
+    });
+  },
+  async getChatImg(id){
+    const db=await this.open();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(this._CHATIMG_STORE,'readonly');
+      const req=tx.objectStore(this._CHATIMG_STORE).get(id);
+      req.onsuccess=()=>res(req.result||null);
+      req.onerror=()=>rej(req.error);
+    });
+  },
+  async deleteChatImg(id){
+    const db=await this.open();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(this._CHATIMG_STORE,'readwrite');
+      const req=tx.objectStore(this._CHATIMG_STORE).delete(id);
       req.onsuccess=()=>res();
       req.onerror=()=>rej(req.error);
     });
@@ -10266,6 +10342,10 @@ function renderChatLog(c){
     const quoteHtml=m.replyTo
       ? `<div class="bubble-quote">${esc(truncateForQuote(m.replyTo.text))}</div>`
       : '';
+    // 添付画像 (チャットで送った画像)。_img(読込済) があれば即表示、無ければ data-ci で遅延読込。
+    const imgHtml=(m._img || m.chatImg)
+      ? `<img class="chat-msg-img" ${m._img?`src="${m._img}"`:''} data-ci="${m.chatImg||''}" alt="">`
+      : '';
 
     if(m.pending){
       // AI待ちプレースホルダー: 動くドットだけ出す
@@ -10275,9 +10355,10 @@ function renderChatLog(c){
       `;
     }else if(isUser){
       // ユーザー側 (user/memo) は分割せず1バブル。リプライ引用があれば本文の上に出す。
+      const textHtml=m.text?linkify(cleanAIText(m.text,m.role)):'';
       div.innerHTML=`
         <div class="msg-time">${chatTimeLabel(t)}</div>
-        <div class="bubble">${quoteHtml}${linkify(cleanAIText(m.text,m.role))}</div>
+        <div class="bubble">${quoteHtml}${imgHtml}${textHtml}</div>
       `;
     }else{
       // AI側: 長文なら複数バブルに分割。1バブルなら従来構造を維持。
@@ -10311,6 +10392,19 @@ function renderChatLog(c){
     if(!m.pending){
       div.querySelectorAll('.bubble').forEach(bub=>attachBubbleLongPress(div,c.id,idx,bub));
     }
+  });
+
+  // 添付画像の遅延読込: src 未設定 (data-ci のみ) の画像を IndexedDB から復元する。
+  log.querySelectorAll('img.chat-msg-img').forEach(im=>{
+    const ci=im.getAttribute('data-ci');
+    if(ci && !im.getAttribute('src')){
+      imgDB.getChatImg(ci).then(du=>{ if(du)im.src=du; }).catch(()=>{});
+    }
+    // タップで拡大 (既存の画像ライトボックスを流用)
+    im.addEventListener('click',ev=>{
+      ev.stopPropagation();
+      if(im.src && window._openIconLightbox)window._openIconLightbox(im.src,'','');
+    });
   });
 }
 
@@ -10811,6 +10905,7 @@ function openDetail(c,origin){
   // 別のカードを開いたらリプライ・部分コピー状態は持ち越さない
   clearReplyTo();
   closePartialCopy();
+  if(typeof clearPendingChatImg==='function')clearPendingChatImg();
   const isOfficial=origin==='official';
   // 「グループに送る」は、自分のメモ かつ グループ参加中のときだけ出す
   const _sg=$('menu-sendgroup-btn');
@@ -11243,10 +11338,41 @@ async function animateNewAiReply(card,placeholderIdx){
   }
 }
 
+// チャット添付画像: 選んだら圧縮してプレビュー表示。送信時に使う。
+let _pendingChatImg=null; // {id, dataUrl}
+async function onChatImagePick(e){
+  const file=e.target.files && e.target.files[0];
+  e.target.value='';
+  if(!file)return;
+  if(!file.type || !file.type.startsWith('image/')){ toast('画像を選んでください'); return; }
+  try{
+    const dataUrl=await smartCompressImage(file); // 既存の圧縮 (~400KB)
+    _pendingChatImg={ id:'ci_'+Date.now().toString(36)+Math.floor(Math.random()*1000), dataUrl };
+    const pv=$('chat-image-preview');
+    $('chat-image-preview-img').src=dataUrl;
+    pv.style.display='flex';
+  }catch(err){ toast('画像の読み込みに失敗しました'); }
+}
+function clearPendingChatImg(){
+  _pendingChatImg=null;
+  const pv=$('chat-image-preview');
+  if(pv)pv.style.display='none';
+  const im=$('chat-image-preview-img');
+  if(im)im.src='';
+}
+
 async function detailSend(){
   const inp=$('detail-input');
   const v=inp.value.trim();
-  if(!v)return;
+  // テキストが空でも、画像が添付されていれば送信できる
+  const sendImg=_pendingChatImg;
+  if(!v && !sendImg)return;
+  // 画像があれば先に IndexedDB へ保存 (端末ローカル専用・クラウド非同期)
+  if(sendImg){
+    try{ await imgDB.putChatImg(sendImg.id,sendImg.dataUrl); }
+    catch(e){ toast('画像の保存に失敗しました'); return; }
+  }
+  clearPendingChatImg();
   const cIdx=state.cards.findIndex(x=>x.id===state.current.id);
   if(cIdx<0)return;
   const c=state.cards[cIdx];
@@ -11274,6 +11400,7 @@ async function detailSend(){
     // AIに質問
     const userMsg={role:'user',text:v,t:Date.now()};
     if(replyRef)userMsg.replyTo=replyRef;
+    if(sendImg){ userMsg.chatImg=sendImg.id; userMsg._img=sendImg.dataUrl; }
     c.chat.push(userMsg);
     save();
     inp.value='';
@@ -11292,7 +11419,9 @@ async function detailSend(){
       // この時点で c.chat の末尾にはユーザーの最新質問とプレースホルダーが入っているので、
       // それらを除いた「過去のやりとり」を履歴とする。
       const history=buildAiHistory(c.chat, placeholderIdx);
-      const answer=await callAI(v,aiContext,history,replyContextForAi);
+      // 添付画像は「このターンだけ」AIに渡す (以降は再送しない=トークン節約)。
+      const attachImages=sendImg?[sendImg.dataUrl]:null;
+      const answer=await callAI(v,aiContext,history,replyContextForAi,attachImages);
       const cIdx2=state.cards.findIndex(x=>x.id===state.current.id);
       if(cIdx2>=0){
         const c2=state.cards[cIdx2];
@@ -11322,6 +11451,7 @@ async function detailSend(){
     // メモとして追記 (LINEで自分が投稿するイメージ)
     const memoMsg={role:'memo',text:v,t:Date.now()};
     if(replyRef)memoMsg.replyTo=replyRef;
+    if(sendImg){ memoMsg.chatImg=sendImg.id; memoMsg._img=sendImg.dataUrl; }
     c.chat.push(memoMsg);
     save();
     inp.value='';
@@ -11357,7 +11487,7 @@ function buildAiHistory(chat, placeholderIdx){
   });
 }
 
-async function callAI(userMessage,cardContext,history,replyRef){
+async function callAI(userMessage,cardContext,history,replyRef,attachImages){
   // 認証チェック (塾生限定)
   if(!canUseAI()){
     return aiGateText(false);
@@ -11454,6 +11584,29 @@ async function callAI(userMessage,cardContext,history,replyRef){
       +'\n\n(これは動画メモです。動画の映像・音声は直接は確認できないため、メモの文章をもとに答えてください。)';
   }else{
     userContent=(contextStr?'コンテキスト:\n'+contextStr+'\n\n':'')+quotePrefix+'質問: '+userMessage;
+  }
+
+  // チャットでユーザーが添付した画像 (このターンのみ)。圧縮して画像ブロックとして先頭に付ける。
+  if(Array.isArray(attachImages) && attachImages.length){
+    const imgBlocks=[];
+    for(const du of attachImages){
+      try{
+        const small=await compressForApi(du);
+        const mm=String(small).match(/^data:([^;]+);base64,(.+)$/);
+        if(mm)imgBlocks.push({type:'image',source:{type:'base64',media_type:mm[1],data:mm[2]}});
+      }catch(e){}
+    }
+    if(imgBlocks.length){
+      const note = userMessage
+        ? '\n\n(添付の画像も参考にして答えてください。)'
+        : '\n\n(添付の画像について、上のメモの文脈をふまえて解説してください。)';
+      if(typeof userContent==='string'){
+        userContent=[...imgBlocks, {type:'text',text:userContent + note}];
+      }else if(Array.isArray(userContent)){
+        // 既に画像+テキストの配列 (カード画像/動画分岐) の場合は、その先頭に追加画像を足す
+        userContent=[...imgBlocks, ...userContent];
+      }
+    }
   }
   messages.push({role:'user',content:userContent});
 
@@ -13408,6 +13561,8 @@ document.addEventListener('click',e=>{
     case 'batch-close':closeBatchTray();break;
     case 'batch-commit':commitBatch();break;
     case 'save-card':saveCard();break;
+    case 'chat-pick-image':$('chat-image-input').click();break;
+    case 'chat-clear-image':clearPendingChatImg();break;
     case 'cancel-upload':cancelUpload();break;
     case 'goto-search':goto('screen-search');break;
     case 'view-grid':setView('grid');break;
@@ -13607,6 +13762,7 @@ $('file-input').addEventListener('change',onFilePick);
 $('file-input-camera').addEventListener('change',onFilePick);
 $('file-input-any').addEventListener('change',onFilePick);
 $('file-input-video').addEventListener('change',onVideoPick);
+$('chat-image-input').addEventListener('change',onChatImagePick);
 
 // 詳細画面: モザイク中に本文(画像/テキスト)をタップしたら一時表示をトグル。
 // ぼかし中はキャプチャ段階で奪い、リスト項目やリンク等の誤操作を防ぐ。
