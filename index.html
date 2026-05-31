@@ -5367,7 +5367,7 @@ function linkCardInner(c){
   const plLabel=isPlaylist
     ? `<div class="link-card-kind"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h13M3 18h9"/><path d="M17 14l5 3-5 3z"/></svg>再生リスト</div>`
     : '';
-  // 白枠を固定高さにしたため、タイトルは全て2行で統一
+  // 白帯は全カード固定高 (link-card-body)。タイトルは通常3行、ラベルありは2行に詰めて同じ高さに収める。
   const bodyCls=plLabel?'link-card-body has-kind':'link-card-body';
   return `<div class="link-card">${thumb}<div class="${bodyCls}">${plLabel}<div class="link-card-title">${title}</div></div></div>`;
 }
