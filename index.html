@@ -4952,6 +4952,27 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 const STORAGE_KEY='snapin_v3';
 const $=id=>document.getElementById(id);
 
+// ── デバッグ表示 (URL に #debug を付けたときだけ画面に状態を出す) ──
+// 通常は何もしない。問題の特定用。例: https://...app/#debug
+const _DBG = (typeof location!=='undefined') && /debug/i.test(location.hash||'');
+let _dbgBox=null; const _dbgLines=[];
+function dbg(msg){
+  if(!_DBG)return;
+  try{
+    if(!_dbgBox){
+      _dbgBox=document.createElement('div');
+      _dbgBox.style.cssText='position:fixed;left:6px;right:6px;bottom:6px;z-index:99999;max-height:36vh;overflow:auto;background:rgba(0,0,0,.82);color:#0f0;font:11px/1.35 monospace;padding:8px 10px;border-radius:8px;white-space:pre-wrap;pointer-events:auto;';
+      _dbgBox.addEventListener('click',()=>{_dbgBox.style.display='none';});
+      document.body.appendChild(_dbgBox);
+    }
+    const t=new Date().toLocaleTimeString();
+    _dbgLines.push(t+'  '+msg);
+    while(_dbgLines.length>14)_dbgLines.shift();
+    _dbgBox.textContent=_dbgLines.join('\n')+'\n(タップで隠す)';
+    _dbgBox.style.display='block';
+  }catch(e){}
+}
+
 const state={
   user:null,
   cards:[],
@@ -10946,6 +10967,9 @@ function openDetail(c,origin){
         : `<div style="color:#888;padding:40px;text-align:center;">動画が見つかりません</div>`;
     }
     // 動画にはピンチズームを付けない
+    // 直前に写真でズームしていた場合、その残留状態(scale>1)がスクロールを妨げるのでリセット
+    try{ if($('detail-img')._resetZoom)$('detail-img')._resetZoom(); }catch(e){}
+    $('detail-img').classList.remove('zoomed');
   }else if(c.image){
     $('detail-img').classList.remove('hide');
     const col=colorById(c.color);
@@ -11343,7 +11367,8 @@ let _pendingChatImg=null; // {id, dataUrl}
 async function onChatImagePick(e){
   const file=e.target.files && e.target.files[0];
   e.target.value='';
-  if(!file)return;
+  if(!file){ dbg('imgPick: no file'); return; }
+  dbg('imgPick: '+(file.type||'?')+' '+Math.round(file.size/1024)+'KB');
   if(!file.type || !file.type.startsWith('image/')){ toast('画像を選んでください'); return; }
   try{
     const dataUrl=await smartCompressImage(file); // 既存の圧縮 (~400KB)
@@ -11351,7 +11376,8 @@ async function onChatImagePick(e){
     const pv=$('chat-image-preview');
     $('chat-image-preview-img').src=dataUrl;
     pv.style.display='flex';
-  }catch(err){ toast('画像の読み込みに失敗しました'); }
+    dbg('imgPick OK, preview shown, id='+_pendingChatImg.id);
+  }catch(err){ dbg('imgPick compress FAIL: '+(err&&err.message||err)); toast('画像の読み込みに失敗しました'); }
 }
 function clearPendingChatImg(){
   _pendingChatImg=null;
@@ -11366,13 +11392,20 @@ async function detailSend(){
   const v=inp.value.trim();
   // テキストが空でも、画像が添付されていれば送信できる
   const sendImg=_pendingChatImg;
+  dbg('detailSend: textLen='+v.length+' hasImg='+(!!sendImg)+' aiMode='+state.detailAiMode);
   if(!v && !sendImg)return;
-  // 画像があれば先に IndexedDB へ保存 (端末ローカル専用・クラウド非同期)
-  if(sendImg){
-    try{ await imgDB.putChatImg(sendImg.id,sendImg.dataUrl); }
-    catch(e){ toast('画像の保存に失敗しました'); return; }
-  }
+  // プレビューは先に消す (保存の成否に関わらず送信は進める)
   clearPendingChatImg();
+  // 画像があれば IndexedDB へ保存 (端末ローカル専用)。失敗しても送信は止めない。
+  if(sendImg){
+    try{
+      await imgDB.putChatImg(sendImg.id,sendImg.dataUrl);
+      dbg('putChatImg OK '+sendImg.id);
+    }catch(e){
+      dbg('putChatImg FAIL: '+(e&&e.message||e));
+      // 保存失敗でも _img(メモリ上の dataURL) で表示＆AI送信はできる
+    }
+  }
   const cIdx=state.cards.findIndex(x=>x.id===state.current.id);
   if(cIdx<0)return;
   const c=state.cards[cIdx];
@@ -11421,6 +11454,7 @@ async function detailSend(){
       const history=buildAiHistory(c.chat, placeholderIdx);
       // 添付画像は「このターンだけ」AIに渡す (以降は再送しない=トークン節約)。
       const attachImages=sendImg?[sendImg.dataUrl]:null;
+      dbg('callAI: attachImages='+(attachImages?attachImages.length:0));
       const answer=await callAI(v,aiContext,history,replyContextForAi,attachImages);
       const cIdx2=state.cards.findIndex(x=>x.id===state.current.id);
       if(cIdx2>=0){
@@ -13766,6 +13800,12 @@ $('chat-image-input').addEventListener('change',onChatImagePick);
 
 // 詳細画面: モザイク中に本文(画像/テキスト)をタップしたら一時表示をトグル。
 // ぼかし中はキャプチャ段階で奪い、リスト項目やリンク等の誤操作を防ぐ。
+$('detail-scroll').addEventListener('touchstart',e=>{
+  if(!_DBG)return;
+  const s=$('detail-scroll');
+  const tg=e.target?(e.target.tagName+(e.target.className?'.'+String(e.target.className).slice(0,18):'')):'?';
+  dbg('touch on '+tg+' top='+s.scrollTop+' sh='+s.scrollHeight+' ch='+s.clientHeight+' scrollable='+(s.scrollHeight>s.clientHeight));
+},{passive:true});
 $('detail-scroll').addEventListener('click',e=>{
   if(!state.detailMosaic)return;
   const inBody=e.target.closest('#detail-content') || e.target.closest('#detail-img');
