@@ -3274,6 +3274,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .confirm-modal-btn.primary{background:var(--g);color:#fff;}
 .confirm-modal-btn.danger{background:var(--rose);color:#fff;}
 .confirm-modal-badge.danger{background:rgba(214,96,77,.14);}
+.confirm-modal-badge--icon{color:var(--g);}
+.confirm-modal-badge.danger.confirm-modal-badge--icon,
+.confirm-modal-badge--icon.danger{color:var(--rose);}
+/* バッジ内のSVGアイコンは線で表示 (絵文字は使わない) */
+.confirm-modal-badge svg{display:block;}
 .share-link-box{
   font-size:12px;color:var(--ink2);
   background:var(--bg);border-radius:12px;
@@ -4531,7 +4536,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <!-- ログアウト確認 (ブラウザ標準の confirm を使わず、アプリ統一デザインで) -->
 <div class="confirm-modal" id="logout-modal" aria-hidden="true">
   <div class="confirm-modal-card">
-    <div class="confirm-modal-badge">👋</div>
+    <div class="confirm-modal-badge confirm-modal-badge--icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6.5a1.5 1.5 0 0 0-3 0V11"/><path d="M15 10.5V4.5a1.5 1.5 0 0 0-3 0V10"/><path d="M12 10V5.5a1.5 1.5 0 0 0-3 0V12"/><path d="M9 11.5V8a1.5 1.5 0 0 0-3 0v6.5c0 3.6 2.7 6.5 6 6.5s6-2.6 6-6.5V9.5a1.5 1.5 0 0 0-3 0V11"/><path d="M5 7.5 4 6"/><path d="M7 4.5 6.5 3"/></svg></div>
     <div class="confirm-modal-title">またね</div>
     <div class="confirm-modal-msg">ログアウトしても、この端末のメモはちゃんと残っています。また、いつでも戻ってきてくださいね。</div>
     <div class="confirm-modal-actions">
@@ -4544,7 +4549,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <!-- 汎用確認モーダル (各種「削除しますか?」をアプリ統一デザインで。confirmModal() が使う) -->
 <div class="confirm-modal" id="ask-modal" aria-hidden="true">
   <div class="confirm-modal-card">
-    <div class="confirm-modal-badge" id="ask-badge">🗑️</div>
+    <div class="confirm-modal-badge confirm-modal-badge--icon" id="ask-badge"></div>
     <div class="confirm-modal-title" id="ask-title"></div>
     <div class="confirm-modal-msg" id="ask-msg"></div>
     <div class="confirm-modal-actions">
@@ -4580,7 +4585,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <!-- 共有: 出来上がったリンク -->
 <div class="confirm-modal" id="share-link-modal" aria-hidden="true">
   <div class="confirm-modal-card">
-    <div class="confirm-modal-badge">🔗</div>
+    <div class="confirm-modal-badge confirm-modal-badge--icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
     <div class="confirm-modal-title">共有リンクができました</div>
     <div class="confirm-modal-msg">10分で自動的に消えます。QRをその場で見せるか、リンクを送ってください。</div>
     <div class="share-qr" id="share-qr"></div>
@@ -6190,12 +6195,23 @@ function doLogout(){
 
 // ═══ 汎用確認モーダル (Promise) ═══
 // confirm() の置き換え。await confirmModal({...}) が true/false を返す。
+// バッジはアプリ共通のモノクロ線アイコン。o.icon で種類を指定 (既定: trash)。
+const MODAL_ICONS={
+  trash:'<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  tag:'<path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L3 13V3h10l7.59 7.59a2 2 0 0 1 0 2.82z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  warning:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/>',
+};
+function modalIconSvg(name){
+  const p=MODAL_ICONS[name]||MODAL_ICONS.trash;
+  return `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+}
 let _askResolve=null;
 function confirmModal(opts){
   const o=opts||{};
   return new Promise(resolve=>{
     _askResolve=resolve;
-    $('ask-badge').textContent=o.emoji||'🗑️';
+    $('ask-badge').innerHTML=modalIconSvg(o.icon||'trash');
     $('ask-badge').classList.toggle('danger',!!o.danger);
     $('ask-title').textContent=o.title||'';
     $('ask-msg').innerHTML=o.msg||'';
