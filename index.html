@@ -6824,7 +6824,7 @@ async function importSharedCard(){
     id,
     type:(p.type==='photonote')?'photonote':(['photo','note','list','link'].includes(p.type)?p.type:'note'),
     text:p.text||'',
-    date:new Date().toISOString().slice(0,10),
+    date:todayStr(),
     created:Date.now(),
   };
   if(p.image)nc.image=p.image;
@@ -6919,7 +6919,7 @@ async function inboxKeep(id){
     id:cid,
     type:(p.type==='photonote')?'photonote':(['photo','note','list','link'].includes(p.type)?p.type:'note'),
     text:p.text||'',
-    date:new Date().toISOString().slice(0,10),
+    date:todayStr(),
     created:Date.now(),
   };
   if(p.image)nc.image=p.image;
@@ -8398,7 +8398,7 @@ function startCreate(type){
   state.current={
     id:'c_'+Date.now(),
     type,
-    date:new Date().toISOString().slice(0,10),
+    date:todayStr(),
     _new:true,
     text:'',
   };
@@ -8555,7 +8555,7 @@ async function fetchUrlAndCreate(){
     state.current={
       id:'c_'+Date.now(),
       type:'link',
-      date:new Date().toISOString().slice(0,10),
+      date:todayStr(),
       _new:true,
       text:'',
       link:{
@@ -8613,7 +8613,7 @@ function onFilePick(e){
       openCropModal(reader.result,(croppedDataUrl)=>{
         // 切り抜き結果を圧縮してから state にセット
         smartCompressDataUrl(croppedDataUrl).then(compressed=>{
-          if(!state.current)state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:new Date().toISOString().slice(0,10),_new:true,text:''};
+          if(!state.current)state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:todayStr(),_new:true,text:''};
           state.current.image=compressed;
           state.photoMode=null;
           state.cameraCapture=false;
@@ -8643,7 +8643,7 @@ function onFilePick(e){
   }
   // 通常フロー (カメラロール/ファイル選択): 従来通り
   smartCompressImage(file).then(compressed=>{
-    if(!state.current)state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:new Date().toISOString().slice(0,10),_new:true,text:''};
+    if(!state.current)state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:todayStr(),_new:true,text:''};
     state.current.image=compressed;
     state.photoMode=null;
     state.cameraCapture=false;
@@ -8686,7 +8686,7 @@ function beginVideoFromFile(file){
   state.current={
     id,
     type:'video',
-    date:new Date().toISOString().slice(0,10),
+    date:todayStr(),
     _new:true,
     text:'',
     poster:'',
@@ -9254,7 +9254,7 @@ function quickSave(){
     id:'c_'+Date.now(),
     type:'note',
     text:v,
-    date:new Date().toISOString().slice(0,10),
+    date:todayStr(),
     created:Date.now(),
   };
   state.cards.unshift(c);
@@ -9287,7 +9287,7 @@ function quickPhoto(){
     id:'c_'+Date.now(),
     type:v?'photonote':'photo',
     text:v,
-    date:new Date().toISOString().slice(0,10),
+    date:todayStr(),
     _new:true,
   };
   state.photoMode=v?'photonote':'photo';
@@ -11038,21 +11038,24 @@ function openDetail(c,origin){
   $('detail-img').classList.add('hide');
   $('detail-img').onclick=null;
 
-  let metaHtml=`<span>${fmtDate(c.date)}</span>`;
+  let metaHtml=`<span>${fmtDetailWhen(c)}</span>`;
   $('detail-meta').innerHTML=metaHtml;
 
   let contentHtml='';
   if(c.type==='video'){
     const vurl=c._videoUrl||'';
     $('detail-img').classList.remove('hide');
-    $('detail-img').style.background='#000';
-    $('detail-img').style.border='none';
+    // 黒帯ではなく、写真と同じ背景色(カラー or 白っぽい既定色)に合わせて統一感を出す。
+    const vcol=colorById(c.color);
+    $('detail-img').style.background=vcol.bg;
+    $('detail-img').style.border=isNoColor(c.color)?'none':('3px solid '+vcol.bd);
     $('detail-img').style.boxSizing='border-box';
     if(vurl){
       // 写真と同じく pointer-events:none にして、指の上下ドラッグは親スクロール(バウンド)に渡す。
       // controls は使わず、自動再生(無音ループ)。タップで音のオン/オフを切り替える。
       // height:100% をやめ、写真と同じく自然サイズ(最大55vh)にして黒塗りを防ぐ。
-      $('detail-img').innerHTML=`<video src="${vurl}" playsinline webkit-playsinline preload="metadata" ${c.poster?`poster="${c.poster}"`:''} autoplay muted loop style="max-width:100%;max-height:55vh;width:auto;height:auto;object-fit:contain;background:#000;pointer-events:none;"></video>`;
+      // 動画本体の余白は親(detail-img)の背景色で埋まるよう、video自身の背景は透明にする。
+      $('detail-img').innerHTML=`<video src="${vurl}" playsinline webkit-playsinline preload="metadata" ${c.poster?`poster="${c.poster}"`:''} autoplay muted loop style="max-width:100%;max-height:55vh;width:auto;height:auto;object-fit:contain;background:transparent;pointer-events:none;"></video>`;
       const _v=$('detail-img').querySelector('video');
       if(_v){
         try{ const pp=_v.play(); if(pp&&pp.catch)pp.catch(()=>{}); }catch(e){}
@@ -12216,7 +12219,7 @@ async function copyToShelf(){
 
   const c={
     id:'c_'+Date.now(),
-    date:new Date().toISOString().slice(0,10),
+    date:todayStr(),
     created:Date.now(),
     chat:[],          // 利用者の追記メモ・AIチャット (共有更新でも消えない)
     _snap:snap,       // 本文フォールバック (削除/オフライン時)
@@ -13543,6 +13546,29 @@ function linkify(s){
   return out;
 }
 function fmtDate(d){return d?d.replace(/-/g,'.'):'';}
+// ローカル日付の YYYY-MM-DD を返す。
+// toISOString() は UTC になるため、日本(UTC+9)の深夜0〜9時に前日へずれてしまう。
+// 投稿日は端末のローカル日付で記録する。
+function todayStr(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+// 詳細画面の投稿日時表示: 「今日」ページと同じく曜日を付け、さらに投稿時刻も添える。
+// 時刻は正確なタイムスタンプ(created)があるときだけ表示する。
+function fmtDetailWhen(c){
+  const WD=['日','月','火','水','木','金','土'];
+  let d=null, hasTime=false;
+  if(c && c.created){ d=new Date(c.created); hasTime=true; }
+  else if(c && c.date){
+    const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(c.date);
+    if(m)d=new Date(+m[1],+m[2]-1,+m[3]); // ローカル日付として解釈 (UTCずれ防止)
+  }
+  if(!d || isNaN(d.getTime()))return fmtDate(c&&c.date||'');
+  const ds=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  const wd=WD[d.getDay()];
+  const tm=hasTime?`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`:'';
+  return `${ds}（${wd}）${tm?' '+tm:''}`;
+}
 let toastT=null;
 // 「元に戻す」付きトースト。可逆な削除/アーカイブで confirm の代わりに使う。
 // 5秒間 表示し、その間に「元に戻す」を押すと undoFn が走る。押さずに消えたら確定。
@@ -14256,7 +14282,7 @@ async function onBatchFilesPicked(e){
   if(fresh && imgs.length===1 && _batch.items.length===0){
     try{
       const compressed=await smartCompressImage(imgs[0]);
-      state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:new Date().toISOString().slice(0,10),_new:true,text:'',image:compressed};
+      state.current={id:'c_'+Date.now(),type:state.photoMode||'photo',date:todayStr(),_new:true,text:'',image:compressed};
       state.photoMode=null;
       closeAddSheet();
       renderUpload();
@@ -14674,7 +14700,7 @@ async function commitBatch(){
   const btn=$('batch-commit-btn');
   if(btn){btn.disabled=true;btn.textContent='保存中…';}
 
-  const today=new Date().toISOString().slice(0,10);
+  const today=todayStr();
   const baseTags=(_batch.tags||[]).slice();
   const added=[]; // ロールバック用に積んだカードIDを記録
 
