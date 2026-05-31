@@ -409,7 +409,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
      (CSS で指定するとインラインが上書きされず、表示が崩れることがあるため) */
 }
 .card.note .ctxt{background:#FFFDF5;}
-.card.list .ctxt{background:#F4F8F3;font-size:10px;-webkit-line-clamp:7;}
+.card.list .ctxt{background:#F4F8F3;display:block;-webkit-box-orient:initial;-webkit-line-clamp:initial;}
 /* note カード用: 140×140 実寸の inner を transform:scale で拡大することで、
    グリッド/詳細/編集の3画面で改行位置を完全一致させる。
    -webkit-line-clamp は使わず overflow:hidden ではみ出し分を切る。 */
@@ -434,13 +434,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   word-break:break-word;
 }
 /* リスト型カードのアイテム表示 (グリッドの.cardと今日の横スクロール.today-newcardで共通) */
-.card .li, .today-newcard .li{display:flex;gap:4px;margin-bottom:3px;align-items:flex-start;line-height:1.3;}
-.card .li span, .today-newcard .li span{min-width:0;overflow:hidden;}
-.card .li .chk, .today-newcard .li .chk{width:9px;height:9px;border:1px solid var(--ink3);border-radius:2px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;color:#fff;box-sizing:border-box;}
-.card .li .chk svg, .today-newcard .li .chk svg{width:7px;height:7px;display:block;}
+.card .li, .today-newcard .li{display:flex;gap:0.4em;margin-bottom:0.28em;align-items:flex-start;line-height:1.3;}
+.card .li span, .today-newcard .li span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.card .li .chk, .today-newcard .li .chk{width:0.9em;height:0.9em;border:1px solid var(--ink3);border-radius:0.2em;flex-shrink:0;margin-top:0.15em;display:flex;align-items:center;justify-content:center;color:#fff;box-sizing:border-box;}
+.card .li .chk svg, .today-newcard .li .chk svg{width:0.7em;height:0.7em;display:block;}
 .card .li.done .chk, .today-newcard .li.done .chk{background:var(--g);border-color:var(--g);}
 .card .li.done, .today-newcard .li.done{color:var(--ink3);text-decoration:line-through;}
-.card .li .li-num, .today-newcard .li .li-num{width:9px;font-size:9px;text-align:left;flex-shrink:0;color:var(--ink2);font-family:var(--font-en);}
+.card .li .li-num, .today-newcard .li .li-num{width:1.3em;font-size:1em;text-align:left;flex-shrink:0;color:var(--ink2);font-family:var(--font-en);}
 
 .card-source{
   position:absolute;
@@ -3203,7 +3203,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--surface);
 }
 .today-newcard.note .ctxt{background:#FFFDF5;}
-.today-newcard.list .ctxt{background:#F4F8F3;font-size:10px;-webkit-line-clamp:6;}
+.today-newcard.list .ctxt{background:#F4F8F3;display:block;-webkit-box-orient:initial;-webkit-line-clamp:initial;}
 /* note カード用: グリッドと同じく 140×140 実寸 + transform:scale 方式 */
 .today-newcard.note .ctxt{
   padding:0;
@@ -5622,9 +5622,20 @@ function resolveAlign(c){
 
 // グリッド/横スクロールのリスト型カード用: チェックボックス付きの統一見た目を返す。
 // today-newcard でも card でも同じ HTML を使うことで、見た目が一貫する。
+// 項目数に応じてフォントを下げ、サムネでもできるだけ多くの項目を表示する (最小4px)。
+function listThumbFontSize(n){
+  if(n<=5)return 10;   // 従来どおりの見た目
+  if(n<=7)return 9;
+  if(n<=9)return 7;
+  if(n<=11)return 6;
+  if(n<=14)return 5;
+  return 4;            // 下限 (メモの最小と同じ)
+}
 function listCardInner(c){
   if(typeof isLinkedCard==='function' && isLinkedCard(c))c=resolveLiveCard(c);
-  const itemsArr=(c.items||[]).slice(0,5);
+  const allItems=c.items||[];
+  const itemsArr=allItems.slice(0,40); // 描画コストの安全上限。実質的に全件表示。
+  const fz=listThumbFontSize(allItems.length);
   const itemsHtml=itemsArr.map((i,idx)=>{
     const m=i.mark||'check';
     const done=i.d===true;
@@ -5638,8 +5649,8 @@ function listCardInner(c){
     const checkSvg=done?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>':'';
     return `<div class="li ${done?'done':''}"><div class="chk">${checkSvg}</div><span>${esc(i.t)}</span></div>`;
   }).join('');
-  const title=c.title?`<div style="font-weight:600;font-size:11px;margin-bottom:4px;color:var(--gd);">${esc(c.title)}</div>`:'';
-  return `<div class="ctxt">${title}${itemsHtml}</div>`;
+  const title=c.title?`<div style="font-weight:600;font-size:1.1em;margin-bottom:0.4em;color:var(--gd);">${esc(c.title)}</div>`:'';
+  return `<div class="ctxt" style="font-size:${fz}px;">${title}${itemsHtml}</div>`;
 }
 
 // リンクカードの一覧表示用HTML。グリッドセル・今日のメモ・フィードで共通利用。
@@ -5691,6 +5702,9 @@ const NOTE_CARD_SIZES=[
   {fz:9,  lh:1.3,  clamp:8},
   {fz:8,  lh:1.3,  clamp:9},
   {fz:7,  lh:1.25, clamp:10},
+  {fz:6,  lh:1.25, clamp:12},
+  {fz:5,  lh:1.2,  clamp:15},
+  {fz:4,  lh:1.2,  clamp:20},
 ];
 // 文字数だけで決める初期インデックス (既存の閾値をそのまま流用)
 function noteCardInitialSizeIndex(tlen){
@@ -5701,7 +5715,10 @@ function noteCardInitialSizeIndex(tlen){
   if(tlen<=57)return 4;
   if(tlen<=72)return 5;
   if(tlen<=91)return 6;
-  return 7;
+  if(tlen<=120)return 7;
+  if(tlen<=180)return 8;
+  if(tlen<=270)return 9;
+  return 10;
 }
 // 与えられたフォントサイズで、各論理行が何行に折り返されるかを推定し合計する。
 // グリッドのセル幅は画面幅 ÷ 3 = だいたい 130〜140px。padding:10px×2 を引くと
@@ -5821,9 +5838,11 @@ function applyDetailNoteStyle(){
     inner.style.lineHeight=lh;
     inner.style.padding=(w*0.055)+'px';
     inner.style.transform='';
-    // inner を枠いっぱいに広げる (元の140px固定をやめる)
+    // inner は通常フロー。短文は正方形に見えるよう枠に最小高さ(=幅)を与え、
+    // 長文ではコンテンツに合わせて枠が縦に伸びる (全文表示・切らない)。
     inner.style.width='100%';
-    inner.style.height='100%';
+    inner.style.height='';
+    wrap.style.minHeight=w+'px';
   });
 }
 
@@ -11098,18 +11117,17 @@ function openDetail(c,origin){
   }
   if(c.type==='note' || ((c.type==='photo'||c.type==='photonote'||c.type==='video') && c.text)){
     if(c.type==='note'){
-      // 詳細画面のメモ表示: 枠は 100% × aspect-ratio:1 の正方形。
-      // 内部 inner も親いっぱいの 100% × 100% にし、フォントサイズ・padding を
+      // 詳細画面のメモ表示: 枠は幅100%で、短文は正方形(最小高さ=幅)に見せる。
+      // 長文では枠が縦に伸びて全文を表示する (はみ出しを切らない)。フォントサイズ・padding は
       // applyDetailNoteStyle が枠幅に応じて直接スケールする (transform:scale は使わない)。
-      // → 3画面で「枠に対するテキスト比率」が完全に一致する。
       const col=colorById(c.color);
       const align=resolveAlign(c);
-      // 外枠 (wrap): 画面に見える正方形
-      const wrapStyle=`background:${col.bg};color:${col.fg};width:100%;aspect-ratio:1;position:relative;border-radius:12px;overflow:hidden;box-sizing:border-box;`;
-      // inner: 親 wrap いっぱい。fontSize/padding は applyDetailNoteStyle が後から設定
-      let innerStyle=`position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;background:${col.bg};color:${col.fg};white-space:pre-wrap;word-break:break-word;`;
-      innerStyle+=align.h==='center'?'align-items:center;text-align:center;':'align-items:flex-start;text-align:left;';
-      innerStyle+=align.v==='center'?'justify-content:center;':'justify-content:flex-start;';
+      // 外枠 (wrap): 短文は正方形に見せ、長文は縦に伸びて全文を表示する (はみ出しを切らない)。
+      const wrapStyle=`background:${col.bg};color:${col.fg};width:100%;border-radius:12px;box-sizing:border-box;display:flex;flex-direction:column;`
+        +(align.v==='center'?'justify-content:center;':'justify-content:flex-start;');
+      // inner: 通常フローのブロック。fontSize/padding と最小高さ(正方形)は applyDetailNoteStyle が後から設定
+      let innerStyle=`width:100%;box-sizing:border-box;background:${col.bg};color:${col.fg};white-space:pre-wrap;word-break:break-word;`;
+      innerStyle+=align.h==='center'?'text-align:center;':'text-align:left;';
       // data-text で applyDetailNoteStyle が後から fontSize を設定
       contentHtml=`<div class="detail-text detail-note-card" style="${wrapStyle}"><div class="detail-note-inner" data-text="${esc(c.text||'')}" style="${innerStyle}">${linkify(c.text||'')}</div></div>`;
     }else{
