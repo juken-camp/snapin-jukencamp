@@ -1314,8 +1314,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .detail-input-img:active{background:rgba(0,0,0,.06);}
 /* 送信前の画像プレビュー (入力バーの上) */
 .chat-image-preview{
-  display:flex;align-items:center;gap:10px;
+  display:flex;justify-content:flex-end;
   padding:8px 14px 4px;
+  background:transparent;
 }
 .chat-image-preview-thumb{
   position:relative;width:64px;height:64px;flex-shrink:0;
@@ -1323,6 +1324,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .chat-image-preview-thumb img{
   width:100%;height:100%;object-fit:cover;border-radius:10px;
   background:rgba(0,0,0,.04);
+  box-shadow:0 1px 6px rgba(0,0,0,.18);
 }
 .chat-image-preview-x{
   position:absolute;top:-6px;right:-6px;z-index:2;
@@ -1331,11 +1333,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 1px 4px rgba(0,0,0,.25);
 }
-.chat-image-preview-send{
-  background:var(--g);color:#fff;font-size:13px;font-weight:600;
-  padding:8px 18px;border-radius:18px;
-}
-.chat-image-preview-send:active{background:var(--gd);transform:scale(0.97);}
 /* チャットバブル内に表示する送信済み画像 */
 .chat-msg-img{
   display:block;max-width:100%;width:200px;max-height:260px;
@@ -4521,7 +4518,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>
-    <button class="chat-image-preview-send" data-action="detail-send">送信</button>
   </div>
   <div class="detail-input" id="detail-input-bar">
     <button class="detail-input-ai" id="detail-ai-toggle" data-action="toggle-ai-mode" aria-label="AIに送る">
