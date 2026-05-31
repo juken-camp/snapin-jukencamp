@@ -375,9 +375,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   position:absolute;top:7px;right:7px;
   width:22px;height:22px;border-radius:50%;
   background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;
-  pointer-events:none;z-index:2;
+  pointer-events:none;z-index:3;
+  /* iOSで再生中の動画(GPUレイヤー)がバッジの上に描画され、点滅して見える問題を防ぐ。
+     バッジ自身も合成レイヤーに乗せ、z-index 通りに動画より前面へ固定する。 */
+  transform:translateZ(0);
+  will-change:transform;
 }
 .video-play-badge svg{width:11px;height:11px;margin-left:1px;}
+/* サムネ動画は明示的に下の層に置き、バッジ(z-index:3)を必ず上にする */
+.grid-video-thumb{position:relative;z-index:0;}
 .card.video,.today-newcard.video{background:#000;}
 .card:active{transform:scale(0.96);}
 .card img{
