@@ -372,12 +372,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 /* 動画カードの再生バッジ (グリッド/今日ページ共通) */
 .video-play-badge{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:34px;height:34px;border-radius:50%;
-  background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;
+  position:absolute;top:7px;right:7px;
+  width:22px;height:22px;border-radius:50%;
+  background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;
   pointer-events:none;z-index:2;
 }
-.video-play-badge svg{width:16px;height:16px;margin-left:2px;}
+.video-play-badge svg{width:11px;height:11px;margin-left:1px;}
 .card.video,.today-newcard.video{background:#000;}
 .card:active{transform:scale(0.96);}
 .card img{
@@ -3701,7 +3701,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .link-card-thumb::after{
   content:'';
   position:absolute;
-  left:8px; bottom:8px;
+  top:7px; right:7px;
   width:22px;height:22px;
   background:rgba(0,0,0,.55) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/><path d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/></svg>") center/14px no-repeat;
   border-radius:50%;
