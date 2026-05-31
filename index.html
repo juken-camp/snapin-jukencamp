@@ -110,7 +110,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 #mosaic-btn .eye-off{display:none;}
 #mosaic-btn.on .eye-on{display:none;}
 #mosaic-btn.on .eye-off{display:block;}
-/* 探す/しばらく見ていないメモ の暗記モード(ボカシ)ボタンも同じ規約 */
+/* 探す/しばらく見ていないメモ の暗記モード(ぼかし)ボタンも同じ規約 */
 #search-mosaic-btn .eye-off,#stale-mosaic-btn .eye-off,#today-mosaic-btn .eye-off{display:none;}
 #search-mosaic-btn.on .eye-on,#stale-mosaic-btn.on .eye-on,#today-mosaic-btn.on .eye-on{display:none;}
 #search-mosaic-btn.on .eye-off,#stale-mosaic-btn.on .eye-off,#today-mosaic-btn.on .eye-off{display:block;}
@@ -577,9 +577,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .feed.mosaic .feed-item.tapped .feed-meta{filter:none;}
 .feed.mosaic .feed-item.tapped::before{display:none;}
 
-/* 「今日」ページ: 暗記モード(ボカシ)。昨日以降の横スクロール行 (today-newcards) に適用 */
+/* 「今日」ページ: 暗記モード(ぼかし)。昨日以降の横スクロール行 (today-newcards) に適用 */
 /* iOS WebKit では子に filter:blur がかかると親の overflow:hidden の角丸クリップが無効化され、
-   ボカシが正方形にはみ出す。mask を当ててカードを独立レイヤー化し、角丸でクリップし直す。 */
+   ぼかしが正方形にはみ出す。mask を当ててカードを独立レイヤー化し、角丸でクリップし直す。 */
 .today-newcards.mosaic .today-newcard{
   -webkit-mask-image:-webkit-radial-gradient(white,black);
   mask-image:radial-gradient(white,black);
@@ -2252,7 +2252,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   opacity:.4;
 }
 .bin-list{padding:8px 0 24px;}
-/* 暗記モード(ボカシ): サムネとタイトル(=答え)をぼかす。行タップで1件ずつ公開。 */
+/* 暗記モード(ぼかし): サムネとタイトル(=答え)をぼかす。行タップで1件ずつ公開。 */
 .bin-list.mosaic .bin-row-thumb img,
 .bin-list.mosaic .bin-row-thumb>div,
 .bin-list.mosaic .bin-row-title{filter:blur(5px) saturate(.9);transition:filter .15s;}
@@ -3967,6 +3967,30 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .batch-cam-shutter:active{transform:scale(0.9);}
 .batch-cam-shutter:disabled{opacity:.4;}
+/* 動画モードのシャッター: 赤いリング、録画中は中央が四角に */
+.batch-cam-shutter.video{border-color:rgba(255,255,255,.45);}
+.batch-cam-shutter.video::after{content:"";display:block;width:30px;height:30px;border-radius:50%;background:#E5392F;margin:16px auto;transition:all .15s;}
+.batch-cam-shutter.video.recording::after{width:26px;height:26px;border-radius:6px;}
+/* モード切替トグル (カメラ下部中央) */
+.batch-cam-modes{
+  position:absolute;left:0;right:0;bottom:10px;
+  display:flex;justify-content:center;gap:6px;
+  pointer-events:auto;
+}
+.batch-cam-mode{
+  color:rgba(255,255,255,.7);font-size:13px;font-weight:600;
+  padding:6px 16px;border-radius:16px;background:rgba(0,0,0,.35);
+  transition:all .12s;
+}
+.batch-cam-mode.on{color:#FFD60A;background:rgba(0,0,0,.55);}
+.batch-cam-rec-time{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  background:rgba(229,57,47,.92);color:#fff;font-size:13px;font-weight:600;
+  padding:4px 12px;border-radius:14px;display:none;align-items:center;gap:6px;z-index:3;
+}
+.batch-cam-rec-time.on{display:flex;}
+.batch-cam-rec-time::before{content:"";width:8px;height:8px;border-radius:50%;background:#fff;animation:recBlink 1s steps(1) infinite;}
+@keyframes recBlink{50%{opacity:0;}}
 .batch-cam-spacer{width:54px;flex-shrink:0;}
 /* 取り込み方法の選択シートは、トレイ(980)/カメラ(990)の上・クロップ(1000)の下に重ねる
    (トレイの「さらに追加」から開いても前面に出るように) */
@@ -4474,12 +4498,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       </div>
       <div class="sheet-opt-title">写真</div>
     </button>
-    <button class="sheet-opt" data-action="create-video">
-      <div class="sheet-opt-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="M22 8l-6 4 6 4z"/></svg>
-      </div>
-      <div class="sheet-opt-title">動画</div>
-    </button>
     <button class="sheet-opt" data-action="create-note">
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -4707,7 +4725,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 </div>
 
 <!-- 複数選択用の input (カメラロールから複数枚) -->
-<input type="file" id="file-input-batch" accept="image/*" multiple style="display:none;">
+<input type="file" id="file-input-batch" accept="image/*,video/*" multiple style="display:none;">
 
 <!-- 連続撮影カメラ -->
 <div class="batch-cam" id="batch-cam" aria-hidden="true">
@@ -4719,7 +4737,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="batch-cam-stage" id="batch-cam-stage">
     <video class="batch-cam-video" id="batch-cam-video" playsinline muted></video>
     <div class="batch-cam-flash" id="batch-cam-flash"></div>
+    <div class="batch-cam-rec-time" id="batch-cam-rec-time">0:00</div>
     <div class="batch-cam-msg" id="batch-cam-msg">カメラを準備中…</div>
+    <div class="batch-cam-modes" id="batch-cam-modes">
+      <button class="batch-cam-mode on" data-action="cam-mode-photo">写真</button>
+      <button class="batch-cam-mode" data-action="cam-mode-video">動画</button>
+    </div>
   </div>
   <div class="batch-cam-bar">
     <div class="batch-cam-strip" id="batch-cam-strip" data-action="batch-cam-done">
@@ -4805,7 +4828,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       </div>
       <div class="ai-note-title">クラウドに保存</div>
     </div>
-    <div class="ai-note-desc" id="cloud-status">メモも写真も、端末の外(クラウド)に保存します。機種変や再インストールでも、ここから戻せます。</div>
+    <div class="ai-note-desc" id="cloud-status">メモと写真はクラウドに保存します。ただし動画はこの端末だけに残り、バックアップされません（機種変や入れ直しでは引き継げないのでご注意ください）。</div>
     <div class="cloud-actions">
       <button class="cloud-btn" data-action="cloud-backup">今すぐバックアップ</button>
       <button class="cloud-btn ghost" data-action="cloud-restore">クラウドから復元</button>
@@ -4825,7 +4848,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
     <div class="settings-item-text">
       <div class="settings-item-title">バックアップを書き出す</div>
-      <div class="settings-item-sub" id="settings-export-sub">個人メモを JSON ファイルで保存</div>
+      <div class="settings-item-sub" id="settings-export-sub">個人メモを JSON ファイルで保存（動画は含まれません）</div>
     </div>
   </button>
   <button class="settings-item" data-action="import-backup">
@@ -4837,7 +4860,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <div class="settings-item-sub">書き出した JSON ファイルを読み込む</div>
     </div>
   </button>
-  <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。</div>
+  <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。動画は端末の中だけに保存されるため、バックアップ（クラウド・書き出しの両方）には含まれません。</div>
   <button class="settings-item settings-item-logout" data-action="logout-confirm" id="settings-logout-btn">
     <div class="settings-item-icon settings-item-icon-logout">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
@@ -4894,7 +4917,7 @@ const state={
   chatRef:null,
   currentOfficial:null,
   mosaicMode:false,
-  todayMosaic:false,   // 「今日」ページの暗記モード(ボカシ)。昨日以降の過去メモに適用 (今日のメモは除外)
+  todayMosaic:false,   // 「今日」ページの暗記モード(ぼかし)。昨日以降の過去メモに適用 (今日のメモは除外)
   detailMosaic:false,  // 詳細画面のモザイク状態
   detailAiMode:false,  // 詳細画面でAI送信モードか
   replyTo:null,        // 現在リプライ中の対象 {cardId, msgIdx, text, role} | null
@@ -4907,7 +4930,7 @@ const state={
   libraryOrder:{},     // 共有ライブラリ一覧の手動並び順 { distributed:[id...], subbed:[id...], avail:[id...] }
   searchColor:null,    // 探すページの色フィルター
   searchTag:null,      // 探すページのタグフィルター
-  searchMosaic:false,  // 探すページの暗記モード(ボカシ)。検索結果/しばらく見ていないメモに共通で効く。
+  searchMosaic:false,  // 探すページの暗記モード(ぼかし)。検索結果/しばらく見ていないメモに共通で効く。
   staleDays:null,      // 「しばらく見ていないメモ」ページの日数 (null=未設定→デフォルト7)
   aiNote:'',           // 設定「AIへの希望」フリー記入。systemプロンプトに差し込む利用者の要望。
   onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
@@ -6903,7 +6926,7 @@ async function cloudRestore(){
 function updateCloudStatus(){
   const status=$('cloud-status');
   if(!status)return;
-  let base='メモも写真も、端末の外(クラウド)に保存します。機種変や再インストールでも、ここから戻せます。';
+  let base='メモと写真はクラウドに保存します。ただし動画はこの端末だけに残り、バックアップされません（機種変や入れ直しでは引き継げないのでご注意ください）。';
   if(state.lastCloudBackupAt){
     const d=new Date(state.lastCloudBackupAt);
     const z=n=>String(n).padStart(2,'0');
@@ -7074,7 +7097,15 @@ async function exportBackup(){
 
     // バックアップ対象: 共有棚由来でなく、捨てたメモ (deletedAt) でないもの。
     // リストから外したメモ (archivedAt) は含める。本人にとってまだ大事なメモのはずなので。
-    const personalCards=state.cards.filter(c=>c && !c.fromShelf && !c.deletedAt);
+    const personalCards=state.cards.filter(c=>c && !c.fromShelf && !c.deletedAt)
+      .map(c=>{
+        // 動画の実行時フィールド (objectURL/一時Blob) は JSON に入れない (復元しても無効なため)
+        if(c && (c._videoUrl || c._videoBlob)){
+          const {_videoUrl,_videoBlob,...rest}=c;
+          return rest;
+        }
+        return c;
+      });
     const payload={
       app:'SnapIn',
       version:1,
@@ -8397,7 +8428,14 @@ function onVideoPick(e){
   const file=e.target.files && e.target.files[0];
   e.target.value='';
   if(!file)return;
-  if(!file.type.startsWith('video/')){
+  beginVideoFromFile(file);
+}
+
+// 動画ファイル(またはBlob)から動画カードの保存画面を開く共通処理。
+// ポスター生成を待たずに即座に保存画面へ遷移する (待ちによる白画面を防ぐ)。
+// ポスターは裏で生成し、出来たらカードに反映する。写真ピッカー/カメラ録画から共用。
+function beginVideoFromFile(file){
+  if(!file || !(file.type||'').startsWith('video/')){
     toast('動画ファイルを選んでください');
     return;
   }
@@ -8406,36 +8444,31 @@ function onVideoPick(e){
     toast('動画が大きすぎます (200MB以下を推奨)');
     return;
   }
+  const id='c_'+Date.now();
   const url=URL.createObjectURL(file);
-  // 先頭フレームをポスター画像として書き出す (フィードで再生前に表示)
+  state.photoMode=null;
+  state.current={
+    id,
+    type:'video',
+    date:new Date().toISOString().slice(0,10),
+    _new:true,
+    text:'',
+    poster:'',
+    _videoBlob:file,
+    _videoUrl:url,
+  };
+  closeAddSheet();
+  renderUpload();        // すぐ動画プレビュー付きの保存画面を表示
+  goto('screen-upload');
+  // ポスターは裏で生成し、間に合えば反映する (フィードで再生前に表示する用)
   makeVideoPoster(url).then(poster=>{
-    state.current={
-      id:'c_'+Date.now(),
-      type:'video',
-      date:new Date().toISOString().slice(0,10),
-      _new:true,
-      text:'',
-      poster:poster||'',
-      _videoBlob:file,
-      _videoUrl:url,
-    };
-    renderUpload();
-    goto('screen-upload');
-  }).catch(()=>{
-    // ポスター生成に失敗しても動画自体は保存できる
-    state.current={
-      id:'c_'+Date.now(),
-      type:'video',
-      date:new Date().toISOString().slice(0,10),
-      _new:true,
-      text:'',
-      poster:'',
-      _videoBlob:file,
-      _videoUrl:url,
-    };
-    renderUpload();
-    goto('screen-upload');
-  });
+    if(poster && state.current && state.current.id===id){
+      state.current.poster=poster;
+      // プレビューの video に poster を後付け
+      const v=$('up-body') && $('up-body').querySelector('video');
+      if(v && !v.getAttribute('poster'))v.setAttribute('poster',poster);
+    }
+  }).catch(()=>{});
 }
 
 // 動画の先頭(0.1秒)フレームを小さな JPEG dataURL にして返す。失敗時は空文字。
@@ -8462,6 +8495,44 @@ function makeVideoPoster(objUrl){
     v.onseeked=grab;
     v.onerror=()=>finish('');
     setTimeout(()=>finish(''),4000); // 保険: 4秒で諦める
+  });
+}
+
+// 動画から等間隔で count 枚の静止フレームを JPEG dataURL で抜き出す (AI分析用)。
+// Claude API は動画を扱えないため、数コマを画像として送って内容を推測してもらう用途。
+function extractVideoFrames(objUrl, count){
+  return new Promise((resolve)=>{
+    const v=document.createElement('video');
+    v.muted=true; v.playsInline=true; v.preload='auto';
+    v.src=objUrl;
+    const frames=[];
+    let times=[]; let idx=0; let done=false;
+    const finish=()=>{ if(done)return; done=true; resolve(frames); };
+    const grab=()=>{
+      try{
+        const vw=v.videoWidth||720, vh=v.videoHeight||1280;
+        const maxW=768; // Vision 用に長辺を抑える
+        const scale=Math.min(1, maxW/vw);
+        const cw=Math.round(vw*scale), ch=Math.round(vh*scale);
+        const cv=document.createElement('canvas');
+        cv.width=cw; cv.height=ch;
+        cv.getContext('2d').drawImage(v,0,0,cw,ch);
+        frames.push(cv.toDataURL('image/jpeg',0.6));
+      }catch(e){}
+      idx++;
+      if(idx>=times.length)finish();
+      else{ try{ v.currentTime=times[idx]; }catch(e){ grab(); } }
+    };
+    v.onloadedmetadata=()=>{
+      const d=(isFinite(v.duration)&&v.duration>0)?v.duration:0;
+      const n=Math.max(1, count||3);
+      if(d>0){ for(let i=0;i<n;i++)times.push(Math.min(d-0.05, d*((i+0.5)/n))); }
+      else { times=[0.1]; }
+      try{ v.currentTime=times[0]; }catch(e){ grab(); }
+    };
+    v.onseeked=grab;
+    v.onerror=finish;
+    setTimeout(finish, 8000); // 保険: 8秒で打ち切り
   });
 }
 
@@ -9001,8 +9072,34 @@ function renderUpload(){
   if(c.type==='video'){
     const wrap=document.createElement('div');
     wrap.className='up-photo';
+    wrap.style.background='#000';
     const vurl=c._videoUrl||'';
-    wrap.innerHTML=`<video src="${vurl}" controls playsinline preload="metadata" ${c.poster?`poster="${c.poster}"`:''} style="width:100%;height:100%;object-fit:cover;background:#000;"></video>`;
+    if(vurl){
+      const v=document.createElement('video');
+      v.src=vurl;
+      v.controls=true;
+      v.muted=true;          // 自動再生のため最初はミュート
+      v.loop=true;
+      v.autoplay=true;
+      v.playsInline=true;
+      v.setAttribute('playsinline','');
+      v.setAttribute('webkit-playsinline','');
+      v.setAttribute('preload','auto');
+      if(c.poster)v.setAttribute('poster',c.poster);
+      v.style.cssText='width:100%;height:100%;object-fit:contain;background:#000;';
+      // 再生できない/コーデック非対応のときはポスターか案内に差し替え
+      v.addEventListener('error',()=>{
+        wrap.innerHTML=c.poster
+          ? `<img src="${c.poster}" alt="" style="width:100%;height:100%;object-fit:contain;">`
+          : `<div style="color:#888;font-size:13px;padding:20px;text-align:center;">この動画は再生できない形式の可能性があります</div>`;
+      });
+      wrap.appendChild(v);
+      // iOS で確実に描画させるため明示的に load/play
+      try{v.load();}catch(e){}
+      const pp=v.play(); if(pp&&pp.catch)pp.catch(()=>{});
+    }else{
+      wrap.innerHTML=`<div style="color:#888;font-size:13px;">動画が見つかりません</div>`;
+    }
     const change=document.createElement('button');
     change.className='change';
     change.textContent='動画を変える';
@@ -10640,6 +10737,17 @@ function openDetail(c,origin){
   }
   state.current=Object.assign({},c,{_origin:origin});
   state.detailAiMode=false;
+  // 動画はAIで分析できない (APIが動画非対応・静止画送信はコスト過多のため無効化)。
+  // → 動画カードではAIトグルを隠し、記録専用にする。
+  {
+    const _aiTg=$('detail-ai-toggle');
+    if(_aiTg){
+      _aiTg.style.display=(c.type==='video')?'none':'';
+      _aiTg.classList.remove('on');
+    }
+    const _inp=$('detail-input');
+    if(_inp)_inp.placeholder='メモを書く…';
+  }
   // 別のカードを開いたら「思い出す」モザイクは解除
   state.detailMosaic=false;
   $('detail-scroll')?.classList.remove('mosaic','revealed');
@@ -10955,6 +11063,11 @@ function recordViewExit(){
 }
 
 function toggleAiMode(){
+  // 動画はAIで分析できないため、AIモードに入れない (記録専用)
+  if(state.current && state.current.type==='video'){
+    toast('動画はAIで分析できません（記録専用です）');
+    return;
+  }
   // 塾生限定
   if(!canUseAI()){
     toast(aiGateText(true));
@@ -11185,6 +11298,7 @@ async function callAI(userMessage,cardContext,history,replyRef){
   // - そうでなければテキストだけ
   let contextStr='';
   if(cardContext){
+    if(cardContext.type==='video')contextStr+='これは動画メモです（動画の映像・音声は直接は確認できません）。\n';
     if(cardContext.text)contextStr+='メモ内容: '+cardContext.text+'\n';
     if(cardContext.title)contextStr+='タイトル: '+cardContext.title+'\n';
     if(cardContext.items)contextStr+='リスト項目: '+cardContext.items.map(i=>i.t).join(', ')+'\n';
@@ -11238,6 +11352,7 @@ async function callAI(userMessage,cardContext,history,replyRef){
   // user メッセージの content を組み立てる
   let userContent;
   const hasImage=cardContext && cardContext.image && /^data:([^;]+);base64,(.+)$/.test(cardContext.image);
+  const isVideo=cardContext && cardContext.type==='video' && (cardContext._videoUrl || cardContext.poster);
 
   // リプライ引用があれば「どの部分について聞かれているか」を本文に明示する。
   // UI上はバブルに引用が出ているが、その情報を本文に入れないとモデルには
@@ -11262,6 +11377,11 @@ async function callAI(userMessage,cardContext,history,replyRef){
       {type:'image',source:{type:'base64',media_type:mediaType,data:data}},
       {type:'text',text:textPart},
     ];
+  }else if(isVideo){
+    // 動画はAIで分析しない (APIが動画非対応・静止画送信はコスト過多のため)。
+    // 画像は一切送らず、テキストだけで答える (動画の中身は見られない旨を明示)。
+    userContent=(contextStr?'コンテキスト:\n'+contextStr+'\n\n':'')+quotePrefix+'質問: '+userMessage
+      +'\n\n(これは動画メモです。動画の映像・音声は直接は確認できないため、メモの文章をもとに答えてください。)';
   }else{
     userContent=(contextStr?'コンテキスト:\n'+contextStr+'\n\n':'')+quotePrefix+'質問: '+userMessage;
   }
@@ -11775,7 +11895,7 @@ function renderLibrary(){
         <div class="benefits numbered">
           <div>思いついた瞬間に、メモ・写真・URLをすぐ保存</div>
           <div>タグ・検索で、必要なものに一瞬でたどり着く</div>
-          <div>メモはボカシをかけて、暗記カードに</div>
+          <div>メモはぼかしをかけて、暗記カードに</div>
           <div>メモの追加情報はいつでも追加で記憶に定着</div>
           <div>リンクやQRコードで、メモをそのまま誰かに手渡し</div>
           <div>ホーム画面に置けばネットがなくても開ける</div>
@@ -13109,7 +13229,7 @@ function toggleMosaic(){
   renderHome();
 }
 
-// 探すページの暗記モード(ボカシ) を切り替え。検索結果・しばらく見ていないメモに共通。
+// 探すページの暗記モード(ぼかし) を切り替え。検索結果・しばらく見ていないメモに共通。
 function toggleSearchMosaic(){
   state.searchMosaic=!state.searchMosaic;
   if(navigator.vibrate)navigator.vibrate(8);
@@ -13123,7 +13243,7 @@ function syncSearchMosaicBtns(){
   $('stale-mosaic-btn')?.classList.toggle('on',state.searchMosaic);
 }
 
-// 「今日」ページの暗記モード(ボカシ) を切り替え。昨日以降の過去メモに適用 (今日のメモは除外)。
+// 「今日」ページの暗記モード(ぼかし) を切り替え。昨日以降の過去メモに適用 (今日のメモは除外)。
 function toggleTodayMosaic(){
   state.todayMosaic=!state.todayMosaic;
   if(navigator.vibrate)navigator.vibrate(8);
@@ -13202,7 +13322,9 @@ document.addEventListener('click',e=>{
     case 'batch-camera':batchStartCamera();break;
     case 'batch-pick':batchStartPick();break;
     case 'batch-add-more':openBatchChoose(true);break;
-    case 'batch-cam-shot':batchCamShoot();break;
+    case 'batch-cam-shot':batchCamShutter();break;
+    case 'cam-mode-photo':setCamMode('photo');break;
+    case 'cam-mode-video':setCamMode('video');break;
     case 'batch-cam-done':batchCamDone();break;
     case 'batch-cam-close':batchCamClose();break;
     case 'batch-close':closeBatchTray();break;
@@ -13690,6 +13812,12 @@ const _batch={
   camStream:null,  // 連続撮影中の MediaStream
   committing:false,// 二重投稿防止
   _seq:0,          // トレイ内アイテムの一意キー
+  camMode:'photo', // 'photo' | 'video' (カメラ画面のモード)
+  recorder:null,   // 動画録画中の MediaRecorder
+  recChunks:[],    // 録画データの断片
+  recTimer:null,   // 録画経過時間の表示タイマー
+  recStart:0,      // 録画開始時刻
+  recHasAudio:false, // 録画に音声が乗るか
 };
 // 「写真」ボタン由来のピックかどうか。true かつ1枚だけなら単体の保存画面へ振り分ける。
 let _photoPickFresh=false;
@@ -13720,7 +13848,17 @@ async function onBatchFilesPicked(e){
   const fresh=_photoPickFresh; _photoPickFresh=false;
   if(files.length===0)return;
   const imgs=files.filter(f=>f.type && f.type.startsWith('image/'));
+  const vids=files.filter(f=>f.type && f.type.startsWith('video/'));
+  // 動画が選ばれたとき:
+  //  - 画像が無く動画だけ → 1本目を動画の保存画面へ (複数動画は1本ずつ)
+  //  - 画像と混在 → 画像はトレイへ、動画はスキップして案内
+  if(vids.length>0 && imgs.length===0){
+    if(vids.length>1)toast('動画は1本ずつ追加できます。最初の1本を読み込みます');
+    beginVideoFromFile(vids[0]);
+    return;
+  }
   if(imgs.length===0){toast('画像ファイルを選んでください');return;}
+  if(vids.length>0)toast('動画は1本ずつ追加できます (今回は写真のみ取り込みます)');
   // 「写真」ボタンから1枚だけ選んだ (トレイ未起動) → 従来どおり単体の保存画面へ。
   if(fresh && imgs.length===1 && _batch.items.length===0){
     try{
@@ -13762,20 +13900,26 @@ async function batchStartCamera(){
     return;
   }
   // 先にストリームを取得し、成功してからカメラ画面を出す (黒画面の点滅を防ぐ)。
+  // 動画モードでも使えるよう音声付きで試し、ダメなら音声なしで再取得する。
   let stream=null;
+  _batch.recHasAudio=false;
   try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:true});
+    _batch.recHasAudio=true;
   }catch(err){
-    console.warn('getUserMedia failed',err);
-    // 権限拒否/一時的な不調など。画面は未表示なので点滅しない。
-    // 紛らわしいシートは出さず、短いトーストだけ。もう一度押せば再試行できる。
-    toast('カメラを開けませんでした。もう一度お試しください');
-    return;
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    }catch(err2){
+      console.warn('getUserMedia failed',err2);
+      toast('カメラを開けませんでした。もう一度お試しください');
+      return;
+    }
   }
   const cam=$('batch-cam');
   const msg=$('batch-cam-msg');
   const shutter=$('batch-cam-shutter');
   _batch.camStream=stream;
+  setCamMode('photo'); // 起動時は写真モード
   cam.classList.add('on');
   cam.setAttribute('aria-hidden','false');
   updateBatchCamStrip();
@@ -13784,6 +13928,89 @@ async function batchStartCamera(){
   if(msg)msg.style.display='none';
   if(shutter)shutter.disabled=false;
   try{await video.play();}catch(e){}
+}
+
+// 写真/動画モードの切り替え
+function setCamMode(mode){
+  if(_batch.recorder)return; // 録画中は切り替え不可
+  _batch.camMode=(mode==='video')?'video':'photo';
+  const shutter=$('batch-cam-shutter');
+  const strip=$('batch-cam-strip');
+  const pBtn=document.querySelector('.batch-cam-mode[data-action="cam-mode-photo"]');
+  const vBtn=document.querySelector('.batch-cam-mode[data-action="cam-mode-video"]');
+  if(pBtn)pBtn.classList.toggle('on',_batch.camMode==='photo');
+  if(vBtn)vBtn.classList.toggle('on',_batch.camMode==='video');
+  if(shutter)shutter.classList.toggle('video',_batch.camMode==='video');
+  // 動画モードでは写真用サムネ束は隠す (混在を避ける)
+  if(strip)strip.style.visibility=(_batch.camMode==='video')?'hidden':'';
+}
+
+// シャッターのディスパッチ: 写真は撮影、動画は録画トグル
+function batchCamShutter(){
+  if(_batch.camMode==='video'){
+    if(_batch.recorder)stopCamRecording();
+    else startCamRecording();
+  }else{
+    batchCamShoot();
+  }
+}
+
+// 動画録画開始
+function startCamRecording(){
+  const stream=_batch.camStream;
+  if(!stream){toast('カメラが見つかりません');return;}
+  let rec;
+  // iOS Safari は video/mp4、その他は webm を出すことが多い。対応するものを選ぶ。
+  const types=['video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  let mime='';
+  for(const t of types){ if(window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)){ mime=t; break; } }
+  try{
+    rec=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);
+  }catch(e){
+    toast('この端末では録画に対応していません');
+    return;
+  }
+  _batch.recorder=rec;
+  _batch.recChunks=[];
+  rec.ondataavailable=ev=>{ if(ev.data && ev.data.size>0)_batch.recChunks.push(ev.data); };
+  rec.onstop=()=>{
+    const type=(_batch.recChunks[0] && _batch.recChunks[0].type) || mime || 'video/mp4';
+    const blob=new Blob(_batch.recChunks,{type});
+    _batch.recChunks=[];
+    _batch.recorder=null;
+    const ext=type.includes('mp4')?'mp4':'webm';
+    const file=new File([blob],'rec_'+Date.now()+'.'+ext,{type});
+    // カメラを閉じて、動画の保存画面へ
+    batchCamCloseStream();
+    const cam=$('batch-cam'); cam.classList.remove('on'); cam.setAttribute('aria-hidden','true');
+    setCamMode('photo');
+    if(blob.size>0)beginVideoFromFile(file);
+    else toast('録画できませんでした');
+  };
+  try{ rec.start(); }catch(e){ _batch.recorder=null; toast('録画を開始できませんでした'); return; }
+  if(navigator.vibrate)navigator.vibrate(15);
+  // UI: シャッターを録画中表示に、経過時間を表示
+  const shutter=$('batch-cam-shutter'); if(shutter)shutter.classList.add('recording');
+  const t=$('batch-cam-rec-time');
+  _batch.recStart=Date.now();
+  const tick=()=>{
+    const s=Math.floor((Date.now()-_batch.recStart)/1000);
+    const mm=Math.floor(s/60), ss=String(s%60).padStart(2,'0');
+    if(t)t.textContent=`${mm}:${ss}`;
+    // 端末保存なので上限はゆるめに3分で自動停止
+    if(s>=180)stopCamRecording();
+  };
+  if(t){t.textContent='0:00';t.classList.add('on');}
+  _batch.recTimer=setInterval(tick,250);
+}
+
+// 動画録画停止
+function stopCamRecording(){
+  if(_batch.recTimer){clearInterval(_batch.recTimer);_batch.recTimer=null;}
+  const shutter=$('batch-cam-shutter'); if(shutter)shutter.classList.remove('recording');
+  const t=$('batch-cam-rec-time'); if(t)t.classList.remove('on');
+  if(navigator.vibrate)navigator.vibrate(15);
+  if(_batch.recorder){ try{_batch.recorder.stop();}catch(e){ _batch.recorder=null; } }
 }
 
 // シャッター: 現在のフレームを切り出して圧縮し、トレイ配列に積む
@@ -13836,6 +14063,15 @@ function updateBatchCamStrip(){
 
 // MediaStream だけ止める (画面表示はそのまま)
 function batchCamCloseStream(){
+  // 録画中なら破棄してから閉じる
+  if(_batch.recTimer){clearInterval(_batch.recTimer);_batch.recTimer=null;}
+  if(_batch.recorder){
+    try{ _batch.recorder.ondataavailable=null; _batch.recorder.onstop=null; _batch.recorder.stop(); }catch(e){}
+    _batch.recorder=null;
+  }
+  _batch.recChunks=[];
+  const _shutter=$('batch-cam-shutter'); if(_shutter)_shutter.classList.remove('recording');
+  const _t=$('batch-cam-rec-time'); if(_t)_t.classList.remove('on');
   if(_batch.camStream){
     try{_batch.camStream.getTracks().forEach(t=>t.stop());}catch(e){}
     _batch.camStream=null;
