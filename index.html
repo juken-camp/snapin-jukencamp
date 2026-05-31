@@ -2794,6 +2794,17 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .claim-field input:focus{
   border-color:var(--g);
 }
+/* iOS/Safari の自動入力で名前欄などが黄色くなるのを防ぎ、通常の白背景(surface)に統一する */
+.claim-field input:-webkit-autofill,
+.claim-field input:-webkit-autofill:hover,
+.claim-field input:-webkit-autofill:focus,
+.claim-field input:-webkit-autofill:active{
+  -webkit-box-shadow:0 0 0 1000px var(--surface) inset;
+  box-shadow:0 0 0 1000px var(--surface) inset;
+  -webkit-text-fill-color:var(--ink);
+  caret-color:var(--ink);
+  transition:background-color 9999s ease-in-out 0s;
+}
 .claim-error{
   font-size:13px;
   color:var(--rose);
@@ -4166,10 +4177,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
     <div class="claim-error hide" id="claim-error"></div>
     <button class="claim-submit" id="claim-submit" data-action="claim-submit">
-      入る
+      ログインする
     </button>
     <div class="claim-help">
-      うまく入れない時は、登録元の塾・グループにご確認ください。
+      うまく入れない時は、登録元のグループにご確認ください。
     </div>
   </div>
 </div>
@@ -4201,7 +4212,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
     <div class="claim-error hide" id="join-error"></div>
     <button class="claim-submit" id="join-submit" data-action="join-submit">
-      入る
+      参加する
     </button>
     <div class="claim-help">
       コードが分からない時は、グループの担当者にご確認ください。
@@ -6303,6 +6314,8 @@ async function doClaimSubmit(force){
       group:data.student.group||'',
       shelfIds:data.student.shelfIds||[],
       aiEnabled:data.student.aiEnabled!==false,
+      teamId:data.student.teamId||null,
+      isGroupAdmin:data.student.isGroupAdmin===true,
     };
     // 既存のuser情報も保持 (personal モードと共存)
     if(!state.user){
@@ -6421,6 +6434,8 @@ async function doJoinSubmit(force){
       group:data.student.group||'',
       shelfIds:data.student.shelfIds||[],
       aiEnabled:data.student.aiEnabled!==false,
+      teamId:data.student.teamId||null,
+      isGroupAdmin:data.student.isGroupAdmin===true,
     };
     if(!state.user){
       state.user={mode:'personal',name:data.student.name,handle:'@'+data.student.id};
@@ -12280,13 +12295,15 @@ function renderLibrary(){
           <div>メモの追加情報はいつでも追加で記憶に定着</div>
           <div>リンクやQRコードで、メモをそのまま誰かに手渡し</div>
           <div>ホーム画面に置けばネットがなくても開ける</div>
-          <div>バックアップで保存、機種変更のときも安心</div>
+          <div>自分でバックアップを書き出して保存・復元できる</div>
         </div>
         <div class="lib-feat-label">Proプラン（個人・塾・会社・家族・グループ向け）</div>
         <div class="benefits numbered">
           <div>メモや写真を即分析、その場でAIに質問して解決</div>
           <div>AIとのチャット履歴を、個人間でも共有できる</div>
-          <div>グループのメモを、ライブラリから自分のメモへ</div>
+          <div>グループのメモを、共有ライブラリから自分のメモへ</div>
+          <div>メモも写真も自動でクラウド保存、機種変も安心</div>
+          <div>自分のメモをグループのみんなにそのまま共有</div>
         </div>
         <div class="sub">Proプランは、個人・塾・会社などでもご利用になれます。</div>
         <div class="btn-row">
