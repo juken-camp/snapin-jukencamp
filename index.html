@@ -4474,6 +4474,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       </div>
       <div class="sheet-opt-title">写真</div>
     </button>
+    <button class="sheet-opt" data-action="create-video">
+      <div class="sheet-opt-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="M22 8l-6 4 6 4z"/></svg>
+      </div>
+      <div class="sheet-opt-title">動画</div>
+    </button>
     <button class="sheet-opt" data-action="create-note">
       <div class="sheet-opt-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -4623,6 +4629,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <input type="file" id="file-input" accept="image/*" style="display:none;">
 <input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none;">
 <input type="file" id="file-input-any" accept=".png,.jpg,.jpeg,.gif,.webp,.heic,.heif" style="display:none;">
+<input type="file" id="file-input-video" accept="video/*" style="display:none;">
 <input type="file" id="restore-input" accept="application/json,.json" style="display:none;">
 
 <!-- URL 入力モーダル (create-url で表示) -->
@@ -4926,6 +4933,12 @@ function buildLightPayload(){
       const {image,...rest}=lc;
       lc={...rest,__hasImg:true};
     }
+    // 動画の実行時専用フィールド (objectURL / 一時 Blob) は永続化しない。
+    // 動画本体は vidDB に Blob で保存され、カードには __hasVid フラグだけ残す。
+    if(lc._videoUrl || lc._videoBlob){
+      const {_videoUrl,_videoBlob,...vrest}=lc;
+      lc=vrest;
+    }
     if(lc._snap && lc._snap.image){
       const {image,...snapRest}=lc._snap;
       lc={...lc,_snap:{...snapRest,__hasImg:true}};
@@ -5016,7 +5029,8 @@ const imgDB={
   _DB_NAME:'snapin_db',
   _STORE:'images',
   _META_STORE:'meta',
-  _VERSION:2,
+  _VIDEO_STORE:'videos',
+  _VERSION:3,
   async open(){
     if(this._db)return this._db;
     return new Promise((res,rej)=>{
@@ -5030,6 +5044,12 @@ const imgDB={
         // localStorage が満杯/消去されても、ここに残っていれば失われない。
         if(!db.objectStoreNames.contains(this._META_STORE)){
           db.createObjectStore(this._META_STORE);
+        }
+        // v3: 動画を Blob のまま保存するストア。
+        // 動画は base64 にすると約1.33倍に膨れる上に重いので、Blob のまま持つ。
+        // クラウドには上げず端末ローカル専用 (無料運用)。
+        if(!db.objectStoreNames.contains(this._VIDEO_STORE)){
+          db.createObjectStore(this._VIDEO_STORE);
         }
       };
       req.onsuccess=()=>{
@@ -5079,6 +5099,36 @@ const imgDB={
       req.onerror=()=>rej(req.error);
     });
   },
+  // ── 動画 (Blob) 用 ───────────────────────────────
+  // 動画は dataURL ではなく Blob のまま IndexedDB に保存する (容量効率・メモリ効率)。
+  // 表示時は URL.createObjectURL(blob) で再生する。
+  async putVideo(id,blob){
+    const db=await this.open();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(this._VIDEO_STORE,'readwrite');
+      const req=tx.objectStore(this._VIDEO_STORE).put(blob,id);
+      req.onsuccess=()=>res();
+      req.onerror=()=>rej(req.error);
+    });
+  },
+  async getVideo(id){
+    const db=await this.open();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(this._VIDEO_STORE,'readonly');
+      const req=tx.objectStore(this._VIDEO_STORE).get(id);
+      req.onsuccess=()=>res(req.result||null);
+      req.onerror=()=>rej(req.error);
+    });
+  },
+  async deleteVideo(id){
+    const db=await this.open();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(this._VIDEO_STORE,'readwrite');
+      const req=tx.objectStore(this._VIDEO_STORE).delete(id);
+      req.onsuccess=()=>res();
+      req.onerror=()=>rej(req.error);
+    });
+  },
   // 軽量ペイロード (画像なし) の耐久コピーを保存/取得する。
   // localStorage と同じ内容を二重に持つことで、localStorage が満杯/消去されても残る。
   async putMeta(obj){
@@ -5109,6 +5159,18 @@ async function hydrateCardImages(){
   if(!Array.isArray(state.cards))return;
   for(const c of state.cards){
     if(!c || !c.id)continue;
+    // 動画カード: vidDB から Blob を取り出して objectURL を作る (再生用、永続化しない)
+    if(c.type==='video' && c.__hasVid){
+      try{
+        const blob=await imgDB.getVideo(c.id);
+        if(blob){
+          if(c._videoUrl){try{URL.revokeObjectURL(c._videoUrl);}catch(e){}}
+          c._videoUrl=URL.createObjectURL(blob);
+        }else{
+          console.warn('video missing for card',c.id);
+        }
+      }catch(e){console.warn('load video failed',c.id,e);}
+    }
     if(c.image && typeof c.image==='string' && c.image.startsWith('data:')){
       // 既に画像データを持っている (旧形式 or マイグレーション前) → IndexedDB に移す
       try{await imgDB.put(c.id,c.image);}catch(e){console.warn('migrate img failed',c.id,e);}
@@ -5235,6 +5297,10 @@ async function purgeOldTrash(){
   // 画像を IndexedDB から消す
   for(const c of expired){
     if(c.id){try{await imgDB.delete(c.id);}catch(e){/* ignore */}}
+    if(c && c.type==='video' && c.id){
+      if(c._videoUrl){try{URL.revokeObjectURL(c._videoUrl);}catch(e){}}
+      try{await imgDB.deleteVideo(c.id);}catch(e){/* ignore */}
+    }
   }
   const expiredIds=new Set(expired.map(c=>c.id));
   state.cards=state.cards.filter(c=>!expiredIds.has(c.id));
@@ -6707,6 +6773,9 @@ function buildCloudPayload(){
   delete p.auth;            // トークンはサーバーに置かない
   delete p.deviceId;        // 端末IDは復元時に上書きしない
   delete p.lastCloudBackupAt; // これはローカルのUI表示用
+  // 動画は端末ローカル専用 (R2 に上げるとサイズ的にコスト/容量制限の原因になる)。
+  // クラウドには動画カード自体を送らない → 完全無料運用。
+  if(Array.isArray(p.cards))p.cards=p.cards.filter(c=>!c||c.type!=='video');
   p._savedAt=state._savedAt||Date.now();
   return p;
 }
@@ -7957,6 +8026,20 @@ function renderFeed(el,cards){
       const txt=c.text?esc(c.text.slice(0,80)):'';
       inner+=`<div class="feed-meta">${txt}　${fmtDate(c.date)}</div>`;
       if(!isNoColor(c.color)){item.style.border='3px solid '+colorById(c.color).bd;item.style.boxSizing='border-box';}
+    }else if(c.type==='video'){
+      // Instagram風: muted + playsinline + loop で、画面に入ったら自動再生 (下の IntersectionObserver が制御)。
+      const vurl=c._videoUrl||'';
+      const poster=c.poster?` poster="${c.poster}"`:'';
+      if(vurl){
+        inner=`<video class="feed-video" src="${vurl}"${poster} muted loop playsinline webkit-playsinline preload="metadata" style="max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;background:#000;"></video>`;
+      }else{
+        // Blob が見つからない (端末データ削除/別端末など) → ポスターか案内を出す
+        inner=c.poster
+          ? `<img src="${c.poster}" alt="" decoding="async">`
+          : `<div class="feed-note" style="background:#000;color:#888;display:flex;align-items:center;justify-content:center;font-size:14px;">動画が見つかりません</div>`;
+      }
+      const txt=c.text?esc(c.text.slice(0,80)):'';
+      inner+=`<div class="feed-meta">${txt}　${fmtDate(c.date)}</div>`;
     }else if(c.type==='note'){
       const col=colorById(c.color);
       const fz=autoFontSizeDetail(c.text||'');
@@ -8006,10 +8089,32 @@ function renderFeed(el,cards){
     });
     el.appendChild(item);
   });
+  setupFeedVideoAutoplay(el);
 }
 
-
-// ═══ ADD ═══
+// ═══ FEED VIDEO AUTOPLAY (Instagram風) ═══
+// 画面に入った動画を再生し、外れたら一時停止する。
+// iOS で自動再生するには muted + playsinline が必須 (renderFeed 側で付与済み)。
+function setupFeedVideoAutoplay(el){
+  if(!el)return;
+  // 既存の Observer を破棄して作り直す (再描画のたびに新しい <video> が生成されるため)
+  if(el._videoIO){ el._videoIO.disconnect(); }
+  const io=new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      const v=entry.target;
+      if(entry.isIntersecting && entry.intersectionRatio>=0.6){
+        // muted を保証してから再生 (ブラウザの自動再生ポリシー対策)
+        v.muted=true;
+        const p=v.play();
+        if(p && p.catch)p.catch(()=>{}); // 再生拒否は無視 (黙ってポスター表示のまま)
+      }else{
+        v.pause();
+      }
+    });
+  },{root:el,threshold:[0,0.6,1]});
+  el.querySelectorAll('video.feed-video').forEach(v=>io.observe(v));
+  el._videoIO=io;
+}
 function openAddSheet(){
   $('add-mask').classList.add('on');
   $('add-sheet').classList.add('on');
@@ -8046,6 +8151,12 @@ function startCreate(type){
     _photoPickFresh=true;
     const inp=$('file-input-batch');
     inp.value='';   // 同じ写真を再選択しても change が発火するように
+    inp.click();
+  }else if(type==='video'){
+    // 「動画」: iOS標準ピッカーで動画を1本選ぶ。選択後は保存画面でキャプションを付けて保存。
+    // 動画本体は端末内 (vidDB) に Blob で保存し、クラウドには上げない (無料運用)。
+    const inp=$('file-input-video');
+    inp.value='';
     inp.click();
   }else if(type==='file'){
     // 「ファイル」: Files アプリから画像を選ぶ(カメラロール以外の画像)
@@ -8277,6 +8388,80 @@ function onFilePick(e){
     state.current=null;
     state.photoMode=null;
     state.cameraCapture=false;
+  });
+}
+
+// 動画ファイルを選んだとき: Blob を保持し、先頭フレームからポスター画像を作って保存画面へ。
+// 動画本体は圧縮せず Blob のまま (vidDB に保存)。ポスターだけ小さな JPEG にする。
+function onVideoPick(e){
+  const file=e.target.files && e.target.files[0];
+  e.target.value='';
+  if(!file)return;
+  if(!file.type.startsWith('video/')){
+    toast('動画ファイルを選んでください');
+    return;
+  }
+  // 端末内のみ保存とはいえ、極端に大きいものは再生/保存が不安定になるので軽く警告だけ出す。
+  if(file.size > 200*1024*1024){
+    toast('動画が大きすぎます (200MB以下を推奨)');
+    return;
+  }
+  const url=URL.createObjectURL(file);
+  // 先頭フレームをポスター画像として書き出す (フィードで再生前に表示)
+  makeVideoPoster(url).then(poster=>{
+    state.current={
+      id:'c_'+Date.now(),
+      type:'video',
+      date:new Date().toISOString().slice(0,10),
+      _new:true,
+      text:'',
+      poster:poster||'',
+      _videoBlob:file,
+      _videoUrl:url,
+    };
+    renderUpload();
+    goto('screen-upload');
+  }).catch(()=>{
+    // ポスター生成に失敗しても動画自体は保存できる
+    state.current={
+      id:'c_'+Date.now(),
+      type:'video',
+      date:new Date().toISOString().slice(0,10),
+      _new:true,
+      text:'',
+      poster:'',
+      _videoBlob:file,
+      _videoUrl:url,
+    };
+    renderUpload();
+    goto('screen-upload');
+  });
+}
+
+// 動画の先頭(0.1秒)フレームを小さな JPEG dataURL にして返す。失敗時は空文字。
+function makeVideoPoster(objUrl){
+  return new Promise((resolve)=>{
+    const v=document.createElement('video');
+    v.muted=true; v.playsInline=true; v.preload='metadata';
+    v.src=objUrl;
+    let done=false;
+    const finish=(val)=>{ if(done)return; done=true; resolve(val); };
+    const grab=()=>{
+      try{
+        const vw=v.videoWidth||720, vh=v.videoHeight||1280;
+        const maxW=360;
+        const scale=Math.min(1, maxW/vw);
+        const cw=Math.round(vw*scale), ch=Math.round(vh*scale);
+        const cv=document.createElement('canvas');
+        cv.width=cw; cv.height=ch;
+        cv.getContext('2d').drawImage(v,0,0,cw,ch);
+        finish(cv.toDataURL('image/jpeg',0.6));
+      }catch(err){ finish(''); }
+    };
+    v.onloadeddata=()=>{ try{ v.currentTime=0.1; }catch(e){ grab(); } };
+    v.onseeked=grab;
+    v.onerror=()=>finish('');
+    setTimeout(()=>finish(''),4000); // 保険: 4秒で諦める
   });
 }
 
@@ -8813,7 +8998,25 @@ function renderUpload(){
   $('up-title').textContent=c._new?'新しい保存':'編集';
   body.innerHTML='';
 
-  if(c.type==='photo' || c.type==='photonote'){
+  if(c.type==='video'){
+    const wrap=document.createElement('div');
+    wrap.className='up-photo';
+    const vurl=c._videoUrl||'';
+    wrap.innerHTML=`<video src="${vurl}" controls playsinline preload="metadata" ${c.poster?`poster="${c.poster}"`:''} style="width:100%;height:100%;object-fit:cover;background:#000;"></video>`;
+    const change=document.createElement('button');
+    change.className='change';
+    change.textContent='動画を変える';
+    change.addEventListener('click',()=>{ $('file-input-video').click(); });
+    wrap.appendChild(change);
+    body.appendChild(wrap);
+
+    const ta=document.createElement('textarea');
+    ta.className='up-text';
+    ta.placeholder='メモをする';
+    ta.value=c.text||'';
+    ta.addEventListener('input',e=>{ state.current.text=e.target.value; });
+    body.appendChild(ta);
+  }else if(c.type==='photo' || c.type==='photonote'){
     const wrap=document.createElement('div');
     wrap.className='up-photo';
     if(c.image)wrap.innerHTML=`<img src="${c.image}">`;
@@ -9416,6 +9619,7 @@ function saveCard(){
   const c=state.current;
   if(!c){toast('エラー');return;}
   if((c.type==='photo' || c.type==='photonote') && !c.image){toast('写真がありません');return;}
+  if(c.type==='video' && c._new && !c._videoBlob && !c.__hasVid){toast('動画がありません');return;}
   if(c.type==='note' && !(c.text && c.text.trim())){toast('メモが空です');return;}
   if(c.type==='list'){
     c.items=(c.items||[]).filter(i=>i.t.trim()!=='');
@@ -9455,7 +9659,31 @@ function saveCard(){
   if(btn && btn.dataset.saving==='1')return;
   if(btn)btn.dataset.saving='1';
 
-  if(c.image){
+  if(c.type==='video' && c._videoBlob){
+    // 動画: Blob を vidDB に await してから保存。__hasVid を立てて再起動時に復元できるようにする。
+    (async()=>{
+      try{
+        await imgDB.putVideo(c.id,c._videoBlob);
+      }catch(err){
+        console.error('IndexedDB putVideo failed:',err);
+        rollback();
+        if(btn)delete btn.dataset.saving;
+        showSaveError();
+        return;
+      }
+      c.__hasVid=true;
+      delete c._videoBlob; // objectURL (_videoUrl) が Blob を保持するのでメモリ参照は外してよい
+      const ok=save();
+      if(!ok){
+        rollback();
+        imgDB.deleteVideo(c.id).catch(()=>{}); // 孤児動画を残さない
+        if(btn)delete btn.dataset.saving;
+        showSaveError();
+        return;
+      }
+      onSaveSuccess();
+    })();
+  }else if(c.image){
     // 画像あり: IndexedDB に await してから localStorage 書き込み
     (async()=>{
       try{
@@ -10430,7 +10658,22 @@ function openDetail(c,origin){
   $('detail-meta').innerHTML=metaHtml;
 
   let contentHtml='';
-  if(c.image){
+  if(c.type==='video'){
+    const vurl=c._videoUrl||'';
+    $('detail-img').classList.remove('hide');
+    $('detail-img').style.background='#000';
+    $('detail-img').style.border='none';
+    $('detail-img').style.boxSizing='border-box';
+    if(vurl){
+      // 詳細では controls 付き・音あり。最初は自動再生(ミュート)してすぐ見えるようにする。
+      $('detail-img').innerHTML=`<video src="${vurl}" controls playsinline webkit-playsinline preload="metadata" ${c.poster?`poster="${c.poster}"`:''} autoplay muted loop style="width:100%;height:100%;object-fit:contain;background:#000;"></video>`;
+    }else{
+      $('detail-img').innerHTML=c.poster
+        ? `<img src="${c.poster}" alt="">`
+        : `<div style="color:#888;padding:40px;text-align:center;">動画が見つかりません</div>`;
+    }
+    // 動画にはピンチズームを付けない
+  }else if(c.image){
     $('detail-img').classList.remove('hide');
     const col=colorById(c.color);
     $('detail-img').style.background=col.bg;
@@ -10440,7 +10683,7 @@ function openDetail(c,origin){
     // ピンチズーム機能を初期化
     setupImageZoom($('detail-img'));
   }
-  if(c.type==='note' || ((c.type==='photo'||c.type==='photonote') && c.text)){
+  if(c.type==='note' || ((c.type==='photo'||c.type==='photonote'||c.type==='video') && c.text)){
     if(c.type==='note'){
       // 詳細画面のメモ表示: 枠は 100% × aspect-ratio:1 の正方形。
       // 内部 inner も親いっぱいの 100% × 100% にし、フォントサイズ・padding を
@@ -11133,8 +11376,13 @@ function restoreFromTrash(id){
 async function purgeOne(id){
   const idx=state.cards.findIndex(x=>x.id===id);
   if(idx<0)return;
+  const _pc=state.cards[idx];
   state.cards.splice(idx,1);
   try{await imgDB.delete(id);}catch(e){/* ignore */}
+  if(_pc && _pc.type==='video'){
+    if(_pc._videoUrl){try{URL.revokeObjectURL(_pc._videoUrl);}catch(e){}}
+    try{await imgDB.deleteVideo(id);}catch(e){/* ignore */}
+  }
   save();
 }
 
@@ -11145,6 +11393,10 @@ async function emptyTrash(){
   if(!(await confirmModal({title:'ゴミ箱を空にする',msg:`捨てたメモ ${trashed.length}件 を完全に削除します。この操作は取り消せません。`,okText:'すべて削除',danger:true})))return;
   for(const c of trashed){
     if(c.id){try{await imgDB.delete(c.id);}catch(e){/* ignore */}}
+    if(c && c.type==='video' && c.id){
+      if(c._videoUrl){try{URL.revokeObjectURL(c._videoUrl);}catch(e){}}
+      try{await imgDB.deleteVideo(c.id);}catch(e){/* ignore */}
+    }
   }
   const trashIds=new Set(trashed.map(c=>c.id));
   state.cards=state.cards.filter(c=>!trashIds.has(c.id));
@@ -12941,6 +13193,7 @@ document.addEventListener('click',e=>{
     case 'close-welcome':closeWelcome();break;
     case 'create-camera':startCreate('camera');break;
     case 'create-photo':startCreate('photo');break;
+    case 'create-video':startCreate('video');break;
     case 'create-note':startCreate('note');break;
     case 'create-list':startCreate('list');break;
     case 'create-url':startCreate('url');break;
@@ -13153,6 +13406,7 @@ $('detail-input').addEventListener('keydown',e=>{
 $('file-input').addEventListener('change',onFilePick);
 $('file-input-camera').addEventListener('change',onFilePick);
 $('file-input-any').addEventListener('change',onFilePick);
+$('file-input-video').addEventListener('change',onVideoPick);
 
 // 詳細画面: モザイク中に本文(画像/テキスト)をタップしたら一時表示をトグル。
 // ぼかし中はキャプチャ段階で奪い、リスト項目やリンク等の誤操作を防ぐ。
