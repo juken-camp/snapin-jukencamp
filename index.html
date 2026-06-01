@@ -7760,7 +7760,7 @@ function renderToday(){
   const now=new Date();
   const dateStr=`${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
   const wd=['日','月','火','水','木','金','土'][now.getDay()];
-  $('today-date').textContent=`${dateStr} ${wd}`;
+  $('today-date').textContent=`${dateStr}（${wd}）`;
 
   // 時間帯と「今日のひとこと」
   const h=now.getHours();
