@@ -212,10 +212,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-radius:50%;
   background:var(--ink3);
   color:#fff;
-  display:flex;align-items:center;justify-content:center;
   box-shadow:0 0 0 2px var(--surface);
 }
-.bnav-lock-badge svg{display:block;}
+.bnav-lock-badge svg{
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  display:block;
+}
 .bnav-add-wrap{
   flex:1;
   display:flex;
