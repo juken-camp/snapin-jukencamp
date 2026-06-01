@@ -202,6 +202,20 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .bnav-item.on{color:var(--g);}
 .bnav-item:active{transform:scale(0.92);}
+/* 共有タブのロック中表示: 薄く見せて「まだ使えない/フル機能」と分からせる */
+.bnav-item.locked{opacity:.4;}
+.bnav-item.locked.on{opacity:.6;color:var(--ink3);}
+.bnav-lock-badge{
+  position:absolute;
+  top:-4px; right:-7px;
+  width:14px; height:14px;
+  border-radius:50%;
+  background:var(--ink3);
+  color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 2px var(--surface);
+}
+.bnav-lock-badge svg{display:block;}
 .bnav-add-wrap{
   flex:1;
   display:flex;
@@ -5483,6 +5497,7 @@ async function hydrateCardImages(){
 // ログアウト→アプリ再起動→再ログインの流れだと起動時の画像復元が走らず、
 // 投稿画像が白く表示される問題への対策。
 function hydrateThenRenderHome(){
+  setupNavs(); // ログイン状態が変わった可能性があるので共有タブのロック表示を更新
   hydrateCardImages().then(()=>{
     const cur=document.querySelector('.screen.active');
     if(cur && cur.id==='screen-home')renderHome();
@@ -6148,10 +6163,18 @@ function navHtml(active){
       </button></div>`;
     }
     const on=active===i.id?' on':'';
+    // 共有タブは、ログイン中の塾生(=フル機能)でないときは「ロック中」に見せる。
+    // 押すと共有ページ(=フル機能の案内)へ飛ぶので、興味喚起の入口になる。
+    const locked=(i.id==='library' && typeof isStudent==='function' && !isStudent());
+    const lockCls=locked?' locked':'';
     const wrapAttr=i.id==='library'?' id="bnav-library-wrap"':'';
     // バッジはアイコン(SVG)のラッパー内に配置する。こうするとアイコンの右上に正確に乗る。
-    const badge=i.id==='library'?'<span class="home-new-badge hide" id="bnav-library-badge"></span>':'';
-    return `<button class="bnav-item${on}" data-action="nav-${i.id}">
+    let badge=i.id==='library'?'<span class="home-new-badge hide" id="bnav-library-badge"></span>':'';
+    // ロック中は鍵マークの小バッジを右上に出す
+    if(locked){
+      badge='<span class="bnav-lock-badge" aria-hidden="true"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>';
+    }
+    return `<button class="bnav-item${on}${lockCls}" data-action="nav-${i.id}">
       <span class="bnav-icon-wrap"${wrapAttr}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${i.svg}</svg>${badge}</span>
       <span>${i.label}</span>
     </button>`;
@@ -6568,6 +6591,7 @@ function doLogout(){
   state.user=null;
   state.auth=null; // 塾生情報もクリア (再ログインで再claim)
   save();
+  setupNavs(); // 無料状態に戻るので共有タブをロック表示に更新
   state.navStack=['screen-login'];
   goto('screen-login',false);
 }
