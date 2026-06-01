@@ -678,10 +678,24 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .feed-meta{
   position:absolute;
   bottom:24px;left:18px;right:18px;
-  color:rgba(255,255,255,.9);
+  color:rgba(255,255,255,.95);
   font-size:11px;
   font-family:var(--font-en);
   pointer-events:none;
+  z-index:2;
+  /* 動画の明るい部分に重なっても読めるよう、文字に影を付ける */
+  text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 10px rgba(0,0,0,.5);
+}
+/* 写真・動画アイテムの下部に、キャプションを読みやすくする黒いグラデの帯を敷く。
+   (リール定番の手法。中身が明るくても文字が浮く) */
+.feed-item.has-scrim::after{
+  content:"";
+  position:absolute;
+  left:0;right:0;bottom:0;
+  height:140px;
+  background:linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0));
+  pointer-events:none;
+  z-index:1;
 }
 
 /* EMPTY */
@@ -8433,11 +8447,13 @@ function renderFeed(el,cards){
     item.className='feed-item';
     let inner='';
     if(c.type==='photo' || c.type==='photonote'){
+      item.classList.add('has-scrim');
       inner=`<img src="${c.image||''}" alt="" decoding="async" loading="eager">`;
       const txt=c.text?esc(c.text.slice(0,80)):'';
       inner+=`<div class="feed-meta">${txt}　${fmtDate(c.date)}</div>`;
       if(!isNoColor(c.color)){item.style.border='3px solid '+colorById(c.color).bd;item.style.boxSizing='border-box';}
     }else if(c.type==='video'){
+      item.classList.add('has-scrim');
       // Instagram風: muted + playsinline + loop で、画面に入ったら自動再生 (下の IntersectionObserver が制御)。
       const vurl=c._videoUrl||'';
       const poster=c.poster?` poster="${c.poster}"`:'';
@@ -12567,25 +12583,25 @@ function renderLibrary(){
         <div class="lib-feat-label">ずっと無料で使えます</div>
         <div class="benefits numbered">
           <div>アカウント不要、メアドもパスワードもいらない</div>
-          <div>メモも写真もURLも、なんでも一元化</div>
-          <div>メモ・リスト・写真・動画・URLから選んで保存</div>
-          <div>思い立ったら最短ワンタップでメモを保存</div>
-          <div>メモの整理に便利な色分けとタグ付け機能</div>
-          <div>ぼかしで隠して思い出す、暗記カードに</div>
-          <div>１人チャット機能でいつでも情報を追加</div>
-          <div>リンクかQRコードで友達にメモを共有</div>
-          <div>複数ページを連続撮影＆動画もすぐメモ化</div>
-          <div>書き出して保存、機種変のときも安心</div>
+          <div>メモ・写真・動画・URL、なんでも一か所に集約</div>
+          <div>思い立った瞬間、最短ワンタップで保存できる</div>
+          <div>色分けとタグで、必要なメモにすぐたどり着く</div>
+          <div>検索フィルターで、写真・リンクだけを絞り込み</div>
+          <div>ぼかしで隠して思い出す、メモが暗記カードに</div>
+          <div>１人チャットで、メモにあとから情報を足せる</div>
+          <div>リンクかQRコードで、友達にメモをそのまま共有</div>
+          <div>複数ページを連続撮影、動画もそのままメモ化</div>
+          <div>書き出して保存、機種変のときもデータが安心</div>
         </div>
         <div class="lib-feat-label">Proプラン（個人・塾・会社・家族・グループ向け）</div>
         <div class="benefits numbered">
           <div>メンバーへの情報共有に便利な共有ライブラリ</div>
           <div>メモ・写真・課題を即分析、AIがやさしく対応</div>
-          <div>宿題も読み取って、レベルに合わせて解説</div>
-          <div>AIとのチャット履歴も共有、続きから対話</div>
-          <div>グループの資料は、共有ライブラリで受け取り</div>
-          <div>受け取った資料は、メモにコピーしAIに質問</div>
-          <div>メモも写真も自動でクラウド保存</div>
+          <div>宿題も読み取り、レベルに合わせてやさしく解説</div>
+          <div>AIとのチャット履歴も共有、続きから対話できる</div>
+          <div>配られた資料を、共有ライブラリでそのまま受け取り</div>
+          <div>受け取った資料は、自分のメモにコピーしAIに質問</div>
+          <div>メモも写真も自動でクラウド保存、機種変も安心</div>
         </div>
         <div class="sub">Proプランは、個人・塾・会社などでもご利用になれます。</div>
         <div class="btn-row">
