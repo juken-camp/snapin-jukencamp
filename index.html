@@ -2756,37 +2756,56 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   line-height:1.65;
 }
 .login-card{
+  position:relative;
   width:100%;
-  padding:17px 18px;
-  background:var(--bg);
-  border-radius:15px;
+  padding:15px 16px 15px 18px;
+  background:var(--surface);
+  border-radius:13px;
   text-align:left;
   border:1px solid var(--line);
-  min-height:74px;
   box-sizing:border-box;
   display:flex;
   flex-direction:column;
   justify-content:center;
-  transition:transform .12s ease, background .15s;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);
+  overflow:hidden;
+  transition:transform .12s ease, box-shadow .15s, border-color .15s;
 }
-.login-card:active{transform:scale(0.98);}
-.login-card-title{font-size:15.5px;font-weight:600;display:flex;align-items:center;gap:9px;}
-.login-card-sub{font-size:12px;color:var(--ink3);margin-top:5px;padding-left:27px;line-height:1.45;}
-/* 主導線: 「今すぐはじめる」を緑で強調 */
-.login-card-primary{
+/* 左端に細い緑のアクセントライン (ベタ塗りをやめて抜け感を出す) */
+.login-card::before{
+  content:"";
+  position:absolute;
+  left:0; top:0; bottom:0;
+  width:3px;
   background:var(--g);
+  opacity:.9;
+}
+/* 右端に控えめな矢印 */
+.login-card::after{
+  content:"";
+  position:absolute;
+  right:16px; top:50%;
+  width:7px; height:7px;
+  border-right:2px solid var(--ink3);
+  border-top:2px solid var(--ink3);
+  transform:translateY(-50%) rotate(45deg);
+  opacity:.45;
+}
+.login-card:active{transform:scale(0.985);box-shadow:0 1px 1px rgba(0,0,0,.03);}
+.login-card-title{font-size:15.5px;font-weight:600;display:flex;align-items:center;gap:9px;color:var(--ink);}
+.login-card-title svg{color:var(--g);}
+.login-card-sub{font-size:12px;color:var(--ink3);margin-top:4px;padding-left:27px;line-height:1.45;}
+/* 主導線: アクセントを少しだけ強める (太い左ライン＋淡い緑の地) */
+.login-card-primary{
+  background:linear-gradient(0deg, var(--gl) 0%, var(--surface) 70%);
   border-color:var(--g);
-  color:#fff;
 }
-.login-card-primary .login-card-sub{color:rgba(255,255,255,.85);}
-.login-card-primary:active{background:var(--gd);}
-/* 副導線: 登録者向け (淡い緑のセカンダリ) */
+.login-card-primary::before{width:4px;opacity:1;}
+.login-card-primary .login-card-title{color:var(--gd);}
+/* 副導線: 標準の白カードのまま (アイコンだけ緑) */
 .login-card-juken{
-  background:var(--gl);
-  border-color:transparent;
-  color:var(--gd);
+  background:var(--surface);
 }
-.login-card-juken .login-card-sub{color:var(--gd);opacity:.72;}
 .login-pwa{
   font-size:11px;
   color:var(--ink3);
