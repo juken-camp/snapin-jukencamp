@@ -6239,6 +6239,7 @@ async function refreshMe(force){
     state.auth.teamId=s.teamId||null;
     state.auth.isGroupAdmin=s.isGroupAdmin===true;
     save();
+    setupNavs(); // 認証状態が更新された可能性があるので共有タブのロック表示も更新
     // 共有タブを開いている時は反映のため再描画
     if(document.getElementById('screen-library')?.classList.contains('active')){
       renderLibrary();
@@ -14456,6 +14457,7 @@ if('serviceWorker' in navigator){
 }
 
 if(load() && state.user){
+  setupNavs(); // load() で復元した認証状態を反映 (塾生なら共有タブのロックを解除)
   state.navStack=['screen-home'];
   goto('screen-home',false);
   // 起動時に塾生情報を最新化 (force=true、スロットリング無視)
