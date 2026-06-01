@@ -5597,11 +5597,11 @@ function canUseAI(){
 
 // 有料プランの表示名。文言を揃えるため一元管理する。
 // 「有料版」「AIプラン」等に変えたいときは、この値と、共有ライブラリ紹介ページの
-// 2か所 (lib-feat-label / sub の "Proプラン") を差し替えればアプリ全体で統一される。
-const PLAN_NAME='Proプラン';
+// 2か所 (lib-feat-label / sub の "グループ向け機能") を差し替えればアプリ全体で統一される。
+const PLAN_NAME='グループ向け機能';
 
 // AIが使えないときに出す案内文を、相手に応じて出し分ける。
-//   - 未ログイン (無料・匿名)        → Proプランの案内 (登録/相談へ誘導)
+//   - 未ログイン (無料・匿名)        → グループ向け機能の案内 (登録/相談へ誘導)
 //   - ログイン済みだがAIオフ (塾生等) → 本人ではなく塾・管理者に有効化を依頼する案内
 //     (塾生本人は課金者ではないので「有料版でご利用に」は出さない)
 // short=true でトースト用の一行、false でAIチャット内に表示する詳しめの文を返す。
@@ -5609,8 +5609,8 @@ function aiGateText(short){
   const loggedIn = !!(state.auth && state.auth.token);
   if(!loggedIn){
     return short
-      ? 'AI機能は'+PLAN_NAME+'でご利用になれます'
-      : '[AI機能は'+PLAN_NAME+'でご利用になれます。\nログイン画面の「AI機能と共有ライブラリを使う」から登録してください。導入のご相談は共有ライブラリの「使ってみたい・相談する」からどうぞ。]';
+      ? 'AIは'+PLAN_NAME+'でご利用になれます'
+      : '[AIは'+PLAN_NAME+'でご利用になれます。\nログイン画面の「AI機能と共有ライブラリを使う」から登録してください。導入のご相談は共有ライブラリの「使ってみたい・相談する」からどうぞ。]';
   }
   return short
     ? 'このアカウントではAIがまだオフです。塾・管理者にご相談ください'
@@ -12593,7 +12593,7 @@ function renderLibrary(){
           <div>複数ページを連続撮影、動画もそのままメモ化</div>
           <div>書き出して保存、機種変のときもデータが安心</div>
         </div>
-        <div class="lib-feat-label">Proプラン（個人・塾・会社・家族・グループ向け）</div>
+        <div class="lib-feat-label">JUKEN CAMPが使っているグループ向け機能</div>
         <div class="benefits numbered">
           <div>メンバーへの情報共有に便利な共有ライブラリ</div>
           <div>メモ・写真・課題を即分析、AIがやさしく対応</div>
@@ -12603,7 +12603,7 @@ function renderLibrary(){
           <div>受け取った資料は、自分のメモにコピーしAIに質問</div>
           <div>メモも写真も自動でクラウド保存、機種変も安心</div>
         </div>
-        <div class="sub">Proプランは、個人・塾・会社などでご利用になれます。</div>
+        <div class="sub">グループ向け機能は、個人・塾・会社などでご利用になれます。</div>
         <div class="btn-row">
           <button class="go-contact" data-action="contact-inquiry">使ってみたい・相談する</button>
         </div>
