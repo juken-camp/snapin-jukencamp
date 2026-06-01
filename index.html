@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#FAFAF7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SnapIn">
-<link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"SnapIn","short_name":"SnapIn","start_url":"./","display":"standalone","background_color":"%23FAFAF7","theme_color":"%231D9E75","orientation":"portrait","icons":[{"src":"data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22%3E%3Crect width=%22512%22 height=%22512%22 rx=%22112%22 fill=%22%231D9E75%22/%3E%3Ctext x=%22256%22 y=%22360%22 font-family=%22Georgia,serif%22 font-size=%22300%22 font-weight=%22600%22 font-style=%22italic%22 fill=%22white%22 text-anchor=%22middle%22%3ES%3C/text%3E%3C/svg%3E","sizes":"512x512","type":"image/svg+xml"}]}'>
+<link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"SnapIn","short_name":"SnapIn","start_url":"./","display":"standalone","background_color":"%23FAFAF7","theme_color":"%231D9E75","orientation":"portrait","share_target":{"action":"./","method":"GET","params":{"title":"title","text":"text","url":"url"}},"icons":[{"src":"data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22%3E%3Crect width=%22512%22 height=%22512%22 rx=%22112%22 fill=%22%231D9E75%22/%3E%3Ctext x=%22256%22 y=%22360%22 font-family=%22Georgia,serif%22 font-size=%22300%22 font-weight=%22600%22 font-style=%22italic%22 fill=%22white%22 text-anchor=%22middle%22%3ES%3C/text%3E%3C/svg%3E","sizes":"512x512","type":"image/svg+xml"}]}'>
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
@@ -1621,6 +1621,24 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-bottom-left-radius:5px;
   box-shadow:0 1px 2px rgba(0,0,0,.06);
 }
+/* AI失敗バブル: ほんのり注意色＋再送ボタン */
+.bubble-aierror{
+  background:#FFF4EC !important;
+  color:var(--ink) !important;
+}
+.ai-retry-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  margin-top:8px;
+  padding:6px 11px;
+  font-size:12.5px;font-weight:600;
+  color:var(--g);
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:14px;
+  -webkit-user-select:none;user-select:none;
+}
+.ai-retry-btn:active{background:var(--bg);}
+.ai-retry-btn svg{flex-shrink:0;}
 /* AI返信のマルチバブル: 1つのAI返信を意味のある単位で複数バブルに分けて表示する。
    1バブル時は従来構造のまま、2バブル以上のときだけ .multi が付き、
    バブルを縦に積んで時刻は末尾バブルの右下に1個だけ出す。 */
@@ -2679,8 +2697,23 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  padding:0 30px;
+  padding:32px 26px;
   background:var(--surface);
+  overflow-y:auto;
+}
+.login-hero{
+  width:100%;
+  max-width:360px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+.login-cards{
+  width:100%;
+  max-width:360px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
 }
 .login-logo{
   font-family:-apple-system,"Helvetica Neue",sans-serif;
@@ -2705,51 +2738,60 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink3);
   letter-spacing:0.1em;
   text-align:center;
-  margin-bottom:28px;
+  margin-bottom:30px;
+}
+.login-punch{
+  font-size:21px;
+  font-weight:700;
+  color:var(--ink);
+  text-align:center;
+  letter-spacing:.02em;
+  margin-bottom:10px;
 }
 .login-tag{
   font-size:13px;
   color:var(--ink2);
   text-align:center;
-  margin-bottom:50px;
-  line-height:1.6;
-}
-.login-punch{
-  font-size:20px;
-  font-weight:700;
-  color:var(--ink);
-  text-align:center;
-  letter-spacing:.02em;
-  margin-bottom:8px;
+  margin-bottom:44px;
+  line-height:1.65;
 }
 .login-card{
   width:100%;
-  padding:16px 18px;
+  padding:17px 18px;
   background:var(--bg);
-  border-radius:14px;
-  margin-bottom:12px;
+  border-radius:15px;
   text-align:left;
-  border:1px solid transparent;
-  min-height:76px;
+  border:1px solid var(--line);
+  min-height:74px;
   box-sizing:border-box;
   display:flex;
   flex-direction:column;
   justify-content:center;
+  transition:transform .12s ease, background .15s;
 }
-.login-card:active{background:var(--gl);border-color:var(--g);}
-.login-card-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;}
-.login-card-sub{font-size:12px;color:var(--ink3);margin-top:4px;padding-left:26px;line-height:1.4;}
-.login-card-juken .login-card-sub{color:var(--gd);opacity:.72;}
+.login-card:active{transform:scale(0.98);}
+.login-card-title{font-size:15.5px;font-weight:600;display:flex;align-items:center;gap:9px;}
+.login-card-sub{font-size:12px;color:var(--ink3);margin-top:5px;padding-left:27px;line-height:1.45;}
+/* 主導線: 「今すぐはじめる」を緑で強調 */
+.login-card-primary{
+  background:var(--g);
+  border-color:var(--g);
+  color:#fff;
+}
+.login-card-primary .login-card-sub{color:rgba(255,255,255,.85);}
+.login-card-primary:active{background:var(--gd);}
+/* 副導線: 登録者向け (淡い緑のセカンダリ) */
 .login-card-juken{
   background:var(--gl);
+  border-color:transparent;
   color:var(--gd);
 }
-.login-card-juken:active{background:var(--gl);opacity:.85;}
+.login-card-juken .login-card-sub{color:var(--gd);opacity:.72;}
 .login-pwa{
   font-size:11px;
   color:var(--ink3);
   text-align:center;
-  margin-top:28px;
+  margin-top:36px;
   letter-spacing:0.01em;
   line-height:1.8;
 }
@@ -4131,31 +4173,28 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 <!-- LOGIN -->
 <div class="screen active" id="screen-login">
   <div class="login-wrap">
-    <div class="login-logo">Snap<em>In</em></div>
-    <div class="login-by">by JUKEN CAMP</div>
-    <div class="login-punch">ぜんぶ、ここに残す。</div>
-    <div class="login-tag">見たもの・思いついたこと・やること。<br>覚えておかなくていい、自分だけのメモ。</div>
-    <button class="login-card" data-action="login-personal">
-      <div class="login-card-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-        今すぐはじめる
-      </div>
-      <div class="login-card-sub">無料・登録不要、メアドもパスワードも不要</div>
-    </button>
-    <button class="login-card login-card-juken" data-action="goto-claim">
-      <div class="login-card-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        AI機能と共有ライブラリを使う
-      </div>
-      <div class="login-card-sub">登録された方。名前と誕生日でログイン</div>
-    </button>
-    <button class="login-card" data-action="goto-join">
-      <div class="login-card-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        グループコードで入る
-      </div>
-      <div class="login-card-sub">会社・家族・グループで。配られたコードで参加</div>
-    </button>
+    <div class="login-hero">
+      <div class="login-logo">Snap<em>In</em></div>
+      <div class="login-by">by JUKEN CAMP</div>
+      <div class="login-punch">ぜんぶ、ここに残す。</div>
+      <div class="login-tag">見たもの・思いついたこと・やること。<br>覚えておかなくていい、自分だけのメモ。</div>
+    </div>
+    <div class="login-cards">
+      <button class="login-card login-card-primary" data-action="login-personal">
+        <div class="login-card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          今すぐはじめる
+        </div>
+        <div class="login-card-sub">無料・登録不要、メアドもパスワードも不要</div>
+      </button>
+      <button class="login-card login-card-juken" data-action="goto-claim">
+        <div class="login-card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          AI機能と共有ライブラリを使う
+        </div>
+        <div class="login-card-sub">登録された方。名前と誕生日でログイン</div>
+      </button>
+    </div>
     <div class="login-pwa">ブラウザだと使いにくいので、<br>「ホーム画面に追加」してアプリとして使ってください</div>
   </div>
 </div>
@@ -4166,7 +4205,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     <button class="bhdr-back" data-action="back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
-    <div class="bhdr-title">アカウントで入る</div>
+    <div class="bhdr-title">AI機能と共有ライブラリを使う</div>
   </div>
   <div class="claim-wrap">
     <div class="claim-intro">
@@ -4537,6 +4576,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <button class="menu-item" data-action="share-card">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
         リンクで共有
+      </button>
+      <button class="menu-item" data-action="refetch-link" id="menu-refetch-btn" style="display:none;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        情報を取り直す
       </button>
       <button class="menu-item" data-action="toggle-pin" id="menu-pin-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
@@ -6316,8 +6359,14 @@ async function doClaimSubmit(force){
         forceBtn.className='claim-submit';
         forceBtn.style.cssText='margin-top:10px;background:var(--ink2);';
         forceBtn.textContent='この端末で使う';
-        forceBtn.addEventListener('click',()=>{
-          if(!confirm('別の端末からこのアカウントを引き継ぎますか?(元の端末からは使えなくなります)'))return;
+        forceBtn.addEventListener('click',async()=>{
+          const ok=await confirmModal({
+            icon:'warning',danger:true,
+            title:'この端末で使う',
+            msg:'別の端末からこのアカウントを引き継ぎますか？<br>元の端末からは使えなくなります。',
+            okText:'引き継ぐ',cancelText:'やめる'
+          });
+          if(!ok)return;
           forceBtn.remove();
           doClaimSubmit(true);
         });
@@ -6437,8 +6486,14 @@ async function doJoinSubmit(force){
         forceBtn.className='claim-submit';
         forceBtn.style.cssText='margin-top:10px;background:var(--ink2);';
         forceBtn.textContent='この端末で使う';
-        forceBtn.addEventListener('click',()=>{
-          if(!confirm('別の端末からこのアカウントを引き継ぎますか?(元の端末からは使えなくなります)'))return;
+        forceBtn.addEventListener('click',async()=>{
+          const ok=await confirmModal({
+            icon:'warning',danger:true,
+            title:'この端末で使う',
+            msg:'別の端末からこのアカウントを引き継ぎますか？<br>元の端末からは使えなくなります。',
+            okText:'引き継ぐ',cancelText:'やめる'
+          });
+          if(!ok)return;
           forceBtn.remove();
           doJoinSubmit(true);
         });
@@ -6532,6 +6587,7 @@ function confirmModal(opts){
     $('ask-msg').innerHTML=o.msg||'';
     $('ask-ok').textContent=o.okText||'OK';
     $('ask-cancel').textContent=o.cancelText||'やめる';
+    $('ask-cancel').style.display='';
     $('ask-ok').classList.toggle('danger',!!o.danger);
     $('ask-modal').classList.add('on');
     $('ask-modal').setAttribute('aria-hidden','false');
@@ -6542,6 +6598,24 @@ function closeAskModal(result){
   $('ask-modal').setAttribute('aria-hidden','true');
   const r=_askResolve; _askResolve=null;
   if(r)r(result);
+}
+
+// alert() の置き換え。OKボタン1つだけの通知モーダル。await で閉じるまで待てる。
+function alertModal(opts){
+  const o=(typeof opts==='string')?{msg:opts}:(opts||{});
+  return new Promise(resolve=>{
+    _askResolve=resolve;
+    $('ask-badge').innerHTML=modalIconSvg(o.icon||'warning');
+    $('ask-badge').classList.toggle('danger',!!o.danger);
+    $('ask-title').textContent=o.title||'';
+    $('ask-msg').innerHTML=o.msg||'';
+    $('ask-ok').textContent=o.okText||'OK';
+    $('ask-ok').classList.toggle('danger',!!o.danger);
+    // キャンセルボタンを隠して単一ボタンにする
+    $('ask-cancel').style.display='none';
+    $('ask-modal').classList.add('on');
+    $('ask-modal').setAttribute('aria-hidden','false');
+  });
 }
 
 // ═══ 共有リンク (投稿を10分だけ有効なリンクで他の人に渡す) ═══
@@ -6813,6 +6887,69 @@ async function checkIncomingShare(){
   // URL からパラメータを消す (リロードや再共有で再発火しないように)
   try{ history.replaceState({}, '', location.pathname); }catch(e){}
   loadAndShowShare(token);
+}
+
+// 他アプリの共有から開かれたときの取り込み。
+// iOS の「ショートカット」や Android の共有で、SnapIn を次の形のURLで開く想定:
+//   ?add=<URLまたはテキスト>   (汎用)
+//   ?url=<URL> / ?text=<テキスト> / ?title=<タイトル>  (Web Share Target 互換)
+// URLらしき内容ならリンクメモ作成フロー(og-fetch)へ、それ以外はメモ下書きを開く。
+function looksLikeUrl(s){
+  if(!s)return false;
+  const t=s.trim();
+  if(/\s/.test(t))return false; // 空白を含む = 文章とみなす
+  return /^(https?:\/\/)[^\s]+\.[^\s]+/i.test(t) || /^[\w-]+(\.[\w-]+)+(\/[^\s]*)?$/i.test(t);
+}
+async function checkSharedIntake(){
+  let params;
+  try{ params=new URLSearchParams(location.search); }catch(e){ return; }
+  const add=(params.get('add')||'').trim();
+  const url=(params.get('url')||'').trim();
+  const text=(params.get('text')||'').trim();
+  const title=(params.get('title')||'').trim();
+  if(!add && !url && !text && !title)return;
+  // 再発火防止のため、URLからパラメータを消す
+  try{ history.replaceState({}, '', location.pathname); }catch(e){}
+
+  // 未ログインなら個人モードで始める (共有取り込みと同じ扱い)
+  if(!state.user){
+    state.user={mode:'personal',name:'あなた',handle:'private'};
+    state.onboarded=true;
+    save();
+  }
+
+  // URLを最優先で判定 (url パラメータ → add がURLらしい → text内がURLらしい)
+  let theUrl='';
+  if(url && looksLikeUrl(url))theUrl=url;
+  else if(add && looksLikeUrl(add))theUrl=add;
+  else if(text && looksLikeUrl(text))theUrl=text;
+
+  if(theUrl){
+    // 既存の「URLから作成」フローを再利用 (og-fetch → 保存画面)
+    const inp=$('url-input');
+    if(inp){
+      inp.value=theUrl;
+      if(typeof fetchUrlAndCreate==='function'){
+        await fetchUrlAndCreate();
+      }
+    }
+    return;
+  }
+
+  // テキスト共有: メモの下書きを作って編集画面を開く
+  const bodyText=[title,(add||text)].filter(Boolean).join('\n').trim();
+  if(bodyText){
+    state.current={
+      id:'c_'+Date.now(),
+      type:'note',
+      date:todayStr(),
+      _new:true,
+      text:bodyText,
+    };
+    renderUpload();
+    goto('screen-upload');
+    toast('共有から取り込みました');
+  }
 }
 function showShareRecvError(){
   _incomingShare=null;
@@ -7115,7 +7252,13 @@ async function cloudRestore(){
     toast('クラウドにバックアップがありません');
     return;
   }
-  if(!confirm('クラウドのバックアップでこの端末のメモを置き換えますか?この端末の今のメモは上書きされ、クラウドに保存された内容(写真を含む)で置き換わります。'))return;
+  const okRestore=await confirmModal({
+    icon:'warning',danger:true,
+    title:'クラウドから復元',
+    msg:'この端末の今のメモは上書きされ、クラウドに保存された内容（写真を含む）で置き換わります。よろしいですか？',
+    okText:'置き換える',cancelText:'やめる'
+  });
+  if(!okRestore)return;
   // 端末固有の情報は保持しつつ、メモ系を反映する
   const keepAuth=state.auth, keepDev=state.deviceId;
   applyPayload(data.backup.payload);
@@ -7365,7 +7508,7 @@ async function exportBackup(){
     toast(`バックアップを書き出しました (${personalCards.length}件 / ${mb}MB)`);
   }catch(e){
     console.error('export failed:',e);
-    alert('バックアップの書き出しに失敗しました。 '+(e.message||e));
+    alertModal({title:'書き出しに失敗しました',msg:'バックアップの書き出しに失敗しました。<br>'+esc(e.message||String(e))});
   }
 }
 
@@ -7385,17 +7528,17 @@ async function handleRestoreFile(e){
     let payload;
     try{payload=JSON.parse(text);}
     catch(parseErr){
-      alert('このファイルは SnapIn のバックアップとして読み込めませんでした。(JSON として解釈できません)');
+      await alertModal({title:'読み込めませんでした',msg:'このファイルは SnapIn のバックアップとして読み込めませんでした。（JSON として解釈できません）'});
       return;
     }
     if(!payload || payload.app!=='SnapIn' || !Array.isArray(payload.cards)){
-      alert('このファイルは SnapIn のバックアップではないようです。');
+      await alertModal({title:'読み込めませんでした',msg:'このファイルは SnapIn のバックアップではないようです。'});
       return;
     }
 
     const incoming=payload.cards.filter(c=>c && c.id);
     if(incoming.length===0){
-      alert('バックアップにメモが含まれていませんでした。');
+      await alertModal({title:'メモがありません',msg:'バックアップにメモが含まれていませんでした。'});
       return;
     }
 
@@ -7406,32 +7549,32 @@ async function handleRestoreFile(e){
     const exportedAt=payload.exportedAt?new Date(payload.exportedAt).toLocaleString('ja-JP'):'(日時不明)';
     let mode='merge';
     if(existingPersonal.length>0){
-      // 既存メモあり: マージ(OK) か キャンセル
-      const ok=confirm(
-        'バックアップから復元します。\n\n'+
-        `書き出し日時: ${exportedAt}\n`+
-        `バックアップ内のメモ: ${incoming.length}件\n`+
-        `現在の個人メモ: ${existingPersonal.length}件\n\n`+
-        '【追加して復元】します。同じIDのメモは現在の内容を優先します。\n'+
-        '(端末の現在のメモは消えません)'
-      );
+      // 既存メモあり: まず「追加で復元」してよいか確認
+      const ok=await confirmModal({
+        icon:'warning',
+        title:'バックアップから復元',
+        msg:`書き出し日時: ${esc(exportedAt)}<br>`+
+            `バックアップ内のメモ: ${incoming.length}件<br>`+
+            `現在の個人メモ: ${existingPersonal.length}件<br><br>`+
+            'バックアップのメモを<b>追加して復元</b>します（同じメモは現在の内容を優先）。今あるメモは消えません。',
+        okText:'追加して復元',cancelText:'やめる'
+      });
       if(!ok)return;
-      // 追加で「全部このバックアップで置き換える?」を聞く (任意の上書きモード)
-      const replaceAll=confirm(
-        '※特別な操作: 現在の個人メモをすべて削除して、\n'+
-        'バックアップの内容だけにしますか?\n\n'+
-        '[OK]    → 全置換 (現在のメモは消えます)\n'+
-        '[キャンセル] → 追加で復元 (推奨)'
-      );
+      // さらに「全置換」するか任意で確認
+      const replaceAll=await confirmModal({
+        icon:'warning',danger:true,
+        title:'全置き換えにしますか？',
+        msg:'特別な操作です。<br>現在の個人メモを<b>すべて削除</b>して、バックアップの内容だけにします。<br><br>通常は「追加で復元」のままで大丈夫です。',
+        okText:'全置き換え',cancelText:'追加で復元（推奨）'
+      });
       mode=replaceAll?'replace':'merge';
     }else{
       // 既存メモなし: 確認だけ
-      const ok=confirm(
-        'バックアップから復元します。\n\n'+
-        `書き出し日時: ${exportedAt}\n`+
-        `メモ: ${incoming.length}件\n\n`+
-        '復元してよろしいですか?'
-      );
+      const ok=await confirmModal({
+        title:'バックアップから復元',
+        msg:`書き出し日時: ${esc(exportedAt)}<br>メモ: ${incoming.length}件<br><br>復元してよろしいですか？`,
+        okText:'復元する',cancelText:'やめる'
+      });
       if(!ok)return;
     }
 
@@ -7507,11 +7650,11 @@ async function handleRestoreFile(e){
     // localStorage に保存。容量オーバー時は失敗を伝える。
     const saved=save();
     if(!saved){
-      alert(
-        '復元データの保存に失敗しました (端末の容量不足の可能性)。\n\n'+
-        '画面上には復元されていますが、アプリを閉じると一部が失われるかもしれません。\n'+
-        '不要な写真メモを削除してから、もう一度お試しください。'
-      );
+      await alertModal({
+        icon:'warning',danger:true,
+        title:'保存に失敗しました',
+        msg:'端末の容量が不足している可能性があります。<br>画面上には復元されていますが、アプリを閉じると一部が失われるかもしれません。<br><br>不要な写真メモを削除してから、もう一度お試しください。'
+      });
     }
 
     // 再描画
@@ -7526,7 +7669,7 @@ async function handleRestoreFile(e){
 
   }catch(err){
     console.error('restore failed:',err);
-    alert('復元中にエラーが発生しました。 '+(err.message||err));
+    alertModal({title:'復元できませんでした',msg:'復元中にエラーが発生しました。<br>'+esc(err.message||String(err))});
   }
 }
 
@@ -10516,6 +10659,18 @@ function renderChatLog(c){
         <div class="msg-time">${chatTimeLabel(t)}</div>
         <div class="bubble"><div class="typing-dots" aria-label="返信を考えています"><span></span><span></span><span></span></div></div>
       `;
+    }else if(m.aiError){
+      // AI 失敗バブル: 案内文 + 「再送」ボタン (黙って偽回答は出さない)
+      div.innerHTML=`
+        <div class="msg-time">${chatTimeLabel(t)}</div>
+        <div class="bubble bubble-aierror">
+          ${linkify(m.text||'')}
+          <button class="ai-retry-btn" data-action="ai-retry" data-retry-idx="${idx}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            もう一度送る
+          </button>
+        </div>
+      `;
     }else if(isUser){
       // ユーザー側 (user/memo) は分割せず1バブル。リプライ引用があれば本文の上に出す。
       const textHtml=m.text?linkify(cleanAIText(m.text,m.role)):'';
@@ -10552,7 +10707,7 @@ function renderChatLog(c){
     // pending 中のメッセージにはメニューを出さない。
     // それ以外 (ユーザー / AI 両方) は長押しでアクションメニューを出す。
     // 各バブル単位で付ける (マルチバブルでも対象を確実に特定できるように)。
-    if(!m.pending){
+    if(!m.pending && !m.aiError){
       div.querySelectorAll('.bubble').forEach(bub=>attachBubbleLongPress(div,c.id,idx,bub));
     }
   });
@@ -11303,6 +11458,10 @@ function openDetail(c,origin){
   const archBtn=$('menu-archive-btn');
   if(archBtn)archBtn.style.display=isOfficial?'none':'';
 
+  // 「情報を取り直す」はリンクメモのときだけ (共有メモ・リンク中の本文は対象外)
+  const refetchBtn=$('menu-refetch-btn');
+  if(refetchBtn)refetchBtn.style.display=(!isOfficial && c.type==='link' && c.link && (c.link.url||c.link.originalUrl) && !isLinkedCard(c))?'':'none';
+
   // 共有カードでは入力バー非表示
   $('detail-input-bar').style.display=isOfficial?'none':'';
 
@@ -11630,11 +11789,21 @@ async function detailSend(){
       const cIdx3=state.cards.findIndex(x=>x.id===state.current.id);
       if(cIdx3>=0){
         const c3=state.cards[cIdx3];
+        // 失敗の種類でメッセージを出し分け、再送できるようにする (黙って偽回答は出さない)。
+        const offline=(typeof navigator!=='undefined' && navigator.onLine===false) || e.offline;
+        const failMsg=offline
+          ? 'いま通信が切れているようです。電波のいい場所で、もう一度お試しください。'
+          : '今つながりにくいようです。少し待って、もう一度お試しください。';
         if(c3.chat && c3.chat[placeholderIdx]){
-          c3.chat[placeholderIdx]={role:'ai',text:'エラー: '+e.message,t:Date.now()};
+          // 再送に必要な情報をバブルに保持しておく
+          c3.chat[placeholderIdx]={
+            role:'ai',text:failMsg,t:Date.now(),aiError:true,
+            retry:{ q:v, img:(sendImg?{id:sendImg.id,dataUrl:sendImg.dataUrl}:null), reply:replyRef||null }
+          };
         }
         save();
         renderChatLog(c3);
+        $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
       }
     }
   }else{
@@ -11649,6 +11818,47 @@ async function detailSend(){
     clearReplyTo();
     renderChatLog(c);
     $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
+  }
+}
+
+// AI 返信が失敗したバブルの「もう一度送る」。失敗バブルをプレースホルダーに戻して再送する。
+async function retryAiMessage(idx){
+  if(isNaN(idx))return;
+  const cIdx=state.cards.findIndex(x=>x.id===state.current.id);
+  if(cIdx<0)return;
+  const c=state.cards[cIdx];
+  if(!c.chat || !c.chat[idx] || !c.chat[idx].aiError)return;
+  const r=c.chat[idx].retry||{};
+  // 失敗バブルを「…」プレースホルダーに置き換える
+  c.chat[idx]={role:'ai',text:'…',t:Date.now(),pending:true};
+  save();
+  renderChatLog(c);
+  $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
+
+  const aiContext=isLinkedCard(c)?resolveLiveCard(c):c;
+  const history=buildAiHistory(c.chat, idx);
+  const attachImages=(r.img&&r.img.dataUrl)?[r.img.dataUrl]:null;
+  try{
+    const answer=await callAI(r.q||'', aiContext, history, r.reply||null, attachImages);
+    const c2=state.cards[state.cards.findIndex(x=>x.id===state.current.id)];
+    if(c2 && c2.chat && c2.chat[idx]){
+      c2.chat[idx]={role:'ai',text:answer,t:Date.now()};
+      save();
+      await animateNewAiReply(c2,idx);
+    }
+    $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
+  }catch(e){
+    const c3=state.cards[state.cards.findIndex(x=>x.id===state.current.id)];
+    if(c3 && c3.chat && c3.chat[idx]){
+      const offline=(typeof navigator!=='undefined' && navigator.onLine===false) || e.offline;
+      const failMsg=offline
+        ? 'いま通信が切れているようです。電波のいい場所で、もう一度お試しください。'
+        : '今つながりにくいようです。少し待って、もう一度お試しください。';
+      c3.chat[idx]={role:'ai',text:failMsg,t:Date.now(),aiError:true,retry:r};
+      save();
+      renderChatLog(c3);
+      $('detail-scroll').scrollTop=$('detail-scroll').scrollHeight;
+    }
   }
 }
 
@@ -11820,21 +12030,23 @@ async function callAI(userMessage,cardContext,history,replyRef,attachImages){
     }
     if(!res.ok)throw new Error('API error: '+res.status);
     const data=await res.json();
-    return data.content || data.text || data.message || demoAI(userMessage,cardContext);
+    const answer=data.content || data.text || data.message;
+    if(!answer){
+      // サーバーは応答したが中身が空: 異常として扱う (黙ってデモ応答にしない)
+      const err=new Error('empty response');
+      err.aiFail=true;
+      throw err;
+    }
+    return answer;
   }catch(e){
-    // フォールバック (オフライン or 未デプロイ時)
-    return demoAI(userMessage,cardContext);
+    // 通信失敗・サーバーエラー・未デプロイなど。
+    // 黙ってそれっぽい偽回答(デモ)を返すと利用者が誤解するため、失敗として投げ直す。
+    // 呼び出し側(detailSend)が「再送」ボタン付きの案内を表示する。
+    if(typeof navigator!=='undefined' && navigator.onLine===false){
+      const err=new Error('offline'); err.aiFail=true; err.offline=true; throw err;
+    }
+    const err=new Error(e&&e.message?e.message:'ai_failed'); err.aiFail=true; throw err;
   }
-}
-
-function demoAI(q,ref){
-  let prefix='';
-  if(ref){
-    if(ref.type==='note')prefix='メモを見ました。';
-    else if(ref.image)prefix='写真を見ました。';
-    else if(ref.type==='list')prefix='リストを見ました。';
-  }
-  return prefix+'「'+q+'」についてですね。\n\n(現在はオフラインのデモ応答です。本番環境では Anthropic API に接続して、保存したメモを文脈にした回答を返します。)';
 }
 
 function editCard(){
@@ -11847,6 +12059,55 @@ function editCard(){
   state.current=c;
   renderUpload();
   goto('screen-upload');
+}
+
+// リンクメモの OGP 情報を取り直して、保存済みカードを更新する。
+// 「無題のリンク」やサムネ欠けを、あとから綺麗にできる。
+async function refetchLink(){
+  $('detail-menu').classList.remove('on');
+  const cur=state.current;
+  if(!cur || cur.type!=='link' || !cur.link){toast('リンクメモではありません');return;}
+  const url=cur.link.originalUrl||cur.link.url;
+  if(!url){toast('URLがありません');return;}
+  toast('取り直しています…');
+  try{
+    const res=await fetch('/api/og-fetch',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url}),
+    });
+    const data=await res.json();
+    if(!data || !data.ok)throw new Error(data&&data.error?data.error:'取得に失敗');
+    const finalUrl=data.finalUrl||data.url||url;
+    let img=data.image||null;
+    if(!img){
+      const ytId=youtubeVideoId(finalUrl)||youtubeVideoId(url);
+      if(ytId)img=youtubeThumb(ytId);
+    }
+    // 取得できた項目だけ上書き (空で返ってきたら既存値を残す)
+    const newLink={
+      url:finalUrl,
+      originalUrl:url,
+      title:data.title||cur.link.title||'',
+      description:data.description||cur.link.description||'',
+      image:img||cur.link.image||null,
+      host:data.host||cur.link.host||'',
+      siteName:data.siteName||data.host||cur.link.siteName||'',
+      kind:data.kind||cur.link.kind||'',
+    };
+    const idx=state.cards.findIndex(x=>x.id===cur.id);
+    if(idx>=0){
+      state.cards[idx].link=newLink;
+      save();
+      state.current=state.cards[idx];
+      openDetail(state.current,state.current._origin||'mine');
+    }
+    toast('情報を取り直しました');
+  }catch(e){
+    console.warn('refetchLink failed:',e);
+    const offline=(typeof navigator!=='undefined' && navigator.onLine===false);
+    toast(offline?'通信が切れているようです':'取り直せませんでした。少し待って再度お試しください');
+  }
 }
 
 function deleteCard(){
@@ -13817,6 +14078,8 @@ document.addEventListener('click',e=>{
     case 'toggle-sub':if(state.currentOfficial)toggleSubById(state.currentOfficial.id);break;
     case 'toggle-ai-mode':toggleAiMode();break;
     case 'detail-send':detailSend();break;
+    case 'ai-retry':retryAiMessage(parseInt(t.dataset.retryIdx,10));break;
+    case 'refetch-link':refetchLink();break;
     case 'quick-photo':quickPhoto();break;
     case 'quick-save':quickSave();break;
     case 'ocr-rerun':ocrRerun();break;
@@ -14193,6 +14456,9 @@ if(load() && state.user){
 
 // 共有リンク (?s=トークン) で開かれていたら、受け取り画面を出す (ログイン状態に関わらず)
 checkIncomingShare();
+
+// 他アプリの共有 (?add= / ?url= / ?text=) で開かれていたら取り込む (iOSショートカット等)
+checkSharedIntake();
 
 // アプリを閉じる/バックグラウンドに回した瞬間に、未送信の変更があればクラウドへ送る
 document.addEventListener('visibilitychange',()=>{
