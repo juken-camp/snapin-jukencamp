@@ -9421,13 +9421,13 @@ function renderUpload(){
     // → 3画面で「枠に対するテキスト比率」が完全に一致する。
     const wrap=document.createElement('div');
     wrap.id='up-note-wrap';
-    // wrap は「画面に見える正方形」。
-    wrap.style.cssText='width:100%;aspect-ratio:1;border-radius:12px;position:relative;cursor:text;box-sizing:border-box;overflow:hidden;';
+    // wrap は短文では正方形に見せ、長文では縦に伸びて全文を編集できる (はみ出しを切らない)。
+    wrap.style.cssText='width:100%;border-radius:12px;position:relative;cursor:text;box-sizing:border-box;display:flex;flex-direction:column;';
 
-    // inner は wrap いっぱい (100% × 100%)。fontSize/padding は applyStyle が後から動的に設定。
+    // inner は通常フロー。短文時の正方形は wrap の min-height で表現し、長文では伸びる。
     const inner=document.createElement('div');
     inner.id='up-note-inner';
-    inner.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;';
+    inner.style.cssText='width:100%;box-sizing:border-box;display:flex;flex-direction:column;';
 
     const editor=document.createElement('div');
     editor.id='up-note-area';
@@ -9491,6 +9491,8 @@ function renderUpload(){
       inner.style.lineHeight=lh;
       inner.style.padding=(wrapW*0.055)+'px';
       inner.style.transform='';
+      // 短文は正方形に見せ、長文は内容に合わせて縦に伸びる (全文を編集可能)
+      wrap.style.minHeight=wrapW+'px';
 
       const align=resolveAlign({text:txt,alignH:c.alignH,alignV:c.alignV});
       inner.style.alignItems=align.h==='center'?'center':'flex-start';
