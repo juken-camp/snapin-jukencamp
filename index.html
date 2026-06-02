@@ -677,7 +677,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 /* メディア: 常に横幅いっぱい。高さは画像の比率まかせ (縦長ほど大きく表示)。
    contain で黒帯を出すのをやめ、幅100%・高さautoで余白なく敷き詰める。 */
 .feed-media{position:relative;width:100%;background:rgba(0,0,0,.04);}
-.feed-media img,.feed-media video{width:100%;height:auto;display:block;}
+.feed-media img,.feed-media video{
+  width:100%;height:auto;display:block;
+  /* グリッド画像と同様にGPUレイヤーへ。これがないとスクロールやPTRの戻り時に
+     ラスタライズがメインスレッドで走り、カクつき/固まりが出る (iOS Safari/PWA)。 */
+  transform:translateZ(0);
+  -webkit-transform:translateZ(0);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
 /* note は詳細画面と同じ「基準幅120pxでレイアウト→枠幅に比例拡大」方式で描画し、
    グリッド/詳細と改行位置・文字比率まで完全一致させる。
    色/揃え/最小高さ/フォントサイズ/padding は applyFeedNoteStyle がインラインで設定する。 */
@@ -8499,10 +8507,11 @@ const FEED_ICONS={
   link:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>'
 };
 const FEED_PIN_SVG='<svg class="feed-pin" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg>';
-// カード上部のヘッダー (種類アイコン + 種類名 + 相対日付 + ピン)
+// カード上部のヘッダー (種類アイコン + 相対日付 + ピン)。
+// 種類はアイコンで分かるので、テキストラベルは出さない。
 function feedHead(kindLabel,icon,dateStr,pinned){
-  return `<div class="feed-head">${icon}<span class="feed-kind">${kindLabel}</span>`+
-         `<span class="feed-sep">·</span><span class="feed-date">${fmtFeedDate(dateStr)}</span>`+
+  return `<div class="feed-head">${icon}`+
+         `<span class="feed-date">${fmtFeedDate(dateStr)}</span>`+
          `${pinned?FEED_PIN_SVG:''}</div>`;
 }
 // 本文(キャプション)＋タグを画像の下に置くブロック。
@@ -8536,7 +8545,7 @@ function renderFeed(el,cards){
     let inner='';
     if(c.type==='photo' || c.type==='photonote'){
       inner=feedHead('写真メモ',FEED_ICONS.photo,c.date,c0.pinned)
-          + `<div class="feed-media">${upd}<img src="${c.image||''}" alt="" decoding="async" loading="lazy"></div>`
+          + `<div class="feed-media">${upd}<img src="${c.image||''}" alt="" decoding="async" loading="eager"></div>`
           + feedBody(c.text,c.tags);
       if(!isNoColor(c.color)){item.style.borderColor=colorById(c.color).bd;}
     }else if(c.type==='video'){
@@ -8587,7 +8596,7 @@ function renderFeed(el,cards){
     }else if(c.type==='link'){
       const link=c.link||{};
       const media=link.image
-        ? `<div class="feed-media">${upd}<img src="${esc(link.image)}" alt="" decoding="async" loading="lazy"></div>`
+        ? `<div class="feed-media">${upd}<img src="${esc(link.image)}" alt="" decoding="async" loading="eager"></div>`
         : `<div class="feed-ph" style="min-height:160px;background:linear-gradient(135deg,var(--gl),#F4FAF7);color:var(--g);font-size:48px;">${upd}🔗</div>`;
       let hostRaw2=link.siteName||link.host||'';
       if(/^youtube$/i.test(hostRaw2))hostRaw2='';
@@ -8620,6 +8629,8 @@ function renderFeed(el,cards){
   // メモのフォント/余白/最小高さを枠幅から確定 (グリッド/詳細と改行を一致させる)。
   applyFeedNoteStyle(el);
   requestAnimationFrame(()=>applyFeedNoteStyle(el));
+  // ★ 画像を事前デコード (グリッドと同じ。スクロール/PTRの戻り時の固まりを防ぐ重要処理)
+  precacheCardImages(el);
 }
 
 // ═══ FEED VIDEO AUTOPLAY (Instagram風) ═══
