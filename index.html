@@ -4499,6 +4499,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   <div class="hdr">
     <div class="logo">Snap<em>In</em><span class="page-sub">メモを探す</span></div>
     <div class="hdr-icons">
+      <div class="view-tog view-tog-hdr">
+        <button id="sv-grid" class="on svtog-grid" data-action="search-view-grid" aria-label="グリッド">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </button>
+        <button id="sv-reel" class="svtog-reel" data-action="search-view-reel" aria-label="リール">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M12 7v10"/></svg>
+        </button>
+      </div>
       <button data-action="toggle-search-mosaic" id="search-mosaic-btn" aria-label="思い出す">
         <svg class="eye-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h7M7 14h4"/></svg>
         <svg class="eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2" fill="currentColor" stroke="none"/><path d="M7 10h7M7 14h4" stroke="var(--bg)"/></svg>
@@ -4549,6 +4557,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
     <div class="bhdr-title">しばらく見ていないメモ</div>
+    <div class="view-tog view-tog-hdr" style="margin-left:auto;">
+      <button class="on svtog-grid" data-action="search-view-grid" aria-label="グリッド">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </button>
+      <button class="svtog-reel" data-action="search-view-reel" aria-label="リール">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M12 7v10"/></svg>
+      </button>
+    </div>
     <button class="bhdr-action bhdr-icon" data-action="toggle-search-mosaic" id="stale-mosaic-btn" aria-label="思い出す">
       <svg class="eye-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h7M7 14h4"/></svg>
       <svg class="eye-off" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2" fill="currentColor" stroke="none"/><path d="M7 10h7M7 14h4" stroke="var(--bg)"/></svg>
@@ -5168,6 +5184,7 @@ const state={
   searchColor:null,    // 探すページの色フィルター
   searchTag:null,      // 探すページのタグフィルター
   searchMosaic:false,  // 探すページの暗記モード(ぼかし)。検索結果/しばらく見ていないメモに共通で効く。
+  searchView:'grid',   // 探す/しばらく見ていないメモ の表示: 'grid' か 'reel'(縦スクロール)
   staleDays:null,      // 「しばらく見ていないメモ」ページの日数 (null=未設定→デフォルト7)
   aiNote:'',           // 設定「AIへの希望」フリー記入。systemプロンプトに差し込む利用者の要望。
   onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
@@ -8547,9 +8564,14 @@ function feedBody(text,tags,extraTop){
   return `<div class="feed-body">${top}${capHtml}${tagHtml}</div>`;
 }
 
-function renderFeed(el,cards){
+function renderFeed(el,cards,opts){
+  opts=opts||{};
+  // mosaic: どのぼかしフラグを使うか (ホーム=state.mosaicMode, 探す/しばらく=state.searchMosaic)。
+  // onTap: カードタップ時の処理 (省略時は自分のメモとして詳細を開く)。
+  const mosaicOn=(opts.mosaic!==undefined)?!!opts.mosaic:!!state.mosaicMode;
+  const onTap=(typeof opts.onTap==='function')?opts.onTap:null;
   el.innerHTML='';
-  el.classList.toggle('mosaic',!!state.mosaicMode);
+  el.classList.toggle('mosaic',mosaicOn);
   cards.forEach(c0=>{
     const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
     const item=document.createElement('div');
@@ -8631,10 +8653,11 @@ function renderFeed(el,cards){
         more.remove();
         return;
       }
-      if(state.mosaicMode){
+      if(mosaicOn){
         item.classList.toggle('tapped');
         return;
       }
+      if(onTap){ onTap(c0,item); return; }
       openDetail(c0,'mine');
     });
     el.appendChild(item);
@@ -12473,8 +12496,19 @@ function renderStaleList(){
     </div>`;
     return;
   }
-  // メモページのグリッド / 探すページの検索結果と同じグリッド表示にする。
+  // メモページのグリッド / 探すページの検索結果と同じ表示にする (グリッド or 縦スクロール)。
   wrap.innerHTML='';
+  if(state.searchView==='reel'){
+    const feed=document.createElement('div');
+    feed.className='feed';
+    wrap.appendChild(feed);
+    renderFeed(feed,items,{
+      mosaic:state.searchMosaic,
+      onTap:(c0)=>openDetail(c0,'mine')
+    });
+    syncSearchMosaicBtns();
+    return;
+  }
   const grid=document.createElement('div');
   grid.className='grid';
   wrap.appendChild(grid);
@@ -13597,45 +13631,61 @@ function doSearch(){
   });
   const cardHits=results.filter(r=>r.card);
   if(cardHits.length){
-    const grid=document.createElement('div');
-    grid.className='grid';
-    out.appendChild(grid);
-    cardHits.forEach(r=>{
-      const c0=r.card;
-      // 自分のメモ側の共有由来カードは最新本文に解決して表示
-      const c=(r.origin!=='official' && isLinkedCard(c0))?resolveLiveCard(c0):c0;
-      const card=document.createElement('div');
-      card.className='card '+c.type;
-      if(state.searchMosaic)card.classList.add('mosaic'); // 暗記モード: ぼかし表示
-      let inner='';
-      if(c.type==='photo'||c.type==='photonote')inner=`<img src="${c.image||''}" decoding="async" loading="eager">`;
-      else if(c.type==='video'){
-        card.style.background='#000';
-        inner=videoCardInner(c);
-      }
-      else if(c.type==='note'){
-        const col=colorById(c.color);
-        const style=noteCardStyle(c,col);
-        inner=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
-      }
-      else if(c.type==='list'){
-        inner=listCardInner(c);
-      }else if(c.type==='link'){
-        inner=linkCardInner(c);
-      }
-      if(r.origin==='official')inner+=`<div class="card-source">${esc(r.shelf.handle)}</div>`;
-      if(r.origin!=='official' && cardHasUpdate(c0))inner+=`<div class="card-update-badge">更新</div>`;
-      card.innerHTML=inner;
-      card.addEventListener('click',()=>{
-        // 暗記モードでぼかし中なら、まず公開 (タップで答え合わせ)
-        if(card.classList.contains('mosaic')){ card.classList.remove('mosaic'); return; }
-        if(r.origin==='official')state.currentOfficial=r.shelf;
-        openDetail(c0,r.origin);
+    if(state.searchView==='reel'){
+      // 縦スクロール(リール)表示。原稿(origin)情報は onTap でカードごとに引く。
+      const feed=document.createElement('div');
+      feed.className='feed';
+      out.appendChild(feed);
+      const meta=new Map(cardHits.map(r=>[r.card,r]));
+      renderFeed(feed,cardHits.map(r=>r.card),{
+        mosaic:state.searchMosaic,
+        onTap:(c0)=>{
+          const r=meta.get(c0);
+          if(r && r.origin==='official')state.currentOfficial=r.shelf;
+          openDetail(c0, r?r.origin:'mine');
+        }
       });
-      grid.appendChild(card);
-    });
-    applyGridNoteScale(grid);
-    requestAnimationFrame(()=>applyGridNoteScale(grid));
+    }else{
+      const grid=document.createElement('div');
+      grid.className='grid';
+      out.appendChild(grid);
+      cardHits.forEach(r=>{
+        const c0=r.card;
+        // 自分のメモ側の共有由来カードは最新本文に解決して表示
+        const c=(r.origin!=='official' && isLinkedCard(c0))?resolveLiveCard(c0):c0;
+        const card=document.createElement('div');
+        card.className='card '+c.type;
+        if(state.searchMosaic)card.classList.add('mosaic'); // 暗記モード: ぼかし表示
+        let inner='';
+        if(c.type==='photo'||c.type==='photonote')inner=`<img src="${c.image||''}" decoding="async" loading="eager">`;
+        else if(c.type==='video'){
+          card.style.background='#000';
+          inner=videoCardInner(c);
+        }
+        else if(c.type==='note'){
+          const col=colorById(c.color);
+          const style=noteCardStyle(c,col);
+          inner=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" style="${style}">${esc(c.text||'')}</div></div>`;
+        }
+        else if(c.type==='list'){
+          inner=listCardInner(c);
+        }else if(c.type==='link'){
+          inner=linkCardInner(c);
+        }
+        if(r.origin==='official')inner+=`<div class="card-source">${esc(r.shelf.handle)}</div>`;
+        if(r.origin!=='official' && cardHasUpdate(c0))inner+=`<div class="card-update-badge">更新</div>`;
+        card.innerHTML=inner;
+        card.addEventListener('click',()=>{
+          // 暗記モードでぼかし中なら、まず公開 (タップで答え合わせ)
+          if(card.classList.contains('mosaic')){ card.classList.remove('mosaic'); return; }
+          if(r.origin==='official')state.currentOfficial=r.shelf;
+          openDetail(c0,r.origin);
+        });
+        grid.appendChild(card);
+      });
+      applyGridNoteScale(grid);
+      requestAnimationFrame(()=>applyGridNoteScale(grid));
+    }
   }
 }
 
@@ -14094,6 +14144,16 @@ function setView(v){
   renderHome();
 }
 
+// 探す / しばらく見ていないメモ の表示切替 (グリッド⇔縦スクロール)。
+// トグルは両画面に置いてあるので、まとめて .on を同期する。
+function setSearchView(v){
+  state.searchView=v;
+  document.querySelectorAll('.svtog-grid').forEach(b=>b.classList.toggle('on',v==='grid'));
+  document.querySelectorAll('.svtog-reel').forEach(b=>b.classList.toggle('on',v==='reel'));
+  if($('screen-search')?.classList.contains('active'))doSearch();
+  if($('screen-stale')?.classList.contains('active'))renderStaleList();
+}
+
 function toggleMosaic(){
   state.mosaicMode=!state.mosaicMode;
   $('mosaic-btn').classList.toggle('on',state.mosaicMode);
@@ -14190,7 +14250,11 @@ document.addEventListener('click',e=>{
     case 'import-backup':importBackup();break;
     case 'cloud-backup':cloudBackup();break;
     case 'cloud-restore':cloudRestore();break;
-    case 'nav-home':goto('screen-home');break;
+    case 'nav-home':
+      // すでにホームを表示中なら何もしない。再描画するとフィードのスクロール位置が
+      // 一瞬飛んで戻る「カクッ」が起きるため (グリッドは軽いので無反応に見えていた)。
+      if(!$('screen-home').classList.contains('active'))goto('screen-home');
+      break;
     case 'nav-today':goto('screen-today');break;
     case 'nav-library':goto('screen-library');break;
     case 'nav-search':goto('screen-search');break;
@@ -14223,6 +14287,8 @@ document.addEventListener('click',e=>{
     case 'goto-search':goto('screen-search');break;
     case 'view-grid':setView('grid');break;
     case 'view-reel':setView('reel');break;
+    case 'search-view-grid':setSearchView('grid');break;
+    case 'search-view-reel':setSearchView('reel');break;
     case 'toggle-mosaic':toggleMosaic();break;
     case 'toggle-search-mosaic':toggleSearchMosaic();break;
     case 'toggle-today-mosaic':toggleTodayMosaic();break;
