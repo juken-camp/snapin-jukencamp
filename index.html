@@ -6321,7 +6321,7 @@ function goto(id,push){
   // 画面遷移ごとに塾生情報を最新化 (スロットリングあり)
   // 共有タブは即時更新 (admin変更を即座に反映したいので)
   refreshMe(id==='screen-library');
-  if(id==='screen-home'){renderHome();updateHomeNewBadge();}
+  if(id==='screen-home'){renderHome(true);updateHomeNewBadge();}
   if(id==='screen-today')renderToday();
   if(id==='screen-library'){
     loadOfficialShelves();  // 開くたびに最新を取得
@@ -8163,7 +8163,15 @@ function sortPinnedFirst(cards){
   });
 }
 
-function renderHome(){
+// アクティブ一覧の「指紋」。中身・順序・表示モード・ピン・色・更新状態が変わると変化する。
+// これが前回と同じなら、ホームの一覧を作り直す必要がない (フィードのスクロール位置を保てる)。
+function homeListFingerprint(cards){
+  return state.view+'|'+state.mosaicMode+'|'+cards.length+'|'+
+    cards.map(c=>c.id+':'+(c.pinned?1:0)+':'+(c.color||'')+':'+(c._rev||c.updatedAt||c.created||'')).join(',');
+}
+let _homeListFP=null;
+
+function renderHome(allowSkip){
   const empty=$('empty-home');
   const grid=$('grid-home');
   const feed=$('feed-home');
@@ -8173,9 +8181,22 @@ function renderHome(){
     empty.classList.remove('hide');
     grid.classList.add('hide');
     feed.classList.add('hide');
+    _homeListFP='empty';
   }else{
     empty.classList.add('hide');
     const sorted=sortPinnedFirst(activeCards);
+    // allowSkip(タブを切り替えて戻っただけ) のとき、内容も表示モードも前回と同じなら
+    // 作り直さない。再構築するとフィードのスクロール位置がリセット→再描画で
+    // 「カクッ」となるのを防ぐ。内容を変える操作側は allowSkip を渡さないので必ず再描画される。
+    const fp=homeListFingerprint(sorted);
+    const visibleMatches=(state.view==='grid')
+      ? !grid.classList.contains('hide')
+      : !feed.classList.contains('hide');
+    if(allowSkip && fp===_homeListFP && visibleMatches){
+      $('mosaic-btn').classList.toggle('on',state.mosaicMode);
+      return;
+    }
+    _homeListFP=fp;
     if(state.view==='grid'){
       grid.classList.remove('hide');
       feed.classList.add('hide');
