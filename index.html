@@ -8039,6 +8039,19 @@ function getTodayOpenTasks(){
   return out;
 }
 
+// daysAgo (1=昨日, 2=2日前 ...) の日の絶対日付ラベル「M月D日（曜）」を返す。
+// 「もっと前のメモ」では日数が大きくなると直感的に分からなくなるため、相対表記の代わりに使う。
+// 年が今年と違うときだけ年を付ける (長く使っても破綻しないように)。
+function pastAbsDateLabel(daysAgo){
+  const WD=['日','月','火','水','木','金','土'];
+  const d=new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate()-daysAgo);
+  const now=new Date();
+  const yr=(d.getFullYear()!==now.getFullYear())?(d.getFullYear()+'年'):'';
+  return `${yr}${d.getMonth()+1}月${d.getDate()}日（${WD[d.getDay()]}）`;
+}
+
 // 4日前以降の保存をまとめる (デフォルトは折りたたみ、ボタンで展開)
 function renderPastMoreSection(){
   const sec=$('today-past-more-section');
@@ -8064,7 +8077,7 @@ function renderPastMoreSection(){
   // 展開状態: 各日付グループを順に表示
   let html='';
   for(const g of groups){
-    const label=g.d+'日前のメモ';
+    const label=pastAbsDateLabel(g.d)+'のメモ';
     const secKey='more'+g.d;
     const rowId='today-more-'+g.d+'-cards';
     const cardsHtml=g.cards.map(c0=>{
