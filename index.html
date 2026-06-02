@@ -13676,8 +13676,9 @@ function doSearch(){
         if(r.origin!=='official' && cardHasUpdate(c0))inner+=`<div class="card-update-badge">更新</div>`;
         card.innerHTML=inner;
         card.addEventListener('click',()=>{
-          // 暗記モードでぼかし中なら、まず公開 (タップで答え合わせ)
-          if(card.classList.contains('mosaic')){ card.classList.remove('mosaic'); return; }
+          // 暗記モード中はタップで「見える/隠れる」をトグル (詳細は開かない)。
+          // ホームのグリッドやスクロール表示と同じ挙動。詳細を開くにはぼかしをオフにする。
+          if(state.searchMosaic){ card.classList.toggle('mosaic'); return; }
           if(r.origin==='official')state.currentOfficial=r.shelf;
           openDetail(c0,r.origin);
         });
