@@ -6118,7 +6118,10 @@ function totalCardUpdateCount(){
 function refreshLinkedCardsUI(){
   try{
     if(document.getElementById('screen-home')?.classList.contains('active')){
-      renderHome();
+      // allowSkip: 共有ライブラリ取得後に呼ばれるが、ホームの中身が実際に
+      // 変わっていなければ作り直さない (共有→メモ切替直後の再描画でフィードが
+      // カクッとなるのを防ぐ)。更新があったメモは指紋が変わるので再描画される。
+      renderHome(true);
     }
   }catch(e){}
   try{
@@ -8167,7 +8170,16 @@ function sortPinnedFirst(cards){
 // これが前回と同じなら、ホームの一覧を作り直す必要がない (フィードのスクロール位置を保てる)。
 function homeListFingerprint(cards){
   return state.view+'|'+state.mosaicMode+'|'+cards.length+'|'+
-    cards.map(c=>c.id+':'+(c.pinned?1:0)+':'+(c.color||'')+':'+(c._rev||c.updatedAt||c.created||'')).join(',');
+    cards.map(c=>{
+      // 共有由来カードは、共有元(master)の更新時刻も指紋に含める。
+      // これでライブラリ更新で中身が変わったときだけ再描画される。
+      let liveRev='';
+      if(typeof isLinkedCard==='function' && isLinkedCard(c)){
+        const m=(typeof findOfficialMaster==='function')?findOfficialMaster(c):null;
+        liveRev=m?('m'+(m.updated||0)):'stale';
+      }
+      return c.id+':'+(c.pinned?1:0)+':'+(c.color||'')+':'+(c._rev||c.updatedAt||c.created||'')+':'+liveRev;
+    }).join(',');
 }
 let _homeListFP=null;
 
