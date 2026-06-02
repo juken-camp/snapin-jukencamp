@@ -672,7 +672,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .feed-head .feed-type{width:17px;height:17px;color:var(--ink2);flex-shrink:0;}
 .feed-head .feed-kind{font-size:12.5px;color:var(--ink2);}
 .feed-head .feed-sep{font-size:12px;color:var(--ink3);}
-.feed-head .feed-date{font-size:12.5px;color:var(--ink3);font-family:var(--font-en);}
+.feed-head .feed-date{font-size:12.5px;color:var(--ink3);}
 .feed-head .feed-pin{margin-left:auto;width:15px;height:15px;color:var(--g);flex-shrink:0;}
 /* メディア: 常に横幅いっぱい。高さは画像の比率まかせ (縦長ほど大きく表示)。
    contain で黒帯を出すのをやめ、幅100%・高さautoで余白なく敷き詰める。 */
@@ -8502,16 +8502,17 @@ function archiveSelected(){
 const FEED_ICONS={
   photo:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.81.01L6 21"/></svg>',
   video:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m22 8-6 4 6 4z"/></svg>',
-  note:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h6"/></svg>',
-  list:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>',
+  note:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  list:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
   link:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>'
 };
 const FEED_PIN_SVG='<svg class="feed-pin" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg>';
-// カード上部のヘッダー (種類アイコン + 相対日付 + ピン)。
-// 種類はアイコンで分かるので、テキストラベルは出さない。
-function feedHead(kindLabel,icon,dateStr,pinned){
+// カード上部のヘッダー (種類アイコン + 日付 + ピン)。
+// 種類はアイコンで分かるのでテキストラベルは出さない。
+// 日付はメモ(詳細)画面と同じ「YYYY.MM.DD（曜） HH:MM」形式 (fmtDetailWhen)。
+function feedHead(icon,c,pinned){
   return `<div class="feed-head">${icon}`+
-         `<span class="feed-date">${fmtFeedDate(dateStr)}</span>`+
+         `<span class="feed-date">${fmtDetailWhen(c)}</span>`+
          `${pinned?FEED_PIN_SVG:''}</div>`;
 }
 // 本文(キャプション)＋タグを画像の下に置くブロック。
@@ -8544,7 +8545,7 @@ function renderFeed(el,cards){
       ? `<div class="card-update-badge" title="共有ライブラリが更新しました">更新</div>` : '';
     let inner='';
     if(c.type==='photo' || c.type==='photonote'){
-      inner=feedHead('写真メモ',FEED_ICONS.photo,c.date,c0.pinned)
+      inner=feedHead(FEED_ICONS.photo,c,c0.pinned)
           + `<div class="feed-media">${upd}<img src="${c.image||''}" alt="" decoding="async" loading="eager"></div>`
           + feedBody(c.text,c.tags);
       if(!isNoColor(c.color)){item.style.borderColor=colorById(c.color).bd;}
@@ -8559,7 +8560,7 @@ function renderFeed(el,cards){
           ? `<img src="${c.poster}" alt="" decoding="async">`
           : `<div class="feed-ph" style="min-height:200px;background:#000;color:#888;font-size:14px;">動画が見つかりません</div>`;
       }
-      inner=feedHead('動画メモ',FEED_ICONS.video,c.date,c0.pinned)
+      inner=feedHead(FEED_ICONS.video,c,c0.pinned)
           + `<div class="feed-media">${upd}${media}</div>`
           + feedBody(c.text,c.tags);
     }else if(c.type==='note'){
@@ -8572,7 +8573,7 @@ function renderFeed(el,cards){
         +(align.v==='center'?'justify-content:center;':'justify-content:flex-start;');
       const innerStyle=`background:${col.bg};color:${col.fg};`
         +(align.h==='center'?'text-align:center;':'text-align:left;');
-      inner=feedHead('メモ',FEED_ICONS.note,c.date,c0.pinned)
+      inner=feedHead(FEED_ICONS.note,c,c0.pinned)
           + `<div class="feed-note" style="${wrapStyle}">${upd}`
           + `<div class="feed-note-inner" data-text="${esc(c.text||'')}" style="${innerStyle}">${esc(c.text||'')}</div></div>`
           + feedBody(null,c.tags);
@@ -8589,7 +8590,7 @@ function renderFeed(el,cards){
         const checkSvg=done?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>':'';
         return `<div class="li ${done?'done':''}"><div class="chk">${checkSvg}</div><span>${esc(i.t)}</span></div>`;
       }).join('');
-      inner=feedHead('リスト',FEED_ICONS.list,c.date,c0.pinned)
+      inner=feedHead(FEED_ICONS.list,c,c0.pinned)
           + `<div class="feed-list" style="background:${col.bg};color:${col.fg};--feed-list-fg:${col.fg};">`
           + `${upd}<h3 style="color:${col.fg};opacity:0.7;">${esc(c.title||'リスト')}</h3>${items}</div>`
           + feedBody(null,c.tags);
@@ -8602,7 +8603,7 @@ function renderFeed(el,cards){
       if(/^youtube$/i.test(hostRaw2))hostRaw2='';
       const titleTop=`<div class="feed-link-title">${esc(link.title||link.url||'')}</div>`
                    + (hostRaw2?`<div class="feed-link-host">${esc(hostRaw2)}</div>`:'');
-      inner=feedHead('リンク',FEED_ICONS.link,c.date,c0.pinned)
+      inner=feedHead(FEED_ICONS.link,c,c0.pinned)
           + media
           + feedBody(c.text,c.tags,titleTop);
     }
