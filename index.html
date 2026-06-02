@@ -14083,7 +14083,24 @@ function setView(v){
 
 function toggleMosaic(){
   state.mosaicMode=!state.mosaicMode;
-  renderHome();
+  $('mosaic-btn').classList.toggle('on',state.mosaicMode);
+  const grid=$('grid-home');
+  const feed=$('feed-home');
+  // 全再描画(renderHome)はDOM再構築+画像の再デコードで重く、特に縦スクロール(フィード)では
+  // スクロール位置が飛んで「カクッ」となる。ぼかしはCSSクラスだけで効くので、
+  // 表示中の一覧は再描画せずクラスの付け外しだけで反映する。
+  if(feed && !feed.classList.contains('hide')){
+    feed.classList.toggle('mosaic',state.mosaicMode);
+    if(!state.mosaicMode){
+      feed.querySelectorAll('.feed-item.tapped').forEach(it=>it.classList.remove('tapped'));
+    }
+  }else if(grid && !grid.classList.contains('hide')){
+    // グリッドは各カードに .mosaic を付けてぼかす (タップで個別に解除できる)
+    grid.querySelectorAll('.card').forEach(card=>card.classList.toggle('mosaic',state.mosaicMode));
+  }else{
+    // どちらも非表示 (空ホーム等) のときだけ通常の再描画にフォールバック
+    renderHome();
+  }
 }
 
 // 探すページの暗記モード(ぼかし) を切り替え。検索結果・しばらく見ていないメモに共通。
