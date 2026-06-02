@@ -678,21 +678,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
    contain で黒帯を出すのをやめ、幅100%・高さautoで余白なく敷き詰める。 */
 .feed-media{position:relative;width:100%;background:rgba(0,0,0,.04);}
 .feed-media img,.feed-media video{width:100%;height:auto;display:block;}
-/* note / list は色付きタイルをカード本体として表示 */
-.feed-note{
-  position:relative;
-  padding:34px 26px;
-  font-size:19px;
-  line-height:1.7;
-  color:white;
-  width:100%;
-  min-height:200px;
-  background:linear-gradient(135deg,#1a3a2e,#0d2620);
-  display:flex;align-items:center;justify-content:center;
-  text-align:center;
-  white-space:pre-wrap;
-  overflow:hidden;
-}
+/* note は詳細画面と同じ「基準幅120pxでレイアウト→枠幅に比例拡大」方式で描画し、
+   グリッド/詳細と改行位置・文字比率まで完全一致させる。
+   色/揃え/最小高さ/フォントサイズ/padding は applyFeedNoteStyle がインラインで設定する。 */
+.feed-note{position:relative;width:100%;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;}
+.feed-note-inner{width:100%;box-sizing:border-box;white-space:pre-wrap;word-break:break-word;}
+/* メディア欠落時などのプレースホルダ (中央寄せの簡易タイル) */
+.feed-ph{position:relative;width:100%;min-height:160px;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;}
 .feed-list{
   position:relative;
   padding:30px 26px;
@@ -5928,8 +5920,34 @@ function applyDetailNoteStyle(){
   });
 }
 
-// 共有棚デモデータ
-// 共有棚データ。起動時に /api/shelves から取得する。
+// フィード(縦スクロール)のメモも、詳細画面と同じ計算でフォント/余白/最小高さを
+// 枠幅に比例させて設定する。NOTE_CARD_SIZES と NOTE_BASE_WIDTH を共有しているので、
+// グリッド/詳細/フィードの3画面で改行位置と文字比率が完全一致する。
+function applyFeedNoteStyle(root){
+  const scope=root||document;
+  scope.querySelectorAll('.feed-note').forEach(wrap=>{
+    const inner=wrap.querySelector('.feed-note-inner');
+    if(!inner)return;
+    const txt=inner.dataset.text||'';
+    let idx=noteCardInitialSizeIndex(txt.length);
+    while(idx<NOTE_CARD_SIZES.length-1){
+      const s=NOTE_CARD_SIZES[idx];
+      if(estimateNoteLineCount(txt,s.fz)<=s.clamp)break;
+      idx++;
+    }
+    const baseFz=NOTE_CARD_SIZES[idx].fz;
+    const lh=NOTE_CARD_SIZES[idx].lh;
+    const w=wrap.clientWidth||360;
+    const scale=w/NOTE_BASE_WIDTH;
+    inner.style.fontSize=(baseFz*scale)+'px';
+    inner.style.lineHeight=lh;
+    inner.style.padding=(w*0.055)+'px';
+    inner.style.width='100%';
+    inner.style.transform='';
+    // 短文は正方形(最小高さ=枠幅)に見せ、長文は縦に伸びて全文表示 (詳細画面と同じ)。
+    wrap.style.minHeight=w+'px';
+  });
+}
 // (Vercel Redis に保存されているデータをロード)
 let OFFICIAL_SHELVES=[];
 
@@ -8530,16 +8548,24 @@ function renderFeed(el,cards){
       }else{
         media=c.poster
           ? `<img src="${c.poster}" alt="" decoding="async">`
-          : `<div class="feed-note" style="min-height:200px;background:#000;color:#888;font-size:14px;">動画が見つかりません</div>`;
+          : `<div class="feed-ph" style="min-height:200px;background:#000;color:#888;font-size:14px;">動画が見つかりません</div>`;
       }
       inner=feedHead('動画メモ',FEED_ICONS.video,c.date,c0.pinned)
           + `<div class="feed-media">${upd}${media}</div>`
           + feedBody(c.text,c.tags);
     }else if(c.type==='note'){
       const col=colorById(c.color);
-      const fz=autoFontSizeDetail(c.text||'');
+      const align=resolveAlign(c);
+      // 詳細画面と同じ構造: wrap(.feed-note) + inner(.feed-note-inner[data-text])。
+      // フォントサイズ/padding/最小高さは applyFeedNoteStyle が枠幅に比例して後から設定し、
+      // グリッド/詳細と改行位置を完全一致させる。
+      const wrapStyle=`background:${col.bg};color:${col.fg};`
+        +(align.v==='center'?'justify-content:center;':'justify-content:flex-start;');
+      const innerStyle=`background:${col.bg};color:${col.fg};`
+        +(align.h==='center'?'text-align:center;':'text-align:left;');
       inner=feedHead('メモ',FEED_ICONS.note,c.date,c0.pinned)
-          + `<div class="feed-note" style="background:${col.bg};color:${col.fg};font-size:${fz}px;">${upd}${esc(c.text||'')}</div>`
+          + `<div class="feed-note" style="${wrapStyle}">${upd}`
+          + `<div class="feed-note-inner" data-text="${esc(c.text||'')}" style="${innerStyle}">${esc(c.text||'')}</div></div>`
           + feedBody(null,c.tags);
     }else if(c.type==='list'){
       const col=colorById(c.color);
@@ -8562,7 +8588,7 @@ function renderFeed(el,cards){
       const link=c.link||{};
       const media=link.image
         ? `<div class="feed-media">${upd}<img src="${esc(link.image)}" alt="" decoding="async" loading="lazy"></div>`
-        : `<div class="feed-note" style="min-height:160px;background:linear-gradient(135deg,var(--gl),#F4FAF7);color:var(--g);font-size:48px;">${upd}🔗</div>`;
+        : `<div class="feed-ph" style="min-height:160px;background:linear-gradient(135deg,var(--gl),#F4FAF7);color:var(--g);font-size:48px;">${upd}🔗</div>`;
       let hostRaw2=link.siteName||link.host||'';
       if(/^youtube$/i.test(hostRaw2))hostRaw2='';
       const titleTop=`<div class="feed-link-title">${esc(link.title||link.url||'')}</div>`
@@ -8591,6 +8617,9 @@ function renderFeed(el,cards){
     el.appendChild(item);
   });
   setupFeedVideoAutoplay(el);
+  // メモのフォント/余白/最小高さを枠幅から確定 (グリッド/詳細と改行を一致させる)。
+  applyFeedNoteStyle(el);
+  requestAnimationFrame(()=>applyFeedNoteStyle(el));
 }
 
 // ═══ FEED VIDEO AUTOPLAY (Instagram風) ═══
@@ -14626,6 +14655,7 @@ window.addEventListener('resize',()=>{
   _resizeRafId=requestAnimationFrame(()=>{
     applyGridNoteScale(document);
     if(typeof applyDetailNoteStyle==='function')applyDetailNoteStyle();
+    if(typeof applyFeedNoteStyle==='function')applyFeedNoteStyle(document);
   });
 });
 
