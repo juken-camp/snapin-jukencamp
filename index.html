@@ -592,25 +592,26 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 
 /* リール(フィード)モードのモザイク */
-/* フィードでは URL カードのタイトル/ホストは .feed-meta に入っているので、
-   .feed-meta もぼかし対象に含める。 */
-.feed.mosaic .feed-item img,
-.feed.mosaic .feed-item video,
-.feed.mosaic .feed-note,
-.feed.mosaic .feed-list,
-.feed.mosaic .feed-meta{filter:blur(8px) saturate(0.9);}
+/* 新レイアウトでは本文・タグは .feed-body、画像は .feed-media に入る。
+   ヘッダー(日付/種類)はぼかさず、中身だけをぼかして「思い出す」ヒントにする。 */
+.feed.mosaic .feed-item .feed-media img,
+.feed.mosaic .feed-item .feed-media video,
+.feed.mosaic .feed-item .feed-note,
+.feed.mosaic .feed-item .feed-list,
+.feed.mosaic .feed-item .feed-body{filter:blur(8px) saturate(0.9);}
 .feed.mosaic .feed-item::before{
   content:"";
   position:absolute;inset:0;
   background:var(--mosaic-veil-soft);
   pointer-events:none;
-  z-index:1;
+  z-index:3;
+  border-radius:16px;
 }
-.feed.mosaic .feed-item.tapped img,
-.feed.mosaic .feed-item.tapped video,
+.feed.mosaic .feed-item.tapped .feed-media img,
+.feed.mosaic .feed-item.tapped .feed-media video,
 .feed.mosaic .feed-item.tapped .feed-note,
 .feed.mosaic .feed-item.tapped .feed-list,
-.feed.mosaic .feed-item.tapped .feed-meta{filter:none;}
+.feed.mosaic .feed-item.tapped .feed-body{filter:none;}
 .feed.mosaic .feed-item.tapped::before{display:none;}
 
 /* 「今日」ページ: 暗記モード(ぼかし)。昨日以降の横スクロール行 (today-newcards) に適用 */
@@ -651,25 +652,41 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 #detail-scroll.mosaic.revealed #detail-content{filter:none;}
 
 /* FEED */
-.feed{scroll-snap-type:y mandatory;background:#000;overflow-y:auto;}
+/* フィード = インスタ型の縦並びカード。
+   画像はカード上部、日付や本文・タグは画像の「下」に通常フローで置く
+   (以前は全画面に画像を敷いて文字を重ねていたため読みにくかった)。
+   スクロールは親の .scroll に任せ、.feed 自体はただのブロックにする。 */
+.feed{background:var(--bg);padding:14px 12px 8px;}
 .feed-item{
-  scroll-snap-align:start;
-  height:100%;
-  width:100%;
   position:relative;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  flex-shrink:0;
+  background:var(--surface);
+  border:0.5px solid var(--line);
+  border-radius:16px;
+  overflow:hidden;
+  margin-bottom:16px;
+  box-shadow:var(--shadow);
 }
-.feed-item img{max-width:100%;max-height:100%;object-fit:contain;}
+.feed-item:last-child{margin-bottom:0;}
+/* ヘッダー: 種類アイコン + 種類名 + 日付 (+ ピン) */
+.feed-head{display:flex;align-items:center;gap:7px;padding:11px 14px 9px;}
+.feed-head .feed-type{width:17px;height:17px;color:var(--ink2);flex-shrink:0;}
+.feed-head .feed-kind{font-size:12.5px;color:var(--ink2);}
+.feed-head .feed-sep{font-size:12px;color:var(--ink3);}
+.feed-head .feed-date{font-size:12.5px;color:var(--ink3);font-family:var(--font-en);}
+.feed-head .feed-pin{margin-left:auto;width:15px;height:15px;color:var(--g);flex-shrink:0;}
+/* メディア: 常に横幅いっぱい。高さは画像の比率まかせ (縦長ほど大きく表示)。
+   contain で黒帯を出すのをやめ、幅100%・高さautoで余白なく敷き詰める。 */
+.feed-media{position:relative;width:100%;background:rgba(0,0,0,.04);}
+.feed-media img,.feed-media video{width:100%;height:auto;display:block;}
+/* note / list は色付きタイルをカード本体として表示 */
 .feed-note{
-  padding:40px 28px;
-  font-size:20px;
+  position:relative;
+  padding:34px 26px;
+  font-size:19px;
   line-height:1.7;
   color:white;
   width:100%;
-  aspect-ratio:1;            /* グリッド/編集画面と同じく正方形に */
+  min-height:200px;
   background:linear-gradient(135deg,#1a3a2e,#0d2620);
   display:flex;align-items:center;justify-content:center;
   text-align:center;
@@ -677,44 +694,32 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   overflow:hidden;
 }
 .feed-list{
-  padding:40px 28px;
+  position:relative;
+  padding:30px 26px;
   color:var(--feed-list-fg,#1A1A1A);
   width:100%;
-  aspect-ratio:1;            /* グリッド/編集画面と同じく正方形に */
+  min-height:200px;
   background:#FFFDF5;
   display:flex;flex-direction:column;justify-content:center;
   overflow:hidden;
 }
-.feed-list h3{font-size:16px;margin-bottom:18px;color:inherit;opacity:0.7;font-weight:500;}
-.feed-list .li{font-size:17px;padding:10px 0;border-bottom:0.5px solid rgba(0,0,0,.1);display:flex;gap:12px;align-items:center;}
+.feed-list h3{font-size:16px;margin-bottom:16px;color:inherit;opacity:0.7;font-weight:500;}
+.feed-list .li{font-size:16px;padding:9px 0;border-bottom:0.5px solid rgba(0,0,0,.1);display:flex;gap:12px;align-items:center;}
 .feed-list .li.done{opacity:0.4;text-decoration:line-through;}
 /* チェックはグリッド/編集画面と同じく、枠内に白いチェックマークを出す (塗りつぶしではなく) */
 .feed-list .li .chk{width:18px;height:18px;border:1.5px solid currentColor;opacity:0.5;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
 .feed-list .li.done .chk{background:var(--g);border-color:var(--g);opacity:1;color:#fff;}
 .feed-list .li .chk svg{width:12px;height:12px;display:block;}
 .feed-list .li .li-num{width:16px;font-size:14px;text-align:center;flex-shrink:0;font-family:var(--font-en);opacity:0.85;}
-.feed-meta{
-  position:absolute;
-  bottom:24px;left:18px;right:18px;
-  color:rgba(255,255,255,.95);
-  font-size:11px;
-  font-family:var(--font-en);
-  pointer-events:none;
-  z-index:2;
-  /* 動画の明るい部分に重なっても読めるよう、文字に影を付ける */
-  text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 10px rgba(0,0,0,.5);
-}
-/* 写真・動画アイテムの下部に、キャプションを読みやすくする黒いグラデの帯を敷く。
-   (リール定番の手法。中身が明るくても文字が浮く) */
-.feed-item.has-scrim::after{
-  content:"";
-  position:absolute;
-  left:0;right:0;bottom:0;
-  height:140px;
-  background:linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0));
-  pointer-events:none;
-  z-index:1;
-}
+/* 本文 (画像の下に通常フロー) */
+.feed-body{padding:11px 14px 13px;}
+.feed-cap{font-size:15px;line-height:1.6;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
+.feed-cap.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.feed-more{margin-top:5px;font-size:13px;color:var(--g);font-weight:600;}
+.feed-link-title{font-size:14.5px;line-height:1.5;color:var(--ink);font-weight:600;word-break:break-word;}
+.feed-link-host{font-size:12px;color:var(--ink3);margin-top:3px;font-family:var(--font-en);}
+.feed-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.feed-tags .ftag{font-size:12px;padding:3px 9px;border-radius:8px;background:var(--gl);color:var(--gd);}
 
 /* EMPTY */
 .empty{
@@ -1807,7 +1812,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   z-index:2;
   pointer-events:none;
 }
-.feed-item .card-update-badge{top:14px;left:14px;}
+.feed-media .card-update-badge,.feed-note .card-update-badge,.feed-list .card-update-badge{top:10px;left:10px;}
 
 /* 新着バッジ (ホームヘッダーの共有アイコン) */
 /* アイコン(SVG)を包む小さなラッパー。バッジはこの中で絶対配置するので、アイコンの右上に正確に乗る */
@@ -8467,6 +8472,40 @@ function archiveSelected(){
 }
 
 // ═══ FEED ═══
+// フィードの種類アイコン (16〜17px, currentColor)
+const FEED_ICONS={
+  photo:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.81.01L6 21"/></svg>',
+  video:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m22 8-6 4 6 4z"/></svg>',
+  note:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h6"/></svg>',
+  list:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>',
+  link:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>'
+};
+const FEED_PIN_SVG='<svg class="feed-pin" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg>';
+// カード上部のヘッダー (種類アイコン + 種類名 + 相対日付 + ピン)
+function feedHead(kindLabel,icon,dateStr,pinned){
+  return `<div class="feed-head">${icon}<span class="feed-kind">${kindLabel}</span>`+
+         `<span class="feed-sep">·</span><span class="feed-date">${fmtFeedDate(dateStr)}</span>`+
+         `${pinned?FEED_PIN_SVG:''}</div>`;
+}
+// 本文(キャプション)＋タグを画像の下に置くブロック。
+// text を渡すとキャプションを表示 (長ければ3行クランプ＋「続きを読む」)。
+// text が空/未指定なら、タグだけのブロック (note/list 用)。両方無ければ空文字。
+function feedBody(text,tags,extraTop){
+  const cap=(text||'').trim();
+  const tagHtml=(Array.isArray(tags)&&tags.length)
+    ? `<div class="feed-tags">${tags.map(t=>`<span class="ftag">#${esc(t)}</span>`).join('')}</div>`
+    : '';
+  let capHtml='';
+  if(cap){
+    const long=cap.length>70 || (cap.match(/\n/g)||[]).length>=3;
+    capHtml=`<p class="feed-cap${long?' clamp':''}">${esc(cap)}</p>`+
+            (long?'<button class="feed-more" data-action="feed-more">続きを読む</button>':'');
+  }
+  const top=extraTop||'';
+  if(!cap && !tagHtml && !top)return '';
+  return `<div class="feed-body">${top}${capHtml}${tagHtml}</div>`;
+}
+
 function renderFeed(el,cards){
   el.innerHTML='';
   el.classList.toggle('mosaic',!!state.mosaicMode);
@@ -8474,33 +8513,34 @@ function renderFeed(el,cards){
     const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
     const item=document.createElement('div');
     item.className='feed-item';
+    const upd=cardHasUpdate(c0)
+      ? `<div class="card-update-badge" title="共有ライブラリが更新しました">更新</div>` : '';
     let inner='';
     if(c.type==='photo' || c.type==='photonote'){
-      item.classList.add('has-scrim');
-      inner=`<img src="${c.image||''}" alt="" decoding="async" loading="eager">`;
-      const txt=c.text?esc(c.text.slice(0,80)):'';
-      inner+=`<div class="feed-meta">${txt}　${fmtDate(c.date)}</div>`;
-      if(!isNoColor(c.color)){item.style.border='3px solid '+colorById(c.color).bd;item.style.boxSizing='border-box';}
+      inner=feedHead('写真メモ',FEED_ICONS.photo,c.date,c0.pinned)
+          + `<div class="feed-media">${upd}<img src="${c.image||''}" alt="" decoding="async" loading="lazy"></div>`
+          + feedBody(c.text,c.tags);
+      if(!isNoColor(c.color)){item.style.borderColor=colorById(c.color).bd;}
     }else if(c.type==='video'){
-      item.classList.add('has-scrim');
-      // Instagram風: muted + playsinline + loop で、画面に入ったら自動再生 (下の IntersectionObserver が制御)。
       const vurl=c._videoUrl||'';
       const poster=c.poster?` poster="${c.poster}"`:'';
+      let media;
       if(vurl){
-        inner=`<video class="feed-video" src="${vurl}"${poster} muted loop playsinline webkit-playsinline preload="metadata" style="max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;background:#000;"></video>`;
+        media=`<video class="feed-video" src="${vurl}"${poster} muted loop playsinline webkit-playsinline preload="metadata"></video>`;
       }else{
-        // Blob が見つからない (端末データ削除/別端末など) → ポスターか案内を出す
-        inner=c.poster
+        media=c.poster
           ? `<img src="${c.poster}" alt="" decoding="async">`
-          : `<div class="feed-note" style="background:#000;color:#888;display:flex;align-items:center;justify-content:center;font-size:14px;">動画が見つかりません</div>`;
+          : `<div class="feed-note" style="min-height:200px;background:#000;color:#888;font-size:14px;">動画が見つかりません</div>`;
       }
-      const txt=c.text?esc(c.text.slice(0,80)):'';
-      inner+=`<div class="feed-meta">${txt}　${fmtDate(c.date)}</div>`;
+      inner=feedHead('動画メモ',FEED_ICONS.video,c.date,c0.pinned)
+          + `<div class="feed-media">${upd}${media}</div>`
+          + feedBody(c.text,c.tags);
     }else if(c.type==='note'){
       const col=colorById(c.color);
       const fz=autoFontSizeDetail(c.text||'');
-      inner=`<div class="feed-note" style="background:${col.bg};color:${col.fg};font-size:${fz}px;">${esc(c.text||'')}</div>`;
-      inner+=`<div class="feed-meta" style="color:${col.fg};opacity:0.5;">${fmtDate(c.date)}</div>`;
+      inner=feedHead('メモ',FEED_ICONS.note,c.date,c0.pinned)
+          + `<div class="feed-note" style="background:${col.bg};color:${col.fg};font-size:${fz}px;">${upd}${esc(c.text||'')}</div>`
+          + feedBody(null,c.tags);
     }else if(c.type==='list'){
       const col=colorById(c.color);
       const items=(c.items||[]).map((i,idx)=>{
@@ -8514,29 +8554,34 @@ function renderFeed(el,cards){
         const checkSvg=done?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>':'';
         return `<div class="li ${done?'done':''}"><div class="chk">${checkSvg}</div><span>${esc(i.t)}</span></div>`;
       }).join('');
-      inner=`<div class="feed-list" style="background:${col.bg};color:${col.fg};--feed-list-fg:${col.fg};">` +
-            `<h3 style="color:${col.fg};opacity:0.7;">${esc(c.title||'リスト')}</h3>${items}</div>`;
-      inner+=`<div class="feed-meta" style="color:${col.fg};opacity:0.5;">${fmtDate(c.date)}</div>`;
+      inner=feedHead('リスト',FEED_ICONS.list,c.date,c0.pinned)
+          + `<div class="feed-list" style="background:${col.bg};color:${col.fg};--feed-list-fg:${col.fg};">`
+          + `${upd}<h3 style="color:${col.fg};opacity:0.7;">${esc(c.title||'リスト')}</h3>${items}</div>`
+          + feedBody(null,c.tags);
     }else if(c.type==='link'){
       const link=c.link||{};
-      const img=link.image
-        ? `<img src="${esc(link.image)}" alt="" decoding="async" loading="eager">`
-        : `<div class="feed-note" style="background:linear-gradient(135deg,var(--gl),#F4FAF7);color:var(--g);display:flex;align-items:center;justify-content:center;font-size:48px;">🔗</div>`;
-      inner=img;
-      const title=esc(link.title||link.url||'');
+      const media=link.image
+        ? `<div class="feed-media">${upd}<img src="${esc(link.image)}" alt="" decoding="async" loading="lazy"></div>`
+        : `<div class="feed-note" style="min-height:160px;background:linear-gradient(135deg,var(--gl),#F4FAF7);color:var(--g);font-size:48px;">${upd}🔗</div>`;
       let hostRaw2=link.siteName||link.host||'';
       if(/^youtube$/i.test(hostRaw2))hostRaw2='';
-      const host=esc(hostRaw2);
-      inner+=`<div class="feed-meta">${title}${host?'　'+host:''}　${fmtDate(c.date)}</div>`;
-    }
-    if(cardHasUpdate(c0)){
-      inner+=`<div class="card-update-badge" title="共有ライブラリが更新しました">更新</div>`;
-    }
-    if(c0.pinned){
-      inner+=`<div class="pin-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
+      const titleTop=`<div class="feed-link-title">${esc(link.title||link.url||'')}</div>`
+                   + (hostRaw2?`<div class="feed-link-host">${esc(hostRaw2)}</div>`:'');
+      inner=feedHead('リンク',FEED_ICONS.link,c.date,c0.pinned)
+          + media
+          + feedBody(c.text,c.tags,titleTop);
     }
     item.innerHTML=inner;
-    item.addEventListener('click',()=>{
+    item.addEventListener('click',(e)=>{
+      // 「続きを読む」はカードを開かず、その場で全文展開
+      const more=e.target.closest('.feed-more');
+      if(more){
+        e.stopPropagation();
+        const cap=more.previousElementSibling;
+        if(cap&&cap.classList.contains('feed-cap'))cap.classList.remove('clamp');
+        more.remove();
+        return;
+      }
       if(state.mosaicMode){
         item.classList.toggle('tapped');
         return;
@@ -8567,7 +8612,7 @@ function setupFeedVideoAutoplay(el){
         v.pause();
       }
     });
-  },{root:el,threshold:[0,0.6,1]});
+  },{root:(el.closest('.scroll')||null),threshold:[0,0.6,1]});
   el.querySelectorAll('video.feed-video').forEach(v=>io.observe(v));
   el._videoIO=io;
 }
@@ -13890,6 +13935,23 @@ function linkify(s){
   return out;
 }
 function fmtDate(d){return d?d.replace(/-/g,'.'):'';}
+// フィード用の相対日付ラベル: 今日 / 昨日 / N日前 / 先週 / それ以前は YYYY.MM.DD。
+function fmtFeedDate(d){
+  if(!d)return '';
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+  if(!m)return fmtDate(d);
+  const then=new Date(+m[1],+m[2]-1,+m[3]);
+  const now=new Date();
+  const t0=new Date(then.getFullYear(),then.getMonth(),then.getDate());
+  const n0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const days=Math.round((n0-t0)/(24*60*60*1000));
+  if(days<0)return fmtDate(d);   // 未来日付はそのまま
+  if(days===0)return '今日';
+  if(days===1)return '昨日';
+  if(days<=6)return days+'日前';
+  if(days<=13)return '先週';
+  return fmtDate(d);
+}
 // ローカル日付の YYYY-MM-DD を返す。
 // toISOString() は UTC になるため、日本(UTC+9)の深夜0〜9時に前日へずれてしまう。
 // 投稿日は端末のローカル日付で記録する。
