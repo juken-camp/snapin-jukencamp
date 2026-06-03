@@ -925,30 +925,63 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .memo-card:active{transform:scale(.97);}
 .memo-card img{width:100%;height:100%;object-fit:cover;display:block;}
 .memo-card .ctxt{
-  padding:12px;
-  font-size:11px;
-  line-height:1.55;
+  padding:10px;
+  color:var(--ink);
   height:100%;
   overflow:hidden;
   display:-webkit-box;
-  -webkit-line-clamp:7;
   -webkit-box-orient:vertical;
   word-break:break-word;
+  white-space:pre-wrap;
+  background:var(--surface);
 }
-.memo-card.list .ctxt{font-size:11px;}
-.memo-card.note .ctxt{display:flex;flex-direction:column;}
-.memo-card.note .ctxt.h-center{align-items:center;text-align:center;}
-.memo-card.note .ctxt.h-left{align-items:flex-start;text-align:left;}
-.memo-card.note .ctxt.v-center{justify-content:center;}
-.memo-card.note .ctxt.v-top{justify-content:flex-start;}
-/* リンクカード: サムネ + テキストを縦に積む (画像で60%, ctxtは下40%) */
+.memo-card.note .ctxt{
+  background:#FFFDF5;
+  padding:0;
+  position:relative;
+  display:block;
+  -webkit-box-orient:initial;
+  overflow:hidden;
+}
+.memo-card.list .ctxt{background:#F4F8F3;display:block;-webkit-box-orient:initial;-webkit-line-clamp:initial;}
+.memo-card.note .ctxt-inner{
+  position:absolute;
+  top:0;left:0;
+  width:100%;height:100%;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.memo-card .li{display:flex;gap:0.4em;margin-bottom:0.28em;align-items:flex-start;line-height:1.3;}
+.memo-card .li span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.memo-card .li .chk{width:0.9em;height:0.9em;border:1px solid var(--ink3);border-radius:0.2em;flex-shrink:0;margin-top:0.15em;display:flex;align-items:center;justify-content:center;color:#fff;box-sizing:border-box;}
+.memo-card .li .chk svg{width:0.7em;height:0.7em;display:block;}
+.memo-card .li.done .chk{background:var(--g);border-color:var(--g);}
+.memo-card .li.done{color:var(--ink3);text-decoration:line-through;}
+.memo-card .li .li-num{width:1.3em;font-size:1em;text-align:left;flex-shrink:0;color:var(--ink2);}
+.memo-card .card-source{
+  position:absolute;
+  bottom:0;left:0;right:0;
+  background:linear-gradient(transparent,rgba(0,0,0,.6));
+  color:white;
+  font-size:9px;
+  padding:14px 6px 4px;
+  pointer-events:none;
+}
 .memo-card.link{display:flex;flex-direction:column;}
-.memo-card.link .ctxt{
-  height:auto;
-  flex:1;
-  -webkit-line-clamp:2;
-  line-height:1.4;
-}
+.memo-card .link-card{display:flex;flex-direction:column;height:100%;background:var(--surface);color:var(--ink);overflow:hidden;}
+.memo-card .link-card-thumb{width:100%;flex:1;min-height:0;background:var(--bg);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.memo-card .link-card-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.memo-card .link-card-thumb.no-img{background:linear-gradient(135deg,var(--gl) 0%,#F4FAF7 100%);color:var(--g);}
+.memo-card .link-card-thumb.no-img svg{width:36px;height:36px;}
+.memo-card .link-card-body{flex:none;height:46px;box-sizing:border-box;padding:3px 9px;display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:0;}
+.memo-card .link-card-title{font-size:10px;font-weight:600;color:var(--ink);line-height:1.2;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.memo-card .link-card-body.has-kind .link-card-title{-webkit-line-clamp:2;}
+.memo-card .link-card-kind{display:flex;align-items:center;gap:2px;font-size:8px;font-weight:700;color:var(--g);line-height:1;margin-bottom:1px;}
+.memo-card .link-card-kind svg{width:9px;height:9px;flex:none;}
 .memo-card-add{
   background:var(--gl);
   display:flex;
@@ -3986,6 +4019,85 @@ function renderShelfEdit(){
   renderMemoGrid();
 }
 
+// ── 利用者アプリ(index.html)と同じグリッドカード描画ヘルパー ──
+function isNoColor(id){return !id || id==='none' || id==='default';}
+function listThumbFontSize(n){
+  if(n<=5)return 10;
+  if(n<=7)return 9;
+  if(n<=9)return 7;
+  if(n<=11)return 6;
+  if(n<=14)return 5;
+  return 4;
+}
+// テキストメモ: 文字数・改行から枠に収まるフォントサイズを決め、枠幅に比例して拡大
+function noteCardStyle(card,col,containerWidth){
+  const w=containerWidth||NOTE_BASE_WIDTH;
+  const scale=w/NOTE_BASE_WIDTH;
+  const text=card.text||'';
+  const tlen=text.length;
+  const align=resolveAlign(card);
+  let idx=noteCardInitialSizeIndex(tlen);
+  while(idx<NOTE_CARD_SIZES.length-1){
+    const s=NOTE_CARD_SIZES[idx];
+    if(estimateNoteLineCount(text,s.fz)<=s.clamp)break;
+    idx++;
+  }
+  const baseFz=NOTE_CARD_SIZES[idx].fz;
+  const lh=NOTE_CARD_SIZES[idx].lh;
+  const fz=baseFz*scale;
+  const pad=w*0.055;
+  let style=`background:${col.bg};color:${col.fg};font-size:${fz}px;line-height:${lh};padding:${pad}px;`;
+  style+=align.h==='center'?'align-items:center;text-align:center;':'align-items:flex-start;text-align:left;';
+  style+=align.v==='center'?'justify-content:center;':'justify-content:flex-start;';
+  return style;
+}
+// 描画後に各 note カードの実幅でフォントを確定 (HTML生成時は幅が不明なため)
+function applyGridNoteScale(root){
+  const scope=root||document;
+  scope.querySelectorAll('.memo-card.note .ctxt-inner').forEach(inner=>{
+    const ctxt=inner.parentElement;
+    if(!ctxt)return;
+    const w=ctxt.clientWidth;
+    if(!w)return;
+    const c={
+      text:inner.innerText||'',
+      color:inner.dataset.color||'none',
+      alignH:inner.dataset.alignh||undefined,
+      alignV:inner.dataset.alignv||undefined,
+    };
+    inner.setAttribute('style', noteCardStyle(c,colorById(c.color),w));
+  });
+}
+function listCardInner(c){
+  const allItems=c.items||[];
+  const itemsArr=allItems.slice(0,40);
+  const fz=listThumbFontSize(allItems.length);
+  const itemsHtml=itemsArr.map((i,idx)=>{
+    const m=i.mark||'check';
+    const done=i.d===true;
+    if(m==='number'){
+      let num=0;
+      for(let k=0;k<=idx;k++){ if(((c.items||[])[k].mark||'check')==='number')num++; }
+      return `<div class="li"><div class="li-num">${num}.</div><span>${esc(i.t)}</span></div>`;
+    }
+    const checkSvg=done?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>':'';
+    return `<div class="li ${done?'done':''}"><div class="chk">${checkSvg}</div><span>${esc(i.t)}</span></div>`;
+  }).join('');
+  const title=c.title?`<div style="font-weight:600;font-size:1.1em;margin-bottom:0.4em;color:var(--gd);">${esc(c.title)}</div>`:'';
+  return `<div class="ctxt" style="font-size:${fz}px;">${title}${itemsHtml}</div>`;
+}
+function linkCardInner(c){
+  const link=c.link||{};
+  const thumb=link.image
+    ? `<div class="link-card-thumb"><img src="${esc(link.image)}" alt="" onerror="this.remove()"></div>`
+    : `<div class="link-card-thumb no-img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
+  const title=esc(link.title||link.url||'(無題のリンク)');
+  const isPlaylist=(link.kind==='playlist');
+  const plLabel=isPlaylist?`<div class="link-card-kind"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h13M3 18h9"/><path d="M17 14l5 3-5 3z"/></svg>再生リスト</div>`:'';
+  const bodyCls=plLabel?'link-card-body has-kind':'link-card-body';
+  return `<div class="link-card">${thumb}<div class="${bodyCls}">${plLabel}<div class="link-card-title">${title}</div></div></div>`;
+}
+
 function renderMemoGrid(){
   const s=getSelectedShelf();
   if(!s)return;
@@ -4015,21 +4127,18 @@ function renderMemoGrid(){
     cell.className='memo-card '+(displayCard.type||'note')+(isRef?' is-ref':'');
     let inner='';
     if(displayCard.type==='photo' || displayCard.type==='photonote'){
+      const col=colorById(displayCard.color);
+      cell.style.background=col.bg;
+      if(!isNoColor(displayCard.color)){cell.style.border='2.5px solid '+col.bd;cell.style.boxSizing='border-box';}
       inner=`<img src="${esc(displayCard.image||'')}" alt="">`;
-      if(displayCard.text)inner+=`<div class="ctxt" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:white;padding:6px 8px;font-size:10px;-webkit-line-clamp:2;">${esc(displayCard.text)}</div>`;
+      if(displayCard.text)inner+=`<div class="card-source">${esc(displayCard.text.slice(0,30))}</div>`;
     }else if(displayCard.type==='note'){
       const col=colorById(displayCard.color);
-      const al=resolveAlign(displayCard);
-      inner=`<div class="ctxt h-${al.h} v-${al.v}" style="background:${col.bg};color:${col.fg};">${esc(displayCard.text||'')}</div>`;
+      inner=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" data-color="${esc(displayCard.color||'none')}" data-alignh="${esc(displayCard.alignH||'')}" data-alignv="${esc(displayCard.alignV||'')}" style="${noteCardStyle(displayCard,col)}">${esc(displayCard.text||'')}</div></div>`;
     }else if(displayCard.type==='list'){
-      const items=(displayCard.items||[]).slice(0,5).map(i=>`<div>・${esc(i.t)}</div>`).join('');
-      inner=`<div class="ctxt">${displayCard.title?`<b>${esc(displayCard.title)}</b><br>`:''}${items}</div>`;
+      inner=listCardInner(displayCard);
     }else if(displayCard.type==='link'){
-      const link=displayCard.link||{};
-      const thumb=link.image
-        ? `<img src="${esc(link.image)}" alt="" style="width:100%;height:60%;object-fit:cover;display:block;">`
-        : `<div style="width:100%;height:60%;display:flex;align-items:center;justify-content:center;background:var(--link-grad);color:var(--g);"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
-      inner=`${thumb}<div class="ctxt" style="padding:6px 8px;font-size:10px;"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(link.title||link.url||'(無題のリンク)')}</b><span style="color:var(--ink3);">${esc(link.siteName||link.host||'')}</span></div>`;
+      inner=linkCardInner(displayCard);
     }
     // 共有バッジ
     let badge='';
@@ -4059,6 +4168,9 @@ function renderMemoGrid(){
   addCell.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>';
   addCell.addEventListener('click',()=>openMemoModal(null));
   grid.appendChild(addCell);
+  // note カードのフォントを実幅に合わせて確定 (利用者側と同じ見た目に)
+  applyGridNoteScale(grid);
+  requestAnimationFrame(()=>applyGridNoteScale(grid));
 }
 
 // ── 並べ替えモード: カードを縦リストで描画 ──
