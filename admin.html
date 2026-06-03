@@ -1133,6 +1133,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   width:100%;
   min-height:120px;
 }
+/* ノート編集(contenteditable)の空時プレースホルダ */
+#memo-note-area:empty:before{
+  content:attr(data-placeholder);
+  color:var(--ink3);
+  opacity:0.7;
+  pointer-events:none;
+}
 
 /* 揃えツールバー */
 .align-row{
@@ -2288,6 +2295,102 @@ function resolveAlign(c){
     h:(c.alignH==='left'||c.alignH==='center')?c.alignH:autoH,
     v:(c.alignV==='top'||c.alignV==='center')?c.alignV:autoV,
   };
+}
+
+// ── ノート(テキストメモ)のフォント自動スケール (index.html と完全に同じ方式) ──
+// 枠幅に対するテキスト比率を一致させるため、グリッド基準(120px)でフォントサイズを決め、
+// 実際の枠幅に比例してスケールする。短文は正方形、長文は縦に伸びる。
+const NOTE_CARD_SIZES=[
+  {fz:17, lh:1.5,  clamp:3},
+  {fz:15, lh:1.45, clamp:4},
+  {fz:13, lh:1.4,  clamp:5},
+  {fz:11, lh:1.4,  clamp:6},
+  {fz:10, lh:1.35, clamp:7},
+  {fz:9,  lh:1.3,  clamp:8},
+  {fz:8,  lh:1.3,  clamp:9},
+  {fz:7,  lh:1.25, clamp:10},
+  {fz:6,  lh:1.25, clamp:12},
+  {fz:5,  lh:1.2,  clamp:15},
+  {fz:4,  lh:1.2,  clamp:20},
+];
+function noteCardInitialSizeIndex(tlen){
+  if(tlen<=12)return 0;
+  if(tlen<=21)return 1;
+  if(tlen<=31)return 2;
+  if(tlen<=44)return 3;
+  if(tlen<=57)return 4;
+  if(tlen<=72)return 5;
+  if(tlen<=91)return 6;
+  if(tlen<=120)return 7;
+  if(tlen<=180)return 8;
+  if(tlen<=270)return 9;
+  return 10;
+}
+function estimateNoteLineCount(text,fz){
+  const usableWidth=100;
+  const charsPerLine=Math.max(1, Math.floor((usableWidth*0.9)/fz));
+  const lines=String(text||'').split('\n');
+  let total=0;
+  for(const line of lines){
+    if(line.length===0){ total+=1; continue; }
+    total += Math.ceil(line.length / charsPerLine);
+  }
+  return total;
+}
+const NOTE_BASE_WIDTH=120;
+let noteApplyStyle=null; // 現在編集中ノートの applyStyle (揃えボタンから呼ぶ)
+
+// index.html のノート編集と同じ: 正方形プレビュー + フォント自動スケール + 長文で縦伸び。
+// m (state.editingMemo) を直接更新する。
+function setupNoteEditor(m){
+  const wrap=$('memo-note-wrap'), inner=$('memo-note-inner'), editor=$('memo-note-area');
+  if(!wrap||!inner||!editor)return;
+  const initText=m.text||'';
+  editor.innerHTML=initText?esc(initText).replace(/\n/g,'<br>'):'';
+  const applyStyle=()=>{
+    const col=colorById(m.color);
+    wrap.style.background=col.bg;
+    inner.style.background=col.bg;
+    inner.style.color=col.fg;
+    const txt=editor.innerText;
+    const tlen=txt.length;
+    let idx=noteCardInitialSizeIndex(tlen);
+    while(idx<NOTE_CARD_SIZES.length-1){
+      const s=NOTE_CARD_SIZES[idx];
+      if(estimateNoteLineCount(txt,s.fz)<=s.clamp)break;
+      idx++;
+    }
+    const baseFz=NOTE_CARD_SIZES[idx].fz;
+    const lh=NOTE_CARD_SIZES[idx].lh;
+    const wrapW=wrap.clientWidth||324;
+    const scale=wrapW/NOTE_BASE_WIDTH;
+    inner.style.fontSize=(baseFz*scale)+'px';
+    inner.style.lineHeight=lh;
+    inner.style.padding=(wrapW*0.055)+'px';
+    wrap.style.minHeight=wrapW+'px';
+    const align=resolveAlign({text:txt,alignH:m.alignH,alignV:m.alignV});
+    inner.style.alignItems=align.h==='center'?'center':'flex-start';
+    editor.style.textAlign=align.h==='center'?'center':'left';
+    wrap.style.justifyContent=align.v==='center'?'center':'flex-start';
+    inner.style.justifyContent='flex-start';
+  };
+  noteApplyStyle=applyStyle;
+  wrap.addEventListener('click',e=>{
+    if(e.target===wrap||e.target===inner){
+      editor.focus();
+      const range=document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      const sel=window.getSelection();
+      sel.removeAllRanges(); sel.addRange(range);
+    }
+  });
+  editor.addEventListener('input',()=>{
+    m.text=editor.innerText;
+    applyStyle();
+  });
+  applyStyle();
+  requestAnimationFrame(applyStyle);
 }
 
 const state={
@@ -4169,8 +4272,10 @@ function renderMemoModalBody(){
     const taAlign=`text-align:${al.h};`;
     const areaJustify=al.v==='center'?'center':'flex-start';
     editHtml=`
-      <div class="memo-edit-area note-edit-area" style="background:${col.bg};color:${col.fg};justify-content:${areaJustify};">
-        <textarea id="memo-text" placeholder="メモを書く…" style="${taAlign}">${esc(m.text||'')}</textarea>
+      <div id="memo-note-wrap" style="width:100%;border-radius:12px;position:relative;cursor:text;box-sizing:border-box;display:flex;flex-direction:column;">
+        <div id="memo-note-inner" style="width:100%;box-sizing:border-box;display:flex;flex-direction:column;">
+          <div id="memo-note-area" contenteditable="true" inputmode="text" autocapitalize="sentences" spellcheck="false" data-placeholder="メモを書く…" style="outline:none;width:100%;white-space:pre-wrap;word-break:break-word;-webkit-user-select:text;user-select:text;min-height:1.5em;"></div>
+        </div>
       </div>
       <div class="align-row" id="align-row">
         <div class="align-group" data-axis="h">
@@ -4334,6 +4439,9 @@ function renderMemoModalBody(){
 
   body.innerHTML=typeHtml+editHtml+shareHtml+dateHtml+delHtml;
 
+  // ノート(テキストメモ)は index と同じ自動スケール編集にする
+  if(m.type==='note')setupNoteEditor(m);
+
   // 投稿日時の編集 (過去日時も指定可。公開ページの詳細表示に反映される)
   const dateInp=$('memo-created');
   if(dateInp)dateInp.addEventListener('change',e=>{
@@ -4375,11 +4483,8 @@ function renderMemoModalBody(){
         alignRow.querySelectorAll(`.align-btn[data-axis="${axis}"]`).forEach(b=>{
           b.classList.toggle('on',b===btn);
         });
-        // textarea のプレビューを即時反映 (再描画しないのでフォーカス・カーソルを維持)
-        const ta=$('memo-text');
-        const area=ta?ta.closest('.note-edit-area'):null;
-        if(ta && axis==='h')ta.style.textAlign=val;
-        if(area && axis==='v')area.style.justifyContent=(val==='center')?'center':'flex-start';
+        // プレビューを即時反映 (再描画しないのでフォーカス・カーソルを維持)
+        if(typeof noteApplyStyle==='function')noteApplyStyle();
       });
     });
   }
