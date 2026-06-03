@@ -3083,6 +3083,31 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-size:12px;color:var(--ink2);line-height:1.7;
   margin-top:13px;text-align:center;
 }
+/* 共有ページ: 折りたたみセクション (グループ機能 / なりたち / 安心設計) */
+.lib-locked-banner details.fold{
+  margin-top:10px;
+  background:rgba(255,255,255,.55);
+  border:1px solid var(--line);
+  border-radius:10px;
+  overflow:hidden;
+  text-align:left;
+}
+.lib-locked-banner details.fold > summary{
+  list-style:none;cursor:pointer;
+  padding:12px 13px;
+  font-size:12px;font-weight:700;color:var(--gd);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.lib-locked-banner details.fold > summary::-webkit-details-marker{display:none;}
+.lib-locked-banner details.fold > summary::after{
+  content:"＋";color:var(--g);font-weight:700;font-size:14px;flex-shrink:0;line-height:1;
+}
+.lib-locked-banner details.fold[open] > summary::after{content:"−";}
+.lib-locked-banner details.fold .fold-body{padding:0 13px 12px;}
+.lib-locked-banner details.fold .lib-story,
+.lib-locked-banner details.fold .lib-trust{
+  margin-top:0;padding-top:0;border-top:0;
+}
 /* 製作者クレジット (さりげなく) */
 .lib-locked-banner .lib-credit{
   margin-top:18px;
@@ -5657,7 +5682,15 @@ function aiGateText(short){
     ? 'このアカウントではAIがまだオフです。塾・管理者にご相談ください'
     : '[このアカウントではAIがまだオフになっています。\n塾・管理者にAIの有効化をご相談ください。]';
 }
+// この棚は「誰でも見られる」公開ライブラリか? (未ログインでも閲覧可)
+// 管理画面の「公開」トグル (shelf.public===true) で決まる。
+function isPublicShelf(shelfId){
+  const s=(typeof OFFICIAL_SHELVES!=='undefined'?OFFICIAL_SHELVES:[]).find(x=>x&&x.id===shelfId);
+  return !!(s && s.public===true);
+}
 function canSeeShelfId(shelfId){
+  // 公開ライブラリは、ログインの有無にかかわらず誰でも閲覧可
+  if(isPublicShelf(shelfId))return true;
   if(!state.auth || !state.auth.token)return false;
   if(state.auth.role==='admin')return true;
   // 自分のグループが所有するライブラリは常に閲覧可
@@ -6218,9 +6251,8 @@ function navHtml(active){
       </button></div>`;
     }
     const on=active===i.id?' on':'';
-    // 共有タブは、ログイン中の塾生(=フル機能)でないときは「ロック中」に見せる。
-    // 押すと共有ページ(=フル機能の案内)へ飛ぶので、興味喚起の入口になる。
-    const locked=(i.id==='library' && typeof isStudent==='function' && !isStudent());
+    // 共有タブは、公開ライブラリを誰でも閲覧できるようになったため、鍵マークは出さない。
+    const locked=false;
     const lockCls=locked?' locked':'';
     const wrapAttr=i.id==='library'?' id="bnav-library-wrap"':'';
     // バッジはアイコン(SVG)のラッパー内に配置する。こうするとアイコンの右上に正確に乗る。
@@ -12771,12 +12803,15 @@ async function copyToShelf(){
 function renderLibrary(){
   // グループ管理者には「グループのライブラリ」入口を出す
   renderGroupLibEntry();
-  // 未認証なら上部にバナー、それ以下のライブラリは「塾生限定」マークが付く
+  // 未ログインの訪問者向けの案内。公開ライブラリの「下」に置きたいので、
+  // ここでは文字列だけ用意しておき、リスト描画後に lib-list の末尾へ差し込む。
   const newSec=$('lib-new-section');
-  if(newSec && !isStudent()){
-    newSec.innerHTML=`
+  if(newSec && !isStudent())newSec.innerHTML='';
+  let bannerHtml='';
+  if(!isStudent()){
+    bannerHtml=`
       <div class="lib-locked-banner">
-        <div class="lib-page-note">グループ向け機能を使うと、複数の「共有ライブラリ」を作成しメモを共有、AIにも質問できるようになります。</div>
+        <div class="lib-page-note">公開ライブラリは、登録なしで誰でも見られます。自分で共有ライブラリを作るときは、あなたが選んだ人にだけ届きます。中にいる人以外には見えません。メモの共有も、AIへの質問も、その人たちのあいだだけで使えます。</div>
         <div class="ttl">SnapInでできること</div>
         <div class="lib-feat-label">ずっと無料で使えます</div>
         <div class="benefits numbered">
@@ -12791,60 +12826,73 @@ function renderLibrary(){
           <div>複数ページを連続撮影、動画もそのままメモ化</div>
           <div>書き出して保存、機種変のときもデータが安心</div>
         </div>
-        <div class="lib-feat-label">JUKEN CAMPが使っている便利なグループ向け機能</div>
-        <div class="benefits numbered">
-          <div>メンバーへの情報共有に便利な共有ライブラリ</div>
-          <div>メモ・写真・課題を即分析、AIがやさしく対応</div>
-          <div>宿題も読み取り、レベルに合わせてやさしく解説</div>
-          <div>AIとのチャット履歴も共有、続きから対話できる</div>
-          <div>投稿されたメモを、共有ライブラリで受け取り</div>
-          <div>受け取ったメモは、自分のメモにしてAIに質問</div>
-          <div>メモも写真も自動でクラウド保存、機種変更も安心</div>
-        </div>
         <div class="sub">個人・塾・会社・家族、どんなグループでも使えます。</div>
         <div class="btn-row">
           <button class="go-contact" data-action="contact-inquiry">使ってみたい・相談する</button>
         </div>
         <button class="lib-login-link" data-action="goto-login">すでに登録済みの方はログイン</button>
-        <div class="lib-story">
-          <div class="story-ttl">SnapInのなりたち</div>
-          <div class="story-body">
-            <p>もとは、テスト勉強のための道具でした。解けなかった問題、覚えておきたい公式、間違えやすいところを、自分ひとりのLINEグループに写真やメモで送り、あとからスクロールして見返す。この使い方を、そのままアプリにしました。</p>
-            <p>入れるものは、次第に問題だけではなくなりました。やることリスト、買い物メモ、目標。別々の場所に書いていたものが、ひとつの流れに集まります。メモは、あとで見つけられて初めて役に立ちます。一か所にまとまっていれば、どこに書いたかを思い出す手間がありません。</p>
-            <p>放り込み方に決まりはありません。思いついた順に入れるだけで、取りこぼしがありません。整理が必要になったら、タグをつける。それだけで十分です。</p>
-            <p>グリッド表示は、SNSを流して必要な情報だけを選び取る見方から取りました。並べて見渡せると、探す途中で別のメモが目に入り、見返すつもりがなくても復習になります。</p>
+
+        <details class="fold">
+          <summary>塾やグループで使うと（グループ向け機能）</summary>
+          <div class="fold-body">
+            <div class="benefits numbered">
+              <div>メンバーへの情報共有に便利な共有ライブラリ</div>
+              <div>メモ・写真・課題を即分析、AIがやさしく対応</div>
+              <div>宿題も読み取り、レベルに合わせてやさしく解説</div>
+              <div>AIとのチャット履歴も共有、続きから対話できる</div>
+              <div>投稿されたメモを、共有ライブラリで受け取り</div>
+              <div>受け取ったメモは、自分のメモにしてAIに質問</div>
+              <div>メモも写真も自動でクラウド保存、機種変更も安心</div>
+            </div>
           </div>
-          <details>
-            <summary>なぜ「メモする」だけでうまくいくのか</summary>
-            <div class="why-intro">人は忘れます。頭で抱えようとせず、書いて外に出す。それがうまくいく理由は、いくつかあります。</div>
-            <div class="why-item"><b>忘れるのが普通<span class="term">forgetting curve</span></b><br>古典的な実験では、人は1時間で約56%、1日で約74%を忘れるとされます。「あとでやろう」が消えるのは、意志ではなく記憶のしくみ。書いておけば、忘れても残ります。</div>
-            <div class="why-item"><b>頭から降ろすと、軽くなる<span class="term">Zeigarnik effect</span></b><br>やるべきことを抱えていると、頭の片隅がふさがります。書いて預けると、その分を目の前のことに使えます。</div>
-            <div class="why-item"><b>目に入るほど、行動が変わる<span class="term">cueing</span></b><br>目標や予定は、見える場所にあるほど行動のきっかけになります。頭の中だけの目標は、思い出されないまま過ぎていきます。</div>
-            <div class="why-item"><b>撮るだけなら、続く<span class="term">low friction</span></b><br>記録の手間が小さいほど、取りこぼしは減ります。買い物も、覚えずに済む分だけ無駄が減ります。</div>
-            <div class="why-item"><b>残せば、あとで確かめられる<span class="term">external record</span></b><br>記録があれば、自分で見直せます。仕事なら、共有しておくほど「言った・言わない」が減ります。</div>
-          </details>
-          <div class="story-close">子どもは勉強に、大人は暮らしや仕事のメモに。</div>
-        </div>
-        <div class="lib-trust">
-          <div class="trust-ttl">見えないところも、安心設計</div>
-          <div class="trust-item strong">あなたのメモは、他の人には見られません</div>
-          <div class="trust-item">メモはあなたの端末の中に保存されます</div>
-          <div class="trust-item">届くのは「共有された資料」だけ。一方通行です</div>
-          <div class="trust-item">バックアップを選べば、機種変更でも元どおりです</div>
-          <div class="trust-item">うっかり消してもゴミ箱から元に戻せます</div>
-          <div class="trust-item">通信はすべて暗号化（HTTPS）でやりとりされます</div>
-          <div class="trust-item">AIの鍵はサーバーの中にあり、アプリ側には持たせません</div>
-        </div>
+        </details>
+
+        <details class="fold">
+          <summary>SnapInのなりたち</summary>
+          <div class="fold-body">
+            <div class="lib-story">
+              <div class="story-body">
+                <p>もとは、テスト勉強のための道具でした。解けなかった問題、覚えておきたい公式、間違えやすいところを、自分ひとりのLINEグループに写真やメモで送り、あとからスクロールして見返す。この使い方を、そのままアプリにしました。</p>
+                <p>入れるものは、次第に問題だけではなくなりました。やることリスト、買い物メモ、目標。別々の場所に書いていたものが、ひとつの流れに集まります。メモは、あとで見つけられて初めて役に立ちます。一か所にまとまっていれば、どこに書いたかを思い出す手間がありません。</p>
+                <p>放り込み方に決まりはありません。思いついた順に入れるだけで、取りこぼしがありません。整理が必要になったら、タグをつける。それだけで十分です。</p>
+                <p>グリッド表示は、SNSを流して必要な情報だけを選び取る見方から取りました。並べて見渡せると、探す途中で別のメモが目に入り、見返すつもりがなくても復習になります。</p>
+              </div>
+              <details>
+                <summary>なぜ「メモする」だけでうまくいくのか</summary>
+                <div class="why-intro">人は忘れます。頭で抱えようとせず、書いて外に出す。それがうまくいく理由は、いくつかあります。</div>
+                <div class="why-item"><b>忘れるのが普通<span class="term">forgetting curve</span></b><br>古典的な実験では、人は1時間で約56%、1日で約74%を忘れるとされます。「あとでやろう」が消えるのは、意志ではなく記憶のしくみ。書いておけば、忘れても残ります。</div>
+                <div class="why-item"><b>頭から降ろすと、軽くなる<span class="term">Zeigarnik effect</span></b><br>やるべきことを抱えていると、頭の片隅がふさがります。書いて預けると、その分を目の前のことに使えます。</div>
+                <div class="why-item"><b>目に入るほど、行動が変わる<span class="term">cueing</span></b><br>目標や予定は、見える場所にあるほど行動のきっかけになります。頭の中だけの目標は、思い出されないまま過ぎていきます。</div>
+                <div class="why-item"><b>撮るだけなら、続く<span class="term">low friction</span></b><br>記録の手間が小さいほど、取りこぼしは減ります。買い物も、覚えずに済む分だけ無駄が減ります。</div>
+                <div class="why-item"><b>残せば、あとで確かめられる<span class="term">external record</span></b><br>記録があれば、自分で見直せます。仕事なら、共有しておくほど「言った・言わない」が減ります。</div>
+              </details>
+              <div class="story-close">子どもは勉強に、大人は暮らしや仕事のメモに。</div>
+            </div>
+          </div>
+        </details>
+
+        <details class="fold">
+          <summary>見えないところも、安心設計</summary>
+          <div class="fold-body">
+            <div class="lib-trust">
+              <div class="trust-item strong">あなたのメモは、他の人には見られません</div>
+              <div class="trust-item">メモはあなたの端末の中に保存されます</div>
+              <div class="trust-item">届くのは「共有された資料」だけ。一方通行です</div>
+              <div class="trust-item">バックアップを選べば、機種変更でも元どおりです</div>
+              <div class="trust-item">うっかり消してもゴミ箱から元に戻せます</div>
+              <div class="trust-item">通信はすべて暗号化（HTTPS）でやりとりされます</div>
+              <div class="trust-item">AIの鍵はサーバーの中にあり、アプリ側には持たせません</div>
+            </div>
+          </div>
+        </details>
         <div class="lib-credit">Snap<span class="in">In</span><span class="by">by</span><span class="maker">JUKEN CAMP</span></div>
       </div>
     `;
   }
 
-  // 塾生としてログイン済みのユーザーには shelfIds に含まれるライブラリだけを表示。
-  // 未認証ユーザーには一切表示しない (上部のバナーでログインを促すのみ)。
-  const distributed=isStudent()
-    ? OFFICIAL_SHELVES.filter(s=>canSeeShelfId(s.id))
-    : [];
+  // 塾生としてログイン済みのユーザーには shelfIds に含まれるライブラリを表示。
+  // 未認証ユーザーにも「公開」設定された棚だけは表示する (canSeeShelfId が公開棚に true を返す)。
+  const distributed=OFFICIAL_SHELVES.filter(s=>canSeeShelfId(s.id));
   const subscribable=[];
   const subbed=[];
   const avail=[];
@@ -12874,6 +12922,13 @@ function renderLibrary(){
 
   const list=$('lib-list');
   list.innerHTML='';
+  // 未ログインの訪問者には、公開ライブラリの「上」に短い案内を添える
+  if(!isStudent() && distOrdered.length>0){
+    const intro=document.createElement('div');
+    intro.className='glib-intro';
+    intro.textContent='登録なしで、誰でも見られるライブラリです。気になるメモは、自分のメモに保存できます。';
+    list.appendChild(intro);
+  }
   // 配布型を先に表示（登録ボタンなし）
   distOrdered.forEach(s=>list.appendChild(libItem(s,true,'distributed')));
   // 購読型（登録ずみ → 未登録の順）
@@ -12889,6 +12944,13 @@ function renderLibrary(){
     list.appendChild(divider);
   }
   availOrdered.forEach(s=>list.appendChild(libItem(s,false,'avail')));
+
+  // 未ログインの訪問者には、公開ライブラリの「下」に SnapIn の案内を差し込む
+  if(!isStudent() && bannerHtml){
+    const wrap=document.createElement('div');
+    wrap.innerHTML=bannerHtml;
+    if(wrap.firstElementChild)list.appendChild(wrap.firstElementChild);
+  }
 
   // ドラッグ並べ替えをセットアップ
   setupLibraryReorder();
