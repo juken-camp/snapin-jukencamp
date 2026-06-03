@@ -3682,6 +3682,13 @@ function renderShelfEdit(){
             ${state.categories.map(c=>`<option value="${esc(c.id)}" ${catOf(s)===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
           </select>
         </div>
+        <div class="shelf-edit-row">
+          <div class="team-toggle-row">
+            <label style="margin:0;">誰でも見られるように公開する</label>
+            <div class="team-switch ${s.public===true?'on':''}" id="shelf-public-switch"></div>
+          </div>
+          <div class="team-toggle-desc">ONにすると、ログインしていない人でもこの共有ライブラリを開いて閲覧・保存できます。塾の紹介や無料公開コンテンツ向け。OFFは塾生限定のままです。</div>
+        </div>
       </div>
     </div>
 
@@ -3744,6 +3751,17 @@ function renderShelfEdit(){
       window.scrollTo({top:0});
     });
   }
+
+  // 公開トグル (誰でも閲覧可にする / 塾生限定に戻す)
+  const pubSw=$('shelf-public-switch');
+  if(pubSw)pubSw.addEventListener('click',async ()=>{
+    const cur=getSelectedShelf();
+    if(!cur)return;
+    cur.public=!(cur.public===true);
+    pubSw.classList.toggle('on',cur.public);
+    await saveShelves();
+    toast(cur.public?'このライブラリを公開しました':'公開を解除しました');
+  });
 
   // 対象カテゴリの変更 (別カテゴリへ移動)
   const catSel=$('shelf-category');
