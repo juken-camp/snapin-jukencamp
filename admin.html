@@ -787,7 +787,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .shelf-info{flex:1;min-width:0;}
 .shelf-name{
   font-size:14px;font-weight:600;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  white-space:pre-line;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
 .shelf-handle{
   font-size:11px;color:var(--ink3);
@@ -840,6 +841,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   flex:1;
   font-size:15px;
   font-weight:600;
+  white-space:pre-line;
 }
 .shelf-edit-act{
   padding:6px 12px;
@@ -878,6 +880,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   min-height:64px;
   resize:vertical;
 }
+/* 名前欄は2行想定。リサイズハンドルは出さず、高さも控えめに */
+#shelf-name{min-height:auto;resize:none;}
 .shelf-edit-row input:focus,
 .shelf-edit-row textarea:focus{
   border-color:var(--g);
@@ -3705,8 +3709,8 @@ function renderShelfEdit(){
           </div>
         </div>
         <div class="shelf-edit-row">
-          <label>共有ライブラリの名前</label>
-          <input id="shelf-name" type="text" value="${esc(s.name||'')}" maxlength="60">
+          <label>共有ライブラリの名前（改行すると2行で表示されます）</label>
+          <textarea id="shelf-name" rows="2" maxlength="60" placeholder="ライブラリの名前">${esc(s.name||'')}</textarea>
         </div>
         <div class="shelf-edit-row">
           <label>ハンドル (@で始まる識別子)</label>
