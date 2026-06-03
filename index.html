@@ -9835,7 +9835,10 @@ function renderUpload(){
       const align=resolveAlign({text:txt,alignH:c.alignH,alignV:c.alignV});
       inner.style.alignItems=align.h==='center'?'center':'flex-start';
       editor.style.textAlign=align.h==='center'?'center':'left';
-      inner.style.justifyContent=align.v==='center'?'center':'flex-start';
+      // 縦揃えは「正方形の wrap」に効かせる。inner は中身の高さしか持たないので、
+      // inner に justify-content を掛けても中央に寄らず、上に張り付いてしまう (詳細画面は wrap 側で揃えている)。
+      wrap.style.justifyContent=align.v==='center'?'center':'flex-start';
+      inner.style.justifyContent='flex-start';
     };
     applyStyle();
     requestAnimationFrame(applyStyle);
