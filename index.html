@@ -5087,7 +5087,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
       </div>
       <div class="ai-note-title">クラウドに保存</div>
     </div>
-    <div class="ai-note-desc" id="cloud-status">メモと写真はクラウドに保存します。ただし動画はこの端末だけに残り、バックアップされません（機種変や入れ直しでは引き継げないのでご注意ください）。</div>
+    <div class="ai-note-desc" id="cloud-status">メモと写真はクラウドに保存します。ただし動画はこの端末だけに残り、バックアップされません（機種変更や入れ直しでは引き継げないのでご注意ください）。</div>
     <div class="cloud-actions">
       <button class="cloud-btn" data-action="cloud-backup">今すぐバックアップ</button>
       <button class="cloud-btn ghost" data-action="cloud-restore">クラウドから復元</button>
@@ -6485,7 +6485,7 @@ async function doClaimSubmit(force){
     if(!data.ok){
       let msg='うまく確認できませんでした。';
       if(data.reason==='not_found')msg='名前または誕生日が一致しません。もう一度確認してください。';
-      else if(data.reason==='already_claimed')msg='この名前はすでに他の端末で使われています。\n機種変や入れ直しなら、下のボタンで切り替えられます。';
+      else if(data.reason==='already_claimed')msg='この名前はすでに他の端末で使われています。\n機種変更や入れ直しなら、下のボタンで切り替えられます。';
       else if(data.reason==='revoked')msg='現在このアカウントは利用できません。先生に確認してください。';
       else if(data.reason==='bad_request')msg='入力に不備があります。もう一度確認してください。';
       errEl.textContent=msg;
@@ -6613,7 +6613,7 @@ async function doJoinSubmit(force){
         const min=data.retryAfterSec?Math.ceil(data.retryAfterSec/60):10;
         msg=`暗証番号を続けてまちがえたため、一時的にロックされています。\n約 ${min} 分後にもう一度お試しください。`;
       }
-      else if(data.reason==='already_claimed')msg='この名前はすでに別の端末で使われています。\n機種変や入れ直しなら、下のボタンで切り替えられます。';
+      else if(data.reason==='already_claimed')msg='この名前はすでに別の端末で使われています。\n機種変更や入れ直しなら、下のボタンで切り替えられます。';
       else if(data.reason==='revoked')msg='現在このグループ・アカウントは利用できません。担当者に確認してください。';
       else if(data.reason==='bad_request')msg='入力に不備があります。もう一度確認してください。';
       errEl.textContent=msg;
@@ -7274,7 +7274,7 @@ async function inboxDelete(id){
 }
 
 // ═══ 設定シート (バックアップ/復元) ═══
-// 個人メモは PWA を削除したり機種変したりすると消えてしまう。
+// 個人メモは PWA を削除したり機種変更したりすると消えてしまう。
 // サーバー同期は塾生プラン側で別途検討するとして、まずクライアントだけで完結する
 // JSON エクスポート/インポート方式を用意する。
 // 共有棚 (subscribed/distributed) の中身そのものはサーバー由来なので含めない。
@@ -7440,7 +7440,7 @@ async function cloudRestore(){
 function updateCloudStatus(){
   const status=$('cloud-status');
   if(!status)return;
-  let base='メモと写真はクラウドに保存します。ただし動画はこの端末だけに残り、バックアップされません（機種変や入れ直しでは引き継げないのでご注意ください）。';
+  let base='メモと写真はクラウドに保存します。ただし動画はこの端末だけに残り、バックアップされません（機種変更や入れ直しでは引き継げないのでご注意ください）。';
   if(state.lastCloudBackupAt){
     const d=new Date(state.lastCloudBackupAt);
     const z=n=>String(n).padStart(2,'0');
@@ -12845,9 +12845,9 @@ function renderLibrary(){
           <div>１人チャットで、メモにあとから情報を足せる</div>
           <div>リンクかQRコードで、友達にメモをそのまま共有</div>
           <div>複数ページを連続撮影、動画もそのままメモ化</div>
-          <div>書き出して保存、機種変のときもデータが安心</div>
+          <div>書き出して保存、機種変更のときもデータが安心</div>
         </div>
-        <button class="lib-login-link" data-action="goto-login">すでに登録済みの方はログイン</button>
+        <button class="lib-login-link" data-action="goto-claim">すでに登録済みの方はログイン</button>
 
         <details class="fold">
           <summary>塾やグループで使うと（グループ向け機能）</summary>
