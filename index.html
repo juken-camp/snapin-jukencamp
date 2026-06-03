@@ -6009,6 +6009,23 @@ function applyFeedNoteStyle(root){
 // (Vercel Redis に保存されているデータをロード)
 let OFFICIAL_SHELVES=[];
 
+// 共有棚をローカルにキャッシュするキー。前回取得した内容を起動直後に即表示し、
+// その裏でサーバーから最新を取り直す (stale-while-revalidate)。
+// 初回(キャッシュなし)だけは取得待ちのチラつきが残るが、2回目以降は待ちなしで出る。
+const SHELVES_CACHE_KEY='snapin_official_shelves_v1';
+function hydrateShelvesFromCache(){
+  try{
+    if(OFFICIAL_SHELVES.length>0)return; // すでに最新がある場合は触らない
+    const raw=localStorage.getItem(SHELVES_CACHE_KEY);
+    if(!raw)return;
+    const arr=JSON.parse(raw);
+    if(Array.isArray(arr) && arr.length){
+      OFFICIAL_SHELVES=arr;
+      resolveShelfRefs(OFFICIAL_SHELVES);
+    }
+  }catch(e){/* キャッシュが壊れていても無視して通常取得に任せる */}
+}
+
 // 各ライブラリ内の参照(_ref)を、他ライブラリのマスター実体に解決して展開する。
 // これでクロスポストされたメモが各ライブラリのカード一覧に正しく現れる。
 function resolveShelfRefs(shelves){
@@ -6045,6 +6062,9 @@ async function loadOfficialShelves(){
     if(!res.ok)return;
     const data=await res.json();
     OFFICIAL_SHELVES=Array.isArray(data.shelves)?data.shelves:[];
+    // 次回の起動で即表示できるよう、取得した共有棚(グローバル分)を端末にキャッシュ。
+    // setItem は即時にスナップショットを取るので、この後の merge/resolve の影響は受けない。
+    try{ localStorage.setItem(SHELVES_CACHE_KEY, JSON.stringify(OFFICIAL_SHELVES)); }catch(e){}
     // グループ所有ライブラリ (自分のグループの分だけ) を取得してマージ
     await mergeGroupShelves();
     // クロスポスト: 参照を実体に解決
@@ -12922,13 +12942,6 @@ function renderLibrary(){
 
   const list=$('lib-list');
   list.innerHTML='';
-  // 未ログインの訪問者には、公開ライブラリの「上」に短い案内を添える
-  if(!isStudent() && distOrdered.length>0){
-    const intro=document.createElement('div');
-    intro.className='glib-intro';
-    intro.textContent='登録なしで、誰でも見られるライブラリです。気になるメモは、自分のメモに保存できます。';
-    list.appendChild(intro);
-  }
   // 配布型を先に表示（登録ボタンなし）
   distOrdered.forEach(s=>list.appendChild(libItem(s,true,'distributed')));
   // 購読型（登録ずみ → 未登録の順）
@@ -14735,6 +14748,7 @@ async function refreshFromLogo(logoEl){
 
 // 起動
 setupNavs();
+hydrateShelvesFromCache(); // 前回のキャッシュを先に反映 (起動直後の空白を防ぐ)
 loadOfficialShelves(); // 共有棚をサーバーから取得 (非同期、UIブロックしない)
 
 // 各画面のSnapInロゴをタップで現在画面を更新できるようにする
