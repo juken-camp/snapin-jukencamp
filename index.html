@@ -3108,6 +3108,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .lib-locked-banner details.fold .lib-trust{
   margin-top:0;padding-top:0;border-top:0;
 }
+.lib-locked-banner details.fold .fold-body .why-intro{padding:0 0 9px;}
+.lib-locked-banner details.fold .fold-body .why-item{padding:9px 0;}
 /* 製作者クレジット (さりげなく) */
 .lib-locked-banner .lib-credit{
   margin-top:18px;
@@ -12831,7 +12833,6 @@ function renderLibrary(){
   if(!isStudent()){
     bannerHtml=`
       <div class="lib-locked-banner">
-        <div class="lib-page-note">公開ライブラリは、登録なしで誰でも見られます。自分で共有ライブラリを作るときは、あなたが選んだ人にだけ届きます。中にいる人以外には見えません。メモの共有も、AIへの質問も、その人たちのあいだだけで使えます。</div>
         <div class="ttl">SnapInでできること</div>
         <div class="lib-feat-label">ずっと無料で使えます</div>
         <div class="benefits numbered">
@@ -12845,10 +12846,6 @@ function renderLibrary(){
           <div>リンクかQRコードで、友達にメモをそのまま共有</div>
           <div>複数ページを連続撮影、動画もそのままメモ化</div>
           <div>書き出して保存、機種変のときもデータが安心</div>
-        </div>
-        <div class="sub">個人・塾・会社・家族、どんなグループでも使えます。</div>
-        <div class="btn-row">
-          <button class="go-contact" data-action="contact-inquiry">使ってみたい・相談する</button>
         </div>
         <button class="lib-login-link" data-action="goto-login">すでに登録済みの方はログイン</button>
 
@@ -12864,11 +12861,15 @@ function renderLibrary(){
               <div>受け取ったメモは、自分のメモにしてAIに質問</div>
               <div>メモも写真も自動でクラウド保存、機種変更も安心</div>
             </div>
+            <div class="sub">個人・塾・会社・家族、どんなグループでも使えます。</div>
+            <div class="btn-row">
+              <button class="go-contact" data-action="contact-inquiry">使ってみたい・相談する</button>
+            </div>
           </div>
         </details>
 
         <details class="fold">
-          <summary>SnapInのなりたち</summary>
+          <summary>塾の現場でうまれたSnapIn</summary>
           <div class="fold-body">
             <div class="lib-story">
               <div class="story-body">
@@ -12877,16 +12878,21 @@ function renderLibrary(){
                 <p>放り込み方に決まりはありません。思いついた順に入れるだけで、取りこぼしがありません。整理が必要になったら、タグをつける。それだけで十分です。</p>
                 <p>グリッド表示は、SNSを流して必要な情報だけを選び取る見方から取りました。並べて見渡せると、探す途中で別のメモが目に入り、見返すつもりがなくても復習になります。</p>
               </div>
-              <details>
-                <summary>なぜ「メモする」だけでうまくいくのか</summary>
-                <div class="why-intro">人は忘れます。頭で抱えようとせず、書いて外に出す。それがうまくいく理由は、いくつかあります。</div>
-                <div class="why-item"><b>忘れるのが普通<span class="term">forgetting curve</span></b><br>古典的な実験では、人は1時間で約56%、1日で約74%を忘れるとされます。「あとでやろう」が消えるのは、意志ではなく記憶のしくみ。書いておけば、忘れても残ります。</div>
-                <div class="why-item"><b>頭から降ろすと、軽くなる<span class="term">Zeigarnik effect</span></b><br>やるべきことを抱えていると、頭の片隅がふさがります。書いて預けると、その分を目の前のことに使えます。</div>
-                <div class="why-item"><b>目に入るほど、行動が変わる<span class="term">cueing</span></b><br>目標や予定は、見える場所にあるほど行動のきっかけになります。頭の中だけの目標は、思い出されないまま過ぎていきます。</div>
-                <div class="why-item"><b>撮るだけなら、続く<span class="term">low friction</span></b><br>記録の手間が小さいほど、取りこぼしは減ります。買い物も、覚えずに済む分だけ無駄が減ります。</div>
-                <div class="why-item"><b>残せば、あとで確かめられる<span class="term">external record</span></b><br>記録があれば、自分で見直せます。仕事なら、共有しておくほど「言った・言わない」が減ります。</div>
-              </details>
               <div class="story-close">子どもは勉強に、大人は暮らしや仕事のメモに。</div>
+            </div>
+          </div>
+        </details>
+
+        <details class="fold">
+          <summary>なぜ「メモする」だけでうまくいくのか</summary>
+          <div class="fold-body">
+            <div class="lib-story">
+              <div class="why-intro">人は忘れます。頭で抱えようとせず、書いて外に出す。それがうまくいく理由は、いくつかあります。</div>
+              <div class="why-item"><b>忘れるのが普通<span class="term">forgetting curve</span></b><br>古典的な実験では、人は1時間で約56%、1日で約74%を忘れるとされます。「あとでやろう」が消えるのは、意志ではなく記憶のしくみ。書いておけば、忘れても残ります。</div>
+              <div class="why-item"><b>頭から降ろすと、軽くなる<span class="term">Zeigarnik effect</span></b><br>やるべきことを抱えていると、頭の片隅がふさがります。書いて預けると、その分を目の前のことに使えます。</div>
+              <div class="why-item"><b>目に入るほど、行動が変わる<span class="term">cueing</span></b><br>目標や予定は、見える場所にあるほど行動のきっかけになります。頭の中だけの目標は、思い出されないまま過ぎていきます。</div>
+              <div class="why-item"><b>撮るだけなら、続く<span class="term">low friction</span></b><br>記録の手間が小さいほど、取りこぼしは減ります。買い物も、覚えずに済む分だけ無駄が減ります。</div>
+              <div class="why-item"><b>残せば、あとで確かめられる<span class="term">external record</span></b><br>記録があれば、自分で見直せます。仕事なら、共有しておくほど「言った・言わない」が減ります。</div>
             </div>
           </div>
         </details>
