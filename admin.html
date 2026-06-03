@@ -954,6 +954,43 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .memo-card-add svg{width:32px;height:32px;}
 
+/* ライブラリ内メモの並べ替えモード (縦リスト + ドラッグ) */
+.memo-reorder-toggle{
+  font-size:12px;font-weight:600;color:var(--g);
+  background:var(--gl);border:none;border-radius:999px;
+  padding:5px 12px;cursor:pointer;
+}
+.memo-reorder-toggle.on{background:var(--g);color:#fff;}
+.memo-reorder-toggle:active{opacity:.7;}
+.reorder-hint{font-size:11px;color:var(--ink3);padding:0 20px 10px;}
+.memo-grid.reorder-mode{display:block;padding:0 14px 8px;}
+.card-reorder-row{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:12px;padding:8px 10px;margin-bottom:8px;
+}
+.card-reorder-row.dragging{
+  box-shadow:0 6px 18px rgba(0,0,0,.16);opacity:.96;position:relative;z-index:5;
+}
+.card-reorder-list.is-dragging .card-reorder-row{transition:transform .12s ease;}
+.card-reorder-list.is-dragging,
+.card-reorder-list.is-dragging *{user-select:none;-webkit-user-select:none;}
+.card-reorder-thumb{
+  width:42px;height:42px;border-radius:8px;flex-shrink:0;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;background:var(--gl);
+}
+.card-reorder-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.card-reorder-label{
+  font-size:13px;color:var(--ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.card-reorder-kind{font-size:10px;color:var(--ink3);margin-top:2px;}
+.card-reorder-handle{
+  flex-shrink:0;color:var(--ink3);cursor:grab;padding:6px;touch-action:none;
+}
+.card-reorder-handle:active{cursor:grabbing;color:var(--ink2);}
+.card-reorder-handle svg{width:18px;height:18px;pointer-events:none;}
+
 /* メモ編集モーダル */
 .modal-mask{
   position:fixed;inset:0;
@@ -2255,6 +2292,7 @@ const state={
   shelves:[],
   selectedId:null,
   editingMemo:null,
+  cardReorder:false,    // ライブラリ内メモの並べ替えモード
   saving:false,
   // ─── 塾生名簿関連 ───
   tab:'shelves',         // 'shelves' | 'students'
@@ -3498,6 +3536,7 @@ function renderShelfList(){
     `;
     row.addEventListener('click',()=>{
       state.selectedId=s.id;
+      state.cardReorder=false; // 別ライブラリを開いたら並べ替えモードは解除
       renderShelfList();
       renderShelfEdit();
       // モバイルでは編集を別画面として開く (一覧の下までスクロールしない)
@@ -3597,6 +3636,7 @@ function newShelf(){
   };
   state.shelves.push(s);
   state.selectedId=id;
+  state.cardReorder=false;
   renderShelfList();
   renderShelfEdit();
   const pane=$('pane-shelves');
@@ -3694,8 +3734,12 @@ function renderShelfEdit(){
 
     <div class="memo-list-head">
       <div class="memo-list-head-title">メモ</div>
-      <div class="memo-list-head-count">${(s.cards||[]).length} 件</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        ${(s.cards||[]).length>=2?`<button class="memo-reorder-toggle ${state.cardReorder?'on':''}" id="memo-reorder-toggle">${state.cardReorder?'完了':'並べ替え'}</button>`:''}
+        <div class="memo-list-head-count">${(s.cards||[]).length} 件</div>
+      </div>
     </div>
+    ${state.cardReorder?'<div class="reorder-hint">⠿ を掴んで上下にドラッグ。順番はそのまま公開ページの表示順になります。</div>':''}
     <div class="memo-grid" id="memo-grid"></div>
   `;
 
@@ -3738,6 +3782,13 @@ function renderShelfEdit(){
   });
 
   $('shelf-delete-btn').addEventListener('click',()=>deleteShelf(s.id));
+
+  // 並べ替えモードの切替 (グリッド ⇄ 縦リスト+ドラッグ)
+  const reBtn=$('memo-reorder-toggle');
+  if(reBtn)reBtn.addEventListener('click',()=>{
+    state.cardReorder=!state.cardReorder;
+    renderShelfEdit(); // ヘッダーのボタン表記とヒントを更新しつつ再描画
+  });
 
   // 一覧に戻る (モバイルの別画面表示から戻る)
   const backBtn=$('shelf-detail-back');
@@ -3833,6 +3884,8 @@ function renderMemoGrid(){
   if(!s)return;
   const grid=$('memo-grid');
   grid.innerHTML='';
+  grid.classList.toggle('reorder-mode', !!state.cardReorder);
+  if(state.cardReorder){ renderCardReorderRows(s,grid); return; }
   // 全ライブラリの実体カードをIDで索引(参照の解決用)
   const byId=new Map();
   for(const sh of state.shelves){
@@ -3901,6 +3954,128 @@ function renderMemoGrid(){
   grid.appendChild(addCell);
 }
 
+// ── 並べ替えモード: カードを縦リストで描画 ──
+// s.cards の全要素を1行ずつ出す (解決できない参照も placeholder で出し、
+// 並べ替え時にインデックスを取りこぼさないようにする)。
+function renderCardReorderRows(s,grid){
+  const byId=new Map();
+  for(const sh of state.shelves){
+    for(const cc of (sh.cards||[])){ if(!cc._ref)byId.set(cc.id,cc); }
+  }
+  const wrap=document.createElement('div');
+  wrap.className='card-reorder-list';
+  (s.cards||[]).forEach((c,idx)=>{
+    let dc=c, isRef=false, resolved=true;
+    if(c._ref){ isRef=true; const o=byId.get(c.id); if(o){dc=o;}else{resolved=false;} }
+    const pv=resolved?cardRowPreview(dc):{thumb:'<div class="card-reorder-thumb"></div>',label:'(共有メモ)',kind:''};
+    const row=document.createElement('div');
+    row.className='card-reorder-row';
+    row.dataset.idx=idx;
+    row.innerHTML=`
+      ${pv.thumb}
+      <div style="flex:1;min-width:0;">
+        <div class="card-reorder-label">${pv.label}</div>
+        <div class="card-reorder-kind">${pv.kind}${isRef?' ・共有':''}</div>
+      </div>
+      <div class="card-reorder-handle" aria-label="並べ替え"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></div>
+    `;
+    const h=row.querySelector('.card-reorder-handle');
+    if(h)attachCardDragHandle(h,row,wrap);
+    wrap.appendChild(row);
+  });
+  grid.appendChild(wrap);
+}
+
+// 並べ替えリストの各行のサムネ・見出しを作る
+function cardRowPreview(dc){
+  let thumb='', label='', kind='';
+  if(dc.type==='photo'||dc.type==='photonote'){
+    thumb=`<div class="card-reorder-thumb">${dc.image?`<img src="${esc(dc.image)}" alt="">`:''}</div>`;
+    label=esc((dc.text||'写真').slice(0,40)); kind='写真';
+  }else if(dc.type==='note'){
+    const col=colorById(dc.color);
+    thumb=`<div class="card-reorder-thumb" style="background:${col.bg};color:${col.fg};font-size:9px;padding:3px;text-align:center;overflow:hidden;line-height:1.2;">${esc((dc.text||'').slice(0,10))}</div>`;
+    label=esc((dc.text||'(空のメモ)').slice(0,40)); kind='メモ';
+  }else if(dc.type==='list'){
+    thumb=`<div class="card-reorder-thumb" style="color:var(--g);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>`;
+    label=esc((dc.title||(dc.items&&dc.items[0]&&dc.items[0].t)||'リスト').slice(0,40)); kind='リスト';
+  }else if(dc.type==='link'){
+    const link=dc.link||{};
+    thumb=`<div class="card-reorder-thumb">${link.image?`<img src="${esc(link.image)}" alt="">`:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--g)" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`}</div>`;
+    label=esc((link.title||link.url||'リンク').slice(0,40)); kind='リンク';
+  }else{
+    thumb=`<div class="card-reorder-thumb"></div>`; label='(メモ)'; kind='';
+  }
+  return {thumb,label,kind};
+}
+
+// ── 指ドラッグでカードを並べ替え (棚リストと同じ1Dドラッグ方式) ──
+let cardDrag=null;
+function attachCardDragHandle(handle,row,listEl){
+  handle.addEventListener('click',e=>{e.stopPropagation();});
+  handle.addEventListener('contextmenu',e=>e.preventDefault());
+  handle.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse' && e.button!==0)return;
+    e.preventDefault(); e.stopPropagation();
+    cardDrag={row,listEl,handle,pointerId:e.pointerId,moved:false,startY:e.clientY};
+    row.classList.add('dragging');
+    listEl.classList.add('is-dragging');
+    try{handle.setPointerCapture(e.pointerId);}catch(_){}
+    document.addEventListener('pointermove',onCardDragMove,{passive:false});
+    document.addEventListener('pointerup',onCardDragEnd);
+    document.addEventListener('pointercancel',onCardDragEnd);
+  });
+}
+function onCardDragMove(e){
+  if(!cardDrag)return;
+  e.preventDefault();
+  const d=cardDrag; d.moved=true;
+  const y=e.clientY;
+  d.row.style.transform='translateY('+(y-d.startY)+'px)';
+  const sibs=[...d.listEl.querySelectorAll('.card-reorder-row:not(.dragging)')];
+  let before=null;
+  for(const sib of sibs){
+    const r=sib.getBoundingClientRect();
+    if(y < r.top + r.height/2){before=sib;break;}
+  }
+  if(before!==d.row.nextElementSibling){
+    d.listEl.insertBefore(d.row,before);
+    d.startY=y;
+    d.row.style.transform='translateY(0px)';
+  }
+  const margin=90, sp=11;
+  if(y<margin)window.scrollBy(0,-sp);
+  else if(y>window.innerHeight-margin)window.scrollBy(0,sp);
+}
+function onCardDragEnd(){
+  if(!cardDrag)return;
+  const d=cardDrag;
+  document.removeEventListener('pointermove',onCardDragMove);
+  document.removeEventListener('pointerup',onCardDragEnd);
+  document.removeEventListener('pointercancel',onCardDragEnd);
+  try{d.handle.releasePointerCapture(d.pointerId);}catch(_){}
+  d.row.style.transform='';
+  d.row.classList.remove('dragging');
+  d.listEl.classList.remove('is-dragging');
+  const moved=d.moved, listEl=d.listEl;
+  cardDrag=null;
+  if(moved)commitCardOrder(listEl);
+}
+function commitCardOrder(listEl){
+  const s=getSelectedShelf();
+  if(!s||!Array.isArray(s.cards))return;
+  const rows=[...listEl.querySelectorAll('.card-reorder-row')];
+  const order=rows.map(r=>parseInt(r.dataset.idx,10)).filter(n=>!isNaN(n));
+  // 全要素がそろっていなければ安全のため中止 (取りこぼし防止)
+  if(order.length!==s.cards.length)return;
+  if(order.join(',')===s.cards.map((c,i)=>i).join(','))return; // 変化なし
+  s.cards=order.map(i=>s.cards[i]);
+  // 続けて並べ替えられるよう data-idx を新しい順に振り直す
+  rows.forEach((r,i)=>{r.dataset.idx=i;});
+  saveShelves();
+  toast('並び順を保存しました');
+}
+
 // ═══ MEMO MODAL ═══
 function openMemoModal(card){
   const isNew=!card;
@@ -3949,6 +4124,13 @@ function closeMemoModal(){
   state.editingMemo=null;
 }
 
+// 投稿日時(created, ミリ秒)を datetime-local の値 (ローカル時刻) に変換する
+function toLocalDatetimeValue(ms){
+  const d=new Date(ms||Date.now());
+  if(isNaN(d.getTime()))return '';
+  const p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 function renderMemoModalBody(){
   const m=state.editingMemo;
   if(!m)return;
@@ -4139,7 +4321,23 @@ function renderMemoModalBody(){
     `;
   }
 
-  body.innerHTML=typeHtml+editHtml+shareHtml+delHtml;
+  const dateHtml=`
+    <div class="memo-date-row" style="padding:12px 0 2px;border-top:0.5px solid var(--line);margin-top:8px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px;">投稿日時（公開ページに表示・過去の日付も指定できます）</label>
+      <input id="memo-created" type="datetime-local" value="${toLocalDatetimeValue(m.created)}" style="width:100%;border:1px solid var(--line2);border-radius:10px;padding:11px 12px;font-size:15px;font-family:inherit;background:var(--surface);color:var(--ink);box-sizing:border-box;">
+    </div>
+  `;
+
+  body.innerHTML=typeHtml+editHtml+shareHtml+dateHtml+delHtml;
+
+  // 投稿日時の編集 (過去日時も指定可。公開ページの詳細表示に反映される)
+  const dateInp=$('memo-created');
+  if(dateInp)dateInp.addEventListener('change',e=>{
+    const v=e.target.value;
+    if(!v)return;
+    const t=new Date(v).getTime();
+    if(!isNaN(t))state.editingMemo.created=t;
+  });
 
   // type切替
   body.querySelectorAll('[data-set-type]').forEach(btn=>{
