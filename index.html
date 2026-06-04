@@ -4277,6 +4277,29 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 /* OFF時は完全に消す → 元の画面が1pxも変わらない */
 html:not(.en-on) .en-row{ display:none; }
 
+/* ─── 英語ミラー(ライブ): composer の上に浮く英訳 ─── */
+.compose-frame{ position:relative; } /* .en-live のアンカー */
+.en-live{
+  position:absolute; left:2px; right:2px; bottom:100%; z-index:5;
+  margin-bottom:9px;
+  font-family:var(--font-en); color:var(--ink2);
+  font-size:13.5px; line-height:1.5; letter-spacing:.15px;
+  padding:8px 13px; border-radius:13px;
+  /* 入力欄の上に「浮いている」一枚。下のチャットが透けるので少し濃いめ＋強めの影。 */
+  background:rgba(255,255,255,.64);
+  -webkit-backdrop-filter:blur(14px) saturate(1.35);
+  backdrop-filter:blur(14px) saturate(1.35);
+  border:.5px solid rgba(0,0,0,.05);
+  box-shadow:0 1px 2px rgba(0,0,0,.03), 0 12px 26px rgba(0,0,0,.10);
+  pointer-events:none;
+  max-height:5.4em; overflow:hidden;
+  /* 字幕(上から落ちる)とは逆に、打った文字の上へ「持ち上がる」動き */
+  opacity:0; transform:translateY(7px);
+  transition:opacity .35s ease, transform .35s ease;
+}
+.en-live.in{ opacity:1; transform:translateY(0); }
+html:not(.en-on) .en-live{ display:none; }
+
 /* ─── 英語ミラー 設定トグル ─── */
 .enm-box{ margin:6px 0 2px; }
 .enm-row{
@@ -4781,6 +4804,8 @@ html:not(.en-on) .en-row{ display:none; }
   </div>
   <div class="detail-input" id="detail-input-bar">
     <div class="compose-frame" id="compose-frame">
+    <!-- 英語ミラー(ライブ): 打鍵中の英訳が上に浮かぶ。absolute/pointer-events:none で入力に干渉しない。 -->
+    <div class="en-live" id="en-live" aria-hidden="true"></div>
     <div class="chat-image-preview" id="chat-image-preview" style="display:none;">
       <div class="chat-image-preview-thumb">
         <img id="chat-image-preview-img" alt="">
@@ -6832,6 +6857,9 @@ function setEnMode(on){
   applyEnMode();
   // メモを開いている最中に切り替えたら、字幕を即座に出す/消すため描き直す。
   if(state.current && typeof renderChatLog==='function'){ try{ renderChatLog(state.current); }catch(e){} }
+  // composer のライブ英訳も即反映: OFFなら消す / ONで既に文字があれば出す
+  if(!state.enMode){ if(typeof hideEnLive==='function')hideEnLive(); }
+  else if(typeof scheduleEnLive==='function'){ scheduleEnLive(); }
 }
 
 // ═══ ログアウト (アプリ統一デザインの確認モーダル) ═══
@@ -11968,6 +11996,7 @@ function openDetail(c,origin){
   $('detail-input').value='';
   $('detail-input').placeholder=isOfficial?'(共有メモはコピー後に編集できます)':'メモを書く…';
   $('detail-input').style.height='auto';
+  if(typeof hideEnLive==='function')hideEnLive(); // カードを切り替えたらライブ英訳もリセット
   $('detail-ai-toggle').classList.remove('on');
   $('detail-input-send').style.background='var(--g)';
 
@@ -12235,6 +12264,7 @@ async function detailSend(){
   if(!v && !sendImg)return;
   // プレビューは先に消す (保存の成否に関わらず送信は進める)
   clearPendingChatImg();
+  if(typeof hideEnLive==='function')hideEnLive(); // 送信したらライブ英訳は消す(吹き出し側の字幕に引き継ぐ)
   // 画像があれば IndexedDB へ保存 (端末ローカル専用)。失敗しても送信は止めない。
   if(sendImg){
     try{
@@ -12454,6 +12484,40 @@ async function jaToEn(textRaw){
     if(en)enCache.put(key,en); // fire-and-forget
     return en;
   }catch(e){ return ''; }
+}
+
+// ── 英語ミラー(ライブ): 打っている最中、composer の上に英訳をそっと浮かべる ──
+// 入力が止まってから(デバウンス)翻訳する。position:absolute / pointer-events:none
+// なので、入力欄・レイアウト・iOSのキーボードには一切干渉しない。
+let _enLiveTimer=null, _enLiveSeq=0;
+function hideEnLive(){
+  if(_enLiveTimer){ clearTimeout(_enLiveTimer); _enLiveTimer=null; }
+  const el=document.getElementById('en-live');
+  if(el){ el.classList.remove('in'); el.textContent=''; }
+}
+function scheduleEnLive(){
+  const el=document.getElementById('en-live');
+  const inp=document.getElementById('detail-input');
+  if(!el || !inp)return;
+  if(!state.enMode){ hideEnLive(); return; }
+  const v=(inp.value||'').trim();
+  if(!v || !hasJapanese(v)){ hideEnLive(); return; } // 空 or 日本語なし → 出さない
+  if(_enLiveTimer)clearTimeout(_enLiveTimer);
+  const seq=++_enLiveSeq;
+  _enLiveTimer=setTimeout(async ()=>{
+    let en='';
+    try{ en=await jaToEn(v); }catch(e){ en=''; }
+    // 入力が進んだ / 内容が変わった / OFFにされた 場合は古い結果を出さない
+    const cur=document.getElementById('detail-input');
+    if(seq!==_enLiveSeq || !state.enMode || !cur || (cur.value||'').trim()!==v)return;
+    if(en){
+      el.textContent=en;
+      requestAnimationFrame(()=>{
+        const c2=document.getElementById('detail-input');
+        if(c2 && (c2.value||'').trim()===v)el.classList.add('in');
+      });
+    }else{ hideEnLive(); }
+  }, 650);
 }
 
 // 字幕枠に順番に英訳を流し込む。キャッシュ済みは瞬時、未訳のみ通信。
@@ -14971,6 +15035,8 @@ $('detail-input').addEventListener('input',e=>{
   e.target.style.height='auto';
   e.target.style.height=Math.min(120,e.target.scrollHeight)+'px';
 });
+// 英語ミラー(ライブ): 入力が止まったら composer の上に英訳を浮かべる(既存リスナーとは別に追加)
+$('detail-input').addEventListener('input',()=>{ if(typeof scheduleEnLive==='function')scheduleEnLive(); });
 $('detail-input').addEventListener('keydown',e=>{
   if(e.key==='Enter' && !e.shiftKey && (e.metaKey || e.ctrlKey)){
     // Cmd/Ctrl+Enter で送信
