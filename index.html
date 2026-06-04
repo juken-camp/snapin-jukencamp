@@ -5554,8 +5554,11 @@ const imgDB={
 //   - 次回 save() 時に localStorage 側からは画像が除かれる
 async function hydrateCardImages(){
   if(!Array.isArray(state.cards))return;
-  for(const c of state.cards){
-    if(!c || !c.id)continue;
+  // 全カードの画像/動画を「並列」に IndexedDB から復元する。
+  // 以前は for...await で1枚ずつ読んでいたため、枚数が多いと一覧に画像が出そろう
+  // までにコンマ数秒かかっていた。並列化で待ち時間を大きく短縮する。
+  await Promise.all(state.cards.map(async (c)=>{
+    if(!c || !c.id)return;
     // 動画カード: vidDB から Blob を取り出して objectURL を作る (再生用、永続化しない)
     if(c.type==='video' && c.__hasVid){
       try{
@@ -5592,10 +5595,10 @@ async function hydrateCardImages(){
       if(c.image)c._snap.image=c.image;
       delete c._snap.__hasImg;
     }
-  }
-  // マイグレーション後、localStorage を軽量化して書き直す (ストレージ圧迫を解消)
-  // ※ 既存ユーザーの初回読み込み時に効くので、ここでは save() を呼んでも安全
-  save();
+  }));
+  // マイグレーション後の localStorage 軽量化。一覧の表示(再描画)を先に通したいので、
+  // 描画をブロックしないよう次のタイミングに回す。
+  setTimeout(()=>{try{save();}catch(e){}},0);
 }
 
 // ログイン直後に、端末内(IndexedDB)の画像を復元してホームを再描画する。
