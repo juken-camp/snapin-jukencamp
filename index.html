@@ -518,6 +518,29 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-color:var(--g);
   color:#fff;
 }
+/* 選択モード中は「更新」バッジを隠す (右上でチェックと被るため) */
+.grid.selecting .card .card-update-badge{display:none;}
+
+/* 今日 / しばらく ページのカード選択 (.today-newcard は .card ではないので個別指定) */
+.today-newcard.selectable{cursor:pointer;}
+.today-newcard.selected{outline:3px solid var(--g);outline-offset:-3px;}
+.today-newcard .sel-mark{
+  position:absolute;
+  top:6px;right:6px;
+  width:22px;height:22px;
+  border-radius:50%;
+  background:rgba(255,255,255,.85);
+  border:1.5px solid rgba(0,0,0,.25);
+  display:flex;
+  align-items:center;justify-content:center;
+  z-index:3;
+}
+.today-newcard.selected .sel-mark{
+  background:var(--g);
+  border-color:var(--g);
+  color:#fff;
+}
+.today-newcard.selectable .card-update-badge{display:none;}
 
 /* 選択モードの上部バー */
 .select-bar{
@@ -5209,7 +5232,8 @@ const state={
   detailAiMode:false,  // 詳細画面でAI送信モードか
   replyTo:null,        // 現在リプライ中の対象 {cardId, msgIdx, text, role} | null
   photoMode:null,      // クイック写真撮影中 'photo' | 'photonote' | null
-  selectMode:false,    // グリッドの複数選択モード
+  selectMode:false,    // 複数選択モード
+  selectContext:null,  // 選択モードがどの画面か 'home' | 'today' | 'stale'
   selectedIds:new Set(),
   pastMoreOpen:false,  // 今日タブの「もっと前の保存を見る」展開状態
   shelfLastSeen:{},    // 共有棚ごとに最後に開いた時刻 (新着判定用)
@@ -6369,11 +6393,17 @@ function goto(id,push){
   // 「＋」メニュー(add-sheet)が開いたまま別画面へ遷移する場合も閉じる
   // (写真フローで画像選択後に screen-upload へ飛ぶ等)
   if($('add-sheet')?.classList.contains('on'))closeAddSheet();
-  // ホーム以外に移ったら選択モードを解除
-  if(id!=='screen-home' && state.selectMode){
-    state.selectMode=false;
-    state.selectedIds=new Set();
-    hideSelectBar();
+  // 選択中の画面以外へ移ったら選択モードを解除
+  if(state.selectMode){
+    const ownerScreen = state.selectContext==='today' ? 'screen-today'
+                      : state.selectContext==='stale' ? 'screen-stale'
+                      : 'screen-home';
+    if(id!==ownerScreen){
+      state.selectMode=false;
+      state.selectContext=null;
+      state.selectedIds=new Set();
+      hideSelectBar();
+    }
   }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const sc=$(id);
@@ -7983,10 +8013,8 @@ function renderToday(){
         el.innerHTML=linkCardInner(c);
       }
       if(cardHasUpdate(c0))el.innerHTML+=`<div class="card-update-badge">更新</div>`;
-      el.addEventListener('click',()=>{
-        // 今日のメモはぼかさない (思い出す練習の対象外) → 常に詳細を開く
-        openDetail(c0,'mine');
-      });
+      // 今日のメモはぼかさない (思い出す練習の対象外) → 常に詳細を開く。長押しで複数選択。
+      bindSelectableCard(el,c0.id,'today',()=>openDetail(c0,'mine'));
       wrap.appendChild(el);
     });
   }else{
@@ -8094,7 +8122,7 @@ function renderPastDaySection(daysAgo){
       el.innerHTML=linkCardInner(c);
     }
     if(cardHasUpdate(c0))el.innerHTML+=`<div class="card-update-badge">更新</div>`;
-    el.addEventListener('click',()=>{
+    bindSelectableCard(el,c0.id,'today',()=>{
       if(state.todayMosaic){el.classList.toggle('tapped');return;}
       openDetail(c0,'mine');
     });
@@ -8205,11 +8233,10 @@ function renderPastMoreSection(){
   sec.innerHTML=html;
   // 各カードにクリックハンドラを付ける (モザイク中はタップで表示トグル)
   sec.querySelectorAll('.today-newcards').forEach(row=>{
-    const isMosaic=row.classList.contains('mosaic');
     row.querySelectorAll('.today-newcard').forEach(el=>{
       const id=el.dataset.cardId;
       if(!id)return;
-      el.addEventListener('click',()=>{
+      bindSelectableCard(el,id,'today',()=>{
         if(row.classList.contains('mosaic')){el.classList.toggle('tapped');return;}
         const card=state.cards.find(x=>x.id===id);
         if(card)openDetail(card,'mine');
@@ -8427,7 +8454,7 @@ function attachGridLongPress(cardEl,c){
     pressTimer=setTimeout(()=>{
       if(moved)return;
       if(navigator.vibrate)navigator.vibrate(20);
-      enterSelectMode(c.id);
+      enterSelectMode(c.id,'home');
     },500);
   };
   const onMove=ev=>{
@@ -8512,17 +8539,48 @@ function attachGridPaintSelect(){
   grid.addEventListener('mouseup',onEnd);
 }
 
-function enterSelectMode(firstId){
+// 選択モードの対象画面 (再描画やカード要素の探索に使う)
+function selScreenEl(){
+  if(state.selectContext==='today')return $('screen-today');
+  if(state.selectContext==='stale')return $('screen-stale');
+  return $('screen-home');
+}
+// 選択中の画面を描き直す
+function selectRerender(){
+  if(state.selectContext==='today')renderToday();
+  else if(state.selectContext==='stale')renderStaleList();
+  else renderHome();
+}
+// 指定IDのカード要素を、現在の選択画面内から探す
+// (メモ=.card / 今日=.today-newcard、属性は data-id または data-card-id)
+function selCardEl(id){
+  const root=selScreenEl();
+  if(!root)return null;
+  const e=CSS.escape(id);
+  return root.querySelector(
+    `.card[data-id="${e}"], .today-newcard[data-id="${e}"], .today-newcard[data-card-id="${e}"]`
+  );
+}
+
+function enterSelectMode(firstId,context){
   state.selectMode=true;
+  state.selectContext=context||'home';
   state.selectedIds=new Set([firstId]);
   showSelectBar();
-  renderHome();
+  selectRerender();
 }
 function exitSelectMode(){
   state.selectMode=false;
+  state.selectContext=null;
   state.selectedIds=new Set();
   hideSelectBar();
-  renderHome();
+  // 直前まで選択していた画面を描き直す (selectContext は上でクリア済みなので
+  // selectRerender は使わず、今アクティブな画面を見て描き直す)
+  const active=document.querySelector('.screen.active');
+  const aid=active?active.id:'';
+  if(aid==='screen-today')renderToday();
+  else if(aid==='screen-stale')renderStaleList();
+  else renderHome();
 }
 function toggleSelect(id){
   if(state.selectedIds.has(id))state.selectedIds.delete(id);
@@ -8533,8 +8591,62 @@ function toggleSelect(id){
   }
   // バーの件数を更新 + カードの見た目を更新
   updateSelectBarCount();
-  const card=$('grid-home').querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+  const card=selCardEl(id);
   if(card)card.classList.toggle('selected',state.selectedIds.has(id));
+}
+
+// 今日 / しばらく ページのカードを選択可能にする共通処理。
+// el: カード要素, id: カードID, context: 'today' | 'stale', onOpen: 通常タップ時の処理。
+function bindSelectableCard(el,id,context,onOpen){
+  if(state.selectMode && state.selectContext===context){
+    el.classList.add('selectable');
+    if(state.selectedIds.has(id))el.classList.add('selected');
+    if(!el.querySelector('.sel-mark')){
+      const m=document.createElement('div');
+      m.className='sel-mark';
+      m.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4L19 7"/></svg>';
+      el.appendChild(m);
+    }
+  }
+  attachLongPressSelect(el,id,context);
+  el.addEventListener('click',()=>{
+    if(state.selectMode && state.selectContext===context){
+      if(suppressGridClick)return;
+      toggleSelect(id);
+      return;
+    }
+    onOpen();
+  });
+}
+
+// 長押しで選択モードに入る (今日 / しばらく の各カード用)。
+// グリッドの attachGridLongPress と同じ判定だが context を指定できる。
+function attachLongPressSelect(el,id,context){
+  let pressTimer=null,startX=0,startY=0,moved=false;
+  const xy=ev=>ev.touches?[ev.touches[0].clientX,ev.touches[0].clientY]:[ev.clientX,ev.clientY];
+  const onStart=ev=>{
+    if(state.selectMode)return; // 既に選択モードなら長押し不要
+    [startX,startY]=xy(ev);
+    moved=false;
+    pressTimer=setTimeout(()=>{
+      if(moved)return;
+      if(navigator.vibrate)navigator.vibrate(20);
+      enterSelectMode(id,context);
+    },500);
+  };
+  const onMove=ev=>{
+    const [x,y]=xy(ev);
+    if(Math.abs(x-startX)>8 || Math.abs(y-startY)>8){ moved=true; clearTimeout(pressTimer); }
+  };
+  const onEnd=()=>{ clearTimeout(pressTimer); };
+  el.addEventListener('touchstart',onStart,{passive:true});
+  el.addEventListener('touchmove',onMove,{passive:true});
+  el.addEventListener('touchend',onEnd);
+  el.addEventListener('touchcancel',onEnd);
+  el.addEventListener('mousedown',onStart);
+  el.addEventListener('mousemove',onMove);
+  el.addEventListener('mouseup',onEnd);
+  el.addEventListener('mouseleave',onEnd);
 }
 function showSelectBar(){
   let bar=$('select-bar');
@@ -8550,6 +8662,9 @@ function showSelectBar(){
     `;
     document.querySelector('.app').appendChild(bar);
   }
+  // 「リストから外す」はメモ(ホーム)ページのみ。今日 / しばらく では「捨てる」だけ。
+  const arch=bar.querySelector('.select-bar-archive');
+  if(arch)arch.style.display=(state.selectContext==='home')?'':'none';
   bar.style.display='flex';
   updateSelectBarCount();
 }
@@ -8578,6 +8693,7 @@ function deleteSelected(){
     }
   });
   save();
+  const ctx=state.selectContext; // 戻すときに同じ画面を描き直すため控える
   exitSelectMode();
   toastUndo(`${n}件を捨てました`,()=>{
     prev.forEach(p=>{
@@ -8585,7 +8701,9 @@ function deleteSelected(){
       if(c){delete c.deletedAt;c.pinned=p.pinned;}
     });
     save();
-    renderHome();
+    if(ctx==='today')renderToday();
+    else if(ctx==='stale')renderStaleList();
+    else renderHome();
     toast('元に戻しました');
   });
 }
@@ -8593,6 +8711,7 @@ function deleteSelected(){
 // 選択した複数のメモをまとめてリストから外す (= archive)
 // 1件版の archiveCard と挙動を揃える: archivedAt を立て、ピンも外す。
 function archiveSelected(){
+  if(state.selectContext!=='home')return; // 「リストから外す」はメモページのみ
   const n=state.selectedIds.size;
   if(n===0)return;
   // 元に戻す用に、変更前の pinned を控える
@@ -12639,7 +12758,7 @@ function renderStaleList(){
     }
     if(cardHasUpdate(c0))inner+=`<div class="card-update-badge">更新</div>`;
     card.innerHTML=inner;
-    card.addEventListener('click',()=>{
+    bindSelectableCard(card,c0.id,'stale',()=>{
       if(state.searchMosaic){
         // 暗記モード中: タップで「見える/隠れる」をトグル (詳細は開かない)。
         // 通常表示に戻すには右上のぼかしボタンをオフにする。メモページのグリッドと同じ挙動。
@@ -12650,6 +12769,8 @@ function renderStaleList(){
     });
     grid.appendChild(card);
   });
+  // 選択モード中はグリッドに selecting を付けてチェックマークを表示
+  grid.classList.toggle('selecting', state.selectMode && state.selectContext==='stale');
   applyGridNoteScale(grid);
   requestAnimationFrame(()=>applyGridNoteScale(grid));
   syncSearchMosaicBtns();
