@@ -4277,6 +4277,21 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 /* OFF時は完全に消す → 元の画面が1pxも変わらない */
 html:not(.en-on) .en-row{ display:none; }
 
+/* ─── 英語ミラー: マルチバブルの各バブル直下に付く英訳 ───
+   上のバブルにはタイトに寄せ、次のバブルとの間は1行ぶん空けて、
+   どの英語がどのバブルのものか(まとまり)が一目で分かるようにする。 */
+.en-sub{
+  font-family:var(--font-en); color:var(--ink2);
+  font-size:12.5px; line-height:1.5; letter-spacing:.1px;
+  padding:0 13px;
+  margin:-2px 0 14px;
+  opacity:0; transform:translateY(-3px);
+  transition:opacity .45s ease, transform .45s ease;
+}
+.en-sub:last-child{ margin-bottom:1px; } /* クラスタ末尾は余白を詰める */
+.en-sub.in{ opacity:1; transform:translateY(0); }
+html:not(.en-on) .en-sub{ display:none; }
+
 /* ─── 英語ミラー(ライブ): composer の上に浮く英訳 ─── */
 .compose-frame{ position:relative; } /* .en-live のアンカー */
 .en-live{
@@ -5165,7 +5180,7 @@ html:not(.en-on) .en-live{ display:none; }
       </div>
       <div class="enm-text">
         <div class="enm-title">英語ミラー</div>
-        <div class="enm-sub">書いたことばの下に、英語がそっと浮かびます</div>
+        <div class="enm-sub">書いたことばの下に、英語がそっと浮かぶ</div>
       </div>
       <span class="enm-switch"><span class="enm-knob"></span></span>
     </button>
@@ -11228,19 +11243,29 @@ function renderChatLog(c){
         // リプライ・コピーできるようにする。
         const bubblesHtml=bubbles.map((b,i)=>{
           const inner=(i===0?quoteHtml:'')+linkify(b);
-          return `<div class="bubble" data-bubble-idx="${i}">${inner}</div>`;
+          // 英語ミラーON時は、各バブルの直下に英訳プレースホルダ(.en-sub)を挟む
+          const enSub=(state.enMode && hasJapanese(b))?`<div class="en-sub" data-en-bidx="${i}"></div>`:'';
+          return `<div class="bubble" data-bubble-idx="${i}">${inner}</div>${enSub}`;
         }).join('');
         div.innerHTML=`
           <div class="msg-bubbles">${bubblesHtml}</div>
           <div class="msg-time">${chatTimeLabel(t)}</div>
         `;
+        // 各 .en-sub に、そのバブルの日本語の英訳を流し込むジョブを登録 (バブル単位で対応)
+        if(state.enMode){
+          div.querySelectorAll('.en-sub[data-en-bidx]').forEach(el=>{
+            const bi=parseInt(el.getAttribute('data-en-bidx'),10);
+            if(!isNaN(bi) && bubbles[bi])enJobs.push({el, src:bubbles[bi]});
+          });
+        }
       }
     }
     (section||log).appendChild(div);
 
     // ── 英語ミラー: ON かつ日本語を含む本文のときだけ、メッセージの直後に
     //    独立した字幕行(.en-row)を足す。.msg/.bubble には触れない。
-    if(state.enMode && !m.pending && !m.aiError && m.text && hasJapanese(m.text)){
+    //    マルチバブルは各バブル直下(.en-sub)で個別に付けるので、ここでは対象外。
+    if(state.enMode && !m.pending && !m.aiError && m.text && hasJapanese(m.text) && !div.classList.contains('multi')){
       const enRow=document.createElement('div');
       enRow.className='en-row '+(isUser?'u':'a');
       const enText=document.createElement('div');
@@ -12527,7 +12552,7 @@ async function fillEnglishSubtitles(jobs){
     if(enCache.has(key)){
       const en=enCache.memGet(key);
       if(en){ job.el.textContent=en; job.el.classList.add('in'); }
-      else { const row=job.el.closest('.en-row'); if(row)row.remove(); }
+      else { (job.el.closest('.en-row')||job.el).remove(); }
       continue;
     }
     let en='';
@@ -12537,8 +12562,7 @@ async function fillEnglishSubtitles(jobs){
       job.el.textContent=en;
       requestAnimationFrame(()=>{ if(job.el.isConnected)job.el.classList.add('in'); });
     }else{
-      const row=job.el.closest('.en-row'); // 訳が無ければ空枠は残さない
-      if(row)row.remove();
+      (job.el.closest('.en-row')||job.el).remove(); // 訳が無ければ空枠は残さない(en-row/en-sub どちらも)
     }
   }
 }
