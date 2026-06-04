@@ -3616,6 +3616,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .settings-item-logout{margin-top:4px;}
 .settings-item-icon-logout{background:var(--gl);color:var(--g);}
 .settings-item-title-logout{color:var(--g);}
+/* すべて捨てる (破壊的だが取り消し可能な操作: 控えめな赤) */
+.settings-item-icon-danger{background:rgba(214,96,77,.12);color:var(--rose);}
+.settings-item-title-danger{color:var(--rose);}
 
 /* AIへの希望 (フリー記入) */
 .ai-note-box{
@@ -5150,6 +5153,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </button>
   <div class="settings-note">バックアップは共有ライブラリの中身ではなく、自分で保存した個人メモが対象です。動画は端末の中だけに保存されるため、バックアップ（クラウド・書き出しの両方）には含まれません。</div>
+  <button class="settings-item settings-item-danger" data-action="delete-all-confirm" id="settings-delete-all-btn">
+    <div class="settings-item-icon settings-item-icon-danger">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+    </div>
+    <div class="settings-item-text">
+      <div class="settings-item-title settings-item-title-danger">すべて捨てる</div>
+      <div class="settings-item-sub">メモをまとめてゴミ箱へ（あとから戻せます）</div>
+    </div>
+  </button>
   <button class="settings-item settings-item-logout" data-action="logout-confirm" id="settings-logout-btn">
     <div class="settings-item-icon settings-item-icon-logout">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
@@ -12579,6 +12591,39 @@ async function purgeOne(id){
 }
 
 // 「捨てたメモ」を一括で空にする
+// 設定の「すべて捨てる」: アクティブなメモをまとめてゴミ箱へ (確認あり・取り消し可)。
+async function deleteAllMemos(){
+  const active=getActiveCards();
+  if(active.length===0){ toast('捨てるメモはありません'); return; }
+  const ok=await confirmModal({
+    title:'すべて捨てる',
+    msg:`保存しているメモ ${active.length}件 をすべてゴミ箱へ移します。<br>ゴミ箱からいつでも戻せます。`,
+    okText:'すべて捨てる',
+    danger:true,
+  });
+  if(!ok)return;
+  const prev=active.map(c=>({id:c.id,pinned:c.pinned}));
+  const now=Date.now();
+  active.forEach(c=>{ c.deletedAt=now; c.pinned=false; });
+  save();
+  closeSettings();
+  rerenderMemoScreens();
+  toastUndo(`${prev.length}件を捨てました`,()=>{
+    prev.forEach(p=>{ const c=state.cards.find(x=>x.id===p.id); if(c){delete c.deletedAt;c.pinned=p.pinned;} });
+    save();
+    rerenderMemoScreens();
+    toast('元に戻しました');
+  });
+}
+// メモ一覧を持つ画面を描き直す (今アクティブな画面 + ホーム)。
+function rerenderMemoScreens(){
+  renderHome();
+  const act=document.querySelector('.screen.active');
+  const aid=act?act.id:'';
+  if(aid==='screen-today')renderToday();
+  else if(aid==='screen-stale')renderStaleList();
+}
+
 async function emptyTrash(){
   const trashed=state.cards.filter(isTrashedCard);
   if(trashed.length===0)return;
@@ -14513,6 +14558,7 @@ document.addEventListener('click',e=>{
     case 'open-settings':openSettings();break;
     case 'close-settings':closeSettings();break;
     case 'export-backup':exportBackup();break;
+    case 'delete-all-confirm':deleteAllMemos();break;
     case 'import-backup':importBackup();break;
     case 'cloud-backup':cloudBackup();break;
     case 'cloud-restore':cloudRestore();break;
