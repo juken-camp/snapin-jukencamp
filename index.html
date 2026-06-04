@@ -4300,18 +4300,16 @@ html:not(.en-on) .en-row{ display:none; }
 .en-live.in{ opacity:1; transform:translateY(0); }
 html:not(.en-on) .en-live{ display:none; }
 
-/* ─── 英語ミラー 設定トグル ─── */
-.enm-box{ margin:6px 0 2px; }
+/* ─── 英語ミラー 設定トグル (枠なし・他の設定行に合わせたフラットな行) ─── */
+.enm-box{ margin:2px 0; }
 .enm-row{
-  width:100%; display:flex; align-items:center; gap:12px;
-  padding:12px 14px; background:var(--surface);
-  border:1px solid var(--line); border-radius:14px;
-  text-align:left; cursor:pointer;
+  width:100%; display:flex; align-items:center; gap:14px;
+  padding:9px 4px; text-align:left; cursor:pointer;
 }
 .enm-row:active{ opacity:.7; }
-.enm-icon{ flex:none; width:30px; height:30px; border-radius:9px;
+.enm-icon{ flex:none; width:36px; height:36px; border-radius:10px;
   display:flex; align-items:center; justify-content:center;
-  background:var(--gl); color:var(--gd); }
+  background:var(--gl); color:var(--g); }
 .enm-text{ flex:1; min-width:0; }
 .enm-title{ font-size:15px; color:var(--ink); font-weight:500; }
 .enm-sub{ font-size:12px; color:var(--ink3); margin-top:2px; }
@@ -4322,7 +4320,7 @@ html:not(.en-on) .en-live{ display:none; }
   transition:transform .25s cubic-bezier(.34,1.56,.64,1); }
 .enm-row.on .enm-switch{ background:var(--g); }
 .enm-row.on .enm-knob{ transform:translateX(18px); }
-.enm-note{ font-size:11.5px; color:var(--ink3); line-height:1.6; padding:8px 4px 0; }
+.enm-note{ font-size:11.5px; color:var(--ink3); line-height:1.5; padding:2px 4px 8px; }
 </style>
 </head>
 <body>
