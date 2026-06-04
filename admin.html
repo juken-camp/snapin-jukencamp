@@ -4495,6 +4495,11 @@ function renderMemoModalBody(){
           <div class="link-preview-url">${esc(link.url||'')}</div>
         </div>
       </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="link-fetch-btn" id="link-img-btn" style="flex:1;">${link.image?'画像を変更':'画像を選ぶ'}</button>
+        ${link.image?`<button class="link-fetch-btn" id="link-img-clear" style="flex:0 0 auto;background:var(--surface2);color:var(--ink2);">消す</button>`:''}
+        <input id="link-img-file" type="file" accept="image/*" style="display:none;">
+      </div>
     `:'';
     editHtml=`
       <div class="link-fetch-row">
@@ -4640,6 +4645,34 @@ function renderMemoModalBody(){
     linkTitle.addEventListener('input',e=>{
       if(!state.editingMemo.link)state.editingMemo.link={};
       state.editingMemo.link.title=e.target.value;
+    });
+  }
+  // link: サムネ画像を手動で設定 (og:image が無いサイト用)
+  const linkImgBtn=$('link-img-btn');
+  const linkImgFile=$('link-img-file');
+  if(linkImgBtn && linkImgFile){
+    linkImgBtn.addEventListener('click',()=>linkImgFile.click());
+    linkImgFile.addEventListener('change',async e=>{
+      const f=e.target.files && e.target.files[0];
+      linkImgFile.value='';
+      if(!f)return;
+      setStatus('画像を準備中…','busy');
+      try{
+        const dataUrl=await smartCompress(f,{maxSize:900,maxBytes:500*1024});
+        if(!state.editingMemo.link)state.editingMemo.link={};
+        state.editingMemo.link.image=dataUrl;
+        setStatus('');
+        renderMemoModalBody();
+      }catch(err){
+        setStatus('画像の処理に失敗: '+err.message,'error');
+      }
+    });
+  }
+  const linkImgClear=$('link-img-clear');
+  if(linkImgClear){
+    linkImgClear.addEventListener('click',()=>{
+      if(state.editingMemo.link)state.editingMemo.link.image=null;
+      renderMemoModalBody();
     });
   }
   // list items
@@ -5133,15 +5166,19 @@ async function fetchLinkInModal(){
     if(!data || !data.ok){
       throw new Error(data&&data.error?data.error:'取得に失敗しました');
     }
-    // 利用者アプリと同じ link スキーマで格納
+    // 利用者アプリと同じ link スキーマで格納。
+    // 取得結果に画像/タイトルが無い場合は、既存の値を壊さず引き継ぐ
+    // (og:image を持たないサイトを再取得しても画像が消えないようにする)。
+    const prev=m.link||{};
     m.link={
       url:data.finalUrl||data.url||raw,
       originalUrl:raw,
-      title:data.title||'',
-      description:data.description||'',
-      image:data.image||null,
+      title:data.title||prev.title||'',
+      description:data.description||prev.description||'',
+      image:data.image||prev.image||null,
       host:data.host||'',
-      siteName:data.siteName||data.host||'',
+      siteName:data.siteName||data.host||prev.siteName||'',
+      kind:data.kind||prev.kind||undefined,
     };
     setMsg('','');
     renderMemoModalBody();
