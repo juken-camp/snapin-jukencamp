@@ -6,9 +6,14 @@
 //   - リクエストヘッダ x-snapin-token が必須
 //   - 生徒token: 該当生徒が aiEnabled なら通る、claim 解除されてたら弾く
 //   - 管理者token: 常に通る
+//
+// 例外: 英語ミラーの「翻訳モード」(body.mode === 'translate') だけは
+//   ログイン不要で叩ける。認可の前に処理し、端末/IPごとの1日上限＋共有キャッシュを適用する。
+//   (関数を増やさないため、専用の /api/translate を作らずここに相乗りさせている)
 
 import Anthropic from '@anthropic-ai/sdk';
 import { Redis } from '@upstash/redis';
+import crypto from 'crypto';
 import { authFromReq } from './_lib/auth.js';
 
 const client = new Anthropic({
@@ -25,7 +30,94 @@ const STUDENTS_KEY = 'snapin:students';
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Snapin-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Snapin-Token, X-Snapin-Dev');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 英語ミラー: 翻訳モード (ログイン不要)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const TRANSLATE_SYSTEM =
+  "You are a silent translation layer inside a note-taking app. " +
+  "Translate the user's Japanese into natural, clear English that a Japanese student can read and learn from. " +
+  "Stay faithful and keep it simple. " +
+  "Output ONLY the English translation — no quotes, no notes, no labels, no preamble. " +
+  "If the input contains no Japanese, output it unchanged.";
+
+// すべて環境変数で上書き可能 (Vercel の Settings → Environment Variables)
+const TR_MODEL     = process.env.TRANSLATE_MODEL || 'claude-haiku-4-5-20251001';
+const TR_MAX_CHARS = parseInt(process.env.TR_MAX_CHARS || '1500', 10); // 1行が長すぎる入力は翻訳しない
+const TR_DEV_DAILY = parseInt(process.env.TR_ANON_DAILY || '150', 10); // 端末ごと 1日の翻訳回数上限
+const TR_IP_DAILY  = parseInt(process.env.TR_IP_DAILY  || '5000', 10); // IPごと 1日の翻訳回数上限 (学校の共有wifi想定で高め)
+const TR_CACHE_TTL = 60 * 60 * 24 * 30; // 共有キャッシュ 30日
+const TR_CNT_TTL   = 60 * 60 * 48;      // カウンタ 48時間で自動消滅
+
+function clientIp(req) {
+  const xff = (req.headers['x-forwarded-for'] || '').toString();
+  if (xff) return xff.split(',')[0].trim();
+  return (req.headers['x-real-ip'] || 'unknown').toString();
+}
+function todayStamp() {
+  return new Date().toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+}
+function sha1(s) {
+  return crypto.createHash('sha1').update(s).digest('hex');
+}
+
+// 翻訳モードの本体。失敗してもメモ体験を止めないため、原則 200 で空文字を返す。
+// 上限到達のときだけ 429 を返す (フロントは 429 を見ても黙って何も出さない)。
+async function handleTranslate(req, res, body) {
+  try {
+    const text = (body.text || '').toString().trim();
+    if (!text) return res.status(200).json({ translation: '' });
+    if (text.length > TR_MAX_CHARS) return res.status(200).json({ translation: '' });
+
+    // 1) 共有キャッシュ (ヒットは無料・上限を消費しない)
+    const cacheKey = 'entr:' + sha1(text);
+    try {
+      const hit = await redis.get(cacheKey);
+      if (hit != null && hit !== '') {
+        return res.status(200).json({ translation: String(hit) });
+      }
+    } catch (e) { /* キャッシュ障害は無視して続行 */ }
+
+    // 2) レート制限 (端末ごと・IPごと / 1日)
+    const day = todayStamp();
+    const ip  = clientIp(req);
+    const dev = (req.headers['x-snapin-dev'] || '').toString() || ('ip:' + ip);
+    try {
+      const dKey = 'trd:' + day + ':' + dev;
+      const iKey = 'tri:' + day + ':' + ip;
+      const dN = await redis.incr(dKey); if (dN === 1) await redis.expire(dKey, TR_CNT_TTL);
+      const iN = await redis.incr(iKey); if (iN === 1) await redis.expire(iKey, TR_CNT_TTL);
+      if (dN > TR_DEV_DAILY || iN > TR_IP_DAILY) {
+        return res.status(429).json({ error: 'rate_limited' });
+      }
+    } catch (e) { /* カウンタ障害時は通す (体験優先) */ }
+
+    // 3) 翻訳 (Haiku)
+    const result = await client.messages.create({
+      model: TR_MODEL,
+      max_tokens: 1024,
+      system: TRANSLATE_SYSTEM,
+      messages: [{ role: 'user', content: text }],
+    });
+    let en = result.content
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('')
+      .trim();
+    en = en.replace(/^["「『]+/, '').replace(/["」』]+$/, '').trim();
+
+    // 4) キャッシュ保存 (空でなければ)
+    if (en) {
+      try { await redis.set(cacheKey, en, { ex: TR_CACHE_TTL }); } catch (e) {}
+    }
+
+    return res.status(200).json({ translation: en });
+  } catch (err) {
+    console.error('translate error:', err);
+    return res.status(200).json({ translation: '' }); // 失敗してもメモ体験は止めない
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -106,14 +198,27 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // 認可
+  // body を先に読む (翻訳モードの判定を認可より前に行うため)
+  let body;
+  try {
+    body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+  } catch (e) {
+    body = {};
+  }
+
+  // ─── 英語ミラー: 翻訳モード (ログイン不要・端末/IPごとに1日上限・共有キャッシュ) ───
+  // ※ 認可より前に処理する。先生機能(チャット/OCR)は従来どおりログイン必須のまま。
+  if (body && body.mode === 'translate') {
+    return handleTranslate(req, res, body);
+  }
+
+  // 認可 (ここから先はログイン必須)
   const authResult = await authorize(req);
   if (!authResult.ok) {
     return res.status(authResult.status).json({ error: 'Unauthorized', reason: authResult.reason });
   }
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const { system, messages, ocrImage } = body || {};
 
     // OCR モード (画像から文字を読み取る)
