@@ -4246,6 +4246,60 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
    (トレイの「さらに追加」から開いても前面に出るように) */
 #batch-choose-mask{z-index:993;}
 #batch-choose-sheet{z-index:994;}
+/* ═══════════════════════════════════════════════════════════
+   英語ミラー (English Mirror)
+   ・書いた日本語の下に、半透明で「浮く」英訳を字幕として重ねる。
+   ・.msg / .bubble の構造には一切触れず、独立した .en-row を
+     メッセージの後ろに差し込むだけ → 元のレイアウトは不変。
+   ・既定OFF。html.en-on が付いたときだけ表示される。
+   ═══════════════════════════════════════════════════════════ */
+.en-row{ display:flex; padding:0 4px; margin:-1px 0 11px; pointer-events:none; }
+.en-row.u{ justify-content:flex-end; }
+.en-row.a{ justify-content:flex-start; }
+.en-text{
+  max-width:76%;
+  font-family:var(--font-en);
+  color:var(--ink2);
+  font-size:13.5px; line-height:1.55; letter-spacing:.15px;
+  padding:7px 13px;
+  border-radius:13px;
+  /* 別レイヤーが上に浮いている質感: 半透明の白 + ガラスのにじみ + やわらかい影 */
+  background:rgba(255,255,255,.46);
+  -webkit-backdrop-filter:blur(12px) saturate(1.35);
+  backdrop-filter:blur(12px) saturate(1.35);
+  border:.5px solid rgba(0,0,0,.045);
+  box-shadow:0 1px 1px rgba(0,0,0,.02), 0 10px 22px rgba(0,0,0,.055);
+  /* 後からそっと立ち上がる動き(字幕が遅れて現れる感じ) */
+  opacity:0; transform:translateY(-4px);
+  transition:opacity .5s ease, transform .5s ease;
+}
+.en-text.in{ opacity:1; transform:translateY(0); }
+/* OFF時は完全に消す → 元の画面が1pxも変わらない */
+html:not(.en-on) .en-row{ display:none; }
+
+/* ─── 英語ミラー 設定トグル ─── */
+.enm-box{ margin:6px 0 2px; }
+.enm-row{
+  width:100%; display:flex; align-items:center; gap:12px;
+  padding:12px 14px; background:var(--surface);
+  border:1px solid var(--line); border-radius:14px;
+  text-align:left; cursor:pointer;
+}
+.enm-row:active{ opacity:.7; }
+.enm-icon{ flex:none; width:30px; height:30px; border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--gl); color:var(--gd); }
+.enm-text{ flex:1; min-width:0; }
+.enm-title{ font-size:15px; color:var(--ink); font-weight:500; }
+.enm-sub{ font-size:12px; color:var(--ink3); margin-top:2px; }
+.enm-switch{ flex:none; width:46px; height:28px; border-radius:999px;
+  background:var(--line2); position:relative; transition:background .25s ease; }
+.enm-knob{ position:absolute; top:3px; left:3px; width:22px; height:22px;
+  border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2);
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1); }
+.enm-row.on .enm-switch{ background:var(--g); }
+.enm-row.on .enm-knob{ transform:translateX(18px); }
+.enm-note{ font-size:11.5px; color:var(--ink3); line-height:1.6; padding:8px 4px 0; }
 </style>
 </head>
 <body>
@@ -5079,6 +5133,22 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     </div>
   </div>
 
+  <!-- 英語ミラー: 書いた日本語の下に、英訳を「字幕」のようにそっと浮かべる。既定OFF。
+       表示は CSS の .en-row / html.en-on に寄せ、構造は元のまま。 -->
+  <div class="enm-box">
+    <button class="enm-row" data-action="toggle-en" id="en-toggle" aria-label="英語ミラー">
+      <div class="enm-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M4 20l5-13 5 13"/><path d="M6.5 15h5"/><path d="M17 13c0-1.1.9-2 2-2s2 .9 2 2-2 4-2 4"/></svg>
+      </div>
+      <div class="enm-text">
+        <div class="enm-title">英語ミラー</div>
+        <div class="enm-sub">書いたことばの下に、英語がそっと浮かびます</div>
+      </div>
+      <span class="enm-switch"><span class="enm-knob"></span></span>
+    </button>
+    <div class="enm-note">メモのじゃまをしないよう、うっすら重ねて出します。読みたいときだけ目をやれば、いつのまにか英語に慣れていきます。(AI機能と同じしくみを使うので、ログインが必要です)</div>
+  </div>
+
   <!-- AIへの希望 (フリー記入): 利用者が自分の言葉で学習スタイルや要望を書く。
        systemプロンプトの「核ルール」の後ろに『利用者からの希望』として差し込まれる。 -->
   <div class="ai-note-box">
@@ -5248,6 +5318,7 @@ const state={
   aiNote:'',           // 設定「AIへの希望」フリー記入。systemプロンプトに差し込む利用者の要望。
   onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
   theme:'green',       // 着せ替えテーマ 'green' | 'sakura'
+  enMode:false,        // 英語ミラー(字幕レイヤー)のON/OFF。既定OFF。
   _savedAt:0,          // 直近の保存時刻 (localStorage と IDB 耐久コピーの新旧比較に使う)
   lastCloudBackupAt:0, // 直近にクラウドへバックアップした時刻 (UI 表示用、ローカルのみ)
   tagEditMode:false,   // 探すページのタグ編集モード
@@ -5301,6 +5372,7 @@ function buildLightPayload(){
     aiNote:state.aiNote,
     onboarded:state.onboarded,
     theme:state.theme,
+    enMode:state.enMode,
     lastCloudBackupAt:state.lastCloudBackupAt,
   };
 }
@@ -5606,9 +5678,11 @@ function applyPayload(d){
   state.aiNote=d.aiNote||'';
   state.onboarded=d.onboarded||false;
   state.theme=(d.theme==='sakura')?'sakura':'green';
+  state.enMode=!!d.enMode;
   state._savedAt=d._savedAt||0;
   state.lastCloudBackupAt=d.lastCloudBackupAt||0;
   applyTheme();
+  applyEnMode();
 }
 
 function load(){
@@ -6744,6 +6818,22 @@ function setTheme(t){
   applyTheme();
 }
 
+// ═══ 英語ミラー (字幕レイヤー) ON/OFF ═══
+// テーマと同じ作り: state を立てて save() → DOM へ反映するだけ。
+// 表示制御は CSS 側 (html.en-on の有無) に寄せ、ロジックは最小限にしている。
+function applyEnMode(){
+  document.documentElement.classList.toggle('en-on', !!state.enMode);
+  const tg=document.getElementById('en-toggle');
+  if(tg)tg.classList.toggle('on', !!state.enMode);
+}
+function setEnMode(on){
+  state.enMode=!!on;
+  save();
+  applyEnMode();
+  // メモを開いている最中に切り替えたら、字幕を即座に出す/消すため描き直す。
+  if(state.current && typeof renderChatLog==='function'){ try{ renderChatLog(state.current); }catch(e){} }
+}
+
 // ═══ ログアウト (アプリ統一デザインの確認モーダル) ═══
 function logoutConfirm(){
   $('logout-modal').classList.add('on');
@@ -7592,6 +7682,7 @@ function openSettings(){
   if(logoutBtn) logoutBtn.style.display='flex';
   updateStorageMeter();
   applyTheme(); // テーマチップの選択状態を反映
+  applyEnMode(); // 英語ミラートグルの状態を反映
   $('settings-backdrop').classList.add('on');
   $('settings-sheet').classList.add('on');
   $('settings-sheet').setAttribute('aria-hidden','false');
@@ -11040,6 +11131,7 @@ function renderChatLog(c){
 
   let lastDate='';
   let section=null;
+  const enJobs=[]; // 英語ミラー: 描画後に英訳を流し込む対象 {el, src} を貯める
   msgs.forEach((m,idx)=>{
     if(m.deleted)return;
     const t=m.t||Date.now();
@@ -11120,6 +11212,18 @@ function renderChatLog(c){
     }
     (section||log).appendChild(div);
 
+    // ── 英語ミラー: ON かつ日本語を含む本文のときだけ、メッセージの直後に
+    //    独立した字幕行(.en-row)を足す。.msg/.bubble には触れない。
+    if(state.enMode && !m.pending && !m.aiError && m.text && hasJapanese(m.text)){
+      const enRow=document.createElement('div');
+      enRow.className='en-row '+(isUser?'u':'a');
+      const enText=document.createElement('div');
+      enText.className='en-text';
+      enRow.appendChild(enText);
+      (section||log).appendChild(enRow);
+      enJobs.push({el:enText, src:m.text});
+    }
+
     // pending 中のメッセージにはメニューを出さない。
     // それ以外 (ユーザー / AI 両方) は長押しでアクションメニューを出す。
     // 各バブル単位で付ける (マルチバブルでも対象を確実に特定できるように)。
@@ -11127,6 +11231,9 @@ function renderChatLog(c){
       div.querySelectorAll('.bubble').forEach(bub=>attachBubbleLongPress(div,c.id,idx,bub));
     }
   });
+
+  // 英語ミラー: 描き終わった字幕枠に、順番に英訳を流し込む(キャッシュ優先)。
+  if(state.enMode && enJobs.length)fillEnglishSubtitles(enJobs);
 
   // 添付画像の遅延読込: src 未設定 (data-ci のみ) の画像を IndexedDB から復元する。
   log.querySelectorAll('img.chat-msg-img').forEach(im=>{
@@ -12281,6 +12388,98 @@ async function retryAiMessage(idx){
 
 // AI API呼び出し (本番: Vercel等のサーバレス関数を経由、デモ: ローカル応答)
 const AI_ENDPOINT='/api/chat'; // 本番ではここをサーバレス関数のURLに
+
+/* ═══════════════════════════════════════════════════════════
+   英語ミラー — 翻訳エンジン
+   ・日本語→英語。既存の /api/chat をそのまま使う(専用バックエンド不要)。
+     server が {system, messages} を Claude に渡して {content} を返す前提
+     (= callAI と同じ契約)。次のデプロイでそのまま動く。
+   ・キャッシュは本体DB(snapin_db)に触れず、専用の軽量DBに分ける →
+     既存データ/マイグレーションへのリスクをゼロにする。
+   ・失敗時は「黙って空を返す」。字幕が出ないだけでメモ体験は止めない
+     (このアプリの「偽回答を出さない」方針に揃える)。
+   ═══════════════════════════════════════════════════════════ */
+function hasJapanese(s){
+  return /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uff66-\uff9f]/.test(s||'');
+}
+
+// 英訳キャッシュ専用の独立 IndexedDB。同じ日本語は二度と翻訳しない
+// → 即時・無料・オフラインでも出る。
+const enCache={
+  _db:null, _NAME:'snapin_en_cache', _STORE:'tr', _mem:new Map(),
+  async _open(){
+    if(this._db)return this._db;
+    return new Promise((res,rej)=>{
+      const req=indexedDB.open(this._NAME,1);
+      req.onupgradeneeded=()=>{ const db=req.result; if(!db.objectStoreNames.contains('tr'))db.createObjectStore('tr'); };
+      req.onsuccess=()=>{ this._db=req.result; res(this._db); };
+      req.onerror=()=>rej(req.error);
+    });
+  },
+  has(k){ return this._mem.has(k); },
+  memGet(k){ return this._mem.get(k); },
+  async get(k){
+    if(this._mem.has(k))return this._mem.get(k);
+    try{
+      const db=await this._open();
+      const v=await new Promise((res,rej)=>{ const tx=db.transaction('tr','readonly'); const r=tx.objectStore('tr').get(k); r.onsuccess=()=>res(r.result==null?null:r.result); r.onerror=()=>rej(r.error); });
+      if(v!=null)this._mem.set(k,v);
+      return v;
+    }catch(e){ return null; }
+  },
+  async put(k,v){
+    this._mem.set(k,v);
+    try{ const db=await this._open(); await new Promise((res,rej)=>{ const tx=db.transaction('tr','readwrite'); const r=tx.objectStore('tr').put(v,k); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error); }); }catch(e){}
+  }
+};
+
+const EN_MIRROR_SYS="You are a silent translation layer inside a note-taking app. Translate the user's Japanese into natural, clear English that a Japanese student can read and learn from. Stay faithful and keep it simple. Output ONLY the English translation — no quotes, no notes, no labels, no preamble. If the input contains no Japanese, output it unchanged.";
+
+async function jaToEn(textRaw){
+  const key=(textRaw||'').trim();
+  if(!key || !hasJapanese(key))return '';
+  const cached=await enCache.get(key);
+  if(cached!=null)return cached;
+  if(!state.auth || !state.auth.token)return ''; // AI機能(ログイン)が前提。未ログインなら出さない。
+  try{
+    const res=await fetch(AI_ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-snapin-token':state.auth.token},
+      body:JSON.stringify({ system:EN_MIRROR_SYS, messages:[{role:'user',content:key}] }),
+    });
+    if(!res.ok)return '';
+    const data=await res.json();
+    let en=(data.content || data.text || data.message || '').toString().trim();
+    en=en.replace(/^["「『]+/,'').replace(/["」』]+$/,'').trim(); // 念のため前後の引用符を除去
+    if(en)enCache.put(key,en); // fire-and-forget
+    return en;
+  }catch(e){ return ''; }
+}
+
+// 字幕枠に順番に英訳を流し込む。キャッシュ済みは瞬時、未訳のみ通信。
+async function fillEnglishSubtitles(jobs){
+  for(const job of jobs){
+    if(!job.el || !job.el.isConnected)continue;
+    const key=(job.src||'').trim();
+    // キャッシュにあれば待たずに即表示(再描画時のちらつきを抑える)
+    if(enCache.has(key)){
+      const en=enCache.memGet(key);
+      if(en){ job.el.textContent=en; job.el.classList.add('in'); }
+      else { const row=job.el.closest('.en-row'); if(row)row.remove(); }
+      continue;
+    }
+    let en='';
+    try{ en=await jaToEn(key); }catch(e){ en=''; }
+    if(!job.el.isConnected)continue;
+    if(en){
+      job.el.textContent=en;
+      requestAnimationFrame(()=>{ if(job.el.isConnected)job.el.classList.add('in'); });
+    }else{
+      const row=job.el.closest('.en-row'); // 訳が無ければ空枠は残さない
+      if(row)row.remove();
+    }
+  }
+}
 
 // AIに渡す会話履歴を組み立てる。
 //  - chat: c.chat 配列、placeholderIdx: 末尾に積んだ「…」AIプレースホルダーの位置
@@ -14573,6 +14772,7 @@ document.addEventListener('click',e=>{
     case 'logout-do':doLogout();break;
     case 'theme-green':setTheme('green');break;
     case 'theme-sakura':setTheme('sakura');break;
+    case 'toggle-en':setEnMode(!state.enMode);break;
     case 'open-settings':openSettings();break;
     case 'close-settings':closeSettings();break;
     case 'export-backup':exportBackup();break;
