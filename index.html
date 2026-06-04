@@ -3662,7 +3662,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .ai-note-field:focus-within{border-color:var(--g);}
 .ai-note-field textarea{
   width:100%;
-  min-height:74px;
+  min-height:96px; /* 例(2件)がスマホ幅で4行に折り返しても、空のとき全部見える高さ */
   font-size:14px;line-height:1.6;color:var(--ink);
   resize:none;display:block;
 }
@@ -5251,7 +5251,7 @@ html:not(.en-on) .en-live{ display:none; }
     </div>
     <div class="ai-note-desc">どんなふうに答えてほしいか、自由に書けます。AIがこれを読んで、できるだけ汲んで答えます。(空欄でもOK)</div>
     <div class="ai-note-field">
-      <textarea id="ai-note-input" rows="3" maxlength="400" placeholder="例: 数学が苦手です。むずかしい言葉はかみくだいて、たとえ話を入れてほしい。&#10;例: 答えだけじゃなく、解き方を最初から最後まで見せてほしい。"></textarea>
+      <textarea id="ai-note-input" rows="4" maxlength="400" placeholder="例: 数学が苦手です。むずかしい言葉はかみくだいて、たとえ話を入れてほしい。&#10;例: 答えだけじゃなく、解き方を最初から最後まで見せてほしい。"></textarea>
       <span class="ai-note-count" id="ai-note-count">0 / 400</span>
     </div>
     <div class="ai-note-chips">
