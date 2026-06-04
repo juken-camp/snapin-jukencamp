@@ -285,7 +285,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--surface);
   border-radius:22px;
   padding:0 6px 0 16px;
-  height:42px;
+  min-height:42px;
   margin-bottom:10px;
   transition:background 0.25s;
 }
@@ -293,18 +293,25 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .quick-add:has(.saved-flash){
   background:var(--gl);
 }
-.quick-add input.saved-flash::placeholder{
+.quick-add textarea.saved-flash::placeholder{
   color:var(--g);
   font-weight:600;
 }
-.quick-add input{
+.quick-add textarea{
   flex:1;
   font-size:14px;
   color:var(--ink);
   background:transparent;
-  height:100%;
+  border:none;
+  outline:none;
+  resize:none;
+  font-family:inherit;
+  line-height:1.5;
+  padding:10px 0;
+  max-height:120px;
+  overflow-y:auto;
 }
-.quick-add input::placeholder{color:var(--ink3);}
+.quick-add textarea::placeholder{color:var(--ink3);}
 .quick-add-icons{display:flex;gap:2px;}
 .quick-add-icon{
   width:32px;height:32px;
@@ -4346,7 +4353,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
   <div class="home-top">
     <div class="quick-add">
-      <input id="quick-input" placeholder="今すぐメモする">
+      <textarea id="quick-input" rows="1" placeholder="今すぐメモする"></textarea>
       <div class="quick-add-icons" id="quick-icons">
         <button class="quick-add-icon" data-action="open-qr-scan" aria-label="QRコードを読み取る">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 21v.01M17 21h.01M21 17h.01"/></svg>
@@ -9695,6 +9702,7 @@ function quickSave(){
   const wrap=inp.closest('.quick-add');
   const origPlaceholder=inp.placeholder;
   inp.value='';
+  inp.style.height='auto';
   inp.placeholder='✓ 保存しました';
   inp.classList.add('saved-flash');
   if(wrap)wrap.classList.add('saved-flash');
@@ -14549,11 +14557,10 @@ document.addEventListener('click',e=>{
 $('search-q').addEventListener('input',doSearch);
 
 $('quick-input').addEventListener('input',onQuickInput);
-$('quick-input').addEventListener('keydown',e=>{
-  if(e.key==='Enter' && !e.shiftKey){
-    e.preventDefault();
-    quickSave();
-  }
+// Enter は改行として扱う (送信は右のチェックマークのみ)。入力量に合わせて高さを自動調整。
+$('quick-input').addEventListener('input',e=>{
+  e.target.style.height='auto';
+  e.target.style.height=Math.min(120,e.target.scrollHeight)+'px';
 });
 
 $('detail-input').addEventListener('input',e=>{
