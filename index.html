@@ -2038,6 +2038,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .lib-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
 .lib-info{flex:1;min-width:0;}
 .lib-name{font-size:14px;font-weight:600;margin-bottom:2px;white-space:pre-line;}
+/* 共有ライブラリ名の読み込み中スケルトン (最新タイトル取得までの一瞬。古い名前のチラ見せ防止) */
+.lib-name-skel{
+  display:inline-block;width:96px;height:13px;border-radius:6px;vertical-align:middle;
+  background:linear-gradient(90deg,var(--line) 25%,var(--line2) 37%,var(--line) 63%);
+  background-size:400% 100%;
+  animation:libNameSkel 1.2s ease-in-out infinite;
+}
+.os-name .lib-name-skel{width:140px;height:17px;}
+@keyframes libNameSkel{0%{background-position:100% 0;}100%{background-position:0 0;}}
 .lib-desc{font-size:12px;color:var(--ink2);line-height:1.4;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
 .lib-handle{font-size:11px;color:var(--ink3);font-family:var(--font-en);}
@@ -6053,6 +6062,9 @@ function applyFeedNoteStyle(root){
 }
 // (Vercel Redis に保存されているデータをロード)
 let OFFICIAL_SHELVES=[];
+// 今セッションで /api/shelves から最新を取得済みか。
+// false の間（=キャッシュ未検証）はタイトル等を確定表示せず、古い名前のチラ見せを防ぐ。
+let OFFICIAL_FRESH=false;
 
 // 共有棚をローカルにキャッシュするキー。前回取得した内容を起動直後に即表示し、
 // その裏でサーバーから最新を取り直す (stale-while-revalidate)。
@@ -6110,20 +6122,33 @@ async function loadOfficialShelves(){
     // 次回の起動で即表示できるよう、取得した共有棚(グローバル分)を端末にキャッシュ。
     // setItem は即時にスナップショットを取るので、この後の merge/resolve の影響は受けない。
     try{ localStorage.setItem(SHELVES_CACHE_KEY, JSON.stringify(OFFICIAL_SHELVES)); }catch(e){}
+    OFFICIAL_FRESH=true; // これ以降は最新タイトルを確定表示してよい
     // グループ所有ライブラリ (自分のグループの分だけ) を取得してマージ
     await mergeGroupShelves();
     // クロスポスト: 参照を実体に解決
     resolveShelfRefs(OFFICIAL_SHELVES);
-    // 表示中の画面があれば再描画
-    if(document.getElementById('screen-library')?.classList.contains('active')){
-      renderLibrary();
-    }
+    // 表示中の共有ライブラリ画面を最新タイトルで描き直す
+    refreshOfficialViews();
     // ホームのヘッダーバッジも更新
     updateHomeNewBadge();
   }catch(err){
     console.warn('共有棚の取得に失敗:',err);
+    // 取得できなかった場合(オフライン等)は、これ以上待たずに手元のキャッシュを表示する。
+    OFFICIAL_FRESH=true;
+    refreshOfficialViews();
   }
   refreshLinkedCardsUI();
+}
+
+// 表示中の共有ライブラリ一覧／詳細を、現在の OFFICIAL_SHELVES で描き直す。
+function refreshOfficialViews(){
+  if(document.getElementById('screen-library')?.classList.contains('active')){
+    renderLibrary();
+  }
+  if(document.getElementById('screen-official')?.classList.contains('active') && state.currentOfficial){
+    const fresh=OFFICIAL_SHELVES.find(x=>x&&x.id===state.currentOfficial.id);
+    if(fresh)openOfficial(fresh);
+  }
 }
 
 // 自分のグループが所有する共有ライブラリを取得し、OFFICIAL_SHELVES に足す。
@@ -13538,7 +13563,7 @@ function libItem(s,subbed,group){
   const badge=newN>0?`<span class="lib-new-badge">${newN>99?'99+':newN}</span>`:'';
   const avatar=s.icon
     ? `<div class="lib-avatar has-icon tappable"><img src="${esc(s.icon)}" alt=""></div>`
-    : `<div class="lib-avatar tappable">${esc((s.name||'?').slice(0,1))}</div>`;
+    : `<div class="lib-avatar tappable">${OFFICIAL_FRESH?esc((s.name||'?').slice(0,1)):''}</div>`;
   // 配布型（管理画面からアクセス権が付与されている）かどうか
   const isDistributed=!locked; // canSeeShelfId=true === 配布型
   let actionHtml;
@@ -13556,7 +13581,7 @@ function libItem(s,subbed,group){
   el.innerHTML=`
     ${avatar}
     <div class="lib-info">
-      <div class="lib-name">${esc(s.name)}${badge}</div>
+      <div class="lib-name">${OFFICIAL_FRESH?esc(s.name):'<span class="lib-name-skel"></span>'}${badge}</div>
       <div class="lib-handle">${esc(s.handle)}</div>
     </div>
     ${actionHtml}
@@ -13600,9 +13625,19 @@ function toggleSubById(id){
 }
 
 function openOfficial(s){
+  // リスト由来の参照が古いキャッシュでも、メモリ上に新しい棚があればそれを優先する。
+  const live=(typeof OFFICIAL_SHELVES!=='undefined' && OFFICIAL_SHELVES.find(x=>x&&x.id===s.id))||s;
+  s=live;
   state.currentOfficial=s;
-  $('off-bhdr-title').textContent=s.name;
-  $('os-name').textContent=s.name;
+  // タイトルは「今セッションで最新取得済み」のときだけ確定表示。
+  // 未取得のうちは古い名前を出さず、取得完了後に refreshOfficialViews が確定させる。
+  if(OFFICIAL_FRESH){
+    $('off-bhdr-title').textContent=s.name;
+    $('os-name').textContent=s.name;
+  }else{
+    $('off-bhdr-title').textContent='';
+    $('os-name').innerHTML='<span class="lib-name-skel"></span>';
+  }
   $('os-handle').textContent=s.handle;
   $('os-desc').textContent=s.desc||'';
   const av=$('os-avatar');
@@ -13612,7 +13647,7 @@ function openOfficial(s){
       av.innerHTML=`<img src="${esc(s.icon)}" alt="">`;
     }else{
       av.classList.remove('has-icon');
-      av.textContent=(s.name||'?').slice(0,1);
+      av.textContent=OFFICIAL_FRESH?(s.name||'?').slice(0,1):'';
     }
   }
   updateOfficialSubBtn();
