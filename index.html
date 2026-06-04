@@ -10415,6 +10415,10 @@ function saveCard(){
     c.created=Date.now();
   }
   delete c._new;
+  // 内容が変わったことを示すリビジョンを更新する。
+  // homeListFingerprint がこの値を見て再描画要否を判定しているため、
+  // これを更新しないと編集後にホームへ戻っても古い表示のまま残る。
+  c._rev=Date.now();
 
   // ★ state を更新する前に、保存前のスナップショットを取っておく (失敗時のロールバック用)
   const idx=state.cards.findIndex(x=>x.id===c.id);
@@ -11693,6 +11697,7 @@ function openDetail(c,origin){
         const i=state.cards.findIndex(x=>x.id===state.current.id);
         if(i>=0){
           state.cards[i].items=state.current.items;
+          state.cards[i]._rev=Date.now();
           save();
         }
         openDetail(state.cards[i],'mine');
@@ -12358,6 +12363,7 @@ async function refetchLink(){
     const idx=state.cards.findIndex(x=>x.id===cur.id);
     if(idx>=0){
       state.cards[idx].link=newLink;
+      state.cards[idx]._rev=Date.now();
       save();
       state.current=state.cards[idx];
       openDetail(state.current,state.current._origin||'mine');
