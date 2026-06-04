@@ -4285,6 +4285,23 @@ html:not(.en-on) .en-row{ display:none; }
 .en-sub.in{ opacity:1; transform:translateY(0); }
 html:not(.en-on) .en-sub{ display:none; }
 
+/* ─── 英語ミラー: 読み上げ設定 + タップ読み上げ ─── */
+.en-speak-box{ margin:0 0 2px; }
+.en-speak-row{ display:flex; align-items:center; gap:10px; padding:6px 4px; }
+.en-speak-label{ font-size:13px; color:var(--ink2); width:46px; flex:none; }
+.en-speak-chips{ display:flex; gap:6px; flex-wrap:wrap; }
+.en-chip{ font-size:12.5px; color:var(--ink2); padding:5px 11px; border-radius:999px;
+  border:1px solid var(--line2); background:transparent; cursor:pointer;
+  transition:background .15s ease,color .15s ease,border-color .15s ease; }
+.en-chip:active{ opacity:.7; }
+.en-chip.on{ background:var(--g); color:#fff; border-color:var(--g); }
+html:not(.en-on) .en-speak-box{ display:none; } /* ミラーOFFなら読み上げ設定も隠す */
+html.no-tts .en-speak-box{ display:none; }       /* 読み上げ非対応端末では隠す */
+/* タップで読み上げ可能なときだけ、英文をタップ対象にする(en-row は pointer-events:none なので個別に有効化) */
+html.en-speak-on .en-text, html.en-speak-on .en-sub{ pointer-events:auto; cursor:pointer; }
+/* 読み上げ中の行をそっと強調(アイコンは出さない) */
+.en-text.speaking, .en-sub.speaking{ color:var(--g); }
+
 /* ─── 英語ミラー(ライブ): composer の上に浮く英訳 ─── */
 .compose-frame{ position:relative; } /* .en-live のアンカー */
 .en-live{
@@ -5180,6 +5197,27 @@ html:not(.en-on) .en-live{ display:none; }
     <div class="enm-note">メモのじゃまをしないよう、うっすら重ねて出します。読みたいときだけ目をやれば、いつのまにか英語に慣れていきます。(AI機能と同じしくみを使うので、ログインが必要です)</div>
   </div>
 
+  <!-- 英語ミラー: 読み上げ(端末内・無料)。ミラーONのときだけ表示。スピーカーアイコンは出さず、英文タップで再生。 -->
+  <div class="en-speak-box">
+    <div class="en-speak-row">
+      <div class="en-speak-label">読み上げ</div>
+      <div class="en-speak-chips">
+        <button class="en-chip" data-action="enspeak-off">オフ</button>
+        <button class="en-chip" data-action="enspeak-tap">タップで</button>
+        <button class="en-chip" data-action="enspeak-auto">自動＋タップ</button>
+      </div>
+    </div>
+    <div class="en-speak-row">
+      <div class="en-speak-label">速さ</div>
+      <div class="en-speak-chips">
+        <button class="en-chip" data-action="enrate-slow">ゆっくり</button>
+        <button class="en-chip" data-action="enrate-normal">ふつう</button>
+        <button class="en-chip" data-action="enrate-fast">はやい</button>
+      </div>
+    </div>
+    <div class="enm-note">英文を軽くタップすると、その英文を読み上げます。「自動＋タップ」では、新しい英文が出たときにも自動で読み上げます。</div>
+  </div>
+
   <!-- AIへの希望 (フリー記入): 利用者が自分の言葉で学習スタイルや要望を書く。
        systemプロンプトの「核ルール」の後ろに『利用者からの希望』として差し込まれる。 -->
   <div class="ai-note-box">
@@ -5350,6 +5388,8 @@ const state={
   onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
   theme:'green',       // 着せ替えテーマ 'green' | 'sakura'
   enMode:false,        // 英語ミラー(字幕レイヤー)のON/OFF。既定OFF。
+  enSpeak:'off',       // 読み上げ 'off' | 'tap'(タップで) | 'auto'(出力時に自動＋タップ)
+  enRate:'normal',     // 読み上げ速度 'slow' | 'normal' | 'fast'
   _savedAt:0,          // 直近の保存時刻 (localStorage と IDB 耐久コピーの新旧比較に使う)
   lastCloudBackupAt:0, // 直近にクラウドへバックアップした時刻 (UI 表示用、ローカルのみ)
   tagEditMode:false,   // 探すページのタグ編集モード
@@ -5404,6 +5444,8 @@ function buildLightPayload(){
     onboarded:state.onboarded,
     theme:state.theme,
     enMode:state.enMode,
+    enSpeak:state.enSpeak,
+    enRate:state.enRate,
     lastCloudBackupAt:state.lastCloudBackupAt,
   };
 }
@@ -5710,10 +5752,13 @@ function applyPayload(d){
   state.onboarded=d.onboarded||false;
   state.theme=(d.theme==='sakura')?'sakura':'green';
   state.enMode=!!d.enMode;
+  state.enSpeak=(d.enSpeak==='tap'||d.enSpeak==='auto')?d.enSpeak:'off';
+  state.enRate=(d.enRate==='slow'||d.enRate==='fast')?d.enRate:'normal';
   state._savedAt=d._savedAt||0;
   state.lastCloudBackupAt=d.lastCloudBackupAt||0;
   applyTheme();
   applyEnMode();
+  applyEnSpeak();
 }
 
 function load(){
@@ -6864,8 +6909,30 @@ function setEnMode(on){
   // メモを開いている最中に切り替えたら、字幕を即座に出す/消すため描き直す。
   if(state.current && typeof renderChatLog==='function'){ try{ renderChatLog(state.current); }catch(e){} }
   // composer のライブ英訳も即反映: OFFなら消す / ONで既に文字があれば出す
-  if(!state.enMode){ if(typeof hideEnLive==='function')hideEnLive(); }
+  if(!state.enMode){ if(typeof hideEnLive==='function')hideEnLive(); if('speechSynthesis' in window)try{speechSynthesis.cancel();}catch(e){} }
   else if(typeof scheduleEnLive==='function'){ scheduleEnLive(); }
+}
+
+// ═══ 英語ミラー: 読み上げ設定 (チップの反映と切替) ═══
+function applyEnSpeak(){
+  if(!('speechSynthesis' in window))document.documentElement.classList.add('no-tts');
+  document.documentElement.classList.toggle('en-speak-on', state.enSpeak!=='off');
+  const sm={'enspeak-off':'off','enspeak-tap':'tap','enspeak-auto':'auto'};
+  document.querySelectorAll('[data-action^="enspeak-"]').forEach(el=>{ el.classList.toggle('on', sm[el.dataset.action]===state.enSpeak); });
+  const rm={'enrate-slow':'slow','enrate-normal':'normal','enrate-fast':'fast'};
+  document.querySelectorAll('[data-action^="enrate-"]').forEach(el=>{ el.classList.toggle('on', rm[el.dataset.action]===state.enRate); });
+}
+function setEnSpeak(mode){
+  state.enSpeak=(mode==='tap'||mode==='auto')?mode:'off';
+  save();
+  applyEnSpeak();
+  if(state.enSpeak==='off'){ if('speechSynthesis' in window)try{speechSynthesis.cancel();}catch(e){} }
+  else { _warmUpTTS(); } // ONにしたこのタップでエンジンを起こす(iOSは最初の発話に操作が要る)
+}
+function setEnRate(label){
+  state.enRate=(label==='slow'||label==='fast')?label:'normal';
+  save();
+  applyEnSpeak();
 }
 
 // ═══ ログアウト (アプリ統一デザインの確認モーダル) ═══
@@ -7717,6 +7784,7 @@ function openSettings(){
   updateStorageMeter();
   applyTheme(); // テーマチップの選択状態を反映
   applyEnMode(); // 英語ミラートグルの状態を反映
+  applyEnSpeak(); // 読み上げ設定(チップ)の状態を反映
   $('settings-backdrop').classList.add('on');
   $('settings-sheet').classList.add('on');
   $('settings-sheet').setAttribute('aria-hidden','false');
@@ -11278,6 +11346,8 @@ function renderChatLog(c){
 
   // 英語ミラー: 描き終わった字幕枠に、順番に英訳を流し込む(キャッシュ優先)。
   if(state.enMode && enJobs.length)fillEnglishSubtitles(enJobs);
+  // 自動読み上げ(モードが auto のときだけ、新しいメッセージを読む)
+  if(state.enMode && state.enSpeak==='auto')maybeAutoSpeakLatest(c);
 
   // 添付画像の遅延読込: src 未設定 (data-ci のみ) の画像を IndexedDB から復元する。
   log.querySelectorAll('img.chat-msg-img').forEach(im=>{
@@ -11983,6 +12053,7 @@ function openDetail(c,origin){
   $('detail-chat-log').innerHTML='';
 
   // チャット(AI会話 + 追記メモ)を時系列表示
+  _enAutoBaselineT=(typeof _newestSpeakableT==='function')?_newestSpeakableT(c):0; // 開いた時点の最新を基準に(開いただけでは自動読み上げしない)
   renderChatLog(c);
   ensureDetailBounce();
 
@@ -12500,6 +12571,53 @@ async function jaToEn(textRaw){
     if(en)enCache.put(key,en); // fire-and-forget
     return en;
   }catch(e){ return ''; }
+}
+
+// ═══ 英語ミラー: 読み上げ (Web Speech / 端末内・無料・API課金なし) ═══
+const _TTS_OK=(typeof window!=='undefined') && ('speechSynthesis' in window);
+function _enRateValue(){ return state.enRate==='slow'?0.72 : state.enRate==='fast'?1.2 : 0.95; }
+let _enVoice=null;
+function _pickEnVoice(){
+  if(!_TTS_OK)return null;
+  try{
+    const vs=speechSynthesis.getVoices()||[];
+    // en-US 優先 → en系 → 無ければ null(エンジン既定に任せる)
+    _enVoice=vs.find(v=>/^en[-_]US/i.test(v.lang)) || vs.find(v=>/^en([-_]|$)/i.test(v.lang)) || null;
+  }catch(e){ _enVoice=null; }
+  return _enVoice;
+}
+if(_TTS_OK){ try{ _pickEnVoice(); speechSynthesis.onvoiceschanged=_pickEnVoice; }catch(e){} }
+// iOSは最初の発話が「ユーザー操作の中」でないと鳴らないことがある。設定ONのタップで無音発話を出して起こしておく。
+function _warmUpTTS(){ if(!_TTS_OK)return; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); }catch(e){} }
+function speakEnglish(text, el){
+  if(!_TTS_OK)return;
+  const t=(text||'').trim(); if(!t)return;
+  try{
+    speechSynthesis.cancel(); // 連打/切替時は前の発話を止めてから
+    const u=new SpeechSynthesisUtterance(t);
+    u.lang='en-US';
+    const v=_enVoice||_pickEnVoice(); if(v)u.voice=v;
+    u.rate=_enRateValue(); u.pitch=1;
+    if(el){ const on=()=>el.classList.add('speaking'); const off=()=>el.classList.remove('speaking'); u.onstart=on; u.onend=off; u.onerror=off; }
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+// 自動読み上げ: このカードで「既に見た」最新t。これより新しい memo/ai だけ読む
+// (自分の質問や、カードを開いただけでは喋らない)。
+let _enAutoBaselineT=0;
+function _isAutoSpeakMsg(m){ return m && !m.deleted && !m.pending && !m.aiError && (m.role==='memo'||m.role==='ai') && m.text && hasJapanese(m.text); }
+function _newestSpeakableT(c){ const a=(c&&c.chat)?c.chat:[]; let mx=0; for(const m of a){ if(_isAutoSpeakMsg(m)){ const t=m.t||0; if(t>mx)mx=t; } } return mx; }
+async function maybeAutoSpeakLatest(c){
+  if(!_TTS_OK || state.enSpeak!=='auto' || !state.enMode)return;
+  const a=(c&&c.chat)?c.chat:[];
+  let latest=null;
+  for(const m of a){ if(_isAutoSpeakMsg(m)){ if(!latest || (m.t||0)>=(latest.t||0))latest=m; } }
+  if(!latest)return;
+  const t=latest.t||0;
+  if(t<=_enAutoBaselineT)return;
+  _enAutoBaselineT=t;
+  let en=''; try{ en=await jaToEn(latest.text); }catch(e){ en=''; }
+  if(en && state.enSpeak==='auto' && state.enMode)speakEnglish(en, null);
 }
 
 // ── 英語ミラー(ライブ): 打っている最中、composer の上に英訳をそっと浮かべる ──
@@ -14852,6 +14970,12 @@ document.addEventListener('click',e=>{
     case 'theme-green':setTheme('green');break;
     case 'theme-sakura':setTheme('sakura');break;
     case 'toggle-en':setEnMode(!state.enMode);break;
+    case 'enspeak-off':setEnSpeak('off');break;
+    case 'enspeak-tap':setEnSpeak('tap');break;
+    case 'enspeak-auto':setEnSpeak('auto');break;
+    case 'enrate-slow':setEnRate('slow');break;
+    case 'enrate-normal':setEnRate('normal');break;
+    case 'enrate-fast':setEnRate('fast');break;
     case 'open-settings':openSettings();break;
     case 'close-settings':closeSettings();break;
     case 'export-backup':exportBackup();break;
@@ -15052,6 +15176,14 @@ $('detail-input').addEventListener('input',e=>{
 });
 // 英語ミラー(ライブ): 入力が止まったら composer の上に英訳を浮かべる(既存リスナーとは別に追加)
 $('detail-input').addEventListener('input',()=>{ if(typeof scheduleEnLive==='function')scheduleEnLive(); });
+// 英語ミラー: 英文を軽くタップ → その英文を読み上げ (スピーカーアイコンは出さない)
+$('detail-chat-log').addEventListener('click',e=>{
+  if(state.enSpeak==='off' || !state.enMode)return;
+  const el=e.target.closest('.en-text, .en-sub');
+  if(!el)return;
+  const txt=el.textContent||'';
+  if(txt.trim())speakEnglish(txt, el);
+});
 $('detail-input').addEventListener('keydown',e=>{
   if(e.key==='Enter' && !e.shiftKey && (e.metaKey || e.ctrlKey)){
     // Cmd/Ctrl+Enter で送信
