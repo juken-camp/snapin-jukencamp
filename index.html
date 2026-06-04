@@ -134,7 +134,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .bhdr-back:active{color:var(--g);}
 .bhdr-title{font-size:15px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 /* 公開ライブラリ詳細: 大見出しが見えている間はナビのタイトルを隠す(同じ題が2つ出ないように) */
-#off-bhdr-title{opacity:0;transition:opacity .2s ease;}
+#off-bhdr-title{opacity:1;transition:opacity .2s ease;}
 #off-bhdr-title.show{opacity:1;}
 .bhdr-action{
   font-size:13px;
@@ -2176,7 +2176,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .os-top{display:flex;align-items:center;gap:14px;}
 .os-id{flex:1;min-width:0;}
-.os-name{font-size:18px;font-weight:600;margin-bottom:2px;line-height:1.3;white-space:pre-line;}
+.os-name{font-size:16px;font-weight:600;margin-bottom:2px;line-height:1.4;white-space:pre-line;}
 .os-handle{font-size:11px;color:var(--ink3);font-family:var(--font-en);margin-bottom:0;}
 .os-avatar{
   width:56px;height:56px;
@@ -14058,19 +14058,18 @@ function toggleSubById(id){
   toast(i>=0?'解除しました':'登録しました');
 }
 
+const OFFICIAL_NAV_LABEL='公開ライブラリ'; // ← ナビ(戻る矢印の右)に出す固定ラベル。言葉を変えたいときはここだけ
 function openOfficial(s){
   // リスト由来の参照が古いキャッシュでも、メモリ上に新しい棚があればそれを優先する。
   const live=(typeof OFFICIAL_SHELVES!=='undefined' && OFFICIAL_SHELVES.find(x=>x&&x.id===s.id))||s;
   s=live;
   state.currentOfficial=s;
-  // タイトルは「今セッションで最新取得済み」のときだけ確定表示。
-  // 未取得のうちは古い名前を出さず、取得完了後に refreshOfficialViews が確定させる。
+  // ナビには常に固定ラベルを出す(他ページと同じく、戻る矢印の右が空にならないように)。
+  // スクロールで大見出しが隠れたら、ライブラリ名に切り替わる → setupOfficialHeaderCollapse。
+  $('off-bhdr-title').textContent=OFFICIAL_NAV_LABEL;
   if(OFFICIAL_FRESH){
-    $('off-bhdr-title').textContent=s.name;
-    $('off-bhdr-title').classList.remove('show'); // 開いた直後は大見出しが見えているので隠す
     $('os-name').textContent=s.name;
   }else{
-    $('off-bhdr-title').textContent='';
     $('os-name').innerHTML='<span class="lib-name-skel"></span>';
   }
   $('os-handle').textContent=s.handle;
@@ -15511,8 +15510,8 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 // claim 入力フィールド: Enter で送信、誕生日は数字だけに
-// 公開ライブラリ詳細: 大見出し(.os-name)が見えている間はナビのタイトルを隠し、
-// スクロールで見出しが隠れたらナビに出す(同じ題が2つ同時に出ないように)。
+// 公開ライブラリ詳細: ナビには通常は固定ラベル(公開ライブラリ)を出し、
+// スクロールで大見出し(.os-name)が隠れたら、そのライブラリ名に切り替える。
 (function setupOfficialHeaderCollapse(){
   const sc=document.getElementById('off-scroll');
   if(!sc)return;
@@ -15523,8 +15522,10 @@ document.addEventListener('visibilitychange',()=>{
     const name=document.getElementById('os-name');
     const bhdr=document.querySelector('#screen-official .bhdr');
     if(!title||!name||!bhdr)return;
-    const show=name.getBoundingClientRect().bottom <= bhdr.getBoundingClientRect().bottom;
-    title.classList.toggle('show', show);
+    const scrolledPast = name.getBoundingClientRect().bottom <= bhdr.getBoundingClientRect().bottom;
+    const libName = (state.currentOfficial && state.currentOfficial.name) || '';
+    const want = (scrolledPast && libName) ? libName : OFFICIAL_NAV_LABEL;
+    if(title.textContent!==want) title.textContent=want;
   };
   sc.addEventListener('scroll',()=>{ if(!ticking){ ticking=true; requestAnimationFrame(update); } },{passive:true});
 })();
