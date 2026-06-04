@@ -4253,25 +4253,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
      メッセージの後ろに差し込むだけ → 元のレイアウトは不変。
    ・既定OFF。html.en-on が付いたときだけ表示される。
    ═══════════════════════════════════════════════════════════ */
-.en-row{ display:flex; padding:0 4px; margin:-1px 0 11px; pointer-events:none; }
+.en-row{ display:flex; padding:0 4px; margin:2px 0 12px; pointer-events:none; }
 .en-row.u{ justify-content:flex-end; }
 .en-row.a{ justify-content:flex-start; }
+/* 枠なし: 返信側(.en-sub)と見た目をそろえ、すべてプレーンな英文テキストにする */
 .en-text{
   max-width:76%;
   font-family:var(--font-en);
   color:var(--ink2);
-  font-size:13.5px; line-height:1.55; letter-spacing:.15px;
-  padding:7px 13px;
-  border-radius:13px;
-  /* 別レイヤーが上に浮いている質感: 半透明の白 + ガラスのにじみ + やわらかい影 */
-  background:rgba(255,255,255,.46);
-  -webkit-backdrop-filter:blur(12px) saturate(1.35);
-  backdrop-filter:blur(12px) saturate(1.35);
-  border:.5px solid rgba(0,0,0,.045);
-  box-shadow:0 1px 1px rgba(0,0,0,.02), 0 10px 22px rgba(0,0,0,.055);
-  /* 後からそっと立ち上がる動き(字幕が遅れて現れる感じ) */
-  opacity:0; transform:translateY(-4px);
-  transition:opacity .5s ease, transform .5s ease;
+  font-size:12.5px; line-height:1.5; letter-spacing:.1px;
+  padding:0 13px;
+  opacity:0; transform:translateY(-3px);
+  transition:opacity .45s ease, transform .45s ease;
 }
 .en-text.in{ opacity:1; transform:translateY(0); }
 /* OFF時は完全に消す → 元の画面が1pxも変わらない */
@@ -4284,7 +4277,7 @@ html:not(.en-on) .en-row{ display:none; }
   font-family:var(--font-en); color:var(--ink2);
   font-size:12.5px; line-height:1.5; letter-spacing:.1px;
   padding:0 13px;
-  margin:-2px 0 14px;
+  margin:3px 0 14px;
   opacity:0; transform:translateY(-3px);
   transition:opacity .45s ease, transform .45s ease;
 }
