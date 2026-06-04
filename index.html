@@ -5194,7 +5194,7 @@ html:not(.en-on) .en-live{ display:none; }
       </div>
       <span class="enm-switch"><span class="enm-knob"></span></span>
     </button>
-    <div class="enm-note">メモのじゃまをしないよう、うっすら重ねて出します。読みたいときだけ目をやれば、いつのまにか英語に慣れていきます。(AI機能と同じしくみを使うので、ログインが必要です)</div>
+    <div class="enm-note">メモのじゃまをしないよう、うっすら重ねて出します。読みたいときだけ目をやれば、いつのまにか英語に慣れていきます。ログインなしでも使えます。</div>
   </div>
 
   <!-- 英語ミラー: 読み上げ(端末内・無料)。ミラーONのときだけ表示。スピーカーアイコンは出さず、英文タップで再生。 -->
@@ -12552,25 +12552,45 @@ const enCache={
 
 const EN_MIRROR_SYS="You are a silent translation layer inside a note-taking app. Translate the user's Japanese into natural, clear English that a Japanese student can read and learn from. Stay faithful and keep it simple. Output ONLY the English translation — no quotes, no notes, no labels, no preamble. If the input contains no Japanese, output it unchanged.";
 
+// 端末ごとの匿名ID(未ログインでもサーバ側で1日上限を数えるためのキー)
+function getAnonDeviceId(){
+  try{
+    let id=localStorage.getItem('snapin_anon_id');
+    if(!id){ id='a_'+Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem('snapin_anon_id', id); }
+    return id;
+  }catch(e){ return 'a_nostorage'; }
+}
+// 1リクエスト送信。{status, text} を返す。status:404 は「未デプロイ」の合図。
+async function _postTranslate(url, body, token, dev){
+  try{
+    const h={'Content-Type':'application/json'};
+    if(token)h['x-snapin-token']=token;
+    if(dev)h['x-snapin-dev']=dev;
+    const res=await fetch(url,{method:'POST',headers:h,body:JSON.stringify(body)});
+    if(!res.ok)return {status:res.status, text:''};
+    const data=await res.json();
+    const t=(data.translation || data.content || data.text || data.message || '').toString();
+    return {status:200, text:t};
+  }catch(e){ return {status:0, text:''}; }
+}
 async function jaToEn(textRaw){
   const key=(textRaw||'').trim();
   if(!key || !hasJapanese(key))return '';
   const cached=await enCache.get(key);
   if(cached!=null)return cached;
-  if(!state.auth || !state.auth.token)return ''; // AI機能(ログイン)が前提。未ログインなら出さない。
-  try{
-    const res=await fetch(AI_ENDPOINT,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-snapin-token':state.auth.token},
-      body:JSON.stringify({ system:EN_MIRROR_SYS, messages:[{role:'user',content:key}] }),
-    });
-    if(!res.ok)return '';
-    const data=await res.json();
-    let en=(data.content || data.text || data.message || '').toString().trim();
-    en=en.replace(/^["「『]+/,'').replace(/["」』]+$/,'').trim(); // 念のため前後の引用符を除去
-    if(en)enCache.put(key,en); // fire-and-forget
-    return en;
-  }catch(e){ return ''; }
+  const token=(state.auth && state.auth.token)?state.auth.token:'';
+  const dev=getAnonDeviceId();
+  // 専用の翻訳エンドポイント(未ログインでも叩ける。サーバ側で1日上限＋共有キャッシュ)を優先。
+  let r=await _postTranslate('/api/translate', {text:key}, token, dev);
+  // 未デプロイ(404)かつログイン済みのときだけ、従来の /api/chat にフォールバック。
+  // ※ 429(上限到達)ではフォールバックしない(上限を回避させないため)。
+  if(r.status===404 && token){
+    r=await _postTranslate(AI_ENDPOINT, {system:EN_MIRROR_SYS, messages:[{role:'user',content:key}]}, token, dev);
+  }
+  if(r.status!==200)return ''; // 上限到達/未対応/失敗 → 黙って何も出さない(メモ体験は止めない)
+  let en=(r.text||'').trim().replace(/^["「『]+/,'').replace(/["」』]+$/,'').trim();
+  if(en)enCache.put(key,en); // fire-and-forget
+  return en;
 }
 
 // ═══ 英語ミラー: 読み上げ (Web Speech / 端末内・無料・API課金なし) ═══
