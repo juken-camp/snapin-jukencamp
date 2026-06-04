@@ -133,7 +133,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .bhdr-back{padding:10px;color:var(--ink2);display:flex;align-items:center;}
 .bhdr-back:active{color:var(--g);}
 .bhdr-title{font-size:15px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-/* 公開ライブラリ詳細: 大見出しが見えている間はナビのタイトルを隠す(同じ題が2つ出ないように) */
+/* 共有ライブラリ詳細: ナビは常に固定ラベルを表示。スクロールで大見出しが隠れたらライブラリ名に切替 */
 #off-bhdr-title{opacity:1;transition:opacity .2s ease;}
 #off-bhdr-title.show{opacity:1;}
 .bhdr-action{
@@ -14058,7 +14058,7 @@ function toggleSubById(id){
   toast(i>=0?'解除しました':'登録しました');
 }
 
-const OFFICIAL_NAV_LABEL='公開ライブラリ'; // ← ナビ(戻る矢印の右)に出す固定ラベル。言葉を変えたいときはここだけ
+const OFFICIAL_NAV_LABEL='共有ライブラリ'; // ← ナビ(戻る矢印の右)に出す固定ラベル。言葉を変えたいときはここだけ
 function openOfficial(s){
   // リスト由来の参照が古いキャッシュでも、メモリ上に新しい棚があればそれを優先する。
   const live=(typeof OFFICIAL_SHELVES!=='undefined' && OFFICIAL_SHELVES.find(x=>x&&x.id===s.id))||s;
