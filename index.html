@@ -8476,35 +8476,37 @@ function attachGridLongPress(cardEl,c){
 }
 
 // なぞって複数選択 (iPhoneの写真アプリと同じ感覚)。選択モード中のみ有効。
-// グリッド要素に一度だけバインドする (renderHome で中身が作り替えられても要素自体は残る)。
+// 安定したスクロール親に一度だけバインドする (中身が作り替えられても要素自体は残る)。
 let suppressGridClick=false;
-function attachGridPaintSelect(){
-  const grid=$('grid-home');
-  if(!grid || grid.dataset.paintBound)return;
-  grid.dataset.paintBound='1';
-  let startId=null, committed=false, mode='add', lastId=null, sx=0, sy=0;
+function attachPaintSelect(rootEl, opts){
+  if(!rootEl || rootEl.dataset.paintBound)return;
+  rootEl.dataset.paintBound='1';
+  const sel=opts.cardSelector;
+  const idOf=opts.idOf || (el=>el.dataset.id);
+  const isActive=()=>state.selectMode && state.selectContext===opts.context;
+  let startId=null, startEl=null, committed=false, mode='add', lastId=null, sx=0, sy=0;
   const cardAt=(x,y)=>{
     const el=document.elementFromPoint(x,y);
-    return el?el.closest('.card[data-id]'):null;
+    return el?el.closest(sel):null;
   };
   const paint=(card)=>{
     if(!card)return;
-    const id=card.dataset.id;
-    if(id===lastId)return;
+    const id=idOf(card);
+    if(!id || id===lastId)return;
     lastId=id;
     if(mode==='add'){ state.selectedIds.add(id); card.classList.add('selected'); }
     else { state.selectedIds.delete(id); card.classList.remove('selected'); }
     updateSelectBarCount();
   };
   const onStart=ev=>{
-    if(!state.selectMode){startId=null;return;}
+    if(!isActive()){startId=null;return;}
     const t=ev.touches?ev.touches[0]:ev;
     const card=cardAt(t.clientX,t.clientY);
-    if(!card){startId=null;return;}
-    startId=card.dataset.id; committed=false; lastId=null; sx=t.clientX; sy=t.clientY;
+    if(!card){startId=null;startEl=null;return;}
+    startId=idOf(card); startEl=card; committed=false; lastId=null; sx=t.clientX; sy=t.clientY;
   };
   const onMove=ev=>{
-    if(!state.selectMode || startId===null)return;
+    if(!isActive() || startId===null)return;
     const t=ev.touches?ev.touches[0]:ev;
     if(!committed){
       // 動きが小さいうちはスクロール優先 (誤爆防止)
@@ -8512,8 +8514,7 @@ function attachGridPaintSelect(){
       committed=true;
       // 最初に触れたカードの状態で「追加」か「解除」かを決める
       mode=state.selectedIds.has(startId)?'remove':'add';
-      const sc=grid.querySelector(`.card[data-id="${CSS.escape(startId)}"]`);
-      paint(sc);
+      paint(startEl); // 起点カードは要素参照で確実に塗る (スクロールずれに強い)
       if(navigator.vibrate)navigator.vibrate(8);
     }
     if(committed){
@@ -8528,15 +8529,27 @@ function attachGridPaintSelect(){
       setTimeout(()=>{suppressGridClick=false;},350);
       if(state.selectedIds.size===0)exitSelectMode();
     }
-    startId=null; committed=false; lastId=null;
+    startId=null; startEl=null; committed=false; lastId=null;
   };
-  grid.addEventListener('touchstart',onStart,{passive:true});
-  grid.addEventListener('touchmove',onMove,{passive:false});
-  grid.addEventListener('touchend',onEnd);
-  grid.addEventListener('touchcancel',onEnd);
-  grid.addEventListener('mousedown',onStart);
-  grid.addEventListener('mousemove',ev=>{ if(ev.buttons)onMove(ev); });
-  grid.addEventListener('mouseup',onEnd);
+  rootEl.addEventListener('touchstart',onStart,{passive:true});
+  rootEl.addEventListener('touchmove',onMove,{passive:false});
+  rootEl.addEventListener('touchend',onEnd);
+  rootEl.addEventListener('touchcancel',onEnd);
+  rootEl.addEventListener('mousedown',onStart);
+  rootEl.addEventListener('mousemove',ev=>{ if(ev.buttons)onMove(ev); });
+  rootEl.addEventListener('mouseup',onEnd);
+}
+
+// 各ページのなぞり選択をセットアップ (起動時に一度だけ)。
+// バインド先は再描画で作り直されない安定したスクロール親。
+function setupPaintSelect(){
+  attachPaintSelect($('grid-home'), {context:'home', cardSelector:'.card[data-id]'});
+  attachPaintSelect($('today-scroll'), {
+    context:'today',
+    cardSelector:'.today-newcard[data-id],.today-newcard[data-card-id]',
+    idOf:el=>el.dataset.id||el.dataset.cardId,
+  });
+  attachPaintSelect($('stale-scroll'), {context:'stale', cardSelector:'.card[data-id]'});
 }
 
 // 選択モードの対象画面 (再描画やカード要素の探索に使う)
@@ -14765,7 +14778,7 @@ $('undo-toast-btn').addEventListener('click',()=>{
   if(fn)fn();
 });
 // グリッドのなぞり複数選択をバインド (一度だけ)
-attachGridPaintSelect();
+setupPaintSelect();
 
 // URL モーダルのイベント登録
 $('url-cancel').addEventListener('click',closeUrlModal);
