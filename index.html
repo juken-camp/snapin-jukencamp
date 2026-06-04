@@ -12603,13 +12603,9 @@ async function jaToEn(textRaw){
   if(cached!=null)return cached;
   const token=(state.auth && state.auth.token)?state.auth.token:'';
   const dev=getAnonDeviceId();
-  // 専用の翻訳エンドポイント(未ログインでも叩ける。サーバ側で1日上限＋共有キャッシュ)を優先。
-  let r=await _postTranslate('/api/translate', {text:key}, token, dev);
-  // 未デプロイ(404)かつログイン済みのときだけ、従来の /api/chat にフォールバック。
-  // ※ 429(上限到達)ではフォールバックしない(上限を回避させないため)。
-  if(r.status===404 && token){
-    r=await _postTranslate(AI_ENDPOINT, {system:EN_MIRROR_SYS, messages:[{role:'user',content:key}]}, token, dev);
-  }
+  // 翻訳は /api/chat の「翻訳モード」に相乗り(関数を増やさないため)。未ログインでも叩ける。
+  // サーバ側で端末/IPごとの1日上限＋共有キャッシュを適用。429(上限到達)では何も出さない。
+  const r=await _postTranslate(AI_ENDPOINT, {mode:'translate', text:key}, token, dev);
   if(r.status!==200)return ''; // 上限到達/未対応/失敗 → 黙って何も出さない(メモ体験は止めない)
   let en=(r.text||'').trim().replace(/^["「『]+/,'').replace(/["」』]+$/,'').trim();
   if(en)enCache.put(key,en); // fire-and-forget
