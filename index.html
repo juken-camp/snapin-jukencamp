@@ -132,7 +132,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .bhdr-back{padding:10px;color:var(--ink2);display:flex;align-items:center;}
 .bhdr-back:active{color:var(--g);}
-.bhdr-title{font-size:15px;font-weight:600;flex:1;}
+.bhdr-title{font-size:15px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .bhdr-action{
   font-size:13px;
   font-weight:600;
@@ -2531,6 +2531,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   padding:6px 10px;
 }
 .bhdr-trash-empty:active{color:var(--rose);}
+/* ゴミ箱ヘッダーの「すべて戻す」ボタン(一括復旧) */
+.bhdr-trash-restore{
+  font-size:12px;
+  color:var(--g);
+  font-weight:600;
+  margin-left:auto;
+  padding:6px 10px;
+}
+.bhdr-trash-restore:active{opacity:.6;}
+.bhdr-trash-restore + .bhdr-trash-empty{margin-left:0;}
 
 .color-filter-chip{
   display:flex;align-items:center;gap:6px;
@@ -2883,12 +2893,21 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   width:100%;
   padding:14px 16px;
   font-size:16px;
+  font-weight:400;
   background:var(--surface);
   border:1px solid var(--line);
   border-radius:12px;
   color:var(--ink);
   outline:none;
   transition:border-color .15s;
+}
+/* 名前/誕生日のプレースホルダーを両欄そろえて軽い灰色・通常の太さに固定。
+   iOS/Safari が名前欄を自動入力候補と判断して濃い太字に見せるのを防ぐ。 */
+.claim-field input::placeholder{
+  color:var(--ink3);
+  -webkit-text-fill-color:var(--ink3);
+  font-weight:400;
+  opacity:1;
 }
 .claim-field input:focus{
   border-color:var(--g);
@@ -4732,6 +4751,7 @@ html:not(.en-on) .en-live{ display:none; }
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
     </button>
     <div class="bhdr-title">捨てたメモ</div>
+    <button class="bhdr-trash-restore" data-action="restore-all-trash" id="trash-restore-btn">すべて戻す</button>
     <button class="bhdr-trash-empty" data-action="empty-trash" id="trash-empty-btn">すべて削除</button>
   </div>
   <div class="scroll" id="trash-scroll">
@@ -13000,6 +13020,18 @@ function restoreFromTrash(id){
   toast('一覧に戻しました');
 }
 
+// 捨てたメモをまとめて一覧に戻す (誤って全消ししたときの一括復旧用)
+function restoreAllTrash(){
+  const trashed=state.cards.filter(isTrashedCard);
+  if(trashed.length===0){ toast('戻すメモはありません'); return; }
+  trashed.forEach(c=>{ delete c.deletedAt; });
+  save();
+  toast(`${trashed.length}件を一覧に戻しました`);
+  if(typeof renderTrashScreen==='function')renderTrashScreen();
+  goto('screen-home',false);
+  renderHome();
+}
+
 // 捨てたメモを完全に削除 (1件)
 async function purgeOne(id){
   const idx=state.cards.findIndex(x=>x.id===id);
@@ -15068,6 +15100,7 @@ document.addEventListener('click',e=>{
     case 'open-trash':goto('screen-trash');break;
     case 'open-stale':goto('screen-stale');break;
     case 'empty-trash':emptyTrash();break;
+    case 'restore-all-trash':restoreAllTrash();break;
     case 'toggle-pin':togglePin();break;
     case 'copy-to-shelf':copyToShelf();break;
     case 'open-color-picker':openColorPicker();break;
