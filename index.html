@@ -613,13 +613,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .card.mosaic .link-card-host,
 .card.mosaic img,
 .card.mosaic video{filter:blur(5px) saturate(0.9);}
-.card.mosaic::before{
-  content:"";
-  position:absolute;inset:0;
-  background:var(--mosaic-veil);
-  pointer-events:none;
-  z-index:1;
-}
+/* 色付きベールは廃止。詳細画面と同じ「素のぼかし」に統一する。 */
 
 /* リール(フィード)モードのモザイク */
 /* 新レイアウトでは本文・タグは .feed-body、画像は .feed-media に入る。
@@ -629,14 +623,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .feed.mosaic .feed-item .feed-note,
 .feed.mosaic .feed-item .feed-list,
 .feed.mosaic .feed-item .feed-body{filter:blur(8px) saturate(0.9);}
-.feed.mosaic .feed-item::before{
-  content:"";
-  position:absolute;inset:0;
-  background:var(--mosaic-veil-soft);
-  pointer-events:none;
-  z-index:3;
-  border-radius:16px;
-}
+/* 色付きベールは廃止。素のぼかしに統一。 */
 .feed.mosaic .feed-item.tapped .feed-media img,
 .feed.mosaic .feed-item.tapped .feed-media video,
 .feed.mosaic .feed-item.tapped .feed-note,
@@ -656,14 +643,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .today-newcards.mosaic .today-newcard .link-card-host,
 .today-newcards.mosaic .today-newcard img,
 .today-newcards.mosaic .today-newcard video{filter:blur(5px) saturate(0.9);}
-.today-newcards.mosaic .today-newcard::before{
-  content:"";
-  position:absolute;inset:0;
-  background:var(--mosaic-veil);
-  pointer-events:none;
-  z-index:1;
-  border-radius:inherit;
-}
+/* 色付きベールは廃止。素のぼかしに統一。 */
 .today-newcards.mosaic .today-newcard.tapped .ctxt,
 .today-newcards.mosaic .today-newcard.tapped .link-card-title,
 .today-newcards.mosaic .today-newcard.tapped .link-card-host,
