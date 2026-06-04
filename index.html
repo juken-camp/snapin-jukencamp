@@ -133,6 +133,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .bhdr-back{padding:10px;color:var(--ink2);display:flex;align-items:center;}
 .bhdr-back:active{color:var(--g);}
 .bhdr-title{font-size:15px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* 公開ライブラリ詳細: 大見出しが見えている間はナビのタイトルを隠す(同じ題が2つ出ないように) */
+#off-bhdr-title{opacity:0;transition:opacity .2s ease;}
+#off-bhdr-title.show{opacity:1;}
 .bhdr-action{
   font-size:13px;
   font-weight:600;
@@ -14064,6 +14067,7 @@ function openOfficial(s){
   // 未取得のうちは古い名前を出さず、取得完了後に refreshOfficialViews が確定させる。
   if(OFFICIAL_FRESH){
     $('off-bhdr-title').textContent=s.name;
+    $('off-bhdr-title').classList.remove('show'); // 開いた直後は大見出しが見えているので隠す
     $('os-name').textContent=s.name;
   }else{
     $('off-bhdr-title').textContent='';
@@ -15507,6 +15511,24 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 // claim 入力フィールド: Enter で送信、誕生日は数字だけに
+// 公開ライブラリ詳細: 大見出し(.os-name)が見えている間はナビのタイトルを隠し、
+// スクロールで見出しが隠れたらナビに出す(同じ題が2つ同時に出ないように)。
+(function setupOfficialHeaderCollapse(){
+  const sc=document.getElementById('off-scroll');
+  if(!sc)return;
+  let ticking=false;
+  const update=()=>{
+    ticking=false;
+    const title=document.getElementById('off-bhdr-title');
+    const name=document.getElementById('os-name');
+    const bhdr=document.querySelector('#screen-official .bhdr');
+    if(!title||!name||!bhdr)return;
+    const show=name.getBoundingClientRect().bottom <= bhdr.getBoundingClientRect().bottom;
+    title.classList.toggle('show', show);
+  };
+  sc.addEventListener('scroll',()=>{ if(!ticking){ ticking=true; requestAnimationFrame(update); } },{passive:true});
+})();
+
 (function setupClaimInputs(){
   const nameInp=document.getElementById('claim-name');
   const bdInp=document.getElementById('claim-bd');
