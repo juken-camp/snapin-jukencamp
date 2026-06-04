@@ -5227,7 +5227,6 @@ html:not(.en-on) .en-live{ display:none; }
       <div class="en-speak-chips">
         <button class="en-chip" data-action="enspeak-off">オフ</button>
         <button class="en-chip" data-action="enspeak-tap">タップで</button>
-        <button class="en-chip" data-action="enspeak-auto">自動＋タップ</button>
       </div>
     </div>
     <div class="en-speak-row">
@@ -5238,7 +5237,7 @@ html:not(.en-on) .en-live{ display:none; }
         <button class="en-chip" data-action="enrate-fast">はやい</button>
       </div>
     </div>
-    <div class="enm-note">英文を軽くタップすると、その英文を読み上げます。「自動＋タップ」では、新しい英文が出たときにも自動で読み上げます。</div>
+    <div class="enm-note">英文を軽くタップすると、その英文を読み上げます。</div>
   </div>
 
   <!-- AIへの希望 (フリー記入): 利用者が自分の言葉で学習スタイルや要望を書く。
@@ -5411,7 +5410,7 @@ const state={
   onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
   theme:'green',       // 着せ替えテーマ 'green' | 'sakura'
   enMode:false,        // 英語ミラー(字幕レイヤー)のON/OFF。既定OFF。
-  enSpeak:'off',       // 読み上げ 'off' | 'tap'(タップで) | 'auto'(出力時に自動＋タップ)
+  enSpeak:'off',       // 読み上げ 'off' | 'tap'(英文タップで再生)
   enRate:'normal',     // 読み上げ速度 'slow' | 'normal' | 'fast'
   _savedAt:0,          // 直近の保存時刻 (localStorage と IDB 耐久コピーの新旧比較に使う)
   lastCloudBackupAt:0, // 直近にクラウドへバックアップした時刻 (UI 表示用、ローカルのみ)
@@ -5775,7 +5774,7 @@ function applyPayload(d){
   state.onboarded=d.onboarded||false;
   state.theme=(d.theme==='sakura')?'sakura':'green';
   state.enMode=!!d.enMode;
-  state.enSpeak=(d.enSpeak==='tap'||d.enSpeak==='auto')?d.enSpeak:'off';
+  state.enSpeak=(d.enSpeak==='tap'||d.enSpeak==='auto')?'tap':'off'; // 旧「自動＋タップ」は廃止。保存済みなら「タップで」に引き継ぐ
   state.enRate=(d.enRate==='slow'||d.enRate==='fast')?d.enRate:'normal';
   state._savedAt=d._savedAt||0;
   state.lastCloudBackupAt=d.lastCloudBackupAt||0;
@@ -6940,13 +6939,13 @@ function setEnMode(on){
 function applyEnSpeak(){
   if(!('speechSynthesis' in window))document.documentElement.classList.add('no-tts');
   document.documentElement.classList.toggle('en-speak-on', state.enSpeak!=='off');
-  const sm={'enspeak-off':'off','enspeak-tap':'tap','enspeak-auto':'auto'};
+  const sm={'enspeak-off':'off','enspeak-tap':'tap'};
   document.querySelectorAll('[data-action^="enspeak-"]').forEach(el=>{ el.classList.toggle('on', sm[el.dataset.action]===state.enSpeak); });
   const rm={'enrate-slow':'slow','enrate-normal':'normal','enrate-fast':'fast'};
   document.querySelectorAll('[data-action^="enrate-"]').forEach(el=>{ el.classList.toggle('on', rm[el.dataset.action]===state.enRate); });
 }
 function setEnSpeak(mode){
-  state.enSpeak=(mode==='tap'||mode==='auto')?mode:'off';
+  state.enSpeak=(mode==='tap')?'tap':'off';
   save();
   applyEnSpeak();
   if(state.enSpeak==='off'){ if('speechSynthesis' in window)try{speechSynthesis.cancel();}catch(e){} }
@@ -11369,8 +11368,6 @@ function renderChatLog(c){
 
   // 英語ミラー: 描き終わった字幕枠に、順番に英訳を流し込む(キャッシュ優先)。
   if(state.enMode && enJobs.length)fillEnglishSubtitles(enJobs);
-  // 自動読み上げ(モードが auto のときだけ、新しいメッセージを読む)
-  if(state.enMode && state.enSpeak==='auto')maybeAutoSpeakLatest(c);
 
   // 添付画像の遅延読込: src 未設定 (data-ci のみ) の画像を IndexedDB から復元する。
   log.querySelectorAll('img.chat-msg-img').forEach(im=>{
@@ -15023,7 +15020,6 @@ document.addEventListener('click',e=>{
     case 'toggle-en':setEnMode(!state.enMode);break;
     case 'enspeak-off':setEnSpeak('off');break;
     case 'enspeak-tap':setEnSpeak('tap');break;
-    case 'enspeak-auto':setEnSpeak('auto');break;
     case 'enrate-slow':setEnRate('slow');break;
     case 'enrate-normal':setEnRate('normal');break;
     case 'enrate-fast':setEnRate('fast');break;
