@@ -133,6 +133,15 @@ function hostOf(u) {
   try { return new URL(u).hostname; } catch { return ''; }
 }
 
+// ページ取得に失敗 / og:image も apple-touch-icon も favicon も拾えなかったときの
+// 最終フォールバック。Google のファビコンサービスはほとんどのドメインのアイコンを返す。
+// サーバー側fetchが弾かれるサイトでも、Google 側のキャッシュから取れることが多いので、
+// カードに最低限のアイコンを出せる。
+function faviconFor(host) {
+  if (!host) return null;
+  return 'https://www.google.com/s2/favicons?sz=128&domain=' + encodeURIComponent(host);
+}
+
 // --- メイン ---
 export default async function handler(req, res) {
   // CORS (同一オリジンなら不要だが、念のため明示)
@@ -198,7 +207,7 @@ export default async function handler(req, res) {
       res.status(200).json({
         ok: true,
         url, finalUrl,
-        title: host, description: '', image: null,
+        title: host, description: '', image: faviconFor(host),
         siteName: host, host,
         warning: 'HTTP ' + r.status,
       });
@@ -212,7 +221,7 @@ export default async function handler(req, res) {
         ok: true,
         url, finalUrl,
         title: fileName || host,
-        description: '', image: null,
+        description: '', image: faviconFor(host),
         siteName: host, host,
         warning: 'non-html: ' + ctype,
       });
@@ -258,7 +267,7 @@ export default async function handler(req, res) {
       url, finalUrl,
       title: meta.ogTitle || meta.titleTag || host || '',
       description: meta.ogDescription || '',
-      image: meta.ogImage || meta.appleIcon || meta.icon || null,
+      image: meta.ogImage || meta.appleIcon || meta.icon || faviconFor(host),
       siteName: meta.ogSiteName || host || '',
       host,
     });
@@ -274,7 +283,7 @@ export default async function handler(req, res) {
       finalUrl: url,
       title: host || '',
       description: '',
-      image: null,
+      image: faviconFor(host),
       siteName: host || '',
       host,
       warning: 'fetch failed: ' + (e && e.message ? e.message : 'unknown'),
