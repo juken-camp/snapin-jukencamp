@@ -129,6 +129,7 @@ async function handleTranslate(req, res, body) {
     const result = await client.messages.create({
       model: TR_MODEL,
       max_tokens: 1024,
+      temperature: 0, // 翻訳は決定的に。同じ日本語＋同じ級なら、作り直しても必ず同じ英文になる(覚えた英文がブレない)。
       system: dir === 'en2ja' ? TRANSLATE_SYSTEM_EN2JA : (TRANSLATE_SYSTEM + eikenGuidance(level)),
       messages: [{ role: 'user', content: text }],
     });
