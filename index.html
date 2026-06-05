@@ -6295,6 +6295,10 @@ function hydrateShelvesFromCache(){
     if(Array.isArray(arr) && arr.length){
       OFFICIAL_SHELVES=arr;
       resolveShelfRefs(OFFICIAL_SHELVES);
+      // キャッシュ済みの名前はそのまま即表示してよい。
+      // loadOfficialShelves() が裏で最新を取って refreshOfficialViews() で静かに差し替えるので、
+      // スケルトンで取得完了まで待たせる必要はない (前回名を即出す方が体感が良い)。
+      OFFICIAL_FRESH=true;
     }
   }catch(e){/* キャッシュが壊れていても無視して通常取得に任せる */}
 }
@@ -6339,6 +6343,10 @@ async function loadOfficialShelves(){
     // setItem は即時にスナップショットを取るので、この後の merge/resolve の影響は受けない。
     try{ localStorage.setItem(SHELVES_CACHE_KEY, JSON.stringify(OFFICIAL_SHELVES)); }catch(e){}
     OFFICIAL_FRESH=true; // これ以降は最新タイトルを確定表示してよい
+    // /api/shelves が返った時点で、グループ取得(/api/teams)を待たずに先に描き直す。
+    // これでサーバー往復2回ぶんの直列待ちが解消され、名前が早く出る。
+    resolveShelfRefs(OFFICIAL_SHELVES);
+    refreshOfficialViews();
     // グループ所有ライブラリ (自分のグループの分だけ) を取得してマージ
     await mergeGroupShelves();
     // クロスポスト: 参照を実体に解決
