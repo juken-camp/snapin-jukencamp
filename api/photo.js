@@ -40,7 +40,7 @@ const s3 = new S3Client({
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Snapin-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Snapin-Token, X-Admin-Password');
 }
 
 // chat.js / sync.js と同じ認可チェック
@@ -78,19 +78,52 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const authResult = await authorize(req);
-  if (!authResult.ok) {
-    return res.status(authResult.status).json({ error: 'Unauthorized', reason: authResult.reason });
-  }
-
   let body;
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
   } catch (e) {
     return res.status(400).json({ error: 'invalid_json' });
   }
-
   const action = body.action;
+
+  // ─── 共有ライブラリの写真 (管理者専用 / R2のグローバル領域 + 公開URLで配信) ───
+  // shelves.js と同じ x-admin-password 認証。写真は shelfphotos/ に置き、公開URL(R2_PUBLIC_URL)で
+  // 全生徒が直接読む。棚データにはこの公開URLだけを保存するので、棚の保存が軽くなる(413の根本対策)。
+  if (action === 'shelf-put' || action === 'shelf-delete') {
+    const pass = req.headers['x-admin-password'];
+    if (!process.env.ADMIN_PASSWORD || pass !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      if (action === 'shelf-put') {
+        const m = /^data:([^;]+);base64,(.+)$/.exec(body.dataUrl || '');
+        if (!m) return res.status(400).json({ error: 'invalid_dataurl' });
+        const buf = Buffer.from(m[2], 'base64');
+        if (buf.length > MAX_BYTES) {
+          return res.status(413).json({ error: 'too_large', size: buf.length, max: MAX_BYTES });
+        }
+        const photoId = safeId(body.photoId) || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+        const ShelfKey = `shelfphotos/${photoId}`;
+        await s3.send(new PutObjectCommand({ Bucket: BUCKET, Key: ShelfKey, Body: buf, ContentType: m[1] }));
+        const base = (process.env.R2_PUBLIC_URL || '').replace(/\/+$/, '');
+        return res.status(200).json({ ok: true, photoId, key: ShelfKey, url: base ? `${base}/${ShelfKey}` : null });
+      }
+      // shelf-delete: photoId か url から後始末 (任意)
+      const pid = safeId(body.photoId || (body.url ? String(body.url).split('/').pop() : ''));
+      if (pid) { try { await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: `shelfphotos/${pid}` })); } catch (e) {} }
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error('shelf photo error:', err);
+      return res.status(500).json({ error: err.message || 'Internal server error' });
+    }
+  }
+
+  // ─── 従来: ユーザーごとの写真 (x-snapin-token 認証) ───
+  const authResult = await authorize(req);
+  if (!authResult.ok) {
+    return res.status(authResult.status).json({ error: 'Unauthorized', reason: authResult.reason });
+  }
+
   const cardId = body.cardId;
   if (!cardId) return res.status(400).json({ error: 'cardId required' });
   const Key = photoKey(authResult.payload, cardId);
