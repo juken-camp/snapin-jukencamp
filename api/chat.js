@@ -43,6 +43,16 @@ const TRANSLATE_SYSTEM =
   "Output ONLY the English translation — no quotes, no notes, no labels, no preamble. " +
   "If the input contains no Japanese, output it unchanged.";
 
+// 英→日 (翻訳機モード): 英語のみのメモを日本語に訳して、字幕として下にそっと出す。
+const TRANSLATE_SYSTEM_EN2JA =
+  "You are a silent translation layer inside a Japanese note-taking app. " +
+  "Translate the user's English into natural, clear Japanese that a Japanese student can read and learn from. " +
+  "If the input is a single word, give its common Japanese meaning(s) concisely (you may list a few core meanings separated by 、). " +
+  "If it is a phrase or sentence, translate it naturally. " +
+  "Stay faithful and keep it simple. " +
+  "Output ONLY the Japanese translation — no quotes, no notes, no labels, no romaji, no preamble. " +
+  "If the input contains no English, output it unchanged.";
+
 // すべて環境変数で上書き可能 (Vercel の Settings → Environment Variables)
 const TR_MODEL     = process.env.TRANSLATE_MODEL || 'claude-haiku-4-5-20251001';
 const TR_MAX_CHARS = parseInt(process.env.TR_MAX_CHARS || '1500', 10); // 1行が長すぎる入力は翻訳しない
@@ -71,8 +81,11 @@ async function handleTranslate(req, res, body) {
     if (!text) return res.status(200).json({ translation: '' });
     if (text.length > TR_MAX_CHARS) return res.status(200).json({ translation: '' });
 
-    // 1) 共有キャッシュ (ヒットは無料・上限を消費しない)
-    const cacheKey = 'entr:' + sha1(text);
+    // 翻訳の向き: 'en2ja'(英語→日本語) なら英→日プロンプト。既定は ja2en(日本語→英語)。
+    const dir = (body.dir === 'en2ja') ? 'en2ja' : 'ja2en';
+
+    // 1) 共有キャッシュ (ヒットは無料・上限を消費しない)。向きごとにキーを分ける(同じ語でも訳が逆向き)。
+    const cacheKey = (dir === 'en2ja' ? 'jatr:' : 'entr:') + sha1(text);
     try {
       const hit = await redis.get(cacheKey);
       if (hit != null && hit !== '') {
@@ -98,7 +111,7 @@ async function handleTranslate(req, res, body) {
     const result = await client.messages.create({
       model: TR_MODEL,
       max_tokens: 1024,
-      system: TRANSLATE_SYSTEM,
+      system: dir === 'en2ja' ? TRANSLATE_SYSTEM_EN2JA : TRANSLATE_SYSTEM,
       messages: [{ role: 'user', content: text }],
     });
     let en = result.content
