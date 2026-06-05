@@ -6034,6 +6034,7 @@ function listThumbFontSize(n){
 }
 function listCardInner(c){
   if(typeof isLinkedCard==='function' && isLinkedCard(c))c=resolveLiveCard(c);
+  const col=colorById(c.color);
   const allItems=c.items||[];
   const itemsArr=allItems.slice(0,40); // 描画コストの安全上限。実質的に全件表示。
   const fz=listThumbFontSize(allItems.length);
@@ -6050,8 +6051,8 @@ function listCardInner(c){
     const checkSvg=done?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>':'';
     return `<div class="li ${done?'done':''}"><div class="chk">${checkSvg}</div><span>${esc(i.t)}</span></div>`;
   }).join('');
-  const title=c.title?`<div style="font-weight:600;font-size:1.1em;margin-bottom:0.4em;color:var(--gd);">${esc(c.title)}</div>`:'';
-  return `<div class="ctxt" style="font-size:${fz}px;">${title}${itemsHtml}</div>`;
+  const title=c.title?`<div style="font-weight:600;font-size:1.1em;margin-bottom:0.4em;color:${col.fg};opacity:0.7;">${esc(c.title)}</div>`:'';
+  return `<div class="ctxt" style="font-size:${fz}px;background:${col.bg};color:${col.fg};">${title}${itemsHtml}</div>`;
 }
 
 // リンクカードの一覧表示用HTML。グリッドセル・今日のメモ・フィードで共通利用。
