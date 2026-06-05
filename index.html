@@ -4357,6 +4357,8 @@ html:not(.en-on) .en-sub{ display:none; }
 .en-chip:active{ opacity:.7; }
 .en-chip.on{ background:var(--g); color:#fff; border-color:var(--g); }
 html:not(.en-on) .en-speak-box{ display:none; } /* ミラーOFFなら読み上げ設定も隠す */
+.en-level-box{ margin:0 0 2px; }
+html:not(.en-on) .en-level-box{ display:none; } /* レベルはミラーONのとき表示(読み上げ非対応でも出す) */
 html.no-tts .en-speak-box{ display:none; }       /* 読み上げ非対応端末では隠す */
 /* タップで読み上げ可能なときだけ、英文をタップ対象にする(en-row は pointer-events:none なので個別に有効化) */
 html.en-speak-on .en-text, html.en-speak-on .en-sub{ pointer-events:auto; cursor:pointer; }
@@ -5262,6 +5264,20 @@ html:not(.en-on) .en-live{ display:none; }
     <div class="enm-note">メモのじゃまをしないよう、うっすら重ねて出します。読みたいときだけ目をやれば、いつのまにか英語に慣れていきます。英語だけで書いたメモには、逆に日本語の意味がそっと浮かびます。こちらの機能はAI搭載ですが、誰でもご利用になれます。</div>
   </div>
 
+  <!-- 英語字幕: 英訳の難しさを英検の級で調整。ミラーONのとき表示(読み上げ非対応端末でも出す)。 -->
+  <div class="en-level-box">
+    <div class="en-speak-row">
+      <div class="en-speak-label">レベル</div>
+      <div class="en-speak-chips">
+        <button class="en-chip" data-action="enlevel-5">5級</button>
+        <button class="en-chip" data-action="enlevel-4">4級</button>
+        <button class="en-chip" data-action="enlevel-3">3級</button>
+        <button class="en-chip" data-action="enlevel-pre2">準2級</button>
+      </div>
+    </div>
+    <div class="enm-note">英文の難しさを英検の級で調整できます。やさしい級ほど読みやすく、リスニング練習にもなります。</div>
+  </div>
+
   <!-- 英語ミラー: 読み上げ(端末内・無料)。ミラーONのときだけ表示。スピーカーアイコンは出さず、英文タップで再生。 -->
   <div class="en-speak-box">
     <div class="en-speak-row">
@@ -5453,6 +5469,7 @@ const state={
   enMode:false,        // 英語ミラー(字幕レイヤー)のON/OFF。既定OFF。
   enSpeak:'off',       // 読み上げ 'off' | 'tap'(英文タップで再生)
   enRate:1.0,          // 読み上げ速度 (倍率 0.5〜3.0)
+  enLevel:'pre2',      // 英語字幕の英訳レベル(英検) '5'|'4'|'3'|'pre2'。既定は準2級(=自然な英語)
   _savedAt:0,          // 直近の保存時刻 (localStorage と IDB 耐久コピーの新旧比較に使う)
   lastCloudBackupAt:0, // 直近にクラウドへバックアップした時刻 (UI 表示用、ローカルのみ)
   tagEditMode:false,   // 探すページのタグ編集モード
@@ -5509,6 +5526,7 @@ function buildLightPayload(){
     enMode:state.enMode,
     enSpeak:state.enSpeak,
     enRate:state.enRate,
+    enLevel:state.enLevel,
     lastCloudBackupAt:state.lastCloudBackupAt,
   };
 }
@@ -5817,6 +5835,7 @@ function applyPayload(d){
   state.enMode=!!d.enMode;
   state.enSpeak=(d.enSpeak==='tap'||d.enSpeak==='auto')?'tap':'off'; // 旧「自動＋タップ」は廃止。保存済みなら「タップで」に引き継ぐ
   state.enRate=_normEnRate(d.enRate); // 旧 slow/normal/fast は倍率へ移行。数値は0.5〜3にクランプ
+  state.enLevel=_normEnLevel(d.enLevel); // 英検レベル。未設定/不正は準2級
   state._savedAt=d._savedAt||0;
   state.lastCloudBackupAt=d.lastCloudBackupAt||0;
   applyTheme();
@@ -6987,6 +7006,9 @@ function applyEnSpeak(){
   const rate=_enRateValue();
   if(rr)rr.value=rate;
   if(rv)rv.textContent=rate.toFixed(1)+'×';
+  // レベル(英検)チップの反映
+  const lm={'enlevel-5':'5','enlevel-4':'4','enlevel-3':'3','enlevel-pre2':'pre2'};
+  document.querySelectorAll('[data-action^="enlevel-"]').forEach(el=>{ el.classList.toggle('on', lm[el.dataset.action]===state.enLevel); });
 }
 function setEnSpeak(mode){
   state.enSpeak=(mode==='tap')?'tap':'off';
@@ -6999,6 +7021,15 @@ function setEnRate(v){
   state.enRate=_normEnRate(v);
   save();
   applyEnSpeak();
+}
+// 英検レベル: 不正値は準2級にフォールバック
+function _normEnLevel(v){ return (v==='5'||v==='4'||v==='3'||v==='pre2')?v:'pre2'; }
+function setEnLevel(v){
+  state.enLevel=_normEnLevel(v);
+  save();
+  applyEnSpeak();
+  // 開いているメモがあれば描き直して、新しいレベルの字幕に差し替える(級別キャッシュで再翻訳)。
+  if(state.current && typeof renderChatLog==='function'){ try{ renderChatLog(state.current); }catch(e){} }
 }
 
 // ═══ ログアウト (アプリ統一デザインの確認モーダル) ═══
@@ -10415,16 +10446,23 @@ function renderUpload(){
     });
     body.appendChild(colorRow);
   }else if(c.type==='list'){
+    const col=colorById(c.color);
+    // リスト本体を、保存後のカードと同じ背景色で包む(編集面＝そのままプレビュー)。
+    const clBox=document.createElement('div');
+    clBox.className='cl-box';
+    clBox.style.cssText=`background:${col.bg};color:${col.fg};border-radius:14px;padding:14px 16px;margin-top:4px;`;
+
     const titleInp=document.createElement('input');
     titleInp.className='up-text title';
     titleInp.placeholder='リストのタイトル (任意)';
     titleInp.value=c.title||'';
+    titleInp.style.color=col.fg;
     titleInp.addEventListener('input',e=>{state.current.title=e.target.value;});
-    body.appendChild(titleInp);
+    clBox.appendChild(titleInp);
 
     const itemsWrap=document.createElement('div');
     itemsWrap.id='cl-items';
-    body.appendChild(itemsWrap);
+    clBox.appendChild(itemsWrap);
     renderListItems(itemsWrap);
 
     const addBtn=document.createElement('button');
@@ -10437,12 +10475,28 @@ function renderUpload(){
       if(inheritMark==='check')newItem.d=false;
       state.current.items.push(newItem);
       renderListItems(itemsWrap);
-      setTimeout(()=>{
-        const inps=itemsWrap.querySelectorAll('.cl-input');
-        if(inps.length)inps[inps.length-1].focus();
-      },50);
+      // iOS対策: setTimeout だとジェスチャーが切れてキーボードが閉じる。同期でフォーカスする。
+      const inps=itemsWrap.querySelectorAll('.cl-input');
+      if(inps.length){ const last=inps[inps.length-1]; last.focus(); try{ last.setSelectionRange(0,0); }catch(_){} }
     });
-    body.appendChild(addBtn);
+    clBox.appendChild(addBtn);
+    body.appendChild(clBox);
+
+    // 背景の色選択 (メモと同じ。保存後のカード背景になる)
+    const colorRow=document.createElement('div');
+    colorRow.style.cssText='display:flex;gap:8px;overflow-x:auto;padding:14px 0 4px;scrollbar-width:none;';
+    CARD_COLORS.forEach(colr=>{
+      const sw=document.createElement('button');
+      const selected=(isNoColor(c.color)?'none':c.color)===colr.id;
+      sw.style.cssText=`flex-shrink:0;width:38px;height:38px;border-radius:50%;background:${colr.bg};color:${colr.fg};font-size:11px;font-weight:600;border:2px solid ${selected?'var(--g)':'transparent'};display:flex;align-items:center;justify-content:center;`;
+      sw.textContent=colr.name;
+      sw.addEventListener('click',()=>{
+        state.current.color=colr.id;
+        renderUpload();
+      });
+      colorRow.appendChild(sw);
+    });
+    body.appendChild(colorRow);
   }else if(c.type==='link'){
     // リンクカードのプレビュー + メモ(任意)
     const link=c.link||{};
@@ -10626,17 +10680,18 @@ function renderListItems(wrap){
     inp.addEventListener('keydown',e=>{
       if(e.key==='Enter'){
         e.preventDefault();
-        // 直前の項目の記号を継承 (リストの見た目を作りやすくする)
-        const prev=state.current.items[state.current.items.length-1];
-        const inheritMark=(prev && prev.mark)?prev.mark:'check';
+        // いま編集中の項目の「次」に新しい項目を挿入し、記号は今の項目から引き継ぐ。
+        const cur=state.current.items[i];
+        const inheritMark=(cur && cur.mark)?cur.mark:'check';
         const newItem={t:'',mark:inheritMark};
         if(inheritMark==='check')newItem.d=false;
-        state.current.items.push(newItem);
+        state.current.items.splice(i+1,0,newItem);
         renderListItems(wrap);
-        setTimeout(()=>{
-          const inps=wrap.querySelectorAll('.cl-input');
-          if(inps.length)inps[inps.length-1].focus();
-        },50);
+        // iOS対策: setTimeout だとジェスチャーが切れてキーボードが閉じる。
+        // 再描画は同期なので、その場で次の入力欄へフォーカスする。
+        const inps=wrap.querySelectorAll('.cl-input');
+        const next=inps[i+1];
+        if(next){ next.focus(); try{ next.setSelectionRange(0,0); }catch(_){} }
       }
     });
     row.appendChild(inp);
@@ -12675,7 +12730,7 @@ async function _postTranslate(url, body, token, dev){
 // 英語のみ(=日本語を含まず、英字を含む)か。英→日字幕(翻訳機モード)の判定に使う。
 function isEnglishOnly(s){ s=(s||''); return !hasJapanese(s) && /[A-Za-z]/.test(s); }
 // 翻訳キャッシュのキー。ja→en は従来どおり原文そのまま(既存キャッシュ互換)。en→ja は名前空間を分ける。
-function _trCacheKey(text, dir){ return dir==='en2ja' ? ('j\u0001'+text) : text; }
+function _trCacheKey(text, dir, level){ return dir==='en2ja' ? ('j\u0001'+text) : ((level||'pre2')+'\u0001'+text); }
 
 // 1行を翻訳する。dir: 'ja2en'(日本語→英語) | 'en2ja'(英語→日本語)。
 // 訳せない/上限到達/失敗時は '' を返し、黙って何も出さない(メモ体験は止めない)。
@@ -12685,14 +12740,17 @@ async function translateLine(textRaw, dir){
   if(!key)return '';
   if(dir==='en2ja'){ if(!isEnglishOnly(key))return ''; }
   else { if(!hasJapanese(key))return ''; }
-  const ck=_trCacheKey(key, dir);
+  const level=(dir==='ja2en')?(state.enLevel||'pre2'):'';
+  const ck=_trCacheKey(key, dir, level);
   const cached=await enCache.get(ck);
   if(cached!=null)return cached;
   const token=(state.auth && state.auth.token)?state.auth.token:'';
   const dev=getAnonDeviceId();
   // 翻訳は /api/chat の「翻訳モード」に相乗り(関数を増やさないため)。未ログインでも叩ける。
   // サーバ側で端末/IPごとの1日上限＋共有キャッシュを適用。429(上限到達)では何も出さない。dir で方向を伝える。
-  const r=await _postTranslate(AI_ENDPOINT, {mode:'translate', text:key, dir}, token, dev);
+  const body={mode:'translate', text:key, dir};
+  if(dir==='ja2en')body.level=level; // 英検レベルは日→英の字幕にだけ効かせる
+  const r=await _postTranslate(AI_ENDPOINT, body, token, dev);
   if(r.status!==200)return ''; // 上限到達/未対応/失敗 → 黙って何も出さない
   let out=(r.text||'').trim().replace(/^["「『]+/,'').replace(/["」』]+$/,'').trim();
   // en→ja なのに日本語が返っていない(=旧バックエンド等で未翻訳)なら出さない・キャッシュしない
@@ -12797,7 +12855,8 @@ async function fillEnglishSubtitles(jobs){
     if(!job.el || !job.el.isConnected)continue;
     const dir=(job.dir==='en2ja')?'en2ja':'ja2en';
     const src=(job.src||'').trim();
-    const ck=_trCacheKey(src, dir);
+    const level=(dir==='ja2en')?(state.enLevel||'pre2'):'';
+    const ck=_trCacheKey(src, dir, level);
     // キャッシュにあれば待たずに即表示(再描画時のちらつきを抑える)
     if(enCache.has(ck)){
       const out=enCache.memGet(ck);
@@ -13603,7 +13662,7 @@ function renderLibrary(){
             <div>「英語でこう言うんだ」で、英語に慣れる</div>
             <div>英文をタップで、読み上げ機能つき</div>
             <div>読み上げを倍速で、英語耳が鍛えられる</div>
-            <div>毎日の言葉が、生きた英語になる</div>
+            <div>英検の級で、自分に合う英語に調整できる</div>
           </div>
           <div class="perk-foot">ご利用は、画面右上の設定からどうぞ。</div>
         </div>
@@ -15135,6 +15194,10 @@ document.addEventListener('click',e=>{
     case 'toggle-en':setEnMode(!state.enMode);break;
     case 'enspeak-off':setEnSpeak('off');break;
     case 'enspeak-tap':setEnSpeak('tap');break;
+    case 'enlevel-5':setEnLevel('5');break;
+    case 'enlevel-4':setEnLevel('4');break;
+    case 'enlevel-3':setEnLevel('3');break;
+    case 'enlevel-pre2':setEnLevel('pre2');break;
     case 'open-settings':openSettings();break;
     case 'close-settings':closeSettings();break;
     case 'export-backup':exportBackup();break;
