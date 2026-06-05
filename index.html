@@ -11345,17 +11345,23 @@ function renderChatLog(c){
     }
     (section||log).appendChild(div);
 
-    // ── 英語ミラー: ON かつ日本語を含む本文のときだけ、メッセージの直後に
-    //    独立した字幕行(.en-row)を足す。.msg/.bubble には触れない。
-    //    マルチバブルは各バブル直下(.en-sub)で個別に付けるので、ここでは対象外。
-    if(state.enMode && !m.pending && !m.aiError && m.text && hasJapanese(m.text) && !div.classList.contains('multi')){
-      const enRow=document.createElement('div');
-      enRow.className='en-row '+(isUser?'u':'a');
-      const enText=document.createElement('div');
-      enText.className='en-text';
-      enRow.appendChild(enText);
-      (section||log).appendChild(enRow);
-      enJobs.push({el:enText, src:m.text});
+    // ── 字幕レイヤー: ON のとき、メッセージ直後に独立した字幕行(.en-row)を足す。
+    //    ・日本語を含む本文 → 下に英語字幕(ja2en・従来。memo/user/ai いずれも)
+    //    ・英語のみのメモ(role='memo') → 下に日本語字幕(en2ja・翻訳機モード)
+    //    .msg/.bubble には触れない。マルチバブル(AI分割)は各バブル直下(.en-sub)で対応。
+    if(state.enMode && !m.pending && !m.aiError && m.text && !div.classList.contains('multi')){
+      let enDir=null;
+      if(hasJapanese(m.text))enDir='ja2en';
+      else if(m.role==='memo' && isEnglishOnly(m.text))enDir='en2ja';
+      if(enDir){
+        const enRow=document.createElement('div');
+        enRow.className='en-row '+(isUser?'u':'a');
+        const enText=document.createElement('div');
+        enText.className='en-text';
+        enRow.appendChild(enText);
+        (section||log).appendChild(enRow);
+        enJobs.push({el:enText, src:m.text, dir:enDir});
+      }
     }
 
     // pending 中のメッセージにはメニューを出さない。
@@ -12593,21 +12599,36 @@ async function _postTranslate(url, body, token, dev){
     return {status:200, text:t};
   }catch(e){ return {status:0, text:''}; }
 }
-async function jaToEn(textRaw){
+// 英語のみ(=日本語を含まず、英字を含む)か。英→日字幕(翻訳機モード)の判定に使う。
+function isEnglishOnly(s){ s=(s||''); return !hasJapanese(s) && /[A-Za-z]/.test(s); }
+// 翻訳キャッシュのキー。ja→en は従来どおり原文そのまま(既存キャッシュ互換)。en→ja は名前空間を分ける。
+function _trCacheKey(text, dir){ return dir==='en2ja' ? ('j\u0001'+text) : text; }
+
+// 1行を翻訳する。dir: 'ja2en'(日本語→英語) | 'en2ja'(英語→日本語)。
+// 訳せない/上限到達/失敗時は '' を返し、黙って何も出さない(メモ体験は止めない)。
+async function translateLine(textRaw, dir){
+  dir = (dir==='en2ja') ? 'en2ja' : 'ja2en';
   const key=(textRaw||'').trim();
-  if(!key || !hasJapanese(key))return '';
-  const cached=await enCache.get(key);
+  if(!key)return '';
+  if(dir==='en2ja'){ if(!isEnglishOnly(key))return ''; }
+  else { if(!hasJapanese(key))return ''; }
+  const ck=_trCacheKey(key, dir);
+  const cached=await enCache.get(ck);
   if(cached!=null)return cached;
   const token=(state.auth && state.auth.token)?state.auth.token:'';
   const dev=getAnonDeviceId();
   // 翻訳は /api/chat の「翻訳モード」に相乗り(関数を増やさないため)。未ログインでも叩ける。
-  // サーバ側で端末/IPごとの1日上限＋共有キャッシュを適用。429(上限到達)では何も出さない。
-  const r=await _postTranslate(AI_ENDPOINT, {mode:'translate', text:key}, token, dev);
-  if(r.status!==200)return ''; // 上限到達/未対応/失敗 → 黙って何も出さない(メモ体験は止めない)
-  let en=(r.text||'').trim().replace(/^["「『]+/,'').replace(/["」』]+$/,'').trim();
-  if(en)enCache.put(key,en); // fire-and-forget
-  return en;
+  // サーバ側で端末/IPごとの1日上限＋共有キャッシュを適用。429(上限到達)では何も出さない。dir で方向を伝える。
+  const r=await _postTranslate(AI_ENDPOINT, {mode:'translate', text:key, dir}, token, dev);
+  if(r.status!==200)return ''; // 上限到達/未対応/失敗 → 黙って何も出さない
+  let out=(r.text||'').trim().replace(/^["「『]+/,'').replace(/["」』]+$/,'').trim();
+  // en→ja なのに日本語が返っていない(=旧バックエンド等で未翻訳)なら出さない・キャッシュしない
+  if(dir==='en2ja' && out && !hasJapanese(out))out='';
+  if(out)enCache.put(ck, out); // fire-and-forget
+  return out;
 }
+// 既存呼び出し(ライブ字幕・自動読み上げ)互換: 日本語→英語。
+async function jaToEn(textRaw){ return translateLine(textRaw, 'ja2en'); }
 
 // ═══ 英語ミラー: 読み上げ (Web Speech / 端末内・無料・API課金なし) ═══
 const _TTS_OK=(typeof window!=='undefined') && ('speechSynthesis' in window);
@@ -12690,23 +12711,26 @@ function scheduleEnLive(){
   }, 650);
 }
 
-// 字幕枠に順番に英訳を流し込む。キャッシュ済みは瞬時、未訳のみ通信。
+// 字幕枠に順番に訳を流し込む。キャッシュ済みは瞬時、未訳のみ通信。
+// job.dir: 'ja2en'(英語字幕・既定) | 'en2ja'(日本語字幕=翻訳機モード)
 async function fillEnglishSubtitles(jobs){
   for(const job of jobs){
     if(!job.el || !job.el.isConnected)continue;
-    const key=(job.src||'').trim();
+    const dir=(job.dir==='en2ja')?'en2ja':'ja2en';
+    const src=(job.src||'').trim();
+    const ck=_trCacheKey(src, dir);
     // キャッシュにあれば待たずに即表示(再描画時のちらつきを抑える)
-    if(enCache.has(key)){
-      const en=enCache.memGet(key);
-      if(en){ job.el.textContent=en; job.el.classList.add('in'); }
+    if(enCache.has(ck)){
+      const out=enCache.memGet(ck);
+      if(out){ job.el.textContent=out; job.el.classList.add('in'); }
       else { (job.el.closest('.en-row')||job.el).remove(); }
       continue;
     }
-    let en='';
-    try{ en=await jaToEn(key); }catch(e){ en=''; }
+    let out='';
+    try{ out=await translateLine(src, dir); }catch(e){ out=''; }
     if(!job.el.isConnected)continue;
-    if(en){
-      job.el.textContent=en;
+    if(out){
+      job.el.textContent=out;
       requestAnimationFrame(()=>{ if(job.el.isConnected)job.el.classList.add('in'); });
     }else{
       (job.el.closest('.en-row')||job.el).remove(); // 訳が無ければ空枠は残さない(en-row/en-sub どちらも)
@@ -15230,7 +15254,9 @@ $('detail-chat-log').addEventListener('click',e=>{
   const el=e.target.closest('.en-text, .en-sub');
   if(!el)return;
   const txt=el.textContent||'';
-  if(txt.trim())speakEnglish(txt, el);
+  // 英→日の日本語字幕は英語音声だと崩れるので読み上げない。英語字幕だけ読む。
+  if(!txt.trim() || hasJapanese(txt))return;
+  speakEnglish(txt, el);
 });
 $('detail-input').addEventListener('keydown',e=>{
   if(e.key==='Enter' && !e.shiftKey && (e.metaKey || e.ctrlKey)){
