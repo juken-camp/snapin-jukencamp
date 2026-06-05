@@ -6295,10 +6295,9 @@ function hydrateShelvesFromCache(){
     if(Array.isArray(arr) && arr.length){
       OFFICIAL_SHELVES=arr;
       resolveShelfRefs(OFFICIAL_SHELVES);
-      // キャッシュ済みの名前はそのまま即表示してよい。
-      // loadOfficialShelves() が裏で最新を取って refreshOfficialViews() で静かに差し替えるので、
-      // スケルトンで取得完了まで待たせる必要はない (前回名を即出す方が体感が良い)。
-      OFFICIAL_FRESH=true;
+      // 枠(リスト構造)は即出すが、名前・画像は OFFICIAL_FRESH=true (最新取得後) まで
+      // スケルトン表示にして、古いキャッシュ値のチラ見せを防ぐ。
+      // /api/shelves-read(Edge)で取得が数十msなので、スケルトンはほぼ一瞬で消える。
     }
   }catch(e){/* キャッシュが壊れていても無視して通常取得に任せる */}
 }
@@ -14175,9 +14174,11 @@ function libItem(s,subbed,group){
   if(group)el.dataset.group=group;
   const newN=subbed?newCountForShelf(s):0;
   const badge=newN>0?`<span class="lib-new-badge">${newN>99?'99+':newN}</span>`:'';
-  const avatar=s.icon
-    ? `<div class="lib-avatar has-icon tappable"><img src="${esc(s.icon)}" alt=""></div>`
-    : `<div class="lib-avatar tappable">${OFFICIAL_FRESH?esc((s.name||'?').slice(0,1)):''}</div>`;
+  const avatar=!OFFICIAL_FRESH
+    ? `<div class="lib-avatar tappable"></div>` // 最新取得前は空の枠だけ (古い画像/名前を出さない)
+    : s.icon
+      ? `<div class="lib-avatar has-icon tappable"><img src="${esc(s.icon)}" alt=""></div>`
+      : `<div class="lib-avatar tappable">${esc((s.name||'?').slice(0,1))}</div>`;
   // 配布型（管理画面からアクセス権が付与されている）かどうか
   const isDistributed=!locked; // canSeeShelfId=true === 配布型
   let actionHtml;
@@ -14256,12 +14257,16 @@ function openOfficial(s){
   $('os-desc').textContent=s.desc||'';
   const av=$('os-avatar');
   if(av){
-    if(s.icon){
+    if(!OFFICIAL_FRESH){
+      // 最新取得前は空の枠だけ (古い画像/名前を出さない)
+      av.classList.remove('has-icon');
+      av.innerHTML='';
+    }else if(s.icon){
       av.classList.add('has-icon');
       av.innerHTML=`<img src="${esc(s.icon)}" alt="">`;
     }else{
       av.classList.remove('has-icon');
-      av.textContent=OFFICIAL_FRESH?(s.name||'?').slice(0,1):'';
+      av.textContent=(s.name||'?').slice(0,1);
     }
   }
   updateOfficialSubBtn();
