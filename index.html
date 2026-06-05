@@ -12382,6 +12382,21 @@ async function animateNewAiReply(card,placeholderIdx){
       const t=(card.chat[placeholderIdx] && card.chat[placeholderIdx].t)||Date.now();
       timeEl.textContent=chatTimeLabel(t);
     }
+    // 英語ミラー: このアニメ描画は renderChatLog を通らないので、各バブル直下に
+    // 英訳字幕(.en-sub)を生成して流し込む。これが無いと別ページ往復まで字幕が出ない。
+    if(state.enMode){
+      const enJobs=[];
+      bubblesEl.querySelectorAll('.bubble:not(.dots)').forEach((bub,i)=>{
+        const src=bubbles[i]||'';
+        if(!hasJapanese(src))return;
+        if(bub.nextElementSibling && bub.nextElementSibling.classList.contains('en-sub'))return;
+        const sub=document.createElement('div');
+        sub.className='en-sub';
+        bub.insertAdjacentElement('afterend', sub);
+        enJobs.push({el:sub, src, dir:'ja2en'});
+      });
+      if(enJobs.length)fillEnglishSubtitles(enJobs);
+    }
   }finally{
     // どんな終わり方をしてもフラグは必ずクリアする
     _animatingAiMsg=null;
