@@ -4283,12 +4283,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   max-width:76%;
   font-family:var(--font-en);
   color:var(--ink2);
-  font-size:12.5px; line-height:1.5; letter-spacing:.1px;
+  font-size:13.5px; line-height:1.5; letter-spacing:.1px;
   padding:0 13px;
   opacity:0; transform:translateY(-3px);
   transition:opacity .45s ease, transform .45s ease;
 }
 .en-text.in{ opacity:1; transform:translateY(0); }
+/* 英→日の日本語字幕: 和字は同じpxでも大きく見えるので、英語字幕より一段小さくして釣り合わせる */
+.en-text.en-ja{ font-size:12.5px; }
 /* OFF時は完全に消す → 元の画面が1pxも変わらない */
 html:not(.en-on) .en-row{ display:none; }
 
@@ -4297,7 +4299,7 @@ html:not(.en-on) .en-row{ display:none; }
    どの英語がどのバブルのものか(まとまり)が一目で分かるようにする。 */
 .en-sub{
   font-family:var(--font-en); color:var(--ink2);
-  font-size:12.5px; line-height:1.5; letter-spacing:.1px;
+  font-size:13.5px; line-height:1.5; letter-spacing:.1px;
   padding:0 13px;
   margin:3px 0 14px;
   opacity:0; transform:translateY(-3px);
@@ -5217,7 +5219,7 @@ html:not(.en-on) .en-live{ display:none; }
       </div>
       <span class="enm-switch"><span class="enm-knob"></span></span>
     </button>
-    <div class="enm-note">メモのじゃまをしないよう、うっすら重ねて出します。読みたいときだけ目をやれば、いつのまにか英語に慣れていきます。ログインなしでも使えます。</div>
+    <div class="enm-note">メモのじゃまをしないよう、うっすら重ねて出します。読みたいときだけ目をやれば、いつのまにか英語に慣れていきます。英語だけで書いたメモには、逆に日本語の意味がそっと浮かびます。ログインなしでも使えます。</div>
   </div>
 
   <!-- 英語ミラー: 読み上げ(端末内・無料)。ミラーONのときだけ表示。スピーカーアイコンは出さず、英文タップで再生。 -->
@@ -11357,7 +11359,7 @@ function renderChatLog(c){
         const enRow=document.createElement('div');
         enRow.className='en-row '+(isUser?'u':'a');
         const enText=document.createElement('div');
-        enText.className='en-text';
+        enText.className='en-text'+(enDir==='en2ja'?' en-ja':'');
         enRow.appendChild(enText);
         (section||log).appendChild(enRow);
         enJobs.push({el:enText, src:m.text, dir:enDir});
