@@ -2127,6 +2127,10 @@ html.pre-auth #main-screen{display:block!important;}
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         <span id="new-shelf-label">新しい共有ライブラリを作る</span>
       </button>
+      <button class="new-shelf-btn" id="migrate-photos-btn" style="color:var(--ink2);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        <span>写真をクラウドへ移行</span>
+      </button>
     </div>
 
     <div id="shelf-edit-panel"></div>
@@ -2668,6 +2672,49 @@ async function saveShelves(){
   }finally{
     state.saving=false;
   }
+}
+
+// ═══ 共有ライブラリの写真を R2 へ ═══
+// 写真を /api/photo (shelf-put) にアップロードし、公開URLを返す。失敗時は例外。
+// 棚データには base64 ではなくこのURLだけを保存するので、保存が軽くなる(413の根本対策)。
+async function uploadShelfPhoto(dataUrl){
+  const res=await fetch('/api/photo',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-admin-password':state.password},
+    body:JSON.stringify({action:'shelf-put',dataUrl}),
+  });
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  const d=await res.json();
+  if(!d.url)throw new Error('公開URL未設定 (Vercelの環境変数 R2_PUBLIC_URL を設定してください)');
+  return d.url;
+}
+
+// 既存の base64 写真をまとめて R2 へ移行し、棚を保存し直す(一度実行すればOK)。
+async function migrateShelfPhotos(){
+  if(!state.password){setStatus('再ログインしてください','error');return;}
+  const targets=[];
+  for(const sh of (state.shelves||[])){
+    for(const card of (sh.cards||[])){
+      if(card && !card._ref && (card.type==='photo'||card.type==='photonote')
+         && typeof card.image==='string' && card.image.startsWith('data:')){
+        targets.push(card);
+      }
+    }
+  }
+  if(targets.length===0){ setStatus('移行が必要な写真はありません'); setTimeout(()=>setStatus(''),1800); return; }
+  if(!confirm(`${targets.length}枚の写真をクラウド(R2)へ移行します。よろしいですか?`))return;
+  let done=0, failed=0;
+  for(const card of targets){
+    setStatus(`写真を移行中… (${done+failed+1} / ${targets.length})`,'busy');
+    try{
+      const url=await uploadShelfPhoto(card.image);
+      card.image=url;
+      done++;
+    }catch(e){ failed++; }
+  }
+  if(failed>0){ setStatus(`移行: 成功${done} / 失敗${failed}。R2_PUBLIC_URL の設定を確認してください`,'error'); return; }
+  const ok=await saveShelves();
+  if(ok)setStatus(`${done}枚をクラウドへ移行して保存しました`);
 }
 
 // ═══ STUDENTS ═══
@@ -4627,11 +4674,13 @@ function renderMemoModalBody(){
     setStatus('画像を準備中…','busy');
     try{
       const compressed=await smartCompress(file,{maxSize:1600,maxBytes:1.5*1024*1024});
-      state.editingMemo.image=compressed;
+      setStatus('写真をアップロード中…','busy');
+      const url=await uploadShelfPhoto(compressed); // R2へ上げて公開URLを取得
+      state.editingMemo.image=url;                   // base64ではなくURLを保存(棚が軽くなる)
       setStatus('');
       renderMemoModalBody();
     }catch(err){
-      setStatus('画像の処理に失敗: '+err.message,'error');
+      setStatus('写真のアップロードに失敗: '+err.message,'error');
     }
   };
   const photoFile=$('photo-file');
@@ -5215,6 +5264,7 @@ $('login-form').addEventListener('submit',e=>{e.preventDefault();tryLogin();});
 $('login-btn').addEventListener('click',e=>{e.preventDefault();tryLogin();});
 $('logout-btn').addEventListener('click',logout);
 $('new-shelf-btn').addEventListener('click',newShelf);
+const _migBtn=$('migrate-photos-btn'); if(_migBtn)_migBtn.addEventListener('click',migrateShelfPhotos);
 $('memo-cancel').addEventListener('click',closeMemoModal);
 $('memo-save').addEventListener('click',saveMemoFromModal);
 $('memo-modal').addEventListener('click',e=>{
