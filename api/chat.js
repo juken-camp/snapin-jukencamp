@@ -53,6 +53,21 @@ const TRANSLATE_SYSTEM_EN2JA =
   "Output ONLY the Japanese translation — no quotes, no notes, no labels, no romaji, no preamble. " +
   "If the input contains no English, output it unchanged.";
 
+// 英検レベル別の英文難易度ガイド (日→英の字幕にだけ付与)。文法・文長・表現を級に合わせ、必要な専門語は残す。
+function eikenGuidance(level) {
+  switch (level) {
+    case '5':
+      return ' Write at about Eiken grade 5 (Japanese first-year junior high): use only very basic grammar (simple present and past, be-verbs) and very common words, in short sentences. Avoid the perfect tenses, the passive voice, relative clauses, and idioms. You may keep essential topic-specific terms.';
+    case '4':
+      return ' Write at about Eiken grade 4 (Japanese second-year junior high): use basic grammar (present, past, future, simple comparatives, basic conjunctions) in short sentences. Avoid the perfect tenses, the passive voice, and complex relative clauses where you can.';
+    case '3':
+      return ' Write at about Eiken grade 3 (Japanese junior-high graduate): you may use the present perfect, the passive voice, relative pronouns, and infinitives/gerunds, but keep them simple and the sentences fairly short, with common everyday vocabulary. Keep essential topic-specific terms.';
+    case 'pre2':
+    default:
+      return ' Write at about Eiken grade pre-2 (Japanese first-to-second-year high school): natural, clear English of moderate complexity, kept readable. Avoid unnecessarily advanced or literary phrasing.';
+  }
+}
+
 // すべて環境変数で上書き可能 (Vercel の Settings → Environment Variables)
 const TR_MODEL     = process.env.TRANSLATE_MODEL || 'claude-haiku-4-5-20251001';
 const TR_MAX_CHARS = parseInt(process.env.TR_MAX_CHARS || '1500', 10); // 1行が長すぎる入力は翻訳しない
@@ -83,9 +98,12 @@ async function handleTranslate(req, res, body) {
 
     // 翻訳の向き: 'en2ja'(英語→日本語) なら英→日プロンプト。既定は ja2en(日本語→英語)。
     const dir = (body.dir === 'en2ja') ? 'en2ja' : 'ja2en';
+    // 英検レベル(日→英のみ)。'5'|'4'|'3'|'pre2'、不正値は準2級。
+    const level = (['5', '4', '3', 'pre2'].indexOf((body.level || '').toString()) >= 0) ? body.level.toString() : 'pre2';
 
     // 1) 共有キャッシュ (ヒットは無料・上限を消費しない)。向きごとにキーを分ける(同じ語でも訳が逆向き)。
-    const cacheKey = (dir === 'en2ja' ? 'jatr:' : 'entr:') + sha1(text);
+    //    日→英は級ごとに別キャッシュ(同じ日本語でも級で英文が変わるため)。
+    const cacheKey = (dir === 'en2ja' ? 'jatr:' : ('entr:' + level + ':')) + sha1(text);
     try {
       const hit = await redis.get(cacheKey);
       if (hit != null && hit !== '') {
@@ -111,7 +129,7 @@ async function handleTranslate(req, res, body) {
     const result = await client.messages.create({
       model: TR_MODEL,
       max_tokens: 1024,
-      system: dir === 'en2ja' ? TRANSLATE_SYSTEM_EN2JA : TRANSLATE_SYSTEM,
+      system: dir === 'en2ja' ? TRANSLATE_SYSTEM_EN2JA : (TRANSLATE_SYSTEM + eikenGuidance(level)),
       messages: [{ role: 'user', content: text }],
     });
     let en = result.content
