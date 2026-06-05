@@ -57,9 +57,9 @@ const TRANSLATE_SYSTEM_EN2JA =
 function eikenGuidance(level) {
   switch (level) {
     case '5':
-      return ' Write at about Eiken grade 5 (Japanese first-year junior high): use only very basic grammar (simple present and past, be-verbs) and very common words, in short sentences. Avoid the perfect tenses, the passive voice, relative clauses, and idioms. You may keep essential topic-specific terms.';
+      return ' Write at about Eiken grade 5 (Japanese first-year junior high): use only very basic grammar (simple present and past, be-verbs) and very common words, in short sentences. Avoid the perfect tenses, the passive voice, relative clauses, and idioms. Break long or complex ideas into several short, simple sentences, and replace difficult words with easier ones. Being readable at this level matters more than matching every detail: you may simplify or shorten the meaning so a beginner can understand it. You may keep essential topic-specific terms.';
     case '4':
-      return ' Write at about Eiken grade 4 (Japanese second-year junior high): use basic grammar (present, past, future, simple comparatives, basic conjunctions) in short sentences. Avoid the perfect tenses, the passive voice, and complex relative clauses where you can.';
+      return ' Write at about Eiken grade 4 (Japanese second-year junior high): use basic grammar (present, past, future, simple comparatives, basic conjunctions) in short sentences. Avoid the perfect tenses, the passive voice, and complex relative clauses where you can. Prefer breaking long ideas into shorter sentences and using simpler words; you may lightly simplify or trim the meaning to keep it readable at this level.';
     case '3':
       return ' Write at about Eiken grade 3 (Japanese junior-high graduate): you may use the present perfect, the passive voice, relative pronouns, and infinitives/gerunds, but keep them simple and the sentences fairly short, with common everyday vocabulary. Keep essential topic-specific terms.';
     case 'pre2':
