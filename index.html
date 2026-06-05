@@ -5407,6 +5407,24 @@ html:not(.en-on) .en-live{ display:none; }
 
 </div><!-- .app -->
 
+<!-- 起動直後のチラ見え対策: 重い本体スクリプトが走る前に、ログイン済みなら
+     初期表示を screen-login から screen-home に同期で切り替えておく。
+     (本体の load()&&state.user 判定はスクリプト末尾で走るため、それより前に
+      ブラウザが初期 active の screen-login を一瞬描画してしまうのを防ぐ) -->
+<script>
+try{
+  var _p=localStorage.getItem('snapin_v3');
+  if(_p){
+    var _d=JSON.parse(_p);
+    if(_d && _d.user){
+      var _lg=document.getElementById('screen-login');
+      var _hm=document.getElementById('screen-home');
+      if(_lg&&_hm){ _lg.classList.remove('active'); _hm.classList.add('active'); }
+    }
+  }
+}catch(e){/* 壊れていても本体の通常起動に任せる */}
+</script>
+
 <script>
 (function(){
 'use strict';
