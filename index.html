@@ -6335,7 +6335,11 @@ function resolveShelfRefs(shelves){
 
 async function loadOfficialShelves(){
   try{
-    const res=await fetch('/api/shelves');
+    // 読み取りは Edge Runtime の専用エンドポイント (/api/shelves-read) を優先する。
+    // コールドスタートがほぼ 0 なので、キャッシュ名 → 最新名 の差し替えが一瞬で済む。
+    // 未デプロイ・エラー時は従来の Node 版 /api/shelves(GET) に自動フォールバック。
+    let res=await fetch('/api/shelves-read');
+    if(!res.ok)res=await fetch('/api/shelves');
     if(!res.ok)return;
     const data=await res.json();
     OFFICIAL_SHELVES=Array.isArray(data.shelves)?data.shelves:[];
