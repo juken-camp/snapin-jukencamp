@@ -1064,11 +1064,56 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--g);   /* 選択 = 揃えマークと同じ緑 */
   box-shadow:none;
 }
+/* 手動グリッドと数字をひとまとめにして、揃えマークの右に並べる */
+.up-size-cluster{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  margin-left:2px;
+}
+/* 数字で指定 (横=列 / 縦=行、それぞれ 1〜3)。手動グリッドと連動する */
+.up-size-nums{
+  display:inline-flex;
+  flex-direction:column;
+  gap:3px;
+}
+.up-size-numrow{
+  display:flex;
+  align-items:center;
+  gap:3px;
+}
+.up-size-axis{
+  display:flex;
+  align-items:center;
+  color:var(--ink3);   /* ↔ / ↕ の向きアイコン */
+}
+.up-size-num{
+  width:17px;
+  height:17px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:none;
+  background:transparent;
+  border-radius:4px;
+  font-family:var(--font-en);
+  font-size:11px;
+  font-weight:700;
+  color:var(--ink3);
+  cursor:pointer;
+  transition:background .1s, color .1s;
+}
+.up-size-num.on{
+  background:var(--gl);   /* 選択 = 薄緑チップ + 緑文字 (揃えと同じ緑系) */
+  color:var(--g);
+}
 
 .up-align-bar{
   display:flex;
   align-items:center;
+  flex-wrap:wrap;      /* 狭い画面ではサイズ指定が次の行に折り返す(崩れ防止) */
   gap:6px;
+  row-gap:8px;
   margin:10px 0 4px;
   padding:2px;
 }
@@ -10648,17 +10693,16 @@ function renderUpload(){
   appendUploadTagEditor(body);
 }
 
-// 投稿画面の表示サイズ選択。3×3のミニグリッドをタップ/なぞって、左上からの占有範囲を指定する。
-// 文字・数字・見出しなし。薄いグレーの枠 + 緑の選択。メモでは揃えマークと同じ段の右に並べる。
-// グリッド全体を当たり判定にして指で押しやすくし、ポインタキャプチャでなぞり選択にも対応する。
+// 投稿画面の表示サイズ選択。「手動の3×3グリッド」と「横/縦の数字(1〜3)」の2通りで指定でき、
+// どちらを操作してももう一方に連動する。手は指が太いと押しにくいので、数字でも選べるようにした。
+// グリッドはタップ/なぞり、数字は横=列・縦=行をそれぞれ 1〜3 で選ぶ。選択は揃えマークと同じ緑。
 function appendUploadSizeSelector(body){
   const c=state.current;
   if(!c)return;
 
+  // ── 手動グリッド (3×3) ──
   const grid=document.createElement('div');
   grid.className='up-size-grid';
-
-  // 9セル生成 (col,row = 0..2)
   const cells=[];
   for(let r=0;r<3;r++)for(let col=0;col<3;col++){
     const cell=document.createElement('div');
@@ -10668,60 +10712,96 @@ function appendUploadSizeSelector(body){
     cells.push(cell);
   }
 
-  // 左上から cols×rows ぶんのマスを塗る
-  const paint=(cols,rows)=>{
-    cells.forEach(cell=>{
-      const cc=+cell.dataset.col, rr=+cell.dataset.row;
-      cell.classList.toggle('on', cc<cols && rr<rows);
-    });
+  // ── 数字 (横=列 / 縦=行、各 1〜3) ──
+  const ARROW={
+    h:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"/><path d="M7 8l-4 4 4 4"/><path d="M17 8l4 4-4 4"/></svg>',
+    v:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M8 7l4-4 4 4"/><path d="M8 17l4 4 4-4"/></svg>'
   };
-  const showCurrent=()=>{ const sp=cardSpanOf(c.size); paint(sp.c,sp.r); };
+  const nums=document.createElement('div'); nums.className='up-size-nums';
+  const makeRow=(axis)=>{
+    const row=document.createElement('div'); row.className='up-size-numrow';
+    const ic=document.createElement('span'); ic.className='up-size-axis'; ic.innerHTML=ARROW[axis];
+    row.appendChild(ic);
+    for(let n=1;n<=3;n++){
+      const b=document.createElement('button');
+      b.type='button'; b.className='up-size-num';
+      b.dataset.axis=axis; b.dataset.n=n; b.textContent=n;
+      row.appendChild(b);
+    }
+    return row;
+  };
+  nums.appendChild(makeRow('h'));   // 横 = 列(cols)
+  nums.appendChild(makeRow('v'));   // 縦 = 行(rows)
 
-  // 座標 → (col,row)。グリッド全体(gap含む)を3等分し、外れても 0..2 に丸める。
-  const cellFromPoint=(x,y)=>{
-    const b=grid.getBoundingClientRect();
-    const col=Math.max(0,Math.min(2,Math.floor((x-b.left)/(b.width/3))));
-    const row=Math.max(0,Math.min(2,Math.floor((y-b.top)/(b.height/3))));
-    return {col,row};
-  };
-  const commit=(col,row)=>{
-    const code=(col+1)+'x'+(row+1);
+  // ── 連動の中心: cols×rows を確定し、グリッドと数字の両方を塗り直す ──
+  let curC=1, curR=1;
+  const paintGrid=(cols,rows)=>cells.forEach(cell=>{
+    cell.classList.toggle('on', (+cell.dataset.col)<cols && (+cell.dataset.row)<rows);
+  });
+  const paintNums=(cols,rows)=>nums.querySelectorAll('.up-size-num').forEach(b=>{
+    const v=+b.dataset.n;
+    b.classList.toggle('on', b.dataset.axis==='h' ? v===cols : v===rows);
+  });
+  const set=(cols,rows)=>{
+    cols=Math.max(1,Math.min(3,cols)); rows=Math.max(1,Math.min(3,rows));
+    curC=cols; curR=rows;
+    const code=cols+'x'+rows;
     // 標準(1x1)は size を持たせない (データを汚さない / 既存カードと同じ扱い)
     if(code==='1x1')delete state.current.size; else state.current.size=code;
-    paint(col+1,row+1);
+    paintGrid(cols,rows); paintNums(cols,rows);
   };
 
+  // 数字タップ → その軸だけ更新
+  nums.querySelectorAll('.up-size-num').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const v=+b.dataset.n;
+      if(b.dataset.axis==='h')set(v,curR); else set(curC,v);
+    });
+  });
+
+  // グリッド タップ / なぞり → 左上からの範囲で更新
+  const cellFromPoint=(x,y)=>{
+    const bb=grid.getBoundingClientRect();
+    return {
+      col:Math.max(0,Math.min(2,Math.floor((x-bb.left)/(bb.width/3)))),
+      row:Math.max(0,Math.min(2,Math.floor((y-bb.top)/(bb.height/3))))
+    };
+  };
   let dragging=false;
   grid.addEventListener('pointerdown',(e)=>{
     dragging=true;
     try{ grid.setPointerCapture(e.pointerId); }catch(_){}
-    const {col,row}=cellFromPoint(e.clientX,e.clientY); paint(col+1,row+1);
+    const {col,row}=cellFromPoint(e.clientX,e.clientY); set(col+1,row+1);
     e.preventDefault();
   });
   grid.addEventListener('pointermove',(e)=>{
     if(!dragging)return;
-    const {col,row}=cellFromPoint(e.clientX,e.clientY); paint(col+1,row+1);
+    const {col,row}=cellFromPoint(e.clientX,e.clientY); set(col+1,row+1);
   });
   grid.addEventListener('pointerup',(e)=>{
     if(!dragging)return; dragging=false;
-    const {col,row}=cellFromPoint(e.clientX,e.clientY); commit(col,row);
+    const {col,row}=cellFromPoint(e.clientX,e.clientY); set(col+1,row+1);
   });
-  grid.addEventListener('pointercancel',()=>{ dragging=false; showCurrent(); });
+  grid.addEventListener('pointercancel',()=>{ dragging=false; });
 
-  // メモは揃えバーがあるので、その同じ段の右(揃えマークの右隣)に並べてスッキリさせる。
-  // 揃えバーが無い種別(写真/リスト/リンク/動画)は、これまでどおり単独の行に置く。
+  // ── 配置: グリッドと数字をひとまとめにして、メモなら揃えマークの右へ ──
+  const cluster=document.createElement('div'); cluster.className='up-size-cluster';
+  cluster.appendChild(grid); cluster.appendChild(nums);
+
   const alignBar=body.querySelector('.up-align-bar');
   if(alignBar){
-    const sep=document.createElement('div'); sep.className='up-align-sep';
     const hint=alignBar.querySelector('.up-align-hint');   // 末尾の空ヒント(右寄せ)。その手前に差し込む
-    alignBar.insertBefore(sep, hint);
-    alignBar.insertBefore(grid, hint);
+    alignBar.insertBefore(cluster, hint);
   }else{
+    // 揃えバーが無い種別(写真/リスト/リンク/動画)は単独の行に
     const wrap=document.createElement('div'); wrap.className='up-size-wrap';
-    wrap.appendChild(grid);
+    wrap.appendChild(cluster);
     body.appendChild(wrap);
   }
-  showCurrent();
+
+  // 初期表示 (現在のサイズを両方に反映)
+  const sp=cardSpanOf(state.current.size);
+  set(sp.c, sp.r);
 }
 
 // 投稿画面用のタグエディタ。詳細画面の .detail-tags / .detail-tag-input-row と同じスタイル。
