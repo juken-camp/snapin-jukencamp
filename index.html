@@ -1040,64 +1040,43 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 
 /* メモ編集の揃えツールバー */
-/* 表示サイズ選択 (グリッドでのカードの大きさ。全タイプ共通) */
+/* 表示サイズ選択 (グリッドでのカードの大きさ)。
+   揃えバーと同じ「グレーの溝 + 白チップ」のセグメント様式。文字(見出し/ラベル)は使わず、
+   占有マス数を四角の中に書いた図形だけで、向き(横長/縦長/正方形)と大きさが分かるようにする。
+   線と数字は currentColor なので、未選択=薄グレー / 選択=濃い に自然に切り替わる。 */
 .up-size-wrap{
-  margin:14px 0 2px;
+  margin:14px 0 4px;
 }
-.up-size-label{
-  font-size:12px;
-  color:var(--ink3);
-  margin:0 0 8px 2px;
-}
-.up-size-row{
+.up-size-seg{
   display:flex;
-  gap:16px;
-  overflow-x:auto;
-  padding:2px 0 4px;
-  scrollbar-width:none;
-}
-.up-size-row::-webkit-scrollbar{display:none;}
-.up-size-opt{
-  flex-shrink:0;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:6px;
-  background:none;
-  border:none;
+  gap:2px;
+  background:var(--bg);
+  border-radius:9px;
   padding:2px;
+}
+.up-size-opt{
+  flex:1;
+  min-width:0;
+  height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:none;
+  background:transparent;
+  border-radius:7px;
+  color:var(--ink3);
   cursor:pointer;
+  transition:background .12s, color .12s;
 }
 .up-size-opt:active{transform:scale(0.94);}
-/* 3×3 のグリッド領域を表す枠。fill が「そのカードが占める範囲」を左上基準で示す */
-.up-size-ico{
-  width:30px;
-  height:30px;
-  border-radius:7px;
-  background:var(--bg);
-  position:relative;
-  overflow:hidden;
-  box-sizing:border-box;
+.up-size-opt svg{display:block;}
+.up-size-opt svg text{font-family:var(--font-en);}
+/* 選択 = 揃えバーの .on と同じ「白チップ + 影 + 濃い色」 */
+.up-size-opt.on{
+  background:var(--surface);
+  color:var(--ink);
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
 }
-.up-size-fill{
-  position:absolute;
-  top:0;left:0;
-  border-radius:7px;
-  background:var(--ink3);
-  transition:background .12s;
-}
-.up-size-name{
-  font-size:11px;
-  color:var(--ink3);
-  white-space:nowrap;
-  transition:color .12s;
-}
-.up-size-opt.on .up-size-ico{
-  outline:2px solid var(--g);
-  outline-offset:1px;
-}
-.up-size-opt.on .up-size-fill{background:var(--g);}
-.up-size-opt.on .up-size-name{color:var(--g);font-weight:600;}
 
 .up-align-bar{
   display:flex;
@@ -6189,13 +6168,13 @@ function linkCardInner(c){
 // code は '{列}x{行}' (3列グリッド基準)。投稿/編集画面で選び、グリッドで span として効く。
 // 強調したいメモや、切りたくない縦長/横長の写真を、形に合わせて大きく置ける。
 const CARD_SIZE_OPTIONS=[
-  {code:'1x1', c:1, r:1, name:'標準'},
-  {code:'2x1', c:2, r:1, name:'横長'},
-  {code:'1x2', c:1, r:2, name:'縦長'},
-  {code:'2x2', c:2, r:2, name:'大'},
-  {code:'3x1', c:3, r:1, name:'横ワイド'},
-  {code:'1x3', c:1, r:3, name:'縦ロング'},
-  {code:'3x3', c:3, r:3, name:'特大'},
+  {code:'1x1', c:1, r:1},  // 1マス・正方形
+  {code:'2x1', c:2, r:1},  // 2マス・横長
+  {code:'1x2', c:1, r:2},  // 2マス・縦長
+  {code:'3x1', c:3, r:1},  // 3マス・横長
+  {code:'1x3', c:1, r:3},  // 3マス・縦長
+  {code:'2x2', c:2, r:2},  // 4マス・正方形
+  {code:'3x3', c:3, r:3},  // 9マス・正方形
 ];
 // サイズ文字列を {c,r,code} に正規化 (不正値・未指定は 1x1)。列/行は 1〜3 にクランプ。
 function cardSpanOf(size){
@@ -10691,9 +10670,10 @@ function renderUpload(){
   appendUploadTagEditor(body);
 }
 
-// 投稿画面用の表示サイズ選択。グリッドでのカードの大きさを 7 種から選ぶ。
-// アイコンは 3×3 のグリッド領域を表す枠で、そのカードが占める範囲を左上基準で塗って示す
-// (説明文に頼らず、形そのものを見せる)。選んだ値は state.current.size に入れる。
+// 投稿画面の表示サイズ選択。グリッドでのカードの大きさを 7 種から選ぶ。
+// 文字(見出し・ラベル)は使わない。各ボタンは「占有マス数を四角の中に書いた図形」で、
+// 四角の比率で向き(横長/縦長/正方形)、中の数字でマス数が分かる。揃えバーと同じ
+// グレーの溝 + 白チップ様式。線と数字は currentColor (未選択=薄グレー/選択=濃い)。
 function appendUploadSizeSelector(body){
   const c=state.current;
   if(!c)return;
@@ -10701,43 +10681,49 @@ function appendUploadSizeSelector(body){
   const wrap=document.createElement('div');
   wrap.className='up-size-wrap';
 
-  const label=document.createElement('div');
-  label.className='up-size-label';
-  label.textContent='グリッドでの大きさ';
-  wrap.appendChild(label);
+  const seg=document.createElement('div');
+  seg.className='up-size-seg';
 
-  const row=document.createElement('div');
-  row.className='up-size-row';
+  // 1マス=9px。細い辺は数字が収まるよう最小15pxを確保。枠32pxの中央に置く。
+  // 数字の大きさは四角の短辺に比例させ、どのサイズでもバランスよく見せる。
+  const shapeSvg=(opt)=>{
+    const cell=9, minT=15, V=32;
+    const w=Math.max(opt.c*cell,minT), h=Math.max(opt.r*cell,minT);
+    const x=(V-w)/2, y=(V-h)/2;
+    const fs=(Math.min(w,h)*0.7).toFixed(1);
+    const n=opt.c*opt.r;
+    return `<svg width="26" height="26" viewBox="0 0 ${V} ${V}" aria-hidden="true">`
+      +`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/>`
+      +`<text x="${V/2}" y="${V/2}" text-anchor="middle" dominant-baseline="central" font-size="${fs}" font-weight="700" fill="currentColor">${n}</text>`
+      +`</svg>`;
+  };
 
-  // 現在の選択をボタンに反映する
   const paint=()=>{
     const cur=cardSpanOf(c.size).code;
-    row.querySelectorAll('.up-size-opt').forEach(btn=>{
+    seg.querySelectorAll('.up-size-opt').forEach(btn=>{
       btn.classList.toggle('on',btn.dataset.size===cur);
     });
   };
 
   CARD_SIZE_OPTIONS.forEach(opt=>{
+    const orient=(opt.c===opt.r)?'正方形':(opt.c>opt.r?'横長':'縦長');
     const btn=document.createElement('button');
     btn.type='button';
     btn.className='up-size-opt';
     btn.dataset.size=opt.code;
-    // 塗りは枠(3×3領域)に対する占有率。列/3 × 行/3。
-    const fw=Math.round(opt.c/3*100);
-    const fh=Math.round(opt.r/3*100);
-    btn.innerHTML=
-      `<span class="up-size-ico"><span class="up-size-fill" style="width:${fw}%;height:${fh}%;"></span></span>`+
-      `<span class="up-size-name">${opt.name}</span>`;
+    btn.setAttribute('aria-label',(opt.c*opt.r)+'マス・'+orient);
+    btn.title=(opt.c*opt.r)+'マス';
+    btn.innerHTML=shapeSvg(opt);
     btn.addEventListener('click',()=>{
       // 標準(1x1)は size を持たせない (データを汚さない / 既存カードと同じ扱い)
       if(opt.code==='1x1')delete state.current.size;
       else state.current.size=opt.code;
       paint();
     });
-    row.appendChild(btn);
+    seg.appendChild(btn);
   });
 
-  wrap.appendChild(row);
+  wrap.appendChild(seg);
   body.appendChild(wrap);
   paint();
 }
