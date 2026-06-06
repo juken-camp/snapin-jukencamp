@@ -10684,17 +10684,16 @@ function appendUploadSizeSelector(body){
   const seg=document.createElement('div');
   seg.className='up-size-seg';
 
-  // 1マス=9px。細い辺は数字が収まるよう最小15pxを確保。枠32pxの中央に置く。
-  // 数字の大きさは四角の短辺に比例させ、どのサイズでもバランスよく見せる。
+  // 実寸どおりの比率で四角を描く (1マス=10px、3×3=30px が最大)。最小サイズでクランプしない。
+  // 四角の大小と縦横の長さで「マス数」と「向き」が正しく伝わる。数字は全サイズ共通の大きさ。
   const shapeSvg=(opt)=>{
-    const cell=9, minT=15, V=32;
-    const w=Math.max(opt.c*cell,minT), h=Math.max(opt.r*cell,minT);
+    const cell=10, V=34;
+    const w=opt.c*cell, h=opt.r*cell;
     const x=(V-w)/2, y=(V-h)/2;
-    const fs=(Math.min(w,h)*0.7).toFixed(1);
     const n=opt.c*opt.r;
-    return `<svg width="26" height="26" viewBox="0 0 ${V} ${V}" aria-hidden="true">`
-      +`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/>`
-      +`<text x="${V/2}" y="${V/2}" text-anchor="middle" dominant-baseline="central" font-size="${fs}" font-weight="700" fill="currentColor">${n}</text>`
+    return `<svg width="34" height="34" viewBox="0 0 ${V} ${V}" aria-hidden="true">`
+      +`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/>`
+      +`<text x="${V/2}" y="${V/2}" text-anchor="middle" dominant-baseline="central" font-size="9" font-weight="700" fill="currentColor">${n}</text>`
       +`</svg>`;
   };
 
