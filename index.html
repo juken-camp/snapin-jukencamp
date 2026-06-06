@@ -12760,7 +12760,7 @@ async function _postTranslate(url, body, token, dev){
 // 英語のみ(=日本語を含まず、英字を含む)か。英→日字幕(翻訳機モード)の判定に使う。
 function isEnglishOnly(s){ s=(s||''); return !hasJapanese(s) && /[A-Za-z]/.test(s); }
 // 翻訳キャッシュのキー。ja→en は従来どおり原文そのまま(既存キャッシュ互換)。en→ja は名前空間を分ける。
-function _trCacheKey(text, dir, level){ return dir==='en2ja' ? ('j\u0001'+text) : ((level||'pre2')+'\u0001'+text); }
+function _trCacheKey(text, dir, level){ const V='v2\u0001'; return dir==='en2ja' ? (V+'j\u0001'+text) : (V+(level||'pre2')+'\u0001'+text); }
 
 // 1行を翻訳する。dir: 'ja2en'(日本語→英語) | 'en2ja'(英語→日本語)。
 // 訳せない/上限到達/失敗時は '' を返し、黙って何も出さない(メモ体験は止めない)。
