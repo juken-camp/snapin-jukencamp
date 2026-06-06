@@ -384,6 +384,12 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .grid{
   display:grid;
   grid-template-columns:1fr 1fr 1fr;
+  /* 大きいカード(span)が空けた隙間を後続カードで詰める */
+  grid-auto-flow:row dense;
+  /* 行の高さ=列の幅 になるよう正方形セルを基準にする。
+     JS(syncGridCellSize)が実寸で上書きするが、初期描画用に calc で近似値を置く。
+     (アプリ幅は最大430px / グリッドの padding 2px×2 + 列間 gap 2px×2 = 8px を差し引く) */
+  grid-auto-rows:calc((min(100vw, 430px) - 8px) / 3);
   gap:2px;
   padding:2px;
 }
@@ -397,6 +403,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   transition:transform .12s;
   user-select:none;
   -webkit-user-select:none;
+}
+/* グリッド内のカードは割り当てられたセル(サイズ指定の行×列)いっぱいに伸びる。
+   高さはグリッドの行トラックで決まるので aspect-ratio:1 は打ち消す。 */
+.grid .card{
+  aspect-ratio:auto;
+  height:100%;
+  min-height:0;
 }
 /* 動画カードの再生バッジ (グリッド/今日ページ共通) */
 .video-play-badge{
@@ -1027,6 +1040,65 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 
 /* メモ編集の揃えツールバー */
+/* 表示サイズ選択 (グリッドでのカードの大きさ。全タイプ共通) */
+.up-size-wrap{
+  margin:14px 0 2px;
+}
+.up-size-label{
+  font-size:12px;
+  color:var(--ink3);
+  margin:0 0 8px 2px;
+}
+.up-size-row{
+  display:flex;
+  gap:16px;
+  overflow-x:auto;
+  padding:2px 0 4px;
+  scrollbar-width:none;
+}
+.up-size-row::-webkit-scrollbar{display:none;}
+.up-size-opt{
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  background:none;
+  border:none;
+  padding:2px;
+  cursor:pointer;
+}
+.up-size-opt:active{transform:scale(0.94);}
+/* 3×3 のグリッド領域を表す枠。fill が「そのカードが占める範囲」を左上基準で示す */
+.up-size-ico{
+  width:30px;
+  height:30px;
+  border-radius:7px;
+  background:var(--bg);
+  position:relative;
+  overflow:hidden;
+  box-sizing:border-box;
+}
+.up-size-fill{
+  position:absolute;
+  top:0;left:0;
+  border-radius:7px;
+  background:var(--ink3);
+  transition:background .12s;
+}
+.up-size-name{
+  font-size:11px;
+  color:var(--ink3);
+  white-space:nowrap;
+  transition:color .12s;
+}
+.up-size-opt.on .up-size-ico{
+  outline:2px solid var(--g);
+  outline-offset:1px;
+}
+.up-size-opt.on .up-size-fill{background:var(--g);}
+.up-size-opt.on .up-size-name{color:var(--g);font-weight:600;}
+
 .up-align-bar{
   display:flex;
   align-items:center;
@@ -6113,6 +6185,37 @@ function linkCardInner(c){
 // → 文字数ベースで初期サイズを選んだあと、論理改行と各行の折り返しを合算した
 //   「推定総行数」が clamp に収まるかを確認し、収まらなければサイズを1段下げる。
 //   こうすることで編集画面と同じ全文が常にグリッドにも収まる。
+// ═══ カードの表示サイズ (グリッドでの大きさ) ═══
+// code は '{列}x{行}' (3列グリッド基準)。投稿/編集画面で選び、グリッドで span として効く。
+// 強調したいメモや、切りたくない縦長/横長の写真を、形に合わせて大きく置ける。
+const CARD_SIZE_OPTIONS=[
+  {code:'1x1', c:1, r:1, name:'標準'},
+  {code:'2x1', c:2, r:1, name:'横長'},
+  {code:'1x2', c:1, r:2, name:'縦長'},
+  {code:'2x2', c:2, r:2, name:'大'},
+  {code:'3x1', c:3, r:1, name:'横ワイド'},
+  {code:'1x3', c:1, r:3, name:'縦ロング'},
+  {code:'3x3', c:3, r:3, name:'特大'},
+];
+// サイズ文字列を {c,r,code} に正規化 (不正値・未指定は 1x1)。列/行は 1〜3 にクランプ。
+function cardSpanOf(size){
+  const m=/^([123])x([123])$/.exec(String(size||'1x1'));
+  if(!m)return {c:1,r:1,code:'1x1'};
+  return {c:+m[1], r:+m[2], code:m[1]+'x'+m[2]};
+}
+// 3列グリッドの行トラック高さを「列の幅」に合わせて正方形セルにする。
+// これで span 2/3 のカードが正しい比率(横長=2:1, 縦長=1:2, 大/特大=正方形)で並ぶ。
+// 実寸(clientWidth)から計算するので、画面幅やスクロールバーの差も吸収する。
+function syncGridCellSize(){
+  document.querySelectorAll('.grid').forEach(g=>{
+    const w=g.clientWidth;
+    if(!w)return;
+    // clientWidth は padding(2px×2=4px)を含む。さらに列間 gap(2px×2=4px)を引いて列幅を出す。
+    const cell=(w-4-4)/3;
+    if(cell>0)g.style.gridAutoRows=cell+'px';
+  });
+}
+
 const NOTE_CARD_SIZES=[
   {fz:17, lh:1.5,  clamp:3},   // 元 clamp:null は短文中央寄せ用。総行数判定では3行扱い。
   {fz:15, lh:1.45, clamp:4},
@@ -6204,8 +6307,13 @@ function applyGridNoteScale(root){
   nodes.forEach(inner=>{
     const ctxt=inner.parentElement;
     if(!ctxt)return;
-    const w=ctxt.clientWidth;
-    if(!w)return;
+    const cw=ctxt.clientWidth;
+    if(!cw)return;
+    // サイズ指定で横長/縦長になったカードでも文字がはみ出さないよう、
+    // フォントは幅・高さの小さい方を基準にスケールする(正方形カードは従来どおり=幅)。
+    // 横長カード→高さ基準で収まり、縦長カード→幅基準で収まる。中身は中央に置かれる。
+    const ch=ctxt.clientHeight;
+    const w=(ch>0)?Math.min(cw,ch):cw;
     // カード ID から元データを取りに行く必要があるが、ここではテキストとカラーだけ
     // 取り出して noteCardStyle を呼び直す。
     // 親 .card / .today-newcard から data-id でカードを引く。
@@ -7221,6 +7329,7 @@ async function buildSharePayload(includeChat){
   if(real.link)payload.link=real.link;
   if(Array.isArray(real.items))payload.items=real.items.map(it=>({t:String(it.t||''),mark:it.mark||'check',d:!!it.d}));
   if(real.color)payload.color=real.color;
+  if(real.size && cardSpanOf(real.size).code!=='1x1')payload.size=cardSpanOf(real.size).code;
   if(Array.isArray(real.tags)&&real.tags.length)payload.tags=real.tags.slice(0,20);
   if(includeChat){
     const chat=getChatMessages(real).filter(m=>m && !m.deleted && !m.pending)
@@ -7524,6 +7633,7 @@ async function importSharedCard(){
   if(p.link)nc.link=p.link;
   if(Array.isArray(p.items))nc.items=p.items;
   if(p.color)nc.color=p.color;
+  if(p.size){ const _ssz=cardSpanOf(p.size).code; if(_ssz!=='1x1')nc.size=_ssz; }
   if(Array.isArray(p.tags)&&p.tags.length)nc.tags=p.tags;
   if(Array.isArray(p.chat)&&p.chat.length)nc.chat=p.chat;
   // 送り主の表示 (○○さんのメモより / お友達のメモより)
@@ -7619,6 +7729,7 @@ async function inboxKeep(id){
   if(p.link)nc.link=p.link;
   if(Array.isArray(p.items))nc.items=p.items;
   if(p.color)nc.color=p.color;
+  if(p.size){ const _ssz=cardSpanOf(p.size).code; if(_ssz!=='1x1')nc.size=_ssz; }
   if(Array.isArray(p.tags)&&p.tags.length)nc.tags=p.tags;
   if(Array.isArray(p.chat)&&p.chat.length)nc.chat=p.chat;
   if(it.fromName)nc.sharedFrom=String(it.fromName).slice(0,40);
@@ -8670,6 +8781,13 @@ function renderGrid(el,cards,origin){
     card.dataset.id=c.id;
     card.dataset.origin=origin;
 
+    // 表示サイズ (グリッドでの大きさ)。自分のカードは c.size、共有元のサイズは dc.size を優先。
+    const _sp=cardSpanOf(c.size||dc.size);
+    if(_sp.c>1)card.style.gridColumn='span '+_sp.c;
+    if(_sp.r>1)card.style.gridRow='span '+_sp.r;
+    if(_sp.code!=='1x1')card.classList.add('sized');
+    card.dataset.size=_sp.code;
+
     let inner='';
     if(dc.type==='photo' || dc.type==='photonote'){
       const col=colorById(dc.color);
@@ -8745,9 +8863,12 @@ function renderGrid(el,cards,origin){
       });
     });
   }
+  // セルの行高を列幅に合わせて確定する (サイズ指定カードを正しい比率で並べる)。
+  // note のフォント計算(applyGridNoteScale)はセルの高さに依存するので、必ず先に呼ぶ。
+  syncGridCellSize();
   // note カードの transform:scale を適用 (実寸140px → 親カード幅にフィット)
   applyGridNoteScale(el);
-  requestAnimationFrame(()=>applyGridNoteScale(el));
+  requestAnimationFrame(()=>{ syncGridCellSize(); applyGridNoteScale(el); });
   // ★ カード画像を事前にデコード (PTRやスクロール中のメインスレッドブロックを防ぐ重要処理)
   // これがないと、未デコードの画像がスクロール/transform時にメインスレッドを
   // 数百ms〜2秒以上ブロックして「引っ張った位置で固まる」症状を引き起こす。
@@ -10560,10 +10681,65 @@ function renderUpload(){
     body.appendChild(ta);
   }
 
+  // ─── 表示サイズ (グリッドでの大きさ) ───
+  // どのタイプのメモにも共通。強調したいものや、切りたくない縦長/横長の写真を大きく置ける。
+  appendUploadSizeSelector(body);
+
   // ─── タグ入力エリア (投稿時に付けられる) ───
   // どのタイプのメモにも共通で表示。詳細画面のタグUIと同じ見た目を流用しつつ、
   // 投稿画面ではまだ保存前なので state.current.tags を直接操作する。
   appendUploadTagEditor(body);
+}
+
+// 投稿画面用の表示サイズ選択。グリッドでのカードの大きさを 7 種から選ぶ。
+// アイコンは 3×3 のグリッド領域を表す枠で、そのカードが占める範囲を左上基準で塗って示す
+// (説明文に頼らず、形そのものを見せる)。選んだ値は state.current.size に入れる。
+function appendUploadSizeSelector(body){
+  const c=state.current;
+  if(!c)return;
+
+  const wrap=document.createElement('div');
+  wrap.className='up-size-wrap';
+
+  const label=document.createElement('div');
+  label.className='up-size-label';
+  label.textContent='グリッドでの大きさ';
+  wrap.appendChild(label);
+
+  const row=document.createElement('div');
+  row.className='up-size-row';
+
+  // 現在の選択をボタンに反映する
+  const paint=()=>{
+    const cur=cardSpanOf(c.size).code;
+    row.querySelectorAll('.up-size-opt').forEach(btn=>{
+      btn.classList.toggle('on',btn.dataset.size===cur);
+    });
+  };
+
+  CARD_SIZE_OPTIONS.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='up-size-opt';
+    btn.dataset.size=opt.code;
+    // 塗りは枠(3×3領域)に対する占有率。列/3 × 行/3。
+    const fw=Math.round(opt.c/3*100);
+    const fh=Math.round(opt.r/3*100);
+    btn.innerHTML=
+      `<span class="up-size-ico"><span class="up-size-fill" style="width:${fw}%;height:${fh}%;"></span></span>`+
+      `<span class="up-size-name">${opt.name}</span>`;
+    btn.addEventListener('click',()=>{
+      // 標準(1x1)は size を持たせない (データを汚さない / 既存カードと同じ扱い)
+      if(opt.code==='1x1')delete state.current.size;
+      else state.current.size=opt.code;
+      paint();
+    });
+    row.appendChild(btn);
+  });
+
+  wrap.appendChild(row);
+  body.appendChild(wrap);
+  paint();
 }
 
 // 投稿画面用のタグエディタ。詳細画面の .detail-tags / .detail-tag-input-row と同じスタイル。
@@ -10906,6 +11082,12 @@ function saveCard(){
     // 重複排除 (先勝ち)
     c.tags=[...new Set(c.tags)];
     if(c.tags.length===0)delete c.tags;
+  }
+  // 表示サイズの正規化: 1x1(標準)は持たせない。不正値も捨てる。
+  if(c.size!==undefined){
+    const sp=cardSpanOf(c.size);
+    if(sp.code==='1x1')delete c.size;
+    else c.size=sp.code;
   }
   if(c._new){
     c.created=Date.now();
@@ -15799,6 +15981,7 @@ let _resizeRafId=null;
 window.addEventListener('resize',()=>{
   if(_resizeRafId)cancelAnimationFrame(_resizeRafId);
   _resizeRafId=requestAnimationFrame(()=>{
+    syncGridCellSize();
     applyGridNoteScale(document);
     if(typeof applyDetailNoteStyle==='function')applyDetailNoteStyle();
     if(typeof applyFeedNoteStyle==='function')applyFeedNoteStyle(document);
