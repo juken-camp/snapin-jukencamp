@@ -1042,26 +1042,26 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 /* メモ編集の揃えツールバー */
 /* 表示サイズ選択 (グリッドでのカードの大きさ)。
    3×3のミニグリッドをタップ/なぞって、左上からの占有範囲を指定する。
-   極細の枠 + 淡い塗りで主張させない。色や揃えと同じくらいの大きさで左寄せ。文字・数字なし。 */
+   メモでは揃えマークと同じ段の右に並べる。枠は薄いグレー、選択は揃えと同じ緑。文字・数字なし。 */
 .up-size-wrap{
   margin:14px 0 4px;
   padding:2px;
 }
 .up-size-grid{
   display:inline-grid;
-  grid-template-columns:repeat(3,11px);
-  grid-template-rows:repeat(3,11px);
-  gap:4px;
+  grid-template-columns:repeat(3,10px);
+  grid-template-rows:repeat(3,10px);
+  gap:3px;
   touch-action:none;   /* なぞり中に画面がスクロールしないように */
   cursor:pointer;
 }
 .up-size-cell{
   border-radius:2.5px;
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,.10);   /* 未選択 = 極細の枠 */
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.10);   /* 未選択 = 薄いグレーの枠 */
   transition:background .08s, box-shadow .08s;
 }
 .up-size-cell.on{
-  background:rgba(0,0,0,.20);   /* 選択 = 淡い塗り */
+  background:var(--g);   /* 選択 = 揃えマークと同じ緑 */
   box-shadow:none;
 }
 
@@ -10649,14 +10649,11 @@ function renderUpload(){
 }
 
 // 投稿画面の表示サイズ選択。3×3のミニグリッドをタップ/なぞって、左上からの占有範囲を指定する。
-// 文字・数字・見出しなし。極細の枠 + 淡い塗りの控えめな見た目。グリッド全体を当たり判定にして
-// 指で押しやすくし、ポインタキャプチャでなぞり選択にも対応する (リスナの取りこぼし/漏れなし)。
+// 文字・数字・見出しなし。薄いグレーの枠 + 緑の選択。メモでは揃えマークと同じ段の右に並べる。
+// グリッド全体を当たり判定にして指で押しやすくし、ポインタキャプチャでなぞり選択にも対応する。
 function appendUploadSizeSelector(body){
   const c=state.current;
   if(!c)return;
-
-  const wrap=document.createElement('div');
-  wrap.className='up-size-wrap';
 
   const grid=document.createElement('div');
   grid.className='up-size-grid';
@@ -10711,8 +10708,19 @@ function appendUploadSizeSelector(body){
   });
   grid.addEventListener('pointercancel',()=>{ dragging=false; showCurrent(); });
 
-  wrap.appendChild(grid);
-  body.appendChild(wrap);
+  // メモは揃えバーがあるので、その同じ段の右(揃えマークの右隣)に並べてスッキリさせる。
+  // 揃えバーが無い種別(写真/リスト/リンク/動画)は、これまでどおり単独の行に置く。
+  const alignBar=body.querySelector('.up-align-bar');
+  if(alignBar){
+    const sep=document.createElement('div'); sep.className='up-align-sep';
+    const hint=alignBar.querySelector('.up-align-hint');   // 末尾の空ヒント(右寄せ)。その手前に差し込む
+    alignBar.insertBefore(sep, hint);
+    alignBar.insertBefore(grid, hint);
+  }else{
+    const wrap=document.createElement('div'); wrap.className='up-size-wrap';
+    wrap.appendChild(grid);
+    body.appendChild(wrap);
+  }
   showCurrent();
 }
 
