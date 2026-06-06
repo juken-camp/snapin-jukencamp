@@ -1069,7 +1069,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:inline-flex;
   align-items:center;
   gap:9px;
-  margin-left:2px;
 }
 /* 数字で指定 (横=列 / 縦=行、それぞれ 1〜3)。手動グリッドと連動する */
 .up-size-nums{
@@ -10791,6 +10790,8 @@ function appendUploadSizeSelector(body){
   const alignBar=body.querySelector('.up-align-bar');
   if(alignBar){
     const hint=alignBar.querySelector('.up-align-hint');   // 末尾の空ヒント(右寄せ)。その手前に差し込む
+    const sep=document.createElement('div'); sep.className='up-align-sep';
+    alignBar.insertBefore(sep, hint);      // 揃えグループ間と同じ仕切りを、サイズの手前にも置く
     alignBar.insertBefore(cluster, hint);
   }else{
     // 揃えバーが無い種別(写真/リスト/リンク/動画)は単独の行に
