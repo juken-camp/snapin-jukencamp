@@ -4683,13 +4683,21 @@ function renderMemoModalBody(){
       setStatus('写真のアップロードに失敗: '+err.message,'error');
     }
   };
+  const onPhotoInput=e=>{
+    const file=e.target.files && e.target.files[0];
+    // 先にファイルを掴んでから input をクリア。
+    // こうしないと同じ画像を選び直したとき change が再発火せず、
+    // 1回目に失敗(コールドスタート等)すると2回目までやり直せない。
+    e.target.value='';
+    handlePhotoSelect(file);
+  };
   const photoFile=$('photo-file');
   if(photoFile){
-    photoFile.addEventListener('change',e=>handlePhotoSelect(e.target.files && e.target.files[0]));
+    photoFile.addEventListener('change',onPhotoInput);
   }
   const photoFileChange=$('photo-file-change');
   if(photoFileChange){
-    photoFileChange.addEventListener('change',e=>handlePhotoSelect(e.target.files && e.target.files[0]));
+    photoFileChange.addEventListener('change',onPhotoInput);
   }
   const photoClear=$('photo-clear');
   if(photoClear){
