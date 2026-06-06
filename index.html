@@ -1041,41 +1041,28 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 /* メモ編集の揃えツールバー */
 /* 表示サイズ選択 (グリッドでのカードの大きさ)。
-   揃えバーと同じ「グレーの溝 + 白チップ」のセグメント様式。文字(見出し/ラベル)は使わず、
-   占有マス数を四角の中に書いた図形だけで、向き(横長/縦長/正方形)と大きさが分かるようにする。
-   線と数字は currentColor なので、未選択=薄グレー / 選択=濃い に自然に切り替わる。 */
+   3×3のミニグリッドをタップ/なぞって、左上からの占有範囲を指定する。
+   極細の枠 + 淡い塗りで主張させない。色や揃えと同じくらいの大きさで左寄せ。文字・数字なし。 */
 .up-size-wrap{
   margin:14px 0 4px;
-}
-.up-size-seg{
-  display:flex;
-  gap:2px;
-  background:var(--bg);
-  border-radius:9px;
   padding:2px;
 }
-.up-size-opt{
-  flex:1;
-  min-width:0;
-  height:40px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border:none;
-  background:transparent;
-  border-radius:7px;
-  color:var(--ink3);
+.up-size-grid{
+  display:inline-grid;
+  grid-template-columns:repeat(3,11px);
+  grid-template-rows:repeat(3,11px);
+  gap:4px;
+  touch-action:none;   /* なぞり中に画面がスクロールしないように */
   cursor:pointer;
-  transition:background .12s, color .12s;
 }
-.up-size-opt:active{transform:scale(0.94);}
-.up-size-opt svg{display:block;}
-.up-size-opt svg text{font-family:var(--font-en);}
-/* 選択 = 揃えバーの .on と同じ「白チップ + 影 + 濃い色」 */
-.up-size-opt.on{
-  background:var(--surface);
-  color:var(--ink);
-  box-shadow:0 1px 2px rgba(0,0,0,.06);
+.up-size-cell{
+  border-radius:2.5px;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.10);   /* 未選択 = 極細の枠 */
+  transition:background .08s, box-shadow .08s;
+}
+.up-size-cell.on{
+  background:rgba(0,0,0,.20);   /* 選択 = 淡い塗り */
+  box-shadow:none;
 }
 
 .up-align-bar{
@@ -6165,17 +6152,8 @@ function linkCardInner(c){
 //   「推定総行数」が clamp に収まるかを確認し、収まらなければサイズを1段下げる。
 //   こうすることで編集画面と同じ全文が常にグリッドにも収まる。
 // ═══ カードの表示サイズ (グリッドでの大きさ) ═══
-// code は '{列}x{行}' (3列グリッド基準)。投稿/編集画面で選び、グリッドで span として効く。
-// 強調したいメモや、切りたくない縦長/横長の写真を、形に合わせて大きく置ける。
-const CARD_SIZE_OPTIONS=[
-  {code:'1x1', c:1, r:1},  // 1マス・正方形
-  {code:'2x1', c:2, r:1},  // 2マス・横長
-  {code:'1x2', c:1, r:2},  // 2マス・縦長
-  {code:'3x1', c:3, r:1},  // 3マス・横長
-  {code:'1x3', c:1, r:3},  // 3マス・縦長
-  {code:'2x2', c:2, r:2},  // 4マス・正方形
-  {code:'3x3', c:3, r:3},  // 9マス・正方形
-];
+// size は '{列}x{行}' (3列グリッド基準、各 1〜3)。投稿/編集画面の3×3ミニグリッドで選び、
+// グリッドで span として効く。強調したいメモや、切りたくない縦長/横長の写真を大きく置ける。
 // サイズ文字列を {c,r,code} に正規化 (不正値・未指定は 1x1)。列/行は 1〜3 にクランプ。
 function cardSpanOf(size){
   const m=/^([123])x([123])$/.exec(String(size||'1x1'));
@@ -10670,10 +10648,9 @@ function renderUpload(){
   appendUploadTagEditor(body);
 }
 
-// 投稿画面の表示サイズ選択。グリッドでのカードの大きさを 7 種から選ぶ。
-// 文字(見出し・ラベル)は使わない。各ボタンは「占有マス数を四角の中に書いた図形」で、
-// 四角の比率で向き(横長/縦長/正方形)、中の数字でマス数が分かる。揃えバーと同じ
-// グレーの溝 + 白チップ様式。線と数字は currentColor (未選択=薄グレー/選択=濃い)。
+// 投稿画面の表示サイズ選択。3×3のミニグリッドをタップ/なぞって、左上からの占有範囲を指定する。
+// 文字・数字・見出しなし。極細の枠 + 淡い塗りの控えめな見た目。グリッド全体を当たり判定にして
+// 指で押しやすくし、ポインタキャプチャでなぞり選択にも対応する (リスナの取りこぼし/漏れなし)。
 function appendUploadSizeSelector(body){
   const c=state.current;
   if(!c)return;
@@ -10681,50 +10658,62 @@ function appendUploadSizeSelector(body){
   const wrap=document.createElement('div');
   wrap.className='up-size-wrap';
 
-  const seg=document.createElement('div');
-  seg.className='up-size-seg';
+  const grid=document.createElement('div');
+  grid.className='up-size-grid';
 
-  // 実寸どおりの比率で四角を描く (1マス=10px、3×3=30px が最大)。最小サイズでクランプしない。
-  // 四角の大小と縦横の長さで「マス数」と「向き」が正しく伝わる。数字は全サイズ共通の大きさ。
-  const shapeSvg=(opt)=>{
-    const cell=10, V=34;
-    const w=opt.c*cell, h=opt.r*cell;
-    const x=(V-w)/2, y=(V-h)/2;
-    const n=opt.c*opt.r;
-    return `<svg width="34" height="34" viewBox="0 0 ${V} ${V}" aria-hidden="true">`
-      +`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/>`
-      +`<text x="${V/2}" y="${V/2}" text-anchor="middle" dominant-baseline="central" font-size="9" font-weight="700" fill="currentColor">${n}</text>`
-      +`</svg>`;
-  };
+  // 9セル生成 (col,row = 0..2)
+  const cells=[];
+  for(let r=0;r<3;r++)for(let col=0;col<3;col++){
+    const cell=document.createElement('div');
+    cell.className='up-size-cell';
+    cell.dataset.col=col; cell.dataset.row=r;
+    grid.appendChild(cell);
+    cells.push(cell);
+  }
 
-  const paint=()=>{
-    const cur=cardSpanOf(c.size).code;
-    seg.querySelectorAll('.up-size-opt').forEach(btn=>{
-      btn.classList.toggle('on',btn.dataset.size===cur);
+  // 左上から cols×rows ぶんのマスを塗る
+  const paint=(cols,rows)=>{
+    cells.forEach(cell=>{
+      const cc=+cell.dataset.col, rr=+cell.dataset.row;
+      cell.classList.toggle('on', cc<cols && rr<rows);
     });
   };
+  const showCurrent=()=>{ const sp=cardSpanOf(c.size); paint(sp.c,sp.r); };
 
-  CARD_SIZE_OPTIONS.forEach(opt=>{
-    const orient=(opt.c===opt.r)?'正方形':(opt.c>opt.r?'横長':'縦長');
-    const btn=document.createElement('button');
-    btn.type='button';
-    btn.className='up-size-opt';
-    btn.dataset.size=opt.code;
-    btn.setAttribute('aria-label',(opt.c*opt.r)+'マス・'+orient);
-    btn.title=(opt.c*opt.r)+'マス';
-    btn.innerHTML=shapeSvg(opt);
-    btn.addEventListener('click',()=>{
-      // 標準(1x1)は size を持たせない (データを汚さない / 既存カードと同じ扱い)
-      if(opt.code==='1x1')delete state.current.size;
-      else state.current.size=opt.code;
-      paint();
-    });
-    seg.appendChild(btn);
+  // 座標 → (col,row)。グリッド全体(gap含む)を3等分し、外れても 0..2 に丸める。
+  const cellFromPoint=(x,y)=>{
+    const b=grid.getBoundingClientRect();
+    const col=Math.max(0,Math.min(2,Math.floor((x-b.left)/(b.width/3))));
+    const row=Math.max(0,Math.min(2,Math.floor((y-b.top)/(b.height/3))));
+    return {col,row};
+  };
+  const commit=(col,row)=>{
+    const code=(col+1)+'x'+(row+1);
+    // 標準(1x1)は size を持たせない (データを汚さない / 既存カードと同じ扱い)
+    if(code==='1x1')delete state.current.size; else state.current.size=code;
+    paint(col+1,row+1);
+  };
+
+  let dragging=false;
+  grid.addEventListener('pointerdown',(e)=>{
+    dragging=true;
+    try{ grid.setPointerCapture(e.pointerId); }catch(_){}
+    const {col,row}=cellFromPoint(e.clientX,e.clientY); paint(col+1,row+1);
+    e.preventDefault();
   });
+  grid.addEventListener('pointermove',(e)=>{
+    if(!dragging)return;
+    const {col,row}=cellFromPoint(e.clientX,e.clientY); paint(col+1,row+1);
+  });
+  grid.addEventListener('pointerup',(e)=>{
+    if(!dragging)return; dragging=false;
+    const {col,row}=cellFromPoint(e.clientX,e.clientY); commit(col,row);
+  });
+  grid.addEventListener('pointercancel',()=>{ dragging=false; showCurrent(); });
 
-  wrap.appendChild(seg);
+  wrap.appendChild(grid);
   body.appendChild(wrap);
-  paint();
+  showCurrent();
 }
 
 // 投稿画面用のタグエディタ。詳細画面の .detail-tags / .detail-tag-input-row と同じスタイル。
