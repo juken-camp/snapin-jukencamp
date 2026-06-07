@@ -925,8 +925,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .memo-grid{
   display:grid;
   grid-template-columns:1fr 1fr 1fr;
+  grid-auto-flow:row dense;   /* 大きいサイズのカードが空けた隙間を詰める */
   gap:8px;
   padding:0 14px 8px;
+  /* PCでも生徒のスマホと同じ見え方にするため、3列・スマホ幅で頭打ちにして左寄せ */
+  max-width:460px;
 }
 .memo-card{
   aspect-ratio:1;
@@ -939,6 +942,8 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   transition:transform .1s ease, box-shadow .14s ease;
 }
 .memo-card:active{transform:scale(.97);}
+/* サイズ指定カードは行/列のトラックで大きさが決まるので aspect-ratio を解除して伸ばす */
+.memo-card.sized{aspect-ratio:auto;height:100%;min-height:0;}
 .memo-card img{width:100%;height:100%;object-fit:cover;display:block;}
 .memo-card .ctxt{
   padding:12px;
@@ -1161,7 +1166,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .align-row{
   display:flex;
   align-items:center;
+  flex-wrap:wrap;
   gap:6px;
+  row-gap:8px;
   margin-bottom:14px;
 }
 .align-group{
@@ -1189,6 +1196,47 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:var(--gl);
   border-color:var(--g);
 }
+
+/* ── 表示サイズ選択 (グリッドでのカードの大きさ) ──
+   手動の3×3グリッド(タップ/なぞり) と 横/縦の数字(1〜3) の2通りで指定でき、連動する。
+   メモは揃えバーの右に、それ以外は単独の行に置く。枠は薄グレー、選択は緑。 */
+.up-size-wrap{margin-bottom:14px;}
+.up-size-label{font-size:12px;color:var(--ink3);font-weight:500;margin-bottom:8px;}
+.up-size-cluster{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  margin-left:10px;   /* 揃えアイコン(仕切りから約20px)と“ふところ”を揃える */
+}
+.up-size-grid{
+  display:inline-grid;
+  grid-template-columns:repeat(3,10px);
+  grid-template-rows:repeat(3,10px);
+  gap:3px;
+  touch-action:none;
+  cursor:pointer;
+}
+.up-size-cell{
+  border-radius:2.5px;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.10);   /* 未選択 = 薄いグレーの枠 */
+  transition:background .08s, box-shadow .08s;
+}
+.up-size-cell.on{background:var(--g);box-shadow:none;}   /* 選択 = 緑 */
+.up-size-nums{display:inline-flex;flex-direction:column;gap:3px;}
+.up-size-numrow{display:flex;align-items:center;gap:3px;}
+.up-size-axis{display:flex;align-items:center;color:var(--ink3);}
+.up-size-num{
+  width:18px;height:18px;
+  display:flex;align-items:center;justify-content:center;
+  border:none;background:transparent;border-radius:4px;
+  font-family:inherit;   /* 周囲(ゴシック)と同じ書体 */
+  font-size:11px;font-weight:700;color:var(--ink3);
+  cursor:pointer;transition:background .1s,color .1s;
+}
+.up-size-num.on{background:var(--gl);color:var(--g);}   /* 選択 = 薄緑チップ + 緑文字 */
+/* 単独行(メモ以外)で使うときの仕切り */
+.up-size-standalone{display:flex;align-items:center;gap:6px;}
+.up-size-standalone .up-size-cluster{margin-left:0;}
 .align-btn:active{transform:scale(0.94);}
 
 /* 色選択 */
@@ -2024,9 +2072,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
     text-align:center;
     padding:0 40px;
   }
-  /* 右カラム内のメモグリッドは広いので4列に */
+  /* 右カラムのメモグリッドも、生徒の端末(スマホ=3列)と同じ見え方に揃える */
   #shelf-edit-panel .memo-grid{
-    grid-template-columns:1fr 1fr 1fr 1fr;
+    grid-template-columns:1fr 1fr 1fr;
   }
   .shelf-edit{margin-top:0;border-top:0;}
 
@@ -4067,6 +4115,33 @@ function renderShelfEdit(){
   renderMemoGrid();
 }
 
+// カードの表示サイズ。size は '{列}x{行}' (各 1〜3)。グリッドで span として効く。
+function cardSpanOf(size){
+  const m=/^([123])x([123])$/.exec(String(size||'1x1'));
+  if(!m)return {c:1,r:1,code:'1x1'};
+  return {c:+m[1], r:+m[2], code:m[1]+'x'+m[2]};
+}
+// メモグリッドの行の高さを「列の幅」に合わせて正方形セルにする。列数・gap・paddingは
+// 実際のcomputed styleから読むので、3列(スマホ)でも4列(PC)でも正しく揃う。
+function syncMemoGridCellSize(){
+  document.querySelectorAll('.memo-grid').forEach(g=>{
+    if(g.classList.contains('reorder-mode'))return;   // 並べ替えは block 表示
+    const cs=getComputedStyle(g);
+    const cols=cs.gridTemplateColumns.split(' ').filter(Boolean).length;
+    if(!cols)return;
+    const gap=parseFloat(cs.columnGap)||0;
+    const w=g.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0);
+    if(!w)return;
+    const cell=(w-gap*(cols-1))/cols;
+    if(cell>0)g.style.gridAutoRows=cell+'px';
+  });
+}
+let _memoGridResizeRaf=null;
+window.addEventListener('resize',()=>{
+  if(_memoGridResizeRaf)cancelAnimationFrame(_memoGridResizeRaf);
+  _memoGridResizeRaf=requestAnimationFrame(syncMemoGridCellSize);
+});
+
 function renderMemoGrid(){
   const s=getSelectedShelf();
   if(!s)return;
@@ -4094,6 +4169,11 @@ function renderMemoGrid(){
     }
     const cell=document.createElement('div');
     cell.className='memo-card '+(displayCard.type||'note')+(isRef?' is-ref':'');
+    // 表示サイズ: 自分のカードは c.size、参照(共有)はマスター(displayCard)の size を使う
+    const _sp=cardSpanOf(c.size||displayCard.size);
+    if(_sp.c>1)cell.style.gridColumn='span '+_sp.c;
+    if(_sp.r>1)cell.style.gridRow='span '+_sp.r;
+    if(_sp.code!=='1x1')cell.classList.add('sized');
     let inner='';
     if(displayCard.type==='photo' || displayCard.type==='photonote'){
       inner=`<img src="${esc(displayCard.image||'')}" alt="">`;
@@ -4140,6 +4220,10 @@ function renderMemoGrid(){
   addCell.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>';
   addCell.addEventListener('click',()=>openMemoModal(null));
   grid.appendChild(addCell);
+
+  // サイズ指定カードが正しい比率で並ぶよう、行の高さを列幅に合わせる
+  syncMemoGridCellSize();
+  requestAnimationFrame(syncMemoGridCellSize);
 }
 
 // ── 並べ替えモード: カードを縦リストで描画 ──
@@ -4319,6 +4403,79 @@ function toLocalDatetimeValue(ms){
   const p=n=>String(n).padStart(2,'0');
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
+// 編集モーダルに「表示サイズ選択」(手動グリッド + 横/縦の数字) を差し込む。
+// 2通りで指定でき連動。値は state.editingMemo.size に入る (保存時にそのまま永続化される)。
+function attachMemoSizeSelector(body, m){
+  if(!m)return;
+
+  // 手動グリッド (3×3)
+  const grid=document.createElement('div'); grid.className='up-size-grid';
+  const cells=[];
+  for(let r=0;r<3;r++)for(let col=0;col<3;col++){
+    const cell=document.createElement('div'); cell.className='up-size-cell';
+    cell.dataset.col=col; cell.dataset.row=r; grid.appendChild(cell); cells.push(cell);
+  }
+
+  // 数字 (横=列 / 縦=行、各 1〜3)
+  const ARROW={
+    h:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"/><path d="M7 8l-4 4 4 4"/><path d="M17 8l4 4-4 4"/></svg>',
+    v:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M8 7l4-4 4 4"/><path d="M8 17l4 4 4-4"/></svg>'
+  };
+  const nums=document.createElement('div'); nums.className='up-size-nums';
+  const makeRow=(axis)=>{
+    const row=document.createElement('div'); row.className='up-size-numrow';
+    const ic=document.createElement('span'); ic.className='up-size-axis'; ic.innerHTML=ARROW[axis]; row.appendChild(ic);
+    for(let n=1;n<=3;n++){ const b=document.createElement('button'); b.type='button'; b.className='up-size-num'; b.dataset.axis=axis; b.dataset.n=n; b.textContent=n; row.appendChild(b); }
+    return row;
+  };
+  nums.appendChild(makeRow('h')); nums.appendChild(makeRow('v'));
+
+  // 連動の中心
+  let curC=1, curR=1;
+  const paintGrid=(c,r)=>cells.forEach(cell=>cell.classList.toggle('on',(+cell.dataset.col)<c&&(+cell.dataset.row)<r));
+  const paintNums=(c,r)=>nums.querySelectorAll('.up-size-num').forEach(b=>{const v=+b.dataset.n;b.classList.toggle('on',b.dataset.axis==='h'?v===c:v===r);});
+  const set=(c,r)=>{
+    c=Math.max(1,Math.min(3,c)); r=Math.max(1,Math.min(3,r)); curC=c; curR=r;
+    const code=c+'x'+r;
+    if(code==='1x1')delete state.editingMemo.size; else state.editingMemo.size=code;
+    paintGrid(c,r); paintNums(c,r);
+  };
+  nums.querySelectorAll('.up-size-num').forEach(b=>b.addEventListener('click',()=>{
+    const v=+b.dataset.n; if(b.dataset.axis==='h')set(v,curR); else set(curC,v);
+  }));
+  const cellFromPoint=(x,y)=>{
+    const bb=grid.getBoundingClientRect();
+    return {col:Math.max(0,Math.min(2,Math.floor((x-bb.left)/(bb.width/3)))),row:Math.max(0,Math.min(2,Math.floor((y-bb.top)/(bb.height/3))))};
+  };
+  let dragging=false;
+  grid.addEventListener('pointerdown',e=>{dragging=true;try{grid.setPointerCapture(e.pointerId);}catch(_){}const{col,row}=cellFromPoint(e.clientX,e.clientY);set(col+1,row+1);e.preventDefault();});
+  grid.addEventListener('pointermove',e=>{if(!dragging)return;const{col,row}=cellFromPoint(e.clientX,e.clientY);set(col+1,row+1);});
+  grid.addEventListener('pointerup',e=>{if(!dragging)return;dragging=false;const{col,row}=cellFromPoint(e.clientX,e.clientY);set(col+1,row+1);});
+  grid.addEventListener('pointercancel',()=>{dragging=false;});
+
+  // 配置: メモは揃えバーの右、それ以外は単独の行(ラベル付き)
+  const cluster=document.createElement('div'); cluster.className='up-size-cluster';
+  cluster.appendChild(grid); cluster.appendChild(nums);
+  const alignRow=body.querySelector('#align-row');
+  if(alignRow){
+    const sep=document.createElement('div'); sep.className='align-sep';
+    alignRow.appendChild(sep); alignRow.appendChild(cluster);
+  }else{
+    const wrap=document.createElement('div'); wrap.className='up-size-wrap';
+    const label=document.createElement('div'); label.className='up-size-label'; label.textContent='グリッドでの大きさ';
+    const stand=document.createElement('div'); stand.className='up-size-standalone'; stand.appendChild(cluster);
+    wrap.appendChild(label); wrap.appendChild(stand);
+    const colorRow=body.querySelector('.color-row');
+    const dateRow=body.querySelector('.memo-date-row');
+    if(colorRow && colorRow.parentNode){ colorRow.parentNode.insertBefore(wrap, colorRow.nextSibling); }
+    else if(dateRow && dateRow.parentNode){ dateRow.parentNode.insertBefore(wrap, dateRow); }
+    else body.appendChild(wrap);
+  }
+
+  const sp=cardSpanOf(state.editingMemo.size);
+  set(sp.c, sp.r);
+}
+
 function renderMemoModalBody(){
   const m=state.editingMemo;
   if(!m)return;
@@ -4522,6 +4679,9 @@ function renderMemoModalBody(){
 
   // ノート(テキストメモ)は index と同じ自動スケール編集にする
   if(m.type==='note')setupNoteEditor(m);
+
+  // 表示サイズ選択 (手動グリッド + 数字) を差し込む
+  attachMemoSizeSelector(body, m);
 
   // 投稿日時の編集 (過去日時も指定可。公開ページの詳細表示に反映される)
   const dateInp=$('memo-created');
@@ -5140,7 +5300,7 @@ function memoBodyChanged(prev,next){
     if(typeof v==='object')return JSON.stringify(v);
     return String(v);
   };
-  const fields=['type','text','title','image','items','link','ocrText','color','alignH','alignV'];
+  const fields=['type','text','title','image','items','link','ocrText','color','alignH','alignV','size'];
   for(const f of fields){
     if(norm(prev[f])!==norm(next[f]))return true;
   }
