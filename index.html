@@ -4541,6 +4541,9 @@ html:not(.en-on) .en-live{ display:none; }
   transition:transform .25s cubic-bezier(.34,1.56,.64,1); }
 .enm-row.on .enm-switch{ background:var(--g); }
 .enm-row.on .enm-knob{ transform:translateX(18px); }
+/* ダークモードの子設定(メモの色)。親トグルの文字に揃えて字下げし、つながりを見せる。 */
+.enm-subrow{ padding-left:50px; border-top:0.5px solid var(--line); margin-top:2px; }
+.enm-subrow .enm-title{ font-size:14px; }
 .enm-note{ font-size:11.5px; color:var(--ink3); line-height:1.5; padding:2px 4px 8px; }
 </style>
 </head>
@@ -5412,6 +5415,14 @@ html:not(.en-on) .en-live{ display:none; }
       </div>
       <span class="enm-switch"><span class="enm-knob"></span></span>
     </button>
+    <!-- 子設定: ダーク時のメモの色。既定オン(暗くなじませる)。オフで指定色のまま。ダークON時のみ表示。 -->
+    <button class="enm-row enm-subrow" data-action="toggle-dark-cards" id="dark-cards-toggle" aria-label="メモの色を暗くなじませる" style="display:none;">
+      <div class="enm-text">
+        <div class="enm-title">メモの色を暗くなじませる</div>
+        <div class="enm-sub">オフにすると、指定した色のまま表示します。</div>
+      </div>
+      <span class="enm-switch"><span class="enm-knob"></span></span>
+    </button>
   </div>
 
   <!-- 英語ミラー: 書いた日本語の下に、英訳を「字幕」のようにそっと浮かべる。既定OFF。
@@ -5652,6 +5663,7 @@ const state={
   onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
   theme:'green',       // 着せ替えテーマ green / sakura / ai(藍)
   dark:false,          // ダークモード (設定の手動スイッチ)。OSには追従しない。off=ライトモード
+  darkCardAdapt:true,  // ダーク時にメモの色を暗くなじませるか。false=指定色のまま。ダークON時のみ意味を持つ
   enMode:false,        // 英語ミラー(字幕レイヤー)のON/OFF。既定OFF。
   enSpeak:'off',       // 読み上げ 'off' | 'tap'(英文タップで再生)
   enRate:1.0,          // 読み上げ速度 (倍率 0.5〜3.0)
@@ -5711,6 +5723,7 @@ function buildLightPayload(){
     onboarded:state.onboarded,
     theme:state.theme,
     dark:state.dark,
+    darkCardAdapt:state.darkCardAdapt,
     enMode:state.enMode,
     enSpeak:state.enSpeak,
     enRate:state.enRate,
@@ -6022,6 +6035,7 @@ function applyPayload(d){
   state.onboarded=d.onboarded||false;
   state.theme=_normTheme(d.theme);
   state.dark=!!d.dark;
+  state.darkCardAdapt=(d.darkCardAdapt!==false); // 未設定(旧データ)は既定オン
   state.enMode=!!d.enMode;
   state.enSpeak=(d.enSpeak==='tap'||d.enSpeak==='auto')?'tap':'off'; // 旧「自動＋タップ」は廃止。保存済みなら「タップで」に引き継ぐ
   state.enRate=_normEnRate(d.enRate); // 旧 slow/normal/fast は倍率へ移行。数値は0.5〜3にクランプ
@@ -6174,8 +6188,8 @@ const CARD_COLORS=[
 function colorById(id){
   if(id==='default')id='none';
   const c=CARD_COLORS.find(x=>x.id===id)||CARD_COLORS[0];
-  // ダークモードでは沈めた配色へ差し替え。呼び出し側は col.bg/fg/bd のままで両対応になる。
-  if(state.dark)return {...c, bg:c.bgD||c.bg, fg:c.fgD||c.fg, bd:c.bdD||c.bd};
+  // ダークモードかつ「色をなじませる」がオンのときだけ沈めた配色へ。オフなら指定色のまま。
+  if(state.dark && state.darkCardAdapt!==false)return {...c, bg:c.bgD||c.bg, fg:c.fgD||c.fg, bd:c.bdD||c.bd};
   return c;
 }
 // 色が「指定なし」か判定 (未設定・none・旧default はすべて無色)
@@ -7221,12 +7235,25 @@ function applyDark(){
   // 設定スイッチの見た目を同期
   const row=document.getElementById('dark-toggle');
   if(row)row.classList.toggle('on', !!state.dark);
+  // 子設定(メモの色): ダークON時のみ表示し、オン/オフを同期
+  const sub=document.getElementById('dark-cards-toggle');
+  if(sub){
+    sub.style.display = state.dark ? 'flex' : 'none';
+    sub.classList.toggle('on', state.darkCardAdapt!==false);
+  }
 }
 function setDark(on){
   state.dark=!!on;
   save();
   applyDark();
   // カードの色はインラインで焼き込まれているので、開いている画面を描き直して反映する。
+  if(typeof rerenderMemoScreens==='function'){ try{ rerenderMemoScreens(); }catch(e){} }
+}
+// ダーク時にメモの色をなじませるか (子設定)。
+function setDarkCardAdapt(on){
+  state.darkCardAdapt=!!on;
+  save();
+  applyDark();
   if(typeof rerenderMemoScreens==='function'){ try{ rerenderMemoScreens(); }catch(e){} }
 }
 
@@ -15610,6 +15637,7 @@ document.addEventListener('click',e=>{
     case 'theme-sakura':setTheme('sakura');break;
     case 'theme-ai':setTheme('ai');break;
     case 'toggle-dark':setDark(!state.dark);break;
+    case 'toggle-dark-cards':setDarkCardAdapt(!state.darkCardAdapt);break;
     case 'toggle-en':setEnMode(!state.enMode);break;
     case 'enspeak-off':setEnSpeak('off');break;
     case 'enspeak-tap':setEnSpeak('tap');break;
