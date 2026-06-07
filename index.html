@@ -6758,7 +6758,9 @@ function totalNewCount(){
     const s=OFFICIAL_SHELVES.find(x=>x.id===id);
     if(s)n+=newCountForShelf(s);
   }
-  n+=totalCardUpdateCount();
+  // 編集(updated)は共有ナビの①に出さない。新規公開(created)だけを共有の新着として扱う。
+  // 保存済みメモの更新は「メモ」フィードのカード「更新」バッジ側で知らせ、そこで消える。
+  // (旧: n+=totalCardUpdateCount(); → 共有ページに消す導線が無く詰むため削除)
   return n;
 }
 
