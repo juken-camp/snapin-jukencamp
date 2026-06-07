@@ -38,28 +38,13 @@ html[data-theme="sakura"]{
   --g-rgb:219,80,137; --gd-rgb:171,58,107;
 }
 
-/* 藍テーマ: 深い青。夜空・琉球藍のイメージ */
-html[data-theme="ai"]{
-  --g:#3457A8; --gl:#E8ECF9; --gd:#25407E;
-  --mosaic-veil:linear-gradient(135deg,rgba(52,87,168,.15),rgba(37,64,126,.18));
-  --mosaic-veil-soft:linear-gradient(135deg,rgba(52,87,168,.12),rgba(37,64,126,.15));
-  --g-rgb:52,87,168; --gd-rgb:37,64,126;
+/* ブロンズ金テーマ: 深い金。明るい金はボタンの白文字が消えるため、落ち着いた金茶に寄せる */
+html[data-theme="gold"]{
+  --g:#8A6410; --gl:#FBF3DD; --gd:#6E4E0C;
+  --mosaic-veil:linear-gradient(135deg,rgba(138,100,16,.15),rgba(110,78,12,.18));
+  --mosaic-veil-soft:linear-gradient(135deg,rgba(138,100,16,.12),rgba(110,78,12,.15));
+  --g-rgb:138,100,16; --gd-rgb:110,78,12;
 }
-
-/* ダークモード (設定の手動スイッチで html.dark を付け外し。OS には追従しない)。
-   土台の中立色を一式入れ替える。アクセントの薄い下地(--gl)は暗い画面でまぶしいので
-   半透明の濃い色へ、濃い文字色(--gd)は読めるよう明るい色へ反転する。 */
-html.dark{
-  --bg:#16161A; --surface:#202024;
-  --ink:#E9E9EC; --ink2:#A6A6AD; --ink3:#76767D;
-  --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.17);
-  --shadow:0 1px 2px rgba(0,0,0,.45), 0 4px 14px rgba(0,0,0,.38);
-  --gl:rgba(29,158,117,.20); --gd:#5DCAA5;
-  --mosaic-veil:linear-gradient(135deg,rgba(29,158,117,.24),rgba(15,110,86,.30));
-  --mosaic-veil-soft:linear-gradient(135deg,rgba(29,158,117,.16),rgba(15,110,86,.22));
-}
-html.dark[data-theme="sakura"]{ --gl:rgba(219,80,137,.22); --gd:#F09BBC; }
-html.dark[data-theme="ai"]{ --g:#5B7FD6; --gl:rgba(91,127,214,.24); --gd:#9CB6F0; }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;background:var(--bg);font-family:var(--font-jp);color:var(--ink);overscroll-behavior:none;-webkit-font-smoothing:antialiased;}
@@ -5365,7 +5350,7 @@ html:not(.en-on) .en-live{ display:none; }
     </button>
   </div>
 
-  <!-- 着せ替え (テーマカラー): みどり / さくら / 藍。--g/--gl/--gd を上書きするだけ。 -->
+  <!-- 着せ替え (テーマカラー): みどり / さくら / こがね。--g/--gl/--gd を上書きするだけ。 -->
   <div class="theme-pick">
     <div class="theme-pick-label">着せ替え</div>
     <div class="theme-pick-row">
@@ -5375,8 +5360,8 @@ html:not(.en-on) .en-live{ display:none; }
       <button class="theme-chip" data-action="theme-sakura" aria-label="さくら">
         <span class="theme-chip-dot" style="background:#DB5089;"></span>さくら
       </button>
-      <button class="theme-chip" data-action="theme-ai" aria-label="藍">
-        <span class="theme-chip-dot" style="background:#3457A8;"></span>藍
+      <button class="theme-chip" data-action="theme-gold" aria-label="こがね（ブロンズ金）">
+        <span class="theme-chip-dot" style="background:#8A6410;"></span>こがね
       </button>
     </div>
   </div>
@@ -5398,20 +5383,6 @@ html:not(.en-on) .en-live{ display:none; }
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       <span id="sender-preview-text">お友達のメモより</span>
     </div>
-  </div>
-
-  <!-- ダークモード (手動スイッチ): オフ=ライトモード。OS設定には追従しない。 -->
-  <div class="enm-box">
-    <button class="enm-row" data-action="toggle-dark" id="dark-toggle" aria-label="ダークモード">
-      <div class="enm-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </div>
-      <div class="enm-text">
-        <div class="enm-title">ダークモード</div>
-        <div class="enm-sub">画面を暗い配色に。オフのときはライトモード。</div>
-      </div>
-      <span class="enm-switch"><span class="enm-knob"></span></span>
-    </button>
   </div>
 
   <!-- 英語ミラー: 書いた日本語の下に、英訳を「字幕」のようにそっと浮かべる。既定OFF。
@@ -5650,8 +5621,7 @@ const state={
   aiNote:'',           // 設定「AIへの希望」フリー記入。systemプロンプトに差し込む利用者の要望。
   senderName:'',       // 設定「名前・ニックネーム」。共有(QR/リンク)で送るとき「○○さんのメモより」に使う。空なら「お友達のメモより」。
   onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
-  theme:'green',       // 着せ替えテーマ green / sakura / ai(藍)
-  dark:false,          // ダークモード (設定の手動スイッチ)。OSには追従しない。off=ライトモード
+  theme:'green',       // 着せ替えテーマ 'green' | 'sakura' | 'gold'(こがね)
   enMode:false,        // 英語ミラー(字幕レイヤー)のON/OFF。既定OFF。
   enSpeak:'off',       // 読み上げ 'off' | 'tap'(英文タップで再生)
   enRate:1.0,          // 読み上げ速度 (倍率 0.5〜3.0)
@@ -5710,7 +5680,6 @@ function buildLightPayload(){
     senderName:state.senderName,
     onboarded:state.onboarded,
     theme:state.theme,
-    dark:state.dark,
     enMode:state.enMode,
     enSpeak:state.enSpeak,
     enRate:state.enRate,
@@ -6021,7 +5990,6 @@ function applyPayload(d){
   state.senderName=(d.senderName||'').slice(0,SENDER_NAME_MAX);
   state.onboarded=d.onboarded||false;
   state.theme=_normTheme(d.theme);
-  state.dark=!!d.dark;
   state.enMode=!!d.enMode;
   state.enSpeak=(d.enSpeak==='tap'||d.enSpeak==='auto')?'tap':'off'; // 旧「自動＋タップ」は廃止。保存済みなら「タップで」に引き継ぐ
   state.enRate=_normEnRate(d.enRate); // 旧 slow/normal/fast は倍率へ移行。数値は0.5〜3にクランプ
@@ -6029,7 +5997,6 @@ function applyPayload(d){
   state._savedAt=d._savedAt||0;
   state.lastCloudBackupAt=d.lastCloudBackupAt||0;
   applyTheme();
-  applyDark();
   applyEnMode();
   applyEnSpeak();
 }
@@ -6159,24 +6126,20 @@ function canSeeShelfId(shelfId){
 }
 
 // メモカードの色パレット (タグの代わりに色で分類)
-// bgD/fgD/bdD はダークモード用 (沈めた下地＋明るめの文字)。colorById が dark 時に差し替える。
 const CARD_COLORS=[
-  {id:'none',   name:'なし',bg:'#FFFDF5',fg:'#1A1A1A',bd:'transparent',bgD:'#202024',fgD:'#E9E9EC',bdD:'transparent'},
-  {id:'yellow', name:'黄',bg:'#FFF6D6',fg:'#5A4818',bd:'#E8C24A',bgD:'#2A2613',fgD:'#E8C97A',bdD:'#7A6320'},
-  {id:'orange', name:'橙',bg:'#FDE9D4',fg:'#6E3E18',bd:'#E89A4A',bgD:'#2C2113',fgD:'#ECA968',bdD:'#8A5A28'},
-  {id:'pink',   name:'桃',bg:'#FCE6E8',fg:'#6B2030',bd:'#E58AA0',bgD:'#2C1A1F',fgD:'#EC93A9',bdD:'#8A4356'},
-  {id:'blue',   name:'青',bg:'#E0EDF8',fg:'#1F3A5C',bd:'#5B9BD5',bgD:'#16263A',fgD:'#8FB6E0',bdD:'#2F5F92'},
-  {id:'green',  name:'緑',bg:'#E0F1E4',fg:'#1F4E2C',bd:'#5BB371',bgD:'#15281C',fgD:'#79C893',bdD:'#2E6B45'},
-  {id:'purple', name:'紫',bg:'#EBE0F2',fg:'#3D2657',bd:'#A87FC4',bgD:'#241A30',fgD:'#B79AD6',bdD:'#5E4684'},
-  {id:'gray',   name:'灰',bg:'#ECEDEE',fg:'#3A3F44',bd:'#9AA0A6',bgD:'#26282B',fgD:'#B6BABF',bdD:'#4A4E52'},
+  {id:'none',   name:'なし',bg:'#FFFDF5',fg:'#1A1A1A',bd:'transparent'},
+  {id:'yellow', name:'黄',bg:'#FFF6D6',fg:'#5A4818',bd:'#E8C24A'},
+  {id:'orange', name:'橙',bg:'#FDE9D4',fg:'#6E3E18',bd:'#E89A4A'},
+  {id:'pink',   name:'桃',bg:'#FCE6E8',fg:'#6B2030',bd:'#E58AA0'},
+  {id:'blue',   name:'青',bg:'#E0EDF8',fg:'#1F3A5C',bd:'#5B9BD5'},
+  {id:'green',  name:'緑',bg:'#E0F1E4',fg:'#1F4E2C',bd:'#5BB371'},
+  {id:'purple', name:'紫',bg:'#EBE0F2',fg:'#3D2657',bd:'#A87FC4'},
+  {id:'gray',   name:'灰',bg:'#ECEDEE',fg:'#3A3F44',bd:'#9AA0A6'},
 ];
 // 旧データの 'default' は 'none' とみなす (見た目も同じクリーム色)。
 function colorById(id){
   if(id==='default')id='none';
-  const c=CARD_COLORS.find(x=>x.id===id)||CARD_COLORS[0];
-  // ダークモードでは沈めた配色へ差し替え。呼び出し側は col.bg/fg/bd のままで両対応になる。
-  if(state.dark)return {...c, bg:c.bgD||c.bg, fg:c.fgD||c.fg, bd:c.bdD||c.bd};
-  return c;
+  return CARD_COLORS.find(c=>c.id===id)||CARD_COLORS[0];
 }
 // 色が「指定なし」か判定 (未設定・none・旧default はすべて無色)
 function isNoColor(id){return !id || id==='none' || id==='default';}
@@ -7196,7 +7159,7 @@ async function doJoinSubmit(force){
 
 // ═══ 着せ替え (テーマカラー) ═══
 // 着せ替えの値を正規化: 既知のテーマだけ通し、未知/未設定は緑に倒す。
-function _normTheme(t){ return (t==='sakura'||t==='ai')?t:'green'; }
+function _normTheme(t){ return (t==='sakura'||t==='gold')?t:'green'; }
 function applyTheme(){
   const t=_normTheme(state.theme);
   if(t==='green')document.documentElement.removeAttribute('data-theme');
@@ -7210,24 +7173,6 @@ function setTheme(t){
   state.theme=_normTheme(t);
   save();
   applyTheme();
-}
-
-// ═══ ダークモード (手動スイッチ。html.dark の付け外しで土台の色を切り替える) ═══
-function applyDark(){
-  document.documentElement.classList.toggle('dark', !!state.dark);
-  // PWA のステータスバー色も合わせる
-  const m=document.querySelector('meta[name="theme-color"]');
-  if(m)m.setAttribute('content', state.dark ? '#16161A' : '#FAFAF7');
-  // 設定スイッチの見た目を同期
-  const row=document.getElementById('dark-toggle');
-  if(row)row.classList.toggle('on', !!state.dark);
-}
-function setDark(on){
-  state.dark=!!on;
-  save();
-  applyDark();
-  // カードの色はインラインで焼き込まれているので、開いている画面を描き直して反映する。
-  if(typeof rerenderMemoScreens==='function'){ try{ rerenderMemoScreens(); }catch(e){} }
 }
 
 // ═══ 英語ミラー (字幕レイヤー) ON/OFF ═══
@@ -8157,7 +8102,6 @@ function openSettings(){
   if(logoutBtn) logoutBtn.style.display='flex';
   updateStorageMeter();
   applyTheme(); // テーマチップの選択状態を反映
-  applyDark();  // ダークモードのスイッチ表示を反映
   applyEnMode(); // 英語ミラートグルの状態を反映
   applyEnSpeak(); // 読み上げ設定(チップ)の状態を反映
   $('settings-backdrop').classList.add('on');
@@ -15608,8 +15552,7 @@ document.addEventListener('click',e=>{
     case 'logout-do':doLogout();break;
     case 'theme-green':setTheme('green');break;
     case 'theme-sakura':setTheme('sakura');break;
-    case 'theme-ai':setTheme('ai');break;
-    case 'toggle-dark':setDark(!state.dark);break;
+    case 'theme-gold':setTheme('gold');break;
     case 'toggle-en':setEnMode(!state.enMode);break;
     case 'enspeak-off':setEnSpeak('off');break;
     case 'enspeak-tap':setEnSpeak('tap');break;
