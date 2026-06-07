@@ -16210,6 +16210,23 @@ document.addEventListener('visibilitychange', ()=>{ if(!document.hidden)_schedul
 // load が既に発火済みのケース(PWA再表示など)に備え、初回ブート後にもう一度。
 setTimeout(relayoutNoteScales, 300);
 
+// グリッド/フィードの実寸が「確定/変化した瞬間」を捉えて測り直す。
+// renderHome が非同期で遅れて、固定タイミングの測り直しを取りこぼしても、
+// サイズ確定を ResizeObserver が拾うので「最初だけ小さい(再描画で直る)」を根本から防ぐ。
+// 監視対象はレイアウトで寸法が決まるコンテナのみ(中身のフォント変更では寸法が変わらない)なので無限ループしない。
+if('ResizeObserver' in window){
+  let _ro_raf=null;
+  const _gridRO=new ResizeObserver(()=>{
+    if(_ro_raf)cancelAnimationFrame(_ro_raf);
+    _ro_raf=requestAnimationFrame(relayoutNoteScales);
+  });
+  const _observeGrids=()=>{
+    document.querySelectorAll('.grid, .feed, .today-newcards').forEach(el=>{ try{ _gridRO.observe(el); }catch(e){} });
+  };
+  _observeGrids();
+  setTimeout(_observeGrids, 500); // 起動直後にまだ無かった要素も後から監視に加える
+}
+
 // ═══════════════════════════════════════════════════════════════
 // まとめて取り込み (複数画像 → 1枚ずつ別カードとして一括作成)
 //   A) アプリ内カメラで連続撮影 (batchStartCamera)
