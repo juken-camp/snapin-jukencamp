@@ -3790,6 +3790,28 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-size:11px;color:var(--ink3);
 }
 .ai-note-count.over{color:var(--rose);}
+/* 名前・ニックネーム欄 (共有の送り主表示用) */
+.sender-field{
+  background:var(--bg);
+  border:1px solid var(--line2);
+  border-radius:12px;
+  padding:11px 12px;
+  transition:border-color .15s;
+}
+.sender-field:focus-within{border-color:var(--g);}
+.sender-field input{
+  width:100%;
+  font-size:15px;line-height:1.4;color:var(--ink);
+  background:transparent;border:none;display:block;
+}
+.sender-field input::placeholder{color:var(--ink3);}
+.sender-preview{
+  display:flex;align-items:center;gap:5px;
+  margin-top:9px;padding-left:2px;
+  font-size:12px;color:var(--ink3);
+}
+.sender-preview svg{flex:none;opacity:.7;}
+#sender-preview-text{color:var(--gd);font-weight:500;}
 .ai-note-chips{
   display:flex;flex-wrap:wrap;gap:7px;
   margin-top:9px;
@@ -5333,6 +5355,25 @@ html:not(.en-on) .en-live{ display:none; }
     </div>
   </div>
 
+  <!-- 名前・ニックネーム: 共有(QR/リンク)で送るとき、受け取った人に「○○さんのメモより」と表示される。
+       空欄なら「お友達のメモより」。下にプレビューを出して、入れた名前がどう見えるかその場で映す。 -->
+  <div class="ai-note-box sender-box">
+    <div class="ai-note-head">
+      <div class="ai-note-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="ai-note-title">名前・ニックネーム</div>
+    </div>
+    <div class="ai-note-desc">メモをQRコードやリンクで送ると、受け取った人に「○○さんのメモより」と、ここで入れた名前が出ます。空欄のままなら「お友達のメモより」になり、名前は出ません。本名でもニックネームでも、気軽にどうぞ。</div>
+    <div class="sender-field">
+      <input id="sender-name-input" type="text" maxlength="20" autocomplete="off" placeholder="例: かずま">
+    </div>
+    <div class="sender-preview" id="sender-preview">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span id="sender-preview-text">お友達のメモより</span>
+    </div>
+  </div>
+
   <!-- 英語ミラー: 書いた日本語の下に、英訳を「字幕」のようにそっと浮かべる。既定OFF。
        表示は CSS の .en-row / html.en-on に寄せ、構造は元のまま。 -->
   <div class="enm-box">
@@ -5567,6 +5608,7 @@ const state={
   searchView:'grid',   // 探す/しばらく見ていないメモ の表示: 'grid' か 'reel'(縦スクロール)
   staleDays:null,      // 「しばらく見ていないメモ」ページの日数 (null=未設定→デフォルト7)
   aiNote:'',           // 設定「AIへの希望」フリー記入。systemプロンプトに差し込む利用者の要望。
+  senderName:'',       // 設定「名前・ニックネーム」。共有(QR/リンク)で送るとき「○○さんのメモより」に使う。空なら「お友達のメモより」。
   onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
   theme:'green',       // 着せ替えテーマ 'green' | 'sakura'
   enMode:false,        // 英語ミラー(字幕レイヤー)のON/OFF。既定OFF。
@@ -5624,6 +5666,7 @@ function buildLightPayload(){
     auth:state.auth,
     deviceId:state.deviceId,
     aiNote:state.aiNote,
+    senderName:state.senderName,
     onboarded:state.onboarded,
     theme:state.theme,
     enMode:state.enMode,
@@ -5933,6 +5976,7 @@ function applyPayload(d){
   state.auth=d.auth||null;
   state.deviceId=d.deviceId||null;
   state.aiNote=d.aiNote||'';
+  state.senderName=(d.senderName||'').slice(0,SENDER_NAME_MAX);
   state.onboarded=d.onboarded||false;
   state.theme=(d.theme==='sakura')?'sakura':'green';
   state.enMode=!!d.enMode;
@@ -7309,8 +7353,10 @@ function closeShareChoice(){
   $('share-choice-mask').classList.remove('on');
   $('share-choice-sheet').classList.remove('on');
 }
-// 送り主の表示名を決める: 塾生/メンバーは名前、JUKEN CAMP や将来の有料アカウントも名前、無料の匿名ユーザーは空。
+// 送り主の表示名を決める: 設定で名前/ニックネームを入れていればそれを最優先。
+// 次に塾生/メンバーの名前。どれも無ければ空(=受け取り側で「お友達のメモより」)。
 function shareSenderName(){
+  if(state.senderName && state.senderName.trim()) return String(state.senderName).trim().slice(0,SENDER_NAME_MAX);
   if(state.auth && state.auth.name) return String(state.auth.name).trim();
   if(state.user && state.user.name && state.user.name!=='あなた') return String(state.user.name).trim();
   return '';
@@ -7773,6 +7819,9 @@ async function inboxDelete(id){
 // AIへの希望 (フリー記入) の上限。トークン・表示の両面で適度な長さに。
 const AI_NOTE_MAX=400;
 
+// 共有時の送り主の名前・ニックネームの上限 (短く・表示崩れ防止)。
+const SENDER_NAME_MAX=20;
+
 // 文字数カウンタの更新 (上限超過は色を変える。maxlength で基本は超えないが二重の保険)。
 function updateAiNoteCount(){
   const el=$('ai-note-input');
@@ -7781,6 +7830,15 @@ function updateAiNoteCount(){
   const len=[...el.value].length;
   cnt.textContent=len+' / '+AI_NOTE_MAX;
   cnt.classList.toggle('over',len>AI_NOTE_MAX);
+}
+
+// 名前・ニックネーム欄の下のプレビューを更新: 入れた名前で「○○さんのメモより」、空なら「お友達のメモより」。
+function updateSenderPreview(){
+  const el=$('sender-name-input');
+  const out=$('sender-preview-text');
+  if(!out)return;
+  const name=(el?el.value:state.senderName||'').trim();
+  out.textContent=name ? `${name}さんのメモより` : 'お友達のメモより';
 }
 
 // ═══ クラウドバックアップ (アカウント保有者のみ) ═══
@@ -8014,6 +8072,12 @@ function openSettings(){
     noteEl.value=state.aiNote||'';
     updateAiNoteCount();
   }
+  // 名前・ニックネーム: 保存済みの値を流し込み、プレビューも合わせる
+  const senderEl=$('sender-name-input');
+  if(senderEl){
+    senderEl.value=state.senderName||'';
+  }
+  updateSenderPreview();
   // クラウドに保存: アカウント保有者(塾生/管理者)のみ表示
   const cloudBox=$('cloud-box');
   if(cloudBox){
@@ -15584,6 +15648,14 @@ document.addEventListener('input',e=>{
   if(e.target && e.target.id==='ai-note-input'){
     state.aiNote=[...e.target.value].slice(0,AI_NOTE_MAX).join('');
     updateAiNoteCount();
+    save();
+  }
+});
+// 設定「名前・ニックネーム」: 入力のたびに state へ保存し、プレビューを更新
+document.addEventListener('input',e=>{
+  if(e.target && e.target.id==='sender-name-input'){
+    state.senderName=[...e.target.value].slice(0,SENDER_NAME_MAX).join('');
+    updateSenderPreview();
     save();
   }
 });
