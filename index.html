@@ -38,6 +38,14 @@ html[data-theme="sakura"]{
   --g-rgb:219,80,137; --gd-rgb:171,58,107;
 }
 
+/* ブロンズ金テーマ: 深い金。明るい金はボタンの白文字が消えるため、落ち着いた金茶に寄せる */
+html[data-theme="gold"]{
+  --g:#8A6410; --gl:#FBF3DD; --gd:#6E4E0C;
+  --mosaic-veil:linear-gradient(135deg,rgba(138,100,16,.15),rgba(110,78,12,.18));
+  --mosaic-veil-soft:linear-gradient(135deg,rgba(138,100,16,.12),rgba(110,78,12,.15));
+  --g-rgb:138,100,16; --gd-rgb:110,78,12;
+}
+
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;background:var(--bg);font-family:var(--font-jp);color:var(--ink);overscroll-behavior:none;-webkit-font-smoothing:antialiased;}
 button{font-family:inherit;background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;}
@@ -5342,7 +5350,7 @@ html:not(.en-on) .en-live{ display:none; }
     </button>
   </div>
 
-  <!-- 着せ替え (テーマカラー): みどり / さくら。--g/--gl/--gd を上書きするだけ。 -->
+  <!-- 着せ替え (テーマカラー): みどり / さくら / こがね。--g/--gl/--gd を上書きするだけ。 -->
   <div class="theme-pick">
     <div class="theme-pick-label">着せ替え</div>
     <div class="theme-pick-row">
@@ -5351,6 +5359,9 @@ html:not(.en-on) .en-live{ display:none; }
       </button>
       <button class="theme-chip" data-action="theme-sakura" aria-label="さくら">
         <span class="theme-chip-dot" style="background:#DB5089;"></span>さくら
+      </button>
+      <button class="theme-chip" data-action="theme-gold" aria-label="こがね（ブロンズ金）">
+        <span class="theme-chip-dot" style="background:#8A6410;"></span>こがね
       </button>
     </div>
   </div>
@@ -5610,7 +5621,7 @@ const state={
   aiNote:'',           // 設定「AIへの希望」フリー記入。systemプロンプトに差し込む利用者の要望。
   senderName:'',       // 設定「名前・ニックネーム」。共有(QR/リンク)で送るとき「○○さんのメモより」に使う。空なら「お友達のメモより」。
   onboarded:false,     // 初回ウェルカム(一般ユーザー向けオンボーディング)を表示済みか
-  theme:'green',       // 着せ替えテーマ 'green' | 'sakura'
+  theme:'green',       // 着せ替えテーマ 'green' | 'sakura' | 'gold'(こがね)
   enMode:false,        // 英語ミラー(字幕レイヤー)のON/OFF。既定OFF。
   enSpeak:'off',       // 読み上げ 'off' | 'tap'(英文タップで再生)
   enRate:1.0,          // 読み上げ速度 (倍率 0.5〜3.0)
@@ -5978,7 +5989,7 @@ function applyPayload(d){
   state.aiNote=d.aiNote||'';
   state.senderName=(d.senderName||'').slice(0,SENDER_NAME_MAX);
   state.onboarded=d.onboarded||false;
-  state.theme=(d.theme==='sakura')?'sakura':'green';
+  state.theme=_normTheme(d.theme);
   state.enMode=!!d.enMode;
   state.enSpeak=(d.enSpeak==='tap'||d.enSpeak==='auto')?'tap':'off'; // 旧「自動＋タップ」は廃止。保存済みなら「タップで」に引き継ぐ
   state.enRate=_normEnRate(d.enRate); // 旧 slow/normal/fast は倍率へ移行。数値は0.5〜3にクランプ
@@ -7147,8 +7158,10 @@ async function doJoinSubmit(force){
 }
 
 // ═══ 着せ替え (テーマカラー) ═══
+// 着せ替えの値を正規化: 既知のテーマだけ通し、未知/未設定は緑に倒す。
+function _normTheme(t){ return (t==='sakura'||t==='gold')?t:'green'; }
 function applyTheme(){
-  const t=(state.theme==='sakura')?'sakura':'green';
+  const t=_normTheme(state.theme);
   if(t==='green')document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme',t);
   // 設定シートのチップ表示も同期
@@ -7157,7 +7170,7 @@ function applyTheme(){
   });
 }
 function setTheme(t){
-  state.theme=(t==='sakura')?'sakura':'green';
+  state.theme=_normTheme(t);
   save();
   applyTheme();
 }
@@ -15539,6 +15552,7 @@ document.addEventListener('click',e=>{
     case 'logout-do':doLogout();break;
     case 'theme-green':setTheme('green');break;
     case 'theme-sakura':setTheme('sakura');break;
+    case 'theme-gold':setTheme('gold');break;
     case 'toggle-en':setEnMode(!state.enMode);break;
     case 'enspeak-off':setEnSpeak('off');break;
     case 'enspeak-tap':setEnSpeak('tap');break;
