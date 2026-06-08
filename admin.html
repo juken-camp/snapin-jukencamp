@@ -1581,6 +1581,17 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink3);
   font-size:11px;
 }
+/* 各項目の右側ツール (上へ / 下へ / 削除) */
+.list-item-tools{display:flex;align-items:center;gap:0;flex-shrink:0;}
+.list-move{
+  width:28px;height:32px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ink3);
+  border-radius:6px;
+}
+.list-move svg{width:15px;height:15px;}
+.list-move:disabled{opacity:.25;}
+.list-move:active:not(:disabled){color:var(--g);background:var(--gl);}
 .list-item-add{
   margin-top:8px;
   color:var(--g);
@@ -4943,15 +4954,14 @@ function renderMemoModalBody(){
     editHtml=`
       <div class="list-edit" id="list-edit" style="background:${col.bg};color:${col.fg};">
         <input id="list-title" class="list-title-input" type="text" placeholder="リストのタイトル" value="${esc(m.title||'')}" style="color:${col.fg};">
-        ${(m.items||[{t:'',mark:'check'}]).map((it,i)=>{
+        ${(()=>{const listItems=(m.items&&m.items.length)?m.items:[{t:'',mark:'check'}];const lastIdx=listItems.length-1;return listItems.map((it,i)=>{
           const mark=it.mark||'check';
           const done=it.d===true;
           // 番号項目の場合、何番目かを動的に計算
           let num=0;
           if(mark==='number'){
-            const items=m.items||[];
             for(let k=0;k<=i;k++){
-              if((items[k].mark||'check')==='number')num++;
+              if((listItems[k].mark||'check')==='number')num++;
             }
           }
           let markHtml;
@@ -4968,10 +4978,14 @@ function renderMemoModalBody(){
             <div class="list-item-row${done && mark==='check'?' done':''}">
               ${markHtml}
               <input data-item-idx="${i}" type="text" placeholder="項目" value="${esc(it.t||'')}">
-              <button class="list-item-del" data-del-idx="${i}">×</button>
+              <div class="list-item-tools">
+                <button class="list-move" data-move-up="${i}" aria-label="上へ移動"${i===0?' disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button>
+                <button class="list-move" data-move-down="${i}" aria-label="下へ移動"${i===lastIdx?' disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+                <button class="list-item-del" data-del-idx="${i}" aria-label="削除">×</button>
+              </div>
             </div>
           `;
-        }).join('')}
+        }).join('');})()}
         <button class="list-item-add" id="list-item-add">+ 項目を追加</button>
       </div>
       <div class="color-label">色</div>
@@ -5192,6 +5206,33 @@ function renderMemoModalBody(){
       if(!state.editingMemo.items[idx])state.editingMemo.items[idx]={t:'',mark:'check'};
       state.editingMemo.items[idx].t=e.target.value;
     });
+    // Enter: 次の項目へ (末尾なら新規追加)。空項目で Backspace: 削除して前の項目末尾へ。
+    inp.addEventListener('keydown',e=>{
+      const items=state.editingMemo.items;
+      if(!items)return;
+      const idx=parseInt(e.target.dataset.itemIdx);
+      const focusEnd=el=>{ if(!el)return; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){}};
+      if(e.key==='Enter'){
+        e.preventDefault();
+        if(items[idx])items[idx].t=e.target.value; // 入力中の値を確定
+        if(idx<items.length-1){
+          // 次の既存項目へ (再描画せずカーソル移動だけ)
+          focusEnd(body.querySelectorAll('[data-item-idx]')[idx+1]);
+        }else{
+          // 末尾 → 記号を引き継いで新規項目を追加
+          const prev=items[items.length-1];
+          items.push({t:'',mark:(prev&&prev.mark)?prev.mark:'check'});
+          renderMemoModalBody();
+          setTimeout(()=>{const ins=body.querySelectorAll('[data-item-idx]');focusEnd(ins[ins.length-1]);},10);
+        }
+      }else if(e.key==='Backspace' && e.target.value==='' && items.length>1){
+        // 空の項目で Backspace → その項目を消して前の項目末尾へ
+        e.preventDefault();
+        items.splice(idx,1);
+        renderMemoModalBody();
+        setTimeout(()=>{focusEnd(body.querySelectorAll('[data-item-idx]')[Math.max(0,idx-1)]);},10);
+      }
+    });
   });
   // 記号切替 (□未 → □チェック → 1. → 戻る)
   body.querySelectorAll('[data-mark-idx]').forEach(btn=>{
@@ -5222,6 +5263,25 @@ function renderMemoModalBody(){
       const idx=parseInt(btn.dataset.delIdx);
       state.editingMemo.items.splice(idx,1);
       if(state.editingMemo.items.length===0)state.editingMemo.items=[{t:'',mark:'check'}];
+      renderMemoModalBody();
+    });
+  });
+  // 項目の上下移動 (並べ替え)
+  body.querySelectorAll('[data-move-up]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const idx=parseInt(btn.dataset.moveUp);
+      const items=state.editingMemo.items;
+      if(!items||idx<=0)return;
+      const t=items[idx]; items[idx]=items[idx-1]; items[idx-1]=t;
+      renderMemoModalBody();
+    });
+  });
+  body.querySelectorAll('[data-move-down]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const idx=parseInt(btn.dataset.moveDown);
+      const items=state.editingMemo.items;
+      if(!items||idx>=items.length-1)return;
+      const t=items[idx]; items[idx]=items[idx+1]; items[idx+1]=t;
       renderMemoModalBody();
     });
   });
