@@ -6289,12 +6289,36 @@ function fitLinkThumb(img){
     if(card)card.classList.toggle('cover', (w/h)<1.5);
   }catch(_){}
 }
+// onload はキャッシュ済み画像だと発火しないことがあるため、complete を見て確実に判定する。
+function hookLinkThumb(img){
+  if(!img || img.dataset.fitHooked)return;
+  img.dataset.fitHooked='1';
+  if(img.complete && img.naturalWidth){ fitLinkThumb(img); }
+  else { img.addEventListener('load',()=>fitLinkThumb(img),{once:true}); }
+}
+function scanLinkThumbs(root){
+  if(!root || !root.querySelectorAll)return;
+  root.querySelectorAll('.link-card-thumb img').forEach(hookLinkThumb);
+}
+// 追加されたリンクサムネを監視して、描画タイミングやキャッシュ状態に関係なく判定する。
+function initLinkThumbWatch(){
+  try{
+    scanLinkThumbs(document);
+    new MutationObserver(muts=>{
+      for(const m of muts)for(const n of m.addedNodes){
+        if(n.nodeType!==1)continue;
+        if(n.matches && n.matches('.link-card-thumb img'))hookLinkThumb(n);
+        else scanLinkThumbs(n);
+      }
+    }).observe(document.body,{childList:true,subtree:true});
+  }catch(_){}
+}
 // サムネ画像 + タイトル + ホスト名 のシンプルな構造。
 function linkCardInner(c){
   if(typeof isLinkedCard==='function' && isLinkedCard(c))c=resolveLiveCard(c);
   const link=c.link||{};
   const thumb=link.image
-    ? `<div class="link-card-thumb"><img src="${esc(link.image)}" alt="" onload="fitLinkThumb(this)" onerror="this.parentElement.classList.add('no-img');this.remove();this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' fill=none stroke=currentColor stroke-width=1.6><path d=\\'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\\'/><path d=\\'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\\'/></svg>';"></div>`
+    ? `<div class="link-card-thumb"><img src="${esc(link.image)}" alt="" onerror="this.parentElement.classList.add('no-img');this.remove();this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' fill=none stroke=currentColor stroke-width=1.6><path d=\\'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\\'/><path d=\\'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\\'/></svg>';"></div>`
     : `<div class="link-card-thumb no-img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
   const title=esc(link.title||link.url||'(無題のリンク)');
   // サイト名(host)はグリッドでは表示しない (たいてい個別ページなので不要、タイトルに高さを回す)
@@ -16117,6 +16141,9 @@ if('serviceWorker' in navigator){
     }
   }).catch(()=>{});
 }
+
+// リンクサムネの縦横比監視を開始 (描画より前に。以降の全画面に適用される)
+initLinkThumbWatch();
 
 if(load() && state.user){
   setupNavs(); // load() で復元した認証状態を反映 (塾生なら共有タブのロックを解除)
