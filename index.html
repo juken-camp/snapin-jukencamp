@@ -3999,7 +3999,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 }
 .link-card.cover .link-card-body{
   position:absolute; left:0; right:0; bottom:0;
-  height:auto;
+  height:46px;   /* YouTube(分割レイアウト)の白帯と同じ固定高。文字数で伸縮しない */
   background:var(--surface);  /* color-mix 非対応ブラウザ用の不透明フォールバック */
   background:color-mix(in srgb, var(--surface) 60%, transparent);
   -webkit-backdrop-filter:blur(12px) saturate(1.5);
