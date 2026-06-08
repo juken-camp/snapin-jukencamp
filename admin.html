@@ -1351,6 +1351,22 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   text-overflow:ellipsis;
   white-space:nowrap;
 }
+/* リンク画像: タップでカメラロールから差し替え */
+.link-preview-thumb.pick{cursor:pointer;position:relative;}
+.link-img-edit-badge{
+  position:absolute;left:0;right:0;bottom:0;
+  font-size:10px;font-weight:600;
+  text-align:center;padding:2px 0;
+  background:rgba(0,0,0,.55);color:#fff;
+  pointer-events:none;
+}
+.link-img-reset{
+  align-self:flex-start;
+  margin-top:2px;
+  font-size:11px;color:var(--g);
+  background:none;border:none;padding:0;cursor:pointer;
+  text-decoration:underline;
+}
 
 /* クロスポスト: 共有する共有ライブラリ */
 .share-row{
@@ -4214,12 +4230,12 @@ function renderMemoGrid(){
     cell.addEventListener('click',()=>openMemoModal(c));
     grid.appendChild(cell);
   });
-  // 追加ボタン
+  // 追加ボタン: 先頭(左上)に置く。投稿が増えても一番下までスクロールせずに新規作成できる。
   const addCell=document.createElement('div');
   addCell.className='memo-card memo-card-add';
   addCell.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>';
   addCell.addEventListener('click',()=>openMemoModal(null));
-  grid.appendChild(addCell);
+  grid.insertBefore(addCell, grid.firstChild);
 
   // サイズ指定カードが正しい比率で並ぶよう、行の高さを列幅に合わせる
   syncMemoGridCellSize();
@@ -4609,16 +4625,23 @@ function renderMemoModalBody(){
     const link=m.link||{};
     const hasLink=!!(link.url||link.title);
     // プレビュー (取得済みのとき)
+    // 自動取得した画像(ogImage)と今の画像が違う = カメラロールから差し替え済み
+    const hasCustomImg=!!(link.ogImage && link.image && link.image!==link.ogImage);
     const previewHtml=hasLink?`
       <div class="link-preview">
-        ${link.image
-          ? `<div class="link-preview-thumb"><img src="${esc(link.image)}" alt=""></div>`
-          : `<div class="link-preview-thumb no-img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`
-        }
+        <label class="link-preview-thumb pick ${link.image?'':'no-img'}" id="link-img-pick">
+          <input id="link-img-file" type="file" accept="image/*" style="display:none;">
+          ${link.image
+            ? `<img src="${esc(link.image)}" alt="">`
+            : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`
+          }
+          <span class="link-img-edit-badge">変更</span>
+        </label>
         <div class="link-preview-body">
           <input id="link-title" type="text" placeholder="タイトル" value="${esc(link.title||'')}">
           <div class="link-preview-host">${esc(link.siteName||link.host||'')}</div>
           <div class="link-preview-url">${esc(link.url||'')}</div>
+          ${hasCustomImg?`<button type="button" class="link-img-reset" id="link-img-reset">自動画像に戻す</button>`:''}
         </div>
       </div>
     `:'';
@@ -4769,6 +4792,39 @@ function renderMemoModalBody(){
     linkTitle.addEventListener('input',e=>{
       if(!state.editingMemo.link)state.editingMemo.link={};
       state.editingMemo.link.title=e.target.value;
+    });
+  }
+  // link: サムネをタップしてカメラロールから別画像を選ぶ
+  const handleLinkImageSelect=async (file)=>{
+    if(!file)return;
+    if(!state.editingMemo.link)state.editingMemo.link={};
+    setStatus('画像を準備中…','busy');
+    try{
+      const compressed=await smartCompress(file,{maxSize:1600,maxBytes:1.5*1024*1024});
+      setStatus('写真をアップロード中…','busy');
+      const url=await uploadShelfPhoto(compressed); // R2へ上げて公開URLを取得
+      state.editingMemo.link.image=url;
+      setStatus('');
+      renderMemoModalBody();
+    }catch(err){
+      setStatus('写真のアップロードに失敗: '+err.message,'error');
+    }
+  };
+  const onLinkImgInput=e=>{
+    const file=e.target.files && e.target.files[0];
+    e.target.value=''; // 同じ画像を選び直しても change が再発火するように
+    handleLinkImageSelect(file);
+  };
+  const linkImgFile=$('link-img-file');
+  if(linkImgFile){
+    linkImgFile.addEventListener('change',onLinkImgInput);
+  }
+  const linkImgReset=$('link-img-reset');
+  if(linkImgReset){
+    linkImgReset.addEventListener('click',()=>{
+      if(!state.editingMemo.link)return;
+      state.editingMemo.link.image=state.editingMemo.link.ogImage||null;
+      renderMemoModalBody();
     });
   }
   // list items
@@ -5279,6 +5335,7 @@ async function fetchLinkInModal(){
       title:data.title||'',
       description:data.description||'',
       image:data.image||null,
+      ogImage:data.image||null,   // 自動取得した画像を覚えておく(差し替え後に戻せるように)
       host:data.host||'',
       siteName:data.siteName||data.host||'',
     };
