@@ -2228,6 +2228,9 @@ html.pre-auth #main-screen{display:block!important;}
     <button class="admin-tab" data-admin-tab="teams">グループ <span class="admin-tab-count" id="teams-tab-count">0</span></button>
   </div>
 
+  <!-- アプリのインストール状況 (ページを開くと自動表示) -->
+  <div id="device-stats" style="margin:10px 14px 0;padding:11px 14px;border-radius:12px;background:var(--card,#fff);border:1px solid var(--line,#ececec);font-size:13px;color:var(--ink2,#666);line-height:1.7;"></div>
+
   <!-- 共有ライブラリタブ -->
   <div class="admin-tab-pane on" id="pane-shelves">
     <div class="shelf-col-left">
@@ -3748,6 +3751,7 @@ async function tryLogin(){
   setStatus('ログインしました');
   setTimeout(()=>setStatus(''),1500);
   showMain();
+  fetchDeviceStats();
 }
 
 async function logout(){
@@ -5844,6 +5848,32 @@ $('password-toggle').addEventListener('click',()=>{
 });
 
 // 起動: 前回のログインを復元、共有ライブラリ一覧をフェッチ
+// アプリのインストール状況を取得して表示する。
+// /api/me?stats=1 を admin パスワードで叩くだけ。失敗しても他に影響しない。
+async function fetchDeviceStats(){
+  const el=$('device-stats');
+  if(!el || !state.password)return;
+  try{
+    const res=await fetch('/api/me?stats=1',{
+      headers:{'x-admin-password':state.password},
+    });
+    if(!res.ok)return;
+    const data=await res.json();
+    const s=data && data.stats;
+    if(!s)return;
+    const installed=Number(s.installed)||0;
+    const all=Number(s.devices)||0;
+    const notInstalled=Math.max(0, all-installed);
+    el.innerHTML=
+      '<span style="font-weight:600;color:var(--ink,#222);">📱 アプリの利用状況</span><br>'+
+      'ホーム画面に追加して使っている端末：<b>'+installed+'</b> 台<br>'+
+      'アプリを開いたことがある端末（合計）：<b>'+all+'</b> 台<br>'+
+      'まだホーム追加していない端末：<b>'+notInstalled+'</b> 台';
+  }catch(e){
+    // 失敗時は黙って何も出さない (他機能に影響させない)
+  }
+}
+
 (async function init(){
   document.documentElement.classList.remove('pre-auth');
   loadCategoriesLocal();
@@ -5854,6 +5884,8 @@ $('password-toggle').addEventListener('click',()=>{
     if(state.password)$('login-password').value=state.password;
     // 先にメイン画面を表示 (ログイン画面のフラッシュ/スナップを防ぐ)
     showMain();
+    // アプリのインストール状況を表示 (背景で取得)
+    fetchDeviceStats();
     // 共有ライブラリは背景で取得し、届いたら再描画
     fetchShelves().then(()=>{
       renderCategoryBars();
