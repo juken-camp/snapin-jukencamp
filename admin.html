@@ -1581,17 +1581,76 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   color:var(--ink3);
   font-size:11px;
 }
-/* 各項目の右側ツール (上へ / 下へ / 削除) */
-.list-item-tools{display:flex;align-items:center;gap:0;flex-shrink:0;}
-.list-move{
-  width:28px;height:32px;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--ink3);
-  border-radius:6px;
+/* ───── リスト項目エディタ (利用者アプリ index.html と同一仕様) ─────
+   ドラッグハンドル(⠿)で並べ替え、Enterで次の行に挿入。 */
+.cl-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 0;
+  border-bottom:0.5px solid rgba(0,0,0,.07);
 }
-.list-move svg{width:15px;height:15px;}
-.list-move:disabled{opacity:.25;}
-.list-move:active:not(:disabled){color:var(--g);background:var(--gl);}
+.cl-row:last-of-type{border-bottom:none;}
+.cl-handle{
+  color:var(--ink3);
+  padding:6px 4px;
+  touch-action:none;
+  cursor:grab;
+  flex-shrink:0;
+  display:flex;align-items:center;
+}
+.cl-handle:active{cursor:grabbing;color:var(--ink2);}
+.cl-row.cl-dragging{
+  background:var(--surface);
+  box-shadow:0 8px 22px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.06);
+  border-radius:8px;
+  border-bottom-color:transparent;
+  position:relative;
+  z-index:50;
+  transform:scale(1.01);
+  transition:transform .12s ease, box-shadow .12s ease;
+  pointer-events:none;
+}
+.cl-row.cl-shifting{transition:transform .22s cubic-bezier(.2,.7,.2,1);}
+.cl-mark{
+  width:26px;height:26px;
+  flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  transition:background .12s;
+}
+.cl-mark:active{background:var(--gl);}
+.cl-mark.check .chk-box{
+  width:22px;height:22px;
+  border:1.5px solid var(--ink3);
+  border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;
+  background:transparent;
+  transition:background .12s,border-color .12s;
+}
+.cl-mark.check.on .chk-box{background:var(--g);border-color:var(--g);}
+.cl-mark.num{font-family:var(--font-en);font-weight:500;font-size:14px;color:var(--ink2);}
+.cl-input{flex:1;font-size:15px;padding:4px 0;background:transparent;color:inherit;}
+.cl-input.done{color:var(--ink3);text-decoration:line-through;}
+.cl-del{color:var(--ink3);padding:4px;display:flex;align-items:center;flex-shrink:0;}
+.cl-add{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:14px 0 4px;
+  color:var(--g);
+  font-size:14px;
+  font-weight:500;
+  width:100%;
+}
+.cl-add .plus{
+  width:22px;height:22px;
+  border:1.5px dashed var(--g);
+  border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
 .list-item-add{
   margin-top:8px;
   color:var(--g);
@@ -2633,6 +2692,195 @@ function applyGridNoteScale(root){
     style+=av==='center'?'justify-content:center;':'justify-content:flex-start;';
     inner.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;white-space:pre-wrap;word-break:break-word;'+style;
   });
+}
+
+// ───── リスト項目エディタ (利用者アプリ index.html と同一仕様) ─────
+// #cl-items に項目を描画。ドラッグハンドル(⠿)で並べ替え、Enterで次行に挿入。
+function renderListItems(wrap){
+  if(!wrap)return;
+  wrap.innerHTML='';
+  const items=state.editingMemo.items||(state.editingMemo.items=[{t:'',mark:'check'}]);
+  items.forEach((it,i)=>{
+    const row=document.createElement('div');
+    const mark=it.mark||'check';
+    const done=it.d===true;
+    row.className='cl-row'+(done && mark==='check'?' done':'');
+    row.dataset.i=i;
+
+    const handle=document.createElement('div');
+    handle.className='cl-handle';
+    handle.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>`;
+    row.appendChild(handle);
+
+    // 記号ボタン (タップで3状態を回す: □ → ☑ → 1. → □)
+    const mk=document.createElement('button');
+    if(mark==='number'){
+      let num=0;
+      for(let k=0;k<=i;k++){ if((items[k].mark||'check')==='number')num++; }
+      mk.className='cl-mark num';
+      mk.textContent=num+'.';
+    }else if(done){
+      mk.className='cl-mark check on';
+      mk.innerHTML=`<span class="chk-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span>`;
+    }else{
+      mk.className='cl-mark check';
+      mk.innerHTML=`<span class="chk-box"></span>`;
+    }
+    mk.addEventListener('click',()=>{
+      const cur=state.editingMemo.items[i];
+      const curMark=cur.mark||'check';
+      const curDone=cur.d===true;
+      if(curMark==='check' && !curDone){ cur.d=true; cur.mark='check'; }
+      else if(curMark==='check' && curDone){ cur.mark='number'; delete cur.d; }
+      else { cur.mark='check'; cur.d=false; }
+      renderListItems(wrap);
+    });
+    row.appendChild(mk);
+
+    const inp=document.createElement('input');
+    inp.className='cl-input'+(done && mark==='check'?' done':'');
+    inp.value=it.t;
+    inp.placeholder='項目';
+    inp.addEventListener('input',e=>{state.editingMemo.items[i].t=e.target.value;});
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        // いま編集中の項目の「次」に新しい項目を挿入し、記号は今の項目から引き継ぐ。
+        const cur=state.editingMemo.items[i];
+        const inheritMark=(cur && cur.mark)?cur.mark:'check';
+        const newItem={t:'',mark:inheritMark};
+        if(inheritMark==='check')newItem.d=false;
+        state.editingMemo.items.splice(i+1,0,newItem);
+        renderListItems(wrap);
+        // 同期で次の入力欄へフォーカス (iOSでキーボードが閉じないように)
+        const inps=wrap.querySelectorAll('.cl-input');
+        const next=inps[i+1];
+        if(next){ next.focus(); try{ next.setSelectionRange(0,0); }catch(_){} }
+      }else if(e.key==='Backspace' && e.target.value==='' && state.editingMemo.items.length>1){
+        // 空項目で Backspace → 削除して前の項目末尾へ
+        e.preventDefault();
+        state.editingMemo.items.splice(i,1);
+        renderListItems(wrap);
+        const inps=wrap.querySelectorAll('.cl-input');
+        const prev=inps[Math.max(0,i-1)];
+        if(prev){ prev.focus(); try{ prev.setSelectionRange(prev.value.length,prev.value.length); }catch(_){} }
+      }
+    });
+    row.appendChild(inp);
+
+    const del=document.createElement('button');
+    del.className='cl-del';
+    del.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
+    del.addEventListener('click',()=>{
+      state.editingMemo.items.splice(i,1);
+      if(state.editingMemo.items.length===0)state.editingMemo.items=[{t:'',mark:'check',d:false}];
+      renderListItems(wrap);
+    });
+    row.appendChild(del);
+
+    wrap.appendChild(row);
+  });
+  setupListReorder(wrap);
+}
+
+// .cl-handle を掴んだ瞬間にドラッグ開始 (長押し不要)。
+function setupListReorder(wrap){
+  if(!wrap)return;
+  if(wrap._listReorderInit)return;
+  wrap._listReorderInit=true;
+
+  let drag=null;
+
+  function onPointerDown(e){
+    const handle=e.target.closest('.cl-handle');
+    if(!handle)return;
+    const row=handle.closest('.cl-row');
+    if(!row)return;
+    if(e.pointerType==='mouse' && e.button!==0)return;
+    e.preventDefault();
+
+    const rows=Array.from(wrap.querySelectorAll('.cl-row'));
+    if(rows.length<2)return;
+
+    const rect=row.getBoundingClientRect();
+    const offsetWithinRow=e.clientY-rect.top;
+    const rowHeight=rect.height;
+    const originalIndex=rows.indexOf(row);
+
+    drag={ row, rows, originalIndex, currentIndex:originalIndex, offsetWithinRow, rowHeight, originalTop:rect.top, shifts:new Map() };
+
+    row.classList.add('cl-dragging');
+    for(const r of rows){
+      if(r===row)continue;
+      r.classList.add('cl-shifting');
+      drag.shifts.set(r,0);
+    }
+    if(navigator.vibrate)navigator.vibrate(8);
+    try{handle.setPointerCapture(e.pointerId);}catch(_){}
+  }
+
+  function onPointerMove(e){
+    if(!drag)return;
+    e.preventDefault();
+    const desiredTop=e.clientY-drag.offsetWithinRow;
+    let translateY=desiredTop-drag.originalTop;
+    const rowCenter=desiredTop+drag.rowHeight/2;
+    let newIndex=drag.originalIndex;
+    for(let i=0;i<drag.rows.length;i++){
+      if(i===drag.originalIndex)continue;
+      const otherOriginalTop=drag.originalTop+(i-drag.originalIndex)*drag.rowHeight;
+      const otherCenter=otherOriginalTop+drag.rowHeight/2;
+      if(i>drag.originalIndex && rowCenter>otherCenter)newIndex=Math.max(newIndex,i);
+      if(i<drag.originalIndex && rowCenter<otherCenter)newIndex=Math.min(newIndex,i);
+    }
+    const minT=-drag.originalIndex*drag.rowHeight - drag.rowHeight*0.4;
+    const maxT=(drag.rows.length-1-drag.originalIndex)*drag.rowHeight + drag.rowHeight*0.4;
+    if(translateY<minT)translateY=minT;
+    if(translateY>maxT)translateY=maxT;
+    drag.row.style.transform=`translateY(${translateY}px) scale(1.01)`;
+    if(newIndex!==drag.currentIndex){ drag.currentIndex=newIndex; applyShifts(); }
+  }
+
+  function applyShifts(){
+    if(!drag)return;
+    const {rows,originalIndex,currentIndex,rowHeight}=drag;
+    for(let i=0;i<rows.length;i++){
+      const r=rows[i];
+      if(r===drag.row)continue;
+      let shift=0;
+      if(currentIndex>originalIndex){ if(i>originalIndex && i<=currentIndex)shift=-rowHeight; }
+      else if(currentIndex<originalIndex){ if(i<originalIndex && i>=currentIndex)shift=rowHeight; }
+      const prev=drag.shifts.get(r)||0;
+      if(prev!==shift){ drag.shifts.set(r,shift); r.style.transform=shift===0?'':`translateY(${shift}px)`; }
+    }
+  }
+
+  function onPointerUp(){
+    if(!drag)return;
+    const {row,rows,originalIndex,currentIndex}=drag;
+    if(currentIndex!==originalIndex && state.editingMemo && Array.isArray(state.editingMemo.items)){
+      const moved=state.editingMemo.items.splice(originalIndex,1)[0];
+      state.editingMemo.items.splice(currentIndex,0,moved);
+    }
+    drag.row.classList.remove('cl-dragging');
+    drag.row.style.transform='';
+    for(const r of rows){ r.classList.remove('cl-shifting'); r.style.transform=''; }
+    drag=null;
+    renderListItems(wrap);
+  }
+
+  function onPointerCancel(){
+    if(!drag)return;
+    drag.row.classList.remove('cl-dragging');
+    drag.row.style.transform='';
+    for(const r of drag.rows){ r.classList.remove('cl-shifting'); r.style.transform=''; }
+    drag=null;
+  }
+
+  wrap.addEventListener('pointerdown',onPointerDown);
+  wrap.addEventListener('pointermove',onPointerMove);
+  wrap.addEventListener('pointerup',onPointerUp);
+  wrap.addEventListener('pointercancel',onPointerCancel);
 }
 
 const state={
@@ -4951,42 +5199,12 @@ function renderMemoModalBody(){
     `;
   }else if(m.type==='list'){
     const col=colorById(m.color);
+    // 項目は renderListItems() が #cl-items に描画・配線する (index.html と同一)
     editHtml=`
       <div class="list-edit" id="list-edit" style="background:${col.bg};color:${col.fg};">
-        <input id="list-title" class="list-title-input" type="text" placeholder="リストのタイトル" value="${esc(m.title||'')}" style="color:${col.fg};">
-        ${(()=>{const listItems=(m.items&&m.items.length)?m.items:[{t:'',mark:'check'}];const lastIdx=listItems.length-1;return listItems.map((it,i)=>{
-          const mark=it.mark||'check';
-          const done=it.d===true;
-          // 番号項目の場合、何番目かを動的に計算
-          let num=0;
-          if(mark==='number'){
-            for(let k=0;k<=i;k++){
-              if((listItems[k].mark||'check')==='number')num++;
-            }
-          }
-          let markHtml;
-          if(mark==='number'){
-            markHtml=`<button class="list-mark num" data-mark-idx="${i}" aria-label="記号切替">${num}.</button>`;
-          }else if(done){
-            // ☑ チェック済
-            markHtml=`<button class="list-mark check on" data-mark-idx="${i}" aria-label="記号切替"><span class="chk-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m5 13 4 4L19 7"/></svg></span></button>`;
-          }else{
-            // □ 未チェック
-            markHtml=`<button class="list-mark check" data-mark-idx="${i}" aria-label="記号切替"><span class="chk-box"></span></button>`;
-          }
-          return `
-            <div class="list-item-row${done && mark==='check'?' done':''}">
-              ${markHtml}
-              <input data-item-idx="${i}" type="text" placeholder="項目" value="${esc(it.t||'')}">
-              <div class="list-item-tools">
-                <button class="list-move" data-move-up="${i}" aria-label="上へ移動"${i===0?' disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button>
-                <button class="list-move" data-move-down="${i}" aria-label="下へ移動"${i===lastIdx?' disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
-                <button class="list-item-del" data-del-idx="${i}" aria-label="削除">×</button>
-              </div>
-            </div>
-          `;
-        }).join('');})()}
-        <button class="list-item-add" id="list-item-add">+ 項目を追加</button>
+        <input id="list-title" class="list-title-input" type="text" placeholder="リストのタイトル (任意)" value="${esc(m.title||'')}" style="color:${col.fg};">
+        <div id="cl-items"></div>
+        <button class="cl-add" id="list-item-add"><span class="plus"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></span>項目を追加</button>
       </div>
       <div class="color-label">色</div>
       <div class="color-row">
@@ -5199,108 +5417,24 @@ function renderMemoModalBody(){
       renderMemoModalBody();
     });
   }
-  // list items
-  body.querySelectorAll('[data-item-idx]').forEach(inp=>{
-    inp.addEventListener('input',e=>{
-      const idx=parseInt(e.target.dataset.itemIdx);
-      if(!state.editingMemo.items[idx])state.editingMemo.items[idx]={t:'',mark:'check'};
-      state.editingMemo.items[idx].t=e.target.value;
-    });
-    // Enter: 次の項目へ (末尾なら新規追加)。空項目で Backspace: 削除して前の項目末尾へ。
-    inp.addEventListener('keydown',e=>{
-      const items=state.editingMemo.items;
-      if(!items)return;
-      const idx=parseInt(e.target.dataset.itemIdx);
-      const focusEnd=el=>{ if(!el)return; el.focus(); try{el.setSelectionRange(el.value.length,el.value.length);}catch(_){}};
-      if(e.key==='Enter'){
-        e.preventDefault();
-        if(items[idx])items[idx].t=e.target.value; // 入力中の値を確定
-        if(idx<items.length-1){
-          // 次の既存項目へ (再描画せずカーソル移動だけ)
-          focusEnd(body.querySelectorAll('[data-item-idx]')[idx+1]);
-        }else{
-          // 末尾 → 記号を引き継いで新規項目を追加
-          const prev=items[items.length-1];
-          items.push({t:'',mark:(prev&&prev.mark)?prev.mark:'check'});
-          renderMemoModalBody();
-          setTimeout(()=>{const ins=body.querySelectorAll('[data-item-idx]');focusEnd(ins[ins.length-1]);},10);
-        }
-      }else if(e.key==='Backspace' && e.target.value==='' && items.length>1){
-        // 空の項目で Backspace → その項目を消して前の項目末尾へ
-        e.preventDefault();
-        items.splice(idx,1);
-        renderMemoModalBody();
-        setTimeout(()=>{focusEnd(body.querySelectorAll('[data-item-idx]')[Math.max(0,idx-1)]);},10);
-      }
-    });
-  });
-  // 記号切替 (□未 → □チェック → 1. → 戻る)
-  body.querySelectorAll('[data-mark-idx]').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const idx=parseInt(btn.dataset.markIdx);
-      const it=state.editingMemo.items[idx];
-      if(!it)return;
-      const mark=it.mark||'check';
-      const done=it.d===true;
-      if(mark==='check' && !done){
-        // □ → ☑
-        it.d=true;
-        it.mark='check';
-      }else if(mark==='check' && done){
-        // ☑ → 1.
-        it.mark='number';
-        delete it.d;
-      }else{
-        // 1. → □
-        it.mark='check';
-        it.d=false;
-      }
-      renderMemoModalBody();
-    });
-  });
-  body.querySelectorAll('[data-del-idx]').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const idx=parseInt(btn.dataset.delIdx);
-      state.editingMemo.items.splice(idx,1);
-      if(state.editingMemo.items.length===0)state.editingMemo.items=[{t:'',mark:'check'}];
-      renderMemoModalBody();
-    });
-  });
-  // 項目の上下移動 (並べ替え)
-  body.querySelectorAll('[data-move-up]').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const idx=parseInt(btn.dataset.moveUp);
-      const items=state.editingMemo.items;
-      if(!items||idx<=0)return;
-      const t=items[idx]; items[idx]=items[idx-1]; items[idx-1]=t;
-      renderMemoModalBody();
-    });
-  });
-  body.querySelectorAll('[data-move-down]').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const idx=parseInt(btn.dataset.moveDown);
-      const items=state.editingMemo.items;
-      if(!items||idx>=items.length-1)return;
-      const t=items[idx]; items[idx]=items[idx+1]; items[idx+1]=t;
-      renderMemoModalBody();
-    });
-  });
-  const addBtn=$('list-item-add');
-  if(addBtn){
-    addBtn.addEventListener('click',()=>{
-      if(!state.editingMemo.items)state.editingMemo.items=[];
-      // 直前の項目の記号を引き継ぐ (リスト全体の見た目を作りやすくする)
-      const prev=state.editingMemo.items[state.editingMemo.items.length-1];
-      const inheritMark=(prev && prev.mark)?prev.mark:'check';
-      state.editingMemo.items.push({t:'',mark:inheritMark});
-      renderMemoModalBody();
-      // 末尾にフォーカス
-      setTimeout(()=>{
-        const inputs=body.querySelectorAll('[data-item-idx]');
-        const last=inputs[inputs.length-1];
-        if(last)last.focus();
-      },10);
-    });
+  // list items: index.html と同じく renderListItems が描画・配線する (ドラッグ並べ替え + Enterで挿入)
+  const clItems=$('cl-items');
+  if(clItems){
+    renderListItems(clItems);
+    const addBtn=$('list-item-add');
+    if(addBtn){
+      addBtn.addEventListener('click',()=>{
+        const items=state.editingMemo.items||(state.editingMemo.items=[]);
+        const prev=items[items.length-1];
+        const inheritMark=(prev && prev.mark)?prev.mark:'check';
+        const ni={t:'',mark:inheritMark};
+        if(inheritMark==='check')ni.d=false;
+        items.push(ni);
+        renderListItems(clItems);
+        const inps=clItems.querySelectorAll('.cl-input');
+        if(inps.length){const last=inps[inps.length-1];last.focus();try{last.setSelectionRange(0,0);}catch(_){}}
+      });
+    }
   }
   // photo
   const handlePhotoSelect=async (file)=>{
