@@ -956,7 +956,20 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   -webkit-box-orient:vertical;
   word-break:break-word;
 }
-.memo-card.list .ctxt{font-size:11px;}
+.memo-card.list .ctxt{
+  display:block;
+  -webkit-line-clamp:initial;
+  -webkit-box-orient:initial;
+  line-height:1.3;
+}
+/* リスト型カードのアイテム表示 (利用者アプリ index.html と同じ見た目) */
+.memo-card .li{display:flex;gap:0.4em;margin-bottom:0.28em;align-items:flex-start;line-height:1.3;}
+.memo-card .li span{min-width:0;white-space:normal;word-break:break-word;overflow-wrap:anywhere;}
+.memo-card .li .chk{width:0.9em;height:0.9em;border:1px solid var(--ink3);border-radius:0.2em;flex-shrink:0;margin-top:0.15em;display:flex;align-items:center;justify-content:center;color:#fff;box-sizing:border-box;}
+.memo-card .li .chk svg{width:0.7em;height:0.7em;display:block;}
+.memo-card .li.done .chk{background:var(--g);border-color:var(--g);}
+.memo-card .li.done{color:var(--ink3);text-decoration:line-through;}
+.memo-card .li .li-num{width:1.3em;font-size:1em;text-align:left;flex-shrink:0;color:var(--ink2);font-family:var(--font-en);}
 .memo-card.note .ctxt{display:flex;flex-direction:column;}
 .memo-card.note .ctxt.h-center{align-items:center;text-align:center;}
 .memo-card.note .ctxt.h-left{align-items:flex-start;text-align:left;}
@@ -2433,6 +2446,18 @@ function colorById(id){
 }
 // 色が「指定なし」か判定 (未設定・none・旧default はすべて無色)
 function isNoColor(id){return !id || id==='none' || id==='default';}
+
+// リスト型グリッドカードのフォントサイズ (利用者アプリ index.html と同じ)。
+// 項目数に応じて縮小し、各項目は最大2行まで折り返す (CSS .memo-card .li span 側)。
+function listThumbFontSize(n){
+  if(n<=3)return 10;
+  if(n<=5)return 9;
+  if(n<=7)return 8;
+  if(n<=9)return 7;
+  if(n<=11)return 6;
+  if(n<=14)return 5;
+  return 4;
+}
 
 // テキストメモの揃え。利用者アプリ (index.html) と同じロジック:
 // 明示設定 (alignH/alignV) があればそれを使い、なければ文字量から自動判定。
@@ -4273,8 +4298,23 @@ function renderMemoGrid(){
       const al=resolveAlign(displayCard);
       inner=`<div class="ctxt h-${al.h} v-${al.v}" style="background:${col.bg};color:${col.fg};">${esc(displayCard.text||'')}</div>`;
     }else if(displayCard.type==='list'){
-      const items=(displayCard.items||[]).slice(0,5).map(i=>`<div>・${esc(i.t)}</div>`).join('');
-      inner=`<div class="ctxt">${displayCard.title?`<b>${esc(displayCard.title)}</b><br>`:''}${items}</div>`;
+      const col=colorById(displayCard.color);
+      const allItems=displayCard.items||[];
+      const itemsArr=allItems.slice(0,40);
+      const fz=listThumbFontSize(allItems.length);
+      const itemsHtml=itemsArr.map((it,ii)=>{
+        const mk=it.mark||'check';
+        const done=it.d===true;
+        if(mk==='number'){
+          let num=0;
+          for(let k=0;k<=ii;k++){ if((allItems[k].mark||'check')==='number')num++; }
+          return `<div class="li"><div class="li-num">${num}.</div><span>${esc(it.t)}</span></div>`;
+        }
+        const checkSvg=done?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>':'';
+        return `<div class="li ${done?'done':''}"><div class="chk">${checkSvg}</div><span>${esc(it.t)}</span></div>`;
+      }).join('');
+      const title=displayCard.title?`<div style="font-weight:600;font-size:1.1em;margin-bottom:0.4em;color:${col.fg};opacity:0.7;">${esc(displayCard.title)}</div>`:'';
+      inner=`<div class="ctxt" style="font-size:${fz}px;background:${col.bg};color:${col.fg};">${title}${itemsHtml}</div>`;
     }else if(displayCard.type==='link'){
       const link=displayCard.link||{};
       const thumb=link.image
@@ -4312,7 +4352,25 @@ function renderMemoGrid(){
 
   // サイズ指定カードが正しい比率で並ぶよう、行の高さを列幅に合わせる
   syncMemoGridCellSize();
-  requestAnimationFrame(syncMemoGridCellSize);
+  applyListThumbFit(grid);
+  requestAnimationFrame(()=>{ syncMemoGridCellSize(); applyListThumbFit(grid); });
+}
+
+// リスト型カードのフォントを「全項目を折り返したまま枠に収まる最大サイズ」に合わせる。
+// 利用者アプリ (index.html) と同じ挙動。listThumbFontSize を初期値に、はみ出していれば
+// 0.5px ずつ下げる (下限4px)。各項目は CSS で自由に折り返すので、縮小しきれば全文が見える。
+function applyListThumbFit(root){
+  const scope=root||document;
+  scope.querySelectorAll('.memo-card.list .ctxt').forEach(el=>{
+    if(!el.clientHeight)return;
+    let fz=parseFloat(el.style.fontSize)||10;
+    let guard=0;
+    while(el.scrollHeight>el.clientHeight && fz>4 && guard<40){
+      fz=Math.max(4,fz-0.5);
+      el.style.fontSize=fz+'px';
+      guard++;
+    }
+  });
 }
 
 // ══ 並べ替え: グリッドの見た目のまま 長押し→指ドラッグで移動 ══
@@ -4858,6 +4916,10 @@ function renderMemoModalBody(){
           `;
         }).join('')}
         <button class="list-item-add" id="list-item-add">+ 項目を追加</button>
+      </div>
+      <div class="color-label">色</div>
+      <div class="color-row">
+        ${CARD_COLORS.map(c=>`<button class="color-swatch ${(m.color||'none')===c.id?'on':''} ${c.id==='none'?'is-none':''}" data-set-color="${c.id}" style="background:${c.bg};--sw-bd:${c.bd};" title="${c.name}"></button>`).join('')}
       </div>
     `;
   }else if(m.type==='link'){
