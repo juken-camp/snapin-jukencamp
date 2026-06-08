@@ -5855,6 +5855,7 @@ async function fetchDeviceStats(){
   if(!el || !state.password)return;
   try{
     const res=await fetch('/api/me?stats=1',{
+      cache:'no-store',
       headers:{'x-admin-password':state.password},
     });
     if(!res.ok)return;
