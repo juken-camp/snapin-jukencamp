@@ -4039,6 +4039,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:rgba(0,0,0,.55) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/><path d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/></svg>") center/14px no-repeat;
   border-radius:50%;
 }
+/* YouTubeリンクは再生マーク(赤丸+白い三角)に差し替え */
+.link-card-thumb.yt::after{
+  background:#FF0000 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><path d='M9 7.5v9l8-4.5z'/></svg>") 53%/12px no-repeat;
+}
 .link-card-body{
   flex:none;
   height:46px;
@@ -6321,9 +6325,11 @@ function initLinkThumbWatch(){
 function linkCardInner(c){
   if(typeof isLinkedCard==='function' && isLinkedCard(c))c=resolveLiveCard(c);
   const link=c.link||{};
+  const isYT=(typeof isYouTubeUrl==='function') && isYouTubeUrl(link.url||link.originalUrl||'');
+  const thumbCls='link-card-thumb'+(isYT?' yt':'');
   const thumb=link.image
-    ? `<div class="link-card-thumb"><img src="${esc(link.image)}" alt="" onerror="this.parentElement.classList.add('no-img');this.remove();this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' fill=none stroke=currentColor stroke-width=1.6><path d=\\'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\\'/><path d=\\'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\\'/></svg>';"></div>`
-    : `<div class="link-card-thumb no-img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
+    ? `<div class="${thumbCls}"><img src="${esc(link.image)}" alt="" onerror="this.parentElement.classList.add('no-img');this.remove();this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' fill=none stroke=currentColor stroke-width=1.6><path d=\\'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\\'/><path d=\\'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\\'/></svg>';"></div>`
+    : `<div class="${thumbCls} no-img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
   const title=esc(link.title||link.url||'(無題のリンク)');
   // サイト名(host)はグリッドでは表示しない (たいてい個別ページなので不要、タイトルに高さを回す)
   // 「再生リスト」ラベル: link.kind が 'playlist' のとき。
