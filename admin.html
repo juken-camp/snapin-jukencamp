@@ -4399,29 +4399,20 @@ function gridDragFrame(){
   let scrolling=false;
   if(y<EDGE){ d.scroller.scrollTop-=SP; scrolling=true; }
   else if(y>vh-EDGE){ d.scroller.scrollTop+=SP; scrolling=true; }
-  // 指の最寄りのカードを基準に差し込み位置を決める(カードの隙間の上でも効く)
-  const ref=gridInsertRef(d.grid,x,y,d.cell);
-  moveDragCellFLIP(d.grid,d.cell,ref);
-  if(scrolling)d.raf=requestAnimationFrame(gridDragFrame);
-}
-
-// ポインタに最も近いカードを探し、読み順(上→下/左→右)で前後どちらに入れるかを返す
-function gridInsertRef(grid,x,y,dragCell){
-  let best=null,bestD=Infinity,before=true;
-  for(const c of grid.children){
-    if(c===dragCell||c.dataset.idx===undefined)continue;
-    const r=c.getBoundingClientRect();
-    const cx=r.left+r.width/2, cy=r.top+r.height/2;
-    const dx=x-cx, dy=y-cy, dist=dx*dx+dy*dy;
-    if(dist<bestD){
-      bestD=dist; best=c;
-      if(y<r.top)before=true;
-      else if(y>r.bottom)before=false;
-      else before=x<cx;
+  // 「指を乗せたカードへ空き枠がついてくる」方式。
+  // 指の真下が “別の” カードのときだけ 1回入れ替える。入れ替えると指の下が空き枠になるので、
+  // 止めていれば二度と動かない(=勝手に入れ替わらない)。別カードに移して初めて次の入れ替え。
+  const el=document.elementFromPoint(x,y);
+  const target=el && el.closest('.memo-card[data-idx]');
+  if(target && target!==d.cell && target.parentElement===d.grid){
+    const ch=[...d.grid.children];
+    const di=ch.indexOf(d.cell), ti=ch.indexOf(target);
+    if(di>=0 && ti>=0){
+      const ref = (ti<di) ? target : target.nextSibling;   // 前方なら手前へ/後方なら後ろへ
+      moveDragCellFLIP(d.grid,d.cell,ref);
     }
   }
-  if(!best)return null;
-  return before?best:best.nextSibling;
+  if(scrolling)d.raf=requestAnimationFrame(gridDragFrame);
 }
 
 // FLIPアニメ付きで dragCell を ref の前へ移動(位置が変わらないなら何もしない)。
