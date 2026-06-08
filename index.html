@@ -1424,6 +1424,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   font-size:14px;
   color:var(--ink2);
 }
+/* リスト詳細を指定色のカードで包む。中の区切り線・チェック枠は文字色になじませる。 */
+.detail-list-card{
+  border-radius:14px;
+  padding:6px 18px;
+  box-sizing:border-box;
+}
+.detail-list-card .detail-list-item{border-bottom-color:rgba(0,0,0,.07);}
+.detail-list-card .detail-list-item:last-of-type{border-bottom:none;}
+.detail-list-card .detail-list-item .dli-num{color:inherit;opacity:0.7;}
 
 /* 詳細画面の下部メモエリア (ボトムナビの上に配置、サイズ統一) */
 .detail-input{
@@ -12611,9 +12620,10 @@ function openDetail(c,origin){
       contentHtml=`<div class="detail-text">${linkify(c.text||'')}</div>`;
     }
   }else if(c.type==='list'){
-    const title=c.title?`<div style="font-size:17px;font-weight:600;margin-bottom:14px;">${esc(c.title)}</div>`:'';
+    const col=colorById(c.color);
+    const title=c.title?`<div style="font-size:17px;font-weight:600;margin-bottom:14px;color:${col.fg};opacity:0.75;">${esc(c.title)}</div>`:'';
     const items=c.items||[];
-    contentHtml=title+items.map((i,idx)=>{
+    const itemsHtml=items.map((i,idx)=>{
       const mark=i.mark||'check';
       const done=i.d===true;
       let markHtml;
@@ -12632,6 +12642,8 @@ function openDetail(c,origin){
         <span>${esc(i.t)}</span>
       </div>
     `;}).join('');
+    // ノート詳細と同じく、指定色のカードで包む (グリッドの見た目と一致させる)
+    contentHtml=`<div class="detail-list-card" style="background:${col.bg};color:${col.fg};">${title}${itemsHtml}</div>`;
   }else if(c.type==='link'){
     // リンクカード詳細表示 + 「サイトを開く」ボタン + メモ(自分用コメント)
     const link=c.link||{};
