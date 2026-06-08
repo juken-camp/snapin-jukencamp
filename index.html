@@ -28,6 +28,8 @@
   --mosaic-veil:linear-gradient(135deg,rgba(29,158,117,.15),rgba(15,110,86,.18));
   --mosaic-veil-soft:linear-gradient(135deg,rgba(29,158,117,.12),rgba(15,110,86,.15));
   --g-rgb:29,158,117; --gd-rgb:15,110,86;
+  /* リンク全面サムネの見出し帯(半透明ベール)。後ろの画像が透ける薄さ。 */
+  --card-veil:rgba(255,255,255,.42); --veil-glow:rgba(255,255,255,.7);
 }
 
 /* さくらテーマ: アクセント3変数を上書きするだけで全体が切り替わる */
@@ -57,6 +59,7 @@ html.dark{
   --gl:rgba(29,158,117,.20); --gd:#5DCAA5;
   --mosaic-veil:linear-gradient(135deg,rgba(29,158,117,.24),rgba(15,110,86,.30));
   --mosaic-veil-soft:linear-gradient(135deg,rgba(29,158,117,.16),rgba(15,110,86,.22));
+  --card-veil:rgba(20,20,24,.44); --veil-glow:rgba(0,0,0,.5);
 }
 html.dark[data-theme="sakura"]{ --gl:rgba(219,80,137,.22); --gd:#F09BBC; }
 html.dark[data-theme="ai"]{ --g:#5B7FD6; --gl:rgba(91,127,214,.24); --gd:#9CB6F0; }
@@ -4000,12 +4003,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .link-card.cover .link-card-body{
   position:absolute; left:0; right:0; bottom:0;
   height:46px;   /* YouTube(分割レイアウト)の白帯と同じ固定高。文字数で伸縮しない */
-  background:var(--surface);  /* color-mix 非対応ブラウザ用の不透明フォールバック */
-  background:color-mix(in srgb, var(--surface) 60%, transparent);
-  -webkit-backdrop-filter:blur(12px) saturate(1.5);
-  backdrop-filter:blur(12px) saturate(1.5);
+  background:var(--card-veil);   /* 確実に半透明(後ろの画像が透ける)。color-mix非依存 */
+  -webkit-backdrop-filter:blur(4px) saturate(1.2);
+  backdrop-filter:blur(4px) saturate(1.2);
   box-shadow:0 -0.5px 0 var(--line);
 }
+/* ベールを薄くした分、文字は薄いにじみで読みやすさを確保 */
+.link-card.cover .link-card-title{ text-shadow:0 0 4px var(--veil-glow),0 0 2px var(--veil-glow); }
 .link-card-thumb{
   width:100%;
   flex:1;
