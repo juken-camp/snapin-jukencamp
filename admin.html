@@ -4378,8 +4378,12 @@ function startGridDrag(cell,grid,startX,startY,pointerId){
   document.addEventListener('pointermove',onGridDragMove,{passive:false});
   document.addEventListener('pointerup',onGridDragEnd);
   document.addEventListener('pointercancel',onGridDragEnd);
+  // iOSではポインタイベントの preventDefault だけでは縦スクロールが止まらない。
+  // ネイティブの touchmove を非パッシブで打ち消して、ドラッグ中の画面スクロールを確実に防ぐ。
+  document.addEventListener('touchmove',blockTouchMoveWhileDrag,{passive:false});
   gridDrag.raf=requestAnimationFrame(gridDragFrame);
 }
+function blockTouchMoveWhileDrag(e){ if(gridDrag && e.cancelable)e.preventDefault(); }
 
 function onGridDragMove(e){
   if(!gridDrag)return;
@@ -4446,6 +4450,7 @@ function onGridDragEnd(){
   document.removeEventListener('pointermove',onGridDragMove);
   document.removeEventListener('pointerup',onGridDragEnd);
   document.removeEventListener('pointercancel',onGridDragEnd);
+  document.removeEventListener('touchmove',blockTouchMoveWhileDrag,{passive:false});
   try{d.cell.releasePointerCapture(d.pointerId);}catch(_){}
   if(d.clone&&d.clone.parentElement)d.clone.parentElement.removeChild(d.clone);
   d.cell.classList.remove('drag-src');
