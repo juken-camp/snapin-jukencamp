@@ -3119,9 +3119,11 @@ async function saveShelves(){
     return false;
   }
   // 3) 取得時より件数が大きく減る保存は確認を挟む (例: 22件→2件のような激減を検知)
+  let forceShrink=false;
   if(state.loadedShelfCount>0 && state.shelves.length < state.loadedShelfCount-1){
     const ok=confirm(`ライブラリ数が ${state.loadedShelfCount} 件 → ${state.shelves.length} 件に減っています。\n本当にこの内容で保存しますか?\n意図しない場合はキャンセルして、ページを再読み込みしてください。`);
     if(!ok){ setStatus('保存をキャンセルしました','error'); return false; }
+    forceShrink=true; // ユーザーが明示承認 → サーバーの大幅減ガードも通す
   }
   if(state.saving)return false;
   state.saving=true;
@@ -3139,6 +3141,7 @@ async function saveShelves(){
         adminPassword:state.password,
         shelves:state.shelves,
         categories:state.categories,
+        force:forceShrink,   // 大幅減をユーザーが承認したときだけ true (サーバーのガードを通す)
       }),
     });
     if(res.status===401 || res.status===403){
