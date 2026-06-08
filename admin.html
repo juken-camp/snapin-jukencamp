@@ -970,11 +970,10 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .memo-card .li.done .chk{background:var(--g);border-color:var(--g);}
 .memo-card .li.done{color:var(--ink3);text-decoration:line-through;}
 .memo-card .li .li-num{width:1.3em;font-size:1em;text-align:left;flex-shrink:0;color:var(--ink2);font-family:var(--font-en);}
-.memo-card.note .ctxt{display:flex;flex-direction:column;}
-.memo-card.note .ctxt.h-center{align-items:center;text-align:center;}
-.memo-card.note .ctxt.h-left{align-items:flex-start;text-align:left;}
-.memo-card.note .ctxt.v-center{justify-content:center;}
-.memo-card.note .ctxt.v-top{justify-content:flex-start;}
+/* note カード: 相対コンテナ + 絶対配置 inner。フォントは applyGridNoteScale が実寸で確定。
+   (利用者アプリ index.html と同じ。枠に対する文字比率を編集画面・グリッドで一致させる) */
+.memo-card.note .ctxt{padding:0;position:relative;display:block;overflow:hidden;}
+.memo-card.note .ctxt-inner{position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;white-space:pre-wrap;word-break:break-word;}
 /* リンクカード: サムネ + テキストを縦に積む (画像で60%, ctxtは下40%) */
 .memo-card.link{display:flex;flex-direction:column;}
 .memo-card.link .ctxt{
@@ -1520,6 +1519,14 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border-radius:12px;
   padding:14px;
   margin-bottom:14px;
+}
+/* タイトルは色付きカード内の見出しとして表示 (WYSIWYG) */
+.list-title-input{
+  width:100%;
+  font-weight:700;
+  font-size:16px;
+  padding:2px 0 10px;
+  background:transparent;
 }
 .list-item-row{
   display:flex;
@@ -2566,6 +2573,55 @@ function setupNoteEditor(m){
   });
   applyStyle();
   requestAnimationFrame(applyStyle);
+}
+
+// ── グリッドの note カードを利用者アプリ (index.html) と同じ見た目にする ──
+// 文字数→基準フォント(幅120px想定)を決め、各カードの実幅に比例させて拡大する方式。
+// これで「編集画面・グリッド・実際の公開ビュー」で枠に対する文字比率が一致する。
+// 幅に依存しない部分 (基準フォント/行高/揃え) を返す。
+function noteCardBase(card){
+  const text=card.text||'';
+  const tlen=text.length;
+  let idx=noteCardInitialSizeIndex(tlen);
+  while(idx<NOTE_CARD_SIZES.length-1){
+    const s=NOTE_CARD_SIZES[idx];
+    if(estimateNoteLineCount(text,s.fz)<=s.clamp)break;
+    idx++;
+  }
+  return {fz:NOTE_CARD_SIZES[idx].fz, lh:NOTE_CARD_SIZES[idx].lh, align:resolveAlign(card)};
+}
+function noteCardStyle(card,col,containerWidth){
+  const w=containerWidth||NOTE_BASE_WIDTH;
+  const scale=w/NOTE_BASE_WIDTH;
+  const b=noteCardBase(card);
+  const pad=w*0.055;
+  let style=`background:${col.bg};color:${col.fg};font-size:${b.fz*scale}px;line-height:${b.lh};padding:${pad}px;`;
+  style+=b.align.h==='center'?'align-items:center;text-align:center;':'align-items:flex-start;text-align:left;';
+  style+=b.align.v==='center'?'justify-content:center;':'justify-content:flex-start;';
+  return style;
+}
+// レンダリング後に各 note カードの実寸を測ってフォントを確定させる。
+function applyGridNoteScale(root){
+  const scope=root||document;
+  scope.querySelectorAll('.memo-card.note .ctxt-inner').forEach(inner=>{
+    const ctxt=inner.parentElement;
+    if(!ctxt)return;
+    const cw=ctxt.clientWidth;
+    if(!cw)return;
+    // サイズ指定で横長/縦長になっても収まるよう、幅・高さの小さい方を基準にする。
+    const ch=ctxt.clientHeight;
+    const w=(ch>0)?Math.min(cw,ch):cw;
+    const scale=w/NOTE_BASE_WIDTH;
+    const bfz=parseFloat(inner.dataset.bfz)||11;
+    const blh=parseFloat(inner.dataset.blh)||1.4;
+    const ah=inner.dataset.ah, av=inner.dataset.av;
+    const col=colorById(inner.dataset.color||'none');
+    const pad=w*0.055;
+    let style=`background:${col.bg};color:${col.fg};font-size:${bfz*scale}px;line-height:${blh};padding:${pad}px;`;
+    style+=ah==='center'?'align-items:center;text-align:center;':'align-items:flex-start;text-align:left;';
+    style+=av==='center'?'justify-content:center;':'justify-content:flex-start;';
+    inner.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;white-space:pre-wrap;word-break:break-word;'+style;
+  });
 }
 
 const state={
@@ -4295,8 +4351,9 @@ function renderMemoGrid(){
       if(displayCard.text)inner+=`<div class="ctxt" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:white;padding:6px 8px;font-size:10px;-webkit-line-clamp:2;">${esc(displayCard.text)}</div>`;
     }else if(displayCard.type==='note'){
       const col=colorById(displayCard.color);
-      const al=resolveAlign(displayCard);
-      inner=`<div class="ctxt h-${al.h} v-${al.v}" style="background:${col.bg};color:${col.fg};">${esc(displayCard.text||'')}</div>`;
+      const b=noteCardBase(displayCard);
+      const initStyle=noteCardStyle(displayCard,col); // 初期は幅120基準。直後に applyGridNoteScale が実寸で上書き
+      inner=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" data-color="${displayCard.color||'none'}" data-bfz="${b.fz}" data-blh="${b.lh}" data-ah="${b.align.h}" data-av="${b.align.v}" style="${initStyle}">${esc(displayCard.text||'')}</div></div>`;
     }else if(displayCard.type==='list'){
       const col=colorById(displayCard.color);
       const allItems=displayCard.items||[];
@@ -4352,8 +4409,9 @@ function renderMemoGrid(){
 
   // サイズ指定カードが正しい比率で並ぶよう、行の高さを列幅に合わせる
   syncMemoGridCellSize();
+  applyGridNoteScale(grid);
   applyListThumbFit(grid);
-  requestAnimationFrame(()=>{ syncMemoGridCellSize(); applyListThumbFit(grid); });
+  requestAnimationFrame(()=>{ syncMemoGridCellSize(); applyGridNoteScale(grid); applyListThumbFit(grid); });
 }
 
 // リスト型カードのフォントを「全項目を折り返したまま枠に収まる最大サイズ」に合わせる。
@@ -4881,11 +4939,10 @@ function renderMemoModalBody(){
       </div>
     `;
   }else if(m.type==='list'){
+    const col=colorById(m.color);
     editHtml=`
-      <div class="memo-edit-area">
-        <input id="list-title" type="text" placeholder="リストのタイトル" value="${esc(m.title||'')}">
-      </div>
-      <div class="list-edit" id="list-edit">
+      <div class="list-edit" id="list-edit" style="background:${col.bg};color:${col.fg};">
+        <input id="list-title" class="list-title-input" type="text" placeholder="リストのタイトル" value="${esc(m.title||'')}" style="color:${col.fg};">
         ${(m.items||[{t:'',mark:'check'}]).map((it,i)=>{
           const mark=it.mark||'check';
           const done=it.d===true;
