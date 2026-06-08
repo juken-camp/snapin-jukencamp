@@ -15,10 +15,6 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-<!-- 手描き風フォント (Klee One)。オフライン時は端末の丸ゴシックにフォールバック。 -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap">
 <style>
 :root{
   --g:#1D9E75; --gl:#E8F5EF; --gd:#0F6E56;
@@ -27,8 +23,6 @@
   --line:rgba(0,0,0,.08); --line2:rgba(0,0,0,.14);
   --amber:#E8A33D; --rose:#D6604D; --sky:#3F7FB8;
   --font-jp:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium",sans-serif;
-  --font-mincho:"Hiragino Mincho ProN","Hiragino Mincho Pro","YuMincho","Yu Mincho","HG明朝E","MS PMincho",serif;
-  --font-hand:"Klee One","Hiragino Maru Gothic ProN","Zen Maru Gothic","YuKyokasho","Yu Kyokasho",sans-serif;
   --font-en:"Charter","Iowan Old Style","Georgia",serif;
   --shadow:0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
   --mosaic-veil:linear-gradient(135deg,rgba(29,158,117,.15),rgba(15,110,86,.18));
@@ -6289,7 +6283,7 @@ function listCardInner(c){
     return `<div class="li ${done?'done':''}"><div class="chk">${checkSvg}</div><span>${esc(i.t)}</span></div>`;
   }).join('');
   const title=c.title?`<div style="font-weight:600;font-size:1.1em;margin-bottom:0.4em;color:${col.fg};opacity:0.7;">${esc(c.title)}</div>`:'';
-  return `<div class="ctxt" style="font-size:${fz}px;background:${col.bg};color:${col.fg};${cardTypeCss(c)}">${title}${itemsHtml}</div>`;
+  return `<div class="ctxt" style="font-size:${fz}px;background:${col.bg};color:${col.fg};">${title}${itemsHtml}</div>`;
 }
 
 // リンクカードの一覧表示用HTML。グリッドセル・今日のメモ・フィードで共通利用。
@@ -6470,27 +6464,7 @@ function noteCardStyle(card,col,containerWidth){
   let style=`background:${col.bg};color:${col.fg};font-size:${fz}px;line-height:${lh};padding:${pad}px;`;
   style+=align.h==='center'?'align-items:center;text-align:center;':'align-items:flex-start;text-align:left;';
   style+=align.v==='center'?'justify-content:center;':'justify-content:flex-start;';
-  style+=cardTypeCss(card);
   return style;
-}
-
-// ─── 書体(フォント) & 太字 ───
-// メモ/リストごとに card.font ('gothic'(既定) / 'mincho' / 'hand') と card.bold(メモのみ)を持たせる。
-// 本文テキスト(card.text)自体は一切変えないので、検索・英語ミラー・暗記モードなど既存機能に影響しない。
-const CARD_FONTS=[
-  {id:'gothic',name:'ゴシック',css:'var(--font-jp)'},
-  {id:'mincho',name:'明朝',     css:'var(--font-mincho)'},
-  {id:'hand',  name:'手描き',   css:'var(--font-hand)'},
-];
-function fontCssById(font){
-  const f=CARD_FONTS.find(x=>x.id===font);
-  return f?f.css:'var(--font-jp)';
-}
-// カードの書体/太字を style 文字列(末尾連結用)で返す。bold はメモのみ実際に設定される。
-function cardTypeCss(card){
-  let s='font-family:'+fontCssById(card&&card.font)+';';
-  if(card&&card.bold)s+='font-weight:700;';
-  return s;
 }
 
 // グリッドや「今日」の note カードに、その枠の実幅に合わせたフォントサイズを適用する。
@@ -9544,7 +9518,7 @@ function renderFeed(el,cards,opts){
       // グリッド/詳細と改行位置を完全一致させる。
       const wrapStyle=`background:${col.bg};color:${col.fg};`
         +(align.v==='center'?'justify-content:center;':'justify-content:flex-start;');
-      const innerStyle=`background:${col.bg};color:${col.fg};${cardTypeCss(c)}`
+      const innerStyle=`background:${col.bg};color:${col.fg};`
         +(align.h==='center'?'text-align:center;':'text-align:left;');
       inner=feedHead(FEED_ICONS.note,c,c0.pinned)
           + `<div class="feed-note" style="${wrapStyle}">${upd}`
@@ -9564,7 +9538,7 @@ function renderFeed(el,cards,opts){
         return `<div class="li ${done?'done':''}"><div class="chk">${checkSvg}</div><span>${esc(i.t)}</span></div>`;
       }).join('');
       inner=feedHead(FEED_ICONS.list,c,c0.pinned)
-          + `<div class="feed-list" style="background:${col.bg};color:${col.fg};--feed-list-fg:${col.fg};${cardTypeCss(c)}">`
+          + `<div class="feed-list" style="background:${col.bg};color:${col.fg};--feed-list-fg:${col.fg};">`
           + `${upd}<h3 style="color:${col.fg};opacity:0.7;">${esc(c.title||'リスト')}</h3>${items}</div>`
           + feedBody(null,c.tags);
     }else if(c.type==='link'){
@@ -10735,8 +10709,6 @@ function renderUpload(){
       inner.style.lineHeight=lh;
       inner.style.padding=(wrapW*0.055)+'px';
       inner.style.transform='';
-      inner.style.fontFamily=fontCssById(c.font);
-      inner.style.fontWeight=c.bold?'700':'';
       // 短文は正方形に見せ、長文は内容に合わせて縦に伸びる (全文を編集可能)
       wrap.style.minHeight=wrapW+'px';
 
@@ -10831,9 +10803,6 @@ function renderUpload(){
       });
     });
 
-    // 書体 (ゴシック/明朝/手描き) + 太字。プレビューに即反映。
-    appendTypeToolbar(body,{withBold:true,onChange:applyStyle});
-
     // 色選択ボタン (横スクロール)
     const colorRow=document.createElement('div');
     colorRow.style.cssText='display:flex;gap:8px;overflow-x:auto;padding:14px 0 4px;scrollbar-width:none;';
@@ -10857,7 +10826,7 @@ function renderUpload(){
     // リスト本体を、保存後のカードと同じ背景色で包む(編集面＝そのままプレビュー)。
     const clBox=document.createElement('div');
     clBox.className='cl-box';
-    clBox.style.cssText=`background:${col.bg};color:${col.fg};border-radius:14px;padding:14px 16px;margin-top:4px;font-family:${fontCssById(c.font)};`;
+    clBox.style.cssText=`background:${col.bg};color:${col.fg};border-radius:14px;padding:14px 16px;margin-top:4px;`;
 
     const titleInp=document.createElement('input');
     titleInp.className='up-text title';
@@ -10888,9 +10857,6 @@ function renderUpload(){
     });
     clBox.appendChild(addBtn);
     body.appendChild(clBox);
-
-    // 書体 (ゴシック/明朝/手描き)。プレビュー(clBox)に即反映。
-    appendTypeToolbar(body,{withBold:false,onChange:()=>{ clBox.style.fontFamily=fontCssById(state.current.font); }});
 
     // 背景の色選択 (メモと同じ。保存後のカード背景になる)
     const colorRow=document.createElement('div');
@@ -10948,64 +10914,6 @@ function renderUpload(){
   // どのタイプのメモにも共通で表示。詳細画面のタグUIと同じ見た目を流用しつつ、
   // 投稿画面ではまだ保存前なので state.current.tags を直接操作する。
   appendUploadTagEditor(body);
-}
-
-// メモ/リスト共通の「書体・太字」ツールバー。state.current.font / .bold を操作する。
-// onChange はプレビュー即時反映用 (メモ編集なら applyStyle、リストなら背景再描画)。
-function appendTypeToolbar(parent, opts){
-  opts=opts||{};
-  const c=state.current;
-  if(!c)return;
-  const bar=document.createElement('div');
-  bar.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:14px 0 2px;';
-
-  const refresh=()=>{
-    bar.querySelectorAll('[data-font]').forEach(b=>{
-      const on=(c.font||'gothic')===b.dataset.font;
-      b.style.borderColor=on?'var(--g)':'var(--line2)';
-      b.style.color=on?'var(--g)':'var(--ink2)';
-    });
-    const bb=bar.querySelector('[data-bold]');
-    if(bb){
-      bb.style.borderColor=c.bold?'var(--g)':'var(--line2)';
-      bb.style.color=c.bold?'var(--g)':'var(--ink2)';
-      bb.style.background=c.bold?'var(--gl)':'var(--surface)';
-    }
-  };
-
-  CARD_FONTS.forEach(f=>{
-    const b=document.createElement('button');
-    b.type='button';
-    b.dataset.font=f.id;
-    b.textContent=f.name;
-    b.style.cssText=`flex-shrink:0;padding:7px 15px;border-radius:999px;border:1.5px solid var(--line2);background:var(--surface);font-size:14px;color:var(--ink2);font-family:${f.css};`;
-    b.addEventListener('click',()=>{
-      c.font=f.id;
-      refresh();
-      if(opts.onChange)opts.onChange();
-    });
-    bar.appendChild(b);
-  });
-
-  if(opts.withBold){
-    const sep=document.createElement('div');
-    sep.style.cssText='width:1px;height:20px;background:var(--line2);margin:0 2px;';
-    bar.appendChild(sep);
-    const bb=document.createElement('button');
-    bb.type='button';
-    bb.dataset.bold='1';
-    bb.textContent='太字';
-    bb.style.cssText='flex-shrink:0;padding:7px 16px;border-radius:999px;border:1.5px solid var(--line2);background:var(--surface);font-size:14px;font-weight:700;color:var(--ink2);';
-    bb.addEventListener('click',()=>{
-      c.bold=!c.bold;
-      refresh();
-      if(opts.onChange)opts.onChange();
-    });
-    bar.appendChild(bb);
-  }
-
-  refresh();
-  parent.appendChild(bar);
 }
 
 // 投稿画面の表示サイズ選択。「手動の3×3グリッド」と「横/縦の数字(1〜3)」の2通りで指定でき、
@@ -12656,7 +12564,7 @@ function openDetail(c,origin){
       const wrapStyle=`background:${col.bg};color:${col.fg};width:100%;border-radius:12px;box-sizing:border-box;display:flex;flex-direction:column;`
         +(align.v==='center'?'justify-content:center;':'justify-content:flex-start;');
       // inner: 通常フローのブロック。fontSize/padding と最小高さ(正方形)は applyDetailNoteStyle が後から設定
-      let innerStyle=`width:100%;box-sizing:border-box;background:${col.bg};color:${col.fg};white-space:pre-wrap;word-break:break-word;${cardTypeCss(c)}`;
+      let innerStyle=`width:100%;box-sizing:border-box;background:${col.bg};color:${col.fg};white-space:pre-wrap;word-break:break-word;`;
       innerStyle+=align.h==='center'?'text-align:center;':'text-align:left;';
       // data-text で applyDetailNoteStyle が後から fontSize を設定
       contentHtml=`<div class="detail-text detail-note-card" style="${wrapStyle}"><div class="detail-note-inner" data-text="${esc(c.text||'')}" style="${innerStyle}">${linkify(c.text||'')}</div></div>`;
@@ -12666,7 +12574,7 @@ function openDetail(c,origin){
   }else if(c.type==='list'){
     const title=c.title?`<div style="font-size:17px;font-weight:600;margin-bottom:14px;">${esc(c.title)}</div>`:'';
     const items=c.items||[];
-    contentHtml=`<div style="${cardTypeCss(c)}">`+title+items.map((i,idx)=>{
+    contentHtml=title+items.map((i,idx)=>{
       const mark=i.mark||'check';
       const done=i.d===true;
       let markHtml;
@@ -12684,7 +12592,7 @@ function openDetail(c,origin){
         ${markHtml}
         <span>${esc(i.t)}</span>
       </div>
-    `;}).join('')+`</div>`;
+    `;}).join('');
   }else if(c.type==='link'){
     // リンクカード詳細表示 + 「サイトを開く」ボタン + メモ(自分用コメント)
     const link=c.link||{};
