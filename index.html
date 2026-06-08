@@ -9494,7 +9494,10 @@ const FEED_ICONS={
   video:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m22 8-6 4 6 4z"/></svg>',
   note:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
   list:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
-  link:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>'
+  link:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
+  // YouTube リンクは「再生マーク」で出す。グリッドの▶オーバーレイと種類を揃え、
+  // リール上で通常の🔗リンクと区別がつくようにする。
+  youtube:'<svg class="feed-type" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M10 8.2l6 3.8-6 3.8z" fill="currentColor" stroke="none"/></svg>'
 };
 const FEED_PIN_SVG='<svg class="feed-pin" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg>';
 // カード上部のヘッダー (種類アイコン + 日付 + ピン)。
@@ -9598,7 +9601,10 @@ function renderFeed(el,cards,opts){
       if(/^youtube$/i.test(hostRaw2))hostRaw2='';
       const titleTop=`<div class="feed-link-title">${esc(link.title||link.url||'')}</div>`
                    + (hostRaw2?`<div class="feed-link-host">${esc(hostRaw2)}</div>`:'');
-      inner=feedHead(FEED_ICONS.link,c,c0.pinned)
+      // グリッドと同様、YouTube は再生マーク・それ以外は🔗で統一。
+      const linkIcon=((typeof isYouTubeUrl==='function') && isYouTubeUrl(link.url||link.originalUrl||''))
+        ? FEED_ICONS.youtube : FEED_ICONS.link;
+      inner=feedHead(linkIcon,c,c0.pinned)
           + media
           + feedBody(c.text,c.tags,titleTop);
     }
