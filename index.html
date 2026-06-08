@@ -6893,6 +6893,17 @@ function setupNavs(){
 let _lastMeRefresh=0;
 const ME_REFRESH_INTERVAL=30000; // 30秒
 
+// この起動が「インストール済みPWA(standalone)」からか「ブラウザのタブ」からかを判定。
+// iOS は navigator.standalone、それ以外は matchMedia('(display-mode: standalone)')。
+// 読み取り専用のブラウザAPIのみ。副作用なし。
+function getDisplayMode(){
+  try{
+    if(window.navigator.standalone===true)return 'standalone';            // iOS PWA
+    if(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)return 'standalone'; // Android/Chrome PWA
+  }catch(_){}
+  return 'browser';
+}
+
 async function refreshMe(force){
   if(!state.auth || !state.auth.token)return;
   const now=Date.now();
@@ -6900,7 +6911,11 @@ async function refreshMe(force){
   _lastMeRefresh=now;
   try{
     const res=await fetch('/api/me',{
-      headers:{'x-snapin-token':state.auth.token},
+      headers:{
+        'x-snapin-token':state.auth.token,
+        'x-snapin-display':getDisplayMode(),
+        'x-snapin-platform':(navigator.platform||'').slice(0,40),
+      },
     });
     if(res.status===401){
       // token自体が無効 → ログアウト相当
