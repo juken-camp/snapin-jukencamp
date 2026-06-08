@@ -944,7 +944,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .memo-card:active{transform:scale(.97);}
 /* サイズ指定カードは行/列のトラックで大きさが決まるので aspect-ratio を解除して伸ばす */
 .memo-card.sized{aspect-ratio:auto;height:100%;min-height:0;}
-.memo-card img{width:100%;height:100%;object-fit:cover;display:block;}
+.memo-card img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;-webkit-touch-callout:none;-webkit-user-drag:none;}
 .memo-card .ctxt{
   padding:12px;
   font-size:11px;
@@ -1005,7 +1005,24 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .memo-add-btn:active{background:var(--g);color:#fff;transform:scale(.99);}
 .memo-add-btn svg{width:18px;height:18px;}
 /* 並べ替えモード: グリッドの見た目のまま、長押しドラッグで移動 */
-.memo-grid.reorder-mode .memo-card{cursor:grab;touch-action:manipulation;}
+.memo-grid.reorder-mode .memo-card{
+  cursor:grab;
+  touch-action:manipulation;
+  /* iOSで画像/テキストを長押しすると標準のプレビューや選択メニューが出て、
+     こちらのドラッグ判定を奪う。並べ替え中はそれらを無効化する。 */
+  -webkit-touch-callout:none;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.memo-grid.reorder-mode .memo-card *{
+  /* 子要素(img/テキスト)がタッチを横取りしないようにする。
+     これで長押しは必ずカード本体に届き、elementFromPoint もカードを返す。 */
+  pointer-events:none;
+  -webkit-touch-callout:none;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-user-drag:none;
+}
 .memo-grid.reorder-mode .memo-card::after{
   /* 並べ替え中であることが分かるよう、各カードにグリップ印を出す */
   content:"";position:absolute;top:5px;left:5px;z-index:4;
