@@ -838,6 +838,15 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   transition:background .14s ease, border-color .14s ease, transform .08s ease;
 }
 .new-shelf-btn:active{background:var(--gl);transform:scale(.99);}
+/* ───── ゴミ箱 (削除した共有ライブラリ・7日保持) ───── */
+.trash-note{font-size:12px;color:var(--ink2);padding:4px 2px 14px;line-height:1.6;}
+.trash-item{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:0.5px solid rgba(0,0,0,.07);}
+.trash-item:last-child{border-bottom:none;}
+.trash-acts{display:flex;gap:6px;flex-shrink:0;}
+.trash-restore,.trash-purge{font-size:12px;padding:7px 11px;border-radius:9px;font-weight:600;white-space:nowrap;}
+.trash-restore{color:var(--g);background:var(--gl);}
+.trash-purge{color:#c0392b;background:rgba(192,57,43,.09);}
+.trash-restore:active,.trash-purge:active{transform:scale(.97);}
 
 /* 共有ライブラリの編集パネル */
 .shelf-edit{
@@ -2343,6 +2352,10 @@ html.pre-auth #main-screen{display:block!important;}
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
         <span>写真をクラウドへ移行</span>
       </button>
+      <button class="new-shelf-btn" id="trash-btn" style="color:var(--ink2);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        <span>ゴミ箱<span id="trash-count"></span></span>
+      </button>
     </div>
 
     <div id="shelf-edit-panel"></div>
@@ -2419,6 +2432,20 @@ html.pre-auth #main-screen{display:block!important;}
       <button class="modal-save" id="memo-save">保存</button>
     </div>
     <div class="modal-body" id="memo-modal-body"></div>
+  </div>
+</div>
+
+<!-- ゴミ箱モーダル (削除した共有ライブラリ・7日間保持) -->
+<div class="modal-mask" id="trash-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <button class="modal-hdr-back" id="trash-close">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="modal-hdr-title">ゴミ箱</div>
+      <span style="width:44px;flex-shrink:0;"></span>
+    </div>
+    <div class="modal-body" id="trash-modal-body"></div>
   </div>
 </div>
 
@@ -2890,6 +2917,7 @@ const state={
   shelvesLoaded:false,   // 共有ライブラリの初回取得が済んだか
   shelvesFetchOk:false,  // 初回取得が「成功」したか (失敗時は保存を止めるためのガード)
   loadedShelfCount:0,    // 取得成功時のライブラリ数 (件数が激減する保存を検知するため)
+  trash:[],              // ゴミ箱に入っている共有ライブラリ (deletedAt 付き)
   selectedId:null,
   editingMemo:null,
   cardReorder:false,    // ライブラリ内メモの並べ替えモード
@@ -4327,23 +4355,110 @@ function newShelf(){
 async function deleteShelf(id){
   const s=state.shelves.find(x=>x.id===id);
   if(!s)return;
-  if(!await confirmDialog({title:'共有ライブラリを削除',message:`「${s.name}」を削除しますか？\nこの共有ライブラリを登録している生徒の端末からは消えません(各端末のキャッシュとして残ります)。`,okLabel:'削除する',danger:true}))return;
-  // このライブラリにあった実体メモのIDを集める
-  const masterIds=new Set((s.cards||[]).filter(c=>!c._ref).map(c=>c.id));
-  // 他のライブラリにある「このライブラリを元にした参照」を一掃
-  state.shelves.forEach(other=>{
-    if(other.id===id)return;
-    if(!Array.isArray(other.cards))return;
-    other.cards=other.cards.filter(c=>!(c._ref && (c._originShelf===id || masterIds.has(c.id))));
-  });
-  state.shelves=state.shelves.filter(x=>x.id!==id);
+  if(!await confirmDialog({title:'共有ライブラリをゴミ箱へ',message:`「${s.name}」をゴミ箱に移動しますか？\n7日間は「ゴミ箱」から復元できます。その後は完全に削除されます。\n(すでに登録している生徒の端末にはキャッシュとして残ります)`,okLabel:'ゴミ箱へ移動',danger:true}))return;
+  setStatus('ゴミ箱へ移動中…','busy');
+  try{
+    const res=await fetch('/api/shelves',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-password':state.password},
+      body:JSON.stringify({action:'trash',shelfId:id}),
+    });
+    if(res.status===401||res.status===403){setStatus('認証エラー: パスワードが違います','error');return;}
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    setStatus('ゴミ箱へ移動しました');
+  }catch(err){setStatus('移動に失敗: '+err.message,'error');return;}
   if(state.selectedId===id)state.selectedId=null;
-  await saveShelves();
-  const pane=$('pane-shelves');
-  if(pane)pane.classList.remove('detail-open');
-  renderShelfList();
-  $('shelf-edit-panel').innerHTML='';
+  await fetchShelves();   // active一覧を取り直す (loadedShelfCount も更新される)
+  await fetchTrash();
+  const pane=$('pane-shelves'); if(pane)pane.classList.remove('detail-open');
+  renderCategoryBars(); renderShelfList();
+  const ep=$('shelf-edit-panel'); if(ep)ep.innerHTML='';
   window.scrollTo({top:0});
+}
+
+// ═══ ゴミ箱 (削除した共有ライブラリ・7日間保持) ═══
+async function fetchTrash(){
+  if(!state.password){state.trash=[];updateTrashCount();return;}
+  try{
+    const res=await fetch('/api/shelves?trash=1',{headers:{'x-admin-password':state.password}});
+    if(!res.ok){state.trash=[];updateTrashCount();return;}
+    const data=await res.json();
+    state.trash=Array.isArray(data.shelves)?data.shelves:[];
+  }catch(e){state.trash=[];}
+  updateTrashCount();
+}
+function updateTrashCount(){
+  const c=$('trash-count');
+  if(c)c.textContent=(state.trash&&state.trash.length)?` (${state.trash.length})`:'';
+}
+async function openTrash(){
+  $('trash-modal').classList.add('on');
+  $('trash-modal-body').innerHTML='<div class="shelf-none-match">読み込み中…</div>';
+  await fetchTrash();
+  renderTrash();
+}
+function closeTrash(){ $('trash-modal').classList.remove('on'); }
+function renderTrash(){
+  const body=$('trash-modal-body');
+  if(!body)return;
+  const list=state.trash||[];
+  if(list.length===0){
+    body.innerHTML='<div class="empty-shelf-state" style="padding:34px 16px;">ゴミ箱は空です。<br>削除した共有ライブラリは7日間ここに保管され、その後完全に削除されます。</div>';
+    return;
+  }
+  const now=Date.now();
+  const DAY=24*60*60*1000;
+  body.innerHTML='<div class="trash-note">削除した共有ライブラリは7日間ここに保管されます。期限を過ぎると完全に削除されます。</div>'
+    +list.map(s=>{
+      const left=Math.max(0,Math.ceil((7*DAY-(now-(s.deletedAt||now)))/DAY));
+      const avatar=s.icon
+        ? `<div class="shelf-avatar has-icon"><img src="${esc(s.icon)}" alt=""></div>`
+        : `<div class="shelf-avatar">${esc((s.name||'?').slice(0,1))}</div>`;
+      return `<div class="trash-item">
+        ${avatar}
+        <div class="shelf-info">
+          <div class="shelf-name">${esc(s.name||'(無題)')}</div>
+          <div class="shelf-handle">あと ${left} 日で完全削除 ・ ${(s.cards||[]).length}件</div>
+        </div>
+        <div class="trash-acts">
+          <button class="trash-restore" data-restore="${esc(s.id)}">復元</button>
+          <button class="trash-purge" data-purge="${esc(s.id)}">完全に削除</button>
+        </div>
+      </div>`;
+    }).join('');
+  body.querySelectorAll('[data-restore]').forEach(b=>b.addEventListener('click',()=>restoreShelf(b.dataset.restore)));
+  body.querySelectorAll('[data-purge]').forEach(b=>b.addEventListener('click',()=>purgeShelf(b.dataset.purge)));
+}
+async function restoreShelf(id){
+  setStatus('復元中…','busy');
+  try{
+    const res=await fetch('/api/shelves',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-password':state.password},
+      body:JSON.stringify({action:'restore',shelfId:id}),
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    setStatus('復元しました');
+  }catch(err){setStatus('復元に失敗: '+err.message,'error');return;}
+  await fetchShelves();   // active一覧に戻す
+  await fetchTrash();
+  renderCategoryBars(); renderShelfList(); renderTrash();
+}
+async function purgeShelf(id){
+  const s=(state.trash||[]).find(x=>x.id===id);
+  if(!await confirmDialog({title:'完全に削除',message:`「${(s&&s.name)||'このライブラリ'}」を完全に削除しますか？\nこの操作は取り消せません。`,okLabel:'完全に削除',danger:true}))return;
+  setStatus('削除中…','busy');
+  try{
+    const res=await fetch('/api/shelves',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-password':state.password},
+      body:JSON.stringify({action:'purge',shelfId:id}),
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    setStatus('完全に削除しました');
+  }catch(err){setStatus('削除に失敗: '+err.message,'error');return;}
+  await fetchTrash();
+  renderTrash();
 }
 
 // ═══ SHELF EDIT ═══
@@ -6070,6 +6185,9 @@ $('login-btn').addEventListener('click',e=>{e.preventDefault();tryLogin();});
 $('logout-btn').addEventListener('click',logout);
 $('new-shelf-btn').addEventListener('click',newShelf);
 const _migBtn=$('migrate-photos-btn'); if(_migBtn)_migBtn.addEventListener('click',migrateShelfPhotos);
+const _trashBtn=$('trash-btn'); if(_trashBtn)_trashBtn.addEventListener('click',openTrash);
+const _trashClose=$('trash-close'); if(_trashClose)_trashClose.addEventListener('click',closeTrash);
+const _trashModal=$('trash-modal'); if(_trashModal)_trashModal.addEventListener('click',e=>{ if(e.target===_trashModal)closeTrash(); });
 $('memo-cancel').addEventListener('click',closeMemoModal);
 $('memo-save').addEventListener('click',saveMemoFromModal);
 $('memo-modal').addEventListener('click',e=>{
@@ -6233,6 +6351,7 @@ async function fetchDeviceStats(){
       renderCategoryBars();
       renderShelfList();
       if(state.selectedId)renderShelfEdit();
+      fetchTrash();   // ゴミ箱の件数バッジ＋7日経過分の自動削除を走らせる
     });
   }else{
     // 共有の最新を取得 (ログイン前でも閲覧用に)
