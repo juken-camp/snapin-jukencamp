@@ -6911,6 +6911,7 @@ async function refreshMe(force){
   _lastMeRefresh=now;
   try{
     const res=await fetch('/api/me',{
+      cache:'no-store',
       headers:{
         'x-snapin-token':state.auth.token,
         'x-snapin-display':getDisplayMode(),
