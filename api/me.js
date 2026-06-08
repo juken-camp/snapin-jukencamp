@@ -105,6 +105,9 @@ export default async function handler(req, res) {
     return res.status(401).json({ ok: false, reason: 'invalid_token' });
   }
 
+  // 端末計測 (admin・塾生どちらの端末も数える。失敗しても本処理に影響しない)
+  await recordDevicePing(req, auth);
+
   // 管理者
   if (auth.payload.role === 'admin') {
     // ?stats=1 が付いたときだけ端末数を集計して返す (通常呼び出しには負荷を足さない)
@@ -119,9 +122,6 @@ export default async function handler(req, res) {
   if (auth.payload.role !== 'student') {
     return res.status(401).json({ ok: false, reason: 'unknown_role' });
   }
-
-  // 端末計測 (塾生トークンのみ。失敗しても本処理に影響しない)
-  await recordDevicePing(req, auth);
 
   try {
     const students = (await redis.get(STUDENTS_KEY)) || [];
