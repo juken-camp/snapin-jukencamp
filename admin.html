@@ -988,7 +988,43 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .memo-reorder-toggle.on{background:var(--g);color:#fff;}
 .memo-reorder-toggle:active{opacity:.7;}
 .reorder-hint{font-size:11px;color:var(--ink3);padding:0 20px 10px;}
-.memo-grid.reorder-mode{display:block;padding:0 14px 8px;}
+/* 新規メモ: グリッドとは別の独立ボタン(グリッドの配列を実際の公開ビューと一致させるため) */
+.memo-add-btn{
+  margin:2px 14px 12px;
+  width:calc(100% - 28px);max-width:446px;
+  padding:13px;
+  background:var(--gl);
+  border:1.5px dashed var(--g);
+  border-radius:12px;
+  color:var(--gd);
+  font-size:14px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  cursor:pointer;
+  transition:background .14s ease, transform .08s ease;
+}
+.memo-add-btn:active{background:var(--g);color:#fff;transform:scale(.99);}
+.memo-add-btn svg{width:18px;height:18px;}
+/* 並べ替えモード: グリッドの見た目のまま、長押しドラッグで移動 */
+.memo-grid.reorder-mode .memo-card{cursor:grab;touch-action:manipulation;}
+.memo-grid.reorder-mode .memo-card::after{
+  /* 並べ替え中であることが分かるよう、各カードにグリップ印を出す */
+  content:"";position:absolute;top:5px;left:5px;z-index:4;
+  width:16px;height:16px;border-radius:5px;
+  background:rgba(0,0,0,.42) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='white'%3E%3Ccircle cx='9' cy='6' r='1.8'/%3E%3Ccircle cx='15' cy='6' r='1.8'/%3E%3Ccircle cx='9' cy='12' r='1.8'/%3E%3Ccircle cx='15' cy='12' r='1.8'/%3E%3Ccircle cx='9' cy='18' r='1.8'/%3E%3Ccircle cx='15' cy='18' r='1.8'/%3E%3C/svg%3E") center/10px no-repeat;
+  pointer-events:none;
+}
+.memo-card.drag-src{opacity:.32;}
+.memo-card.drag-src::after{display:none;}
+.memo-card-clone{
+  position:fixed;z-index:9999;pointer-events:none;margin:0;
+  border-radius:12px;overflow:hidden;
+  box-shadow:0 10px 30px rgba(0,0,0,.28);
+  transform:scale(1.04);opacity:.97;
+  will-change:left,top;
+}
+.memo-card-clone *{pointer-events:none;}
+.memo-grid.reorder-dragging{cursor:grabbing;}
+.memo-grid.reorder-dragging .memo-card{transition:none;}
 .card-reorder-row{
   display:flex;align-items:center;gap:10px;
   background:var(--surface);border:1px solid var(--line);
@@ -3991,7 +4027,7 @@ function renderShelfEdit(){
         <div class="memo-list-head-count">${(s.cards||[]).length} 件</div>
       </div>
     </div>
-    ${state.cardReorder?'<div class="reorder-hint">⠿ を掴んで上下にドラッグ。順番はそのまま公開ページの表示順になります。</div>':''}
+    ${state.cardReorder?'<div class="reorder-hint">カードを長押し → そのままドラッグで移動。指を離すと並び順が保存されます。</div>':'<button class="memo-add-btn" id="memo-add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>新しいメモ</button>'}
     <div class="memo-grid" id="memo-grid"></div>
   `;
 
@@ -4035,12 +4071,15 @@ function renderShelfEdit(){
 
   $('shelf-delete-btn').addEventListener('click',()=>deleteShelf(s.id));
 
-  // 並べ替えモードの切替 (グリッド ⇄ 縦リスト+ドラッグ)
+  // 並べ替えモードの切替 (グリッドの見た目のまま 長押しドラッグ)
   const reBtn=$('memo-reorder-toggle');
   if(reBtn)reBtn.addEventListener('click',()=>{
     state.cardReorder=!state.cardReorder;
     renderShelfEdit(); // ヘッダーのボタン表記とヒントを更新しつつ再描画
   });
+  // 新規メモ (グリッドとは独立したボタン)
+  const addMemoBtn=$('memo-add-btn');
+  if(addMemoBtn)addMemoBtn.addEventListener('click',()=>openMemoModal(null));
 
   // 一覧に戻る (モバイルの別画面表示から戻る)
   const backBtn=$('shelf-detail-back');
@@ -4141,7 +4180,6 @@ function cardSpanOf(size){
 // 実際のcomputed styleから読むので、3列(スマホ)でも4列(PC)でも正しく揃う。
 function syncMemoGridCellSize(){
   document.querySelectorAll('.memo-grid').forEach(g=>{
-    if(g.classList.contains('reorder-mode'))return;   // 並べ替えは block 表示
     const cs=getComputedStyle(g);
     const cols=cs.gridTemplateColumns.split(' ').filter(Boolean).length;
     if(!cols)return;
@@ -4164,7 +4202,7 @@ function renderMemoGrid(){
   const grid=$('memo-grid');
   grid.innerHTML='';
   grid.classList.toggle('reorder-mode', !!state.cardReorder);
-  if(state.cardReorder){ renderCardReorderRows(s,grid); return; }
+  const reorder=!!state.cardReorder;
   // 全ライブラリの実体カードをIDで索引(参照の解決用)
   const byId=new Map();
   for(const sh of state.shelves){
@@ -4178,7 +4216,20 @@ function renderMemoGrid(){
     let originShelf=null;
     if(c._ref){
       const origin=byId.get(c.id);
-      if(!origin)return; // 解決できない参照はスキップ
+      if(!origin){
+        // 解決できない参照: 通常はスキップ。並べ替え中はインデックスを取りこぼさないよう
+        // プレースホルダーのセルを置く(全カードがそろわないと並び順を保存できないため)。
+        if(reorder){
+          const ph=document.createElement('div');
+          ph.className='memo-card is-ref';
+          ph.dataset.idx=idx;
+          ph.style.cssText='display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:10px;background:var(--surface2);';
+          ph.textContent='(共有メモ)';
+          attachCardGridDrag(ph);
+          grid.appendChild(ph);
+        }
+        return;
+      }
       displayCard=origin.card;
       originShelf=origin.shelf;
       isRef=true;
@@ -4227,24 +4278,144 @@ function renderMemoGrid(){
       }
     }
     cell.innerHTML=badge+inner;
-    cell.addEventListener('click',()=>openMemoModal(c));
+    cell.dataset.idx=idx;
+    if(reorder){
+      attachCardGridDrag(cell);
+    }else{
+      cell.addEventListener('click',()=>openMemoModal(c));
+    }
     grid.appendChild(cell);
   });
-  // 追加ボタン: 先頭(左上)に置く。投稿が増えても一番下までスクロールせずに新規作成できる。
-  const addCell=document.createElement('div');
-  addCell.className='memo-card memo-card-add';
-  addCell.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>';
-  addCell.addEventListener('click',()=>openMemoModal(null));
-  grid.insertBefore(addCell, grid.firstChild);
 
   // サイズ指定カードが正しい比率で並ぶよう、行の高さを列幅に合わせる
   syncMemoGridCellSize();
   requestAnimationFrame(syncMemoGridCellSize);
 }
 
-// ── 並べ替えモード: カードを縦リストで描画 ──
-// s.cards の全要素を1行ずつ出す (解決できない参照も placeholder で出し、
-// 並べ替え時にインデックスを取りこぼさないようにする)。
+// ══ 並べ替え: グリッドの見た目のまま 長押し→指ドラッグで移動 ══
+// 縦リストに切り替えず、実際の公開ビューと同じ配列のまま並べ替えられる。
+// 仕組み: 長押し(220ms)でドラッグ開始 → 指に追従するクローンを表示し、
+//   元カードは半透明のプレースホルダーに。指の下のカードを elementFromPoint で
+//   判定して DOM 上で前後に差し込み、CSSグリッドの dense 詰めが自動で再配置。
+//   指を離したら DOM 並びから s.cards の順序を確定して保存。
+let gridDrag=null;
+let _gridLongPressTimer=null;
+
+function attachCardGridDrag(cell){
+  cell.addEventListener('contextmenu',e=>e.preventDefault());
+  cell.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse' && e.button!==0)return;
+    if(gridDrag)return;
+    const grid=cell.parentElement;
+    const startX=e.clientX, startY=e.clientY;
+    const pointerId=e.pointerId;
+    // 長押し前は通常スクロールを殺さない。少し動いたら長押しをキャンセル(=スクロール扱い)。
+    const cancelLP=()=>{
+      if(_gridLongPressTimer){clearTimeout(_gridLongPressTimer);_gridLongPressTimer=null;}
+      cell.removeEventListener('pointermove',preMove);
+      cell.removeEventListener('pointerup',preUp);
+      cell.removeEventListener('pointercancel',preUp);
+    };
+    const preMove=ev=>{
+      const dx=ev.clientX-startX, dy=ev.clientY-startY;
+      if(Math.hypot(dx,dy)>9)cancelLP();   // スクロール意図とみなす
+    };
+    const preUp=()=>cancelLP();
+    cell.addEventListener('pointermove',preMove,{passive:true});
+    cell.addEventListener('pointerup',preUp);
+    cell.addEventListener('pointercancel',preUp);
+    _gridLongPressTimer=setTimeout(()=>{
+      _gridLongPressTimer=null;
+      cancelLP();
+      startGridDrag(cell,grid,startX,startY,pointerId);
+    },220);
+  });
+}
+
+function startGridDrag(cell,grid,startX,startY,pointerId){
+  const rect=cell.getBoundingClientRect();
+  // 指に追従するクローン
+  const clone=cell.cloneNode(true);
+  clone.classList.remove('drag-src');
+  clone.className=clone.className.replace(/\bsized\b/,'')+' memo-card-clone';
+  clone.style.left=rect.left+'px';
+  clone.style.top=rect.top+'px';
+  clone.style.width=rect.width+'px';
+  clone.style.height=rect.height+'px';
+  clone.style.gridColumn='';clone.style.gridRow='';
+  document.body.appendChild(clone);
+  cell.classList.add('drag-src');
+  grid.classList.add('reorder-dragging');
+
+  gridDrag={cell,grid,clone,pointerId,offsetX:startX-rect.left,offsetY:startY-rect.top,moved:false};
+  try{cell.setPointerCapture(pointerId);}catch(_){}
+  if(navigator.vibrate){try{navigator.vibrate(12);}catch(_){}}
+  document.addEventListener('pointermove',onGridDragMove,{passive:false});
+  document.addEventListener('pointerup',onGridDragEnd);
+  document.addEventListener('pointercancel',onGridDragEnd);
+}
+
+function onGridDragMove(e){
+  if(!gridDrag)return;
+  e.preventDefault();
+  const d=gridDrag; d.moved=true;
+  const x=e.clientX, y=e.clientY;
+  d.clone.style.left=(x-d.offsetX)+'px';
+  d.clone.style.top=(y-d.offsetY)+'px';
+
+  // 端では自動スクロール
+  const margin=80, sp=12;
+  const sc=d.grid.closest('.scroll')||document.scrollingElement||document.documentElement;
+  if(y<margin) sc.scrollBy(0,-sp);
+  else if(y>window.innerHeight-margin) sc.scrollBy(0,sp);
+
+  // 指の下のカードを探す(クローンは pointer-events:none なので拾わない)
+  const el=document.elementFromPoint(x,y);
+  const target=el && el.closest('.memo-card[data-idx]');
+  if(!target || target===d.cell || target.classList.contains('drag-src'))return;
+  if(target.parentElement!==d.grid)return;
+  // DOM 上で d.cell を target の前/後ろへ。現在位置より前なら前、後ろなら後ろに差し込む。
+  const cells=[...d.grid.children];
+  const di=cells.indexOf(d.cell);
+  const ti=cells.indexOf(target);
+  if(di<0||ti<0)return;
+  if(ti<di) d.grid.insertBefore(d.cell,target);
+  else d.grid.insertBefore(d.cell,target.nextSibling);
+}
+
+function onGridDragEnd(){
+  if(!gridDrag)return;
+  const d=gridDrag;
+  document.removeEventListener('pointermove',onGridDragMove);
+  document.removeEventListener('pointerup',onGridDragEnd);
+  document.removeEventListener('pointercancel',onGridDragEnd);
+  try{d.cell.releasePointerCapture(d.pointerId);}catch(_){}
+  if(d.clone&&d.clone.parentElement)d.clone.parentElement.removeChild(d.clone);
+  d.cell.classList.remove('drag-src');
+  d.grid.classList.remove('reorder-dragging');
+  const moved=d.moved, grid=d.grid;
+  gridDrag=null;
+  if(moved)commitCardOrderFromGrid(grid);
+}
+
+// グリッドの DOM 並びから s.cards の新しい順序を確定して保存
+function commitCardOrderFromGrid(grid){
+  const s=getSelectedShelf();
+  if(!s||!Array.isArray(s.cards))return;
+  const cells=[...grid.querySelectorAll('.memo-card[data-idx]')];
+  const order=cells.map(c=>parseInt(c.dataset.idx,10)).filter(n=>!isNaN(n));
+  if(order.length!==s.cards.length)return;                       // 取りこぼし防止
+  if(order.join(',')===s.cards.map((c,i)=>i).join(','))return;   // 変化なし
+  s.cards=order.map(i=>s.cards[i]);
+  cells.forEach((c,i)=>{c.dataset.idx=i;});                      // 連続並べ替え用に振り直す
+  saveShelves();
+  toast('並び順を保存しました');
+  // セル比率を再計算(差し込みでサイズ指定カードの行高が変わる場合に備える)
+  syncMemoGridCellSize();
+}
+
+// ── (旧・未使用) 並べ替えを縦リストで描画していた処理。
+// 現在はグリッドの見た目のまま長押しドラッグで並べ替えるため呼ばれない。
 function renderCardReorderRows(s,grid){
   const byId=new Map();
   for(const sh of state.shelves){
