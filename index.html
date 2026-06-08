@@ -3987,9 +3987,24 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   display:flex;
   flex-direction:column;
   height:100%;
+  position:relative;
   background:var(--surface);
   color:var(--ink);
   overflow:hidden;
+}
+/* 正方形・縦長サムネ用(.cover): 画像をカード全面に出し、見出しは
+   すりガラス(半透明+ぼかし)の帯で画像の上に重ねる。これで上下が切れない。 */
+.link-card.cover .link-card-thumb{
+  position:absolute; inset:0; flex:none;
+}
+.link-card.cover .link-card-body{
+  position:absolute; left:0; right:0; bottom:0;
+  height:auto;
+  background:var(--surface);  /* color-mix 非対応ブラウザ用の不透明フォールバック */
+  background:color-mix(in srgb, var(--surface) 60%, transparent);
+  -webkit-backdrop-filter:blur(12px) saturate(1.5);
+  backdrop-filter:blur(12px) saturate(1.5);
+  box-shadow:0 -0.5px 0 var(--line);
 }
 .link-card-thumb{
   width:100%;
@@ -6263,12 +6278,23 @@ function listCardInner(c){
 }
 
 // リンクカードの一覧表示用HTML。グリッドセル・今日のメモ・フィードで共通利用。
+// リンクサムネが読み込めたら縦横比を見て、正方形・縦長のときは
+// 「画像をカード全面に出し、見出しをすりガラスの半透明帯で重ねる」レイアウト(.cover)に切替。
+// 横長(16:9など ≥1.5)はそのまま「画像+下の帯」を維持し、YouTubeサムネはピッタリ収まる。
+function fitLinkThumb(img){
+  try{
+    const w=img.naturalWidth, h=img.naturalHeight;
+    if(!w||!h)return;
+    const card=img.closest('.link-card');
+    if(card)card.classList.toggle('cover', (w/h)<1.5);
+  }catch(_){}
+}
 // サムネ画像 + タイトル + ホスト名 のシンプルな構造。
 function linkCardInner(c){
   if(typeof isLinkedCard==='function' && isLinkedCard(c))c=resolveLiveCard(c);
   const link=c.link||{};
   const thumb=link.image
-    ? `<div class="link-card-thumb"><img src="${esc(link.image)}" alt="" onerror="this.parentElement.classList.add('no-img');this.remove();this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' fill=none stroke=currentColor stroke-width=1.6><path d=\\'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\\'/><path d=\\'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\\'/></svg>';"></div>`
+    ? `<div class="link-card-thumb"><img src="${esc(link.image)}" alt="" onload="fitLinkThumb(this)" onerror="this.parentElement.classList.add('no-img');this.remove();this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' fill=none stroke=currentColor stroke-width=1.6><path d=\\'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\\'/><path d=\\'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\\'/></svg>';"></div>`
     : `<div class="link-card-thumb no-img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>`;
   const title=esc(link.title||link.url||'(無題のリンク)');
   // サイト名(host)はグリッドでは表示しない (たいてい個別ページなので不要、タイトルに高さを回す)
