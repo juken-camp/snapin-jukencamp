@@ -738,18 +738,6 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
 }
-/* YouTube カードのサムネ自動プレビュー。
-   画面中央に来たカードだけ、サムネ位置で無音・ループ再生する (YouTubeアプリ風)。
-   下のサムネ <img> が枠の高さ(16:9)を決め、その上に iframe を重ねる。
-   pointer-events:none なのでタップは下のカードに通り、これまで通り詳細が開く。 */
-.feed-media.yt iframe.yt-embed{
-  position:absolute;inset:0;width:100%;height:100%;
-  border:0;display:block;background:#000;pointer-events:none;z-index:1;
-}
-/* モザイク(思い出す)中は自動再生しない (中身が見えてしまうため JS 側で抑止)。
-   念のため、万一表示されても他のメディアと同様にぼかす。 */
-.feed.mosaic .feed-item .feed-media iframe.yt-embed{filter:blur(8px) saturate(0.9);}
-.feed.mosaic .feed-item.tapped .feed-media iframe.yt-embed{filter:none;}
 /* note は詳細画面と同じ「基準幅120pxでレイアウト→枠幅に比例拡大」方式で描画し、
    グリッド/詳細と改行位置・文字比率まで完全一致させる。
    色/揃え/最小高さ/フォントサイズ/padding は applyFeedNoteStyle がインラインで設定する。 */
@@ -9603,13 +9591,8 @@ function renderFeed(el,cards,opts){
           + feedBody(null,c.tags);
     }else if(c.type==='link'){
       const link=c.link||{};
-      // YouTube の「動画」リンク(再生リストやチャンネルは除く)なら、フィードで
-      // サムネ位置に自動プレビュー(無音ループ)を出せるよう、動画IDを持たせておく。
-      const ytId=(typeof youtubeVideoId==='function')
-        ? youtubeVideoId(link.url||link.originalUrl||'') : null;
-      const ytTag=ytId?` yt" data-yt-id="${esc(ytId)}`:'';
       const media=link.image
-        ? `<div class="feed-media${ytTag}">${upd}<img src="${esc(link.image)}" alt="" decoding="async" loading="eager"></div>`
+        ? `<div class="feed-media">${upd}<img src="${esc(link.image)}" alt="" decoding="async" loading="eager"></div>`
         : `<div class="feed-ph" style="min-height:160px;background:linear-gradient(135deg,var(--gl),#F4FAF7);color:var(--g);font-size:48px;">${upd}🔗</div>`;
       let hostRaw2=link.siteName||link.host||'';
       if(/^youtube$/i.test(hostRaw2))hostRaw2='';
@@ -9640,9 +9623,6 @@ function renderFeed(el,cards,opts){
     el.appendChild(item);
   });
   setupFeedVideoAutoplay(el);
-  // YouTube カードのサムネ自動プレビュー (思い出すモード中は中身が見えるので無効)
-  if(!mosaicOn)setupYouTubeFeedAutoplay(el);
-  else if(el._ytIO){ el._ytIO.disconnect(); el._ytIO=null; el._ytActive=null; }
   // メモのフォント/余白/最小高さを枠幅から確定 (グリッド/詳細と改行を一致させる)。
   applyFeedNoteStyle(el);
   requestAnimationFrame(()=>applyFeedNoteStyle(el));
@@ -9672,75 +9652,6 @@ function setupFeedVideoAutoplay(el){
   },{root:(el.closest('.scroll')||null),threshold:[0,0.6,1]});
   el.querySelectorAll('video.feed-video').forEach(v=>io.observe(v));
   el._videoIO=io;
-}
-
-// ═══ FEED YOUTUBE AUTOPLAY (YouTubeアプリ風サムネ自動プレビュー) ═══
-// 画面の中央に来た YouTube カードだけ、サムネ位置で無音・ループ再生する。
-// タップ不要。スクロールで外れると iframe を外してサムネ画像に戻し、音もCPUも止める。
-// 同時に再生するのは常に1枚だけ (YouTubeアプリと同じく、一番よく見えているカード)。
-// iOS で自動再生するには mute=1 + playsinline=1 が必須。controls=0 でサムネのまま見せる。
-function ytPreviewSrc(id){
-  const p=[
-    'autoplay=1','mute=1','playsinline=1','controls=0',
-    'loop=1','playlist='+id,            // loop は単一動画だと playlist 指定が必要
-    'modestbranding=1','rel=0','fs=0','disablekb=1','iv_load_policy=3'
-  ].join('&');
-  return 'https://www.youtube-nocookie.com/embed/'+id+'?'+p;
-}
-function ytShowPreview(box){
-  if(!box || box._ytOn)return;
-  const id=box.dataset.ytId;
-  if(!id)return;
-  box._ytOn=true;
-  const f=document.createElement('iframe');
-  f.className='yt-embed';
-  f.src=ytPreviewSrc(id);
-  f.setAttribute('allow','autoplay; encrypted-media; picture-in-picture');
-  f.setAttribute('frameborder','0');
-  f.setAttribute('loading','eager');
-  f.setAttribute('title','');
-  box.appendChild(f);
-}
-function ytHidePreview(box){
-  if(!box || !box._ytOn)return;
-  box._ytOn=false;
-  const f=box.querySelector('iframe.yt-embed');
-  if(f)f.remove();           // iframe を外すと再生もネットワークも完全停止
-}
-function setupYouTubeFeedAutoplay(el){
-  if(!el)return;
-  if(el._ytIO){ el._ytIO.disconnect(); }
-  el._ytActive=null;
-  const boxes=Array.from(el.querySelectorAll('.feed-media.yt[data-yt-id]'));
-  if(!boxes.length){ el._ytIO=null; return; }
-  const ratios=new Map();
-  // ENTER: これ以上見えたら再生開始。KEEP: ここを下回るまでは再生を維持 (ヒステリシスでチラつき防止)。
-  const ENTER=0.55, KEEP=0.35, SWITCH_MARGIN=0.15;
-  const pick=()=>{
-    const cur=el._ytActive;
-    const curR=cur?(ratios.get(cur)||0):0;
-    let best=null,bestR=0;
-    ratios.forEach((r,box)=>{ if(r>bestR){ bestR=r; best=box; } });
-    let next=cur;
-    if(!cur || curR<KEEP){
-      // 再生中カードが画面からほぼ外れた → 一番よく見えているカードへ (十分見えていれば)
-      next=(bestR>=ENTER)?best:null;
-    }else if(best && best!==cur && bestR>=ENTER && bestR>curR+SWITCH_MARGIN){
-      // 明確に別カードのほうがよく見えるようになったら切り替え
-      next=best;
-    }
-    if(next!==cur){
-      if(cur)ytHidePreview(cur);
-      if(next)ytShowPreview(next);
-      el._ytActive=next;
-    }
-  };
-  const io=new IntersectionObserver((entries)=>{
-    entries.forEach(e=>ratios.set(e.target, e.isIntersecting?e.intersectionRatio:0));
-    pick();
-  },{root:(el.closest('.scroll')||null), threshold:[0,0.25,0.4,0.55,0.7,0.85,1]});
-  boxes.forEach(b=>io.observe(b));
-  el._ytIO=io;
 }
 
 // グリッド/今日/検索などのサムネ用: ポスターに頼らず動画を直接表示する。
