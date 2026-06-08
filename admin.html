@@ -1030,18 +1030,20 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:rgba(0,0,0,.42) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='white'%3E%3Ccircle cx='9' cy='6' r='1.8'/%3E%3Ccircle cx='15' cy='6' r='1.8'/%3E%3Ccircle cx='9' cy='12' r='1.8'/%3E%3Ccircle cx='15' cy='12' r='1.8'/%3E%3Ccircle cx='9' cy='18' r='1.8'/%3E%3Ccircle cx='15' cy='18' r='1.8'/%3E%3C/svg%3E") center/10px no-repeat;
   pointer-events:none;
 }
-.memo-card.drag-src{opacity:.32;}
+.memo-card.drag-src{opacity:.3;}
 .memo-card.drag-src::after{display:none;}
+.memo-grid.reorder-mode .memo-card.pre-press{transform:scale(.95);transition:transform .1s ease;}
 .memo-card-clone{
   position:fixed;z-index:9999;pointer-events:none;margin:0;
   border-radius:12px;overflow:hidden;
-  box-shadow:0 10px 30px rgba(0,0,0,.28);
-  transform:scale(1.04);opacity:.97;
+  box-shadow:0 12px 34px rgba(0,0,0,.30);
+  transform:scale(1.05);opacity:.98;
   will-change:left,top;
+  animation:clonePop .13s ease-out;
 }
+@keyframes clonePop{from{transform:scale(1);}to{transform:scale(1.05);}}
 .memo-card-clone *{pointer-events:none;}
 .memo-grid.reorder-dragging{cursor:grabbing;}
-.memo-grid.reorder-dragging .memo-card{transition:none;}
 .card-reorder-row{
   display:flex;align-items:center;gap:10px;
   background:var(--surface);border:1px solid var(--line);
@@ -4326,26 +4328,30 @@ function attachCardGridDrag(cell){
     const grid=cell.parentElement;
     const startX=e.clientX, startY=e.clientY;
     const pointerId=e.pointerId;
-    // 長押し前は通常スクロールを殺さない。少し動いたら長押しをキャンセル(=スクロール扱い)。
-    const cancelLP=()=>{
+    cell.classList.add('pre-press');   // 押した瞬間に少し沈めて「効いた」感触を出す
+    const cleanup=()=>{
       if(_gridLongPressTimer){clearTimeout(_gridLongPressTimer);_gridLongPressTimer=null;}
+      cell.classList.remove('pre-press');
       cell.removeEventListener('pointermove',preMove);
       cell.removeEventListener('pointerup',preUp);
       cell.removeEventListener('pointercancel',preUp);
     };
     const preMove=ev=>{
-      const dx=ev.clientX-startX, dy=ev.clientY-startY;
-      if(Math.hypot(dx,dy)>9)cancelLP();   // スクロール意図とみなす
+      // 長押し成立前に大きく動いたらスクロール意図とみなして中止(ブレには寛容に)
+      if(Math.hypot(ev.clientX-startX,ev.clientY-startY)>14)cleanup();
     };
-    const preUp=()=>cancelLP();
+    const preUp=()=>cleanup();
     cell.addEventListener('pointermove',preMove,{passive:true});
     cell.addEventListener('pointerup',preUp);
     cell.addEventListener('pointercancel',preUp);
     _gridLongPressTimer=setTimeout(()=>{
       _gridLongPressTimer=null;
-      cancelLP();
+      cell.classList.remove('pre-press');
+      cell.removeEventListener('pointermove',preMove);
+      cell.removeEventListener('pointerup',preUp);
+      cell.removeEventListener('pointercancel',preUp);
       startGridDrag(cell,grid,startX,startY,pointerId);
-    },220);
+    },150);
   });
 }
 
@@ -4353,7 +4359,7 @@ function startGridDrag(cell,grid,startX,startY,pointerId){
   const rect=cell.getBoundingClientRect();
   // 指に追従するクローン
   const clone=cell.cloneNode(true);
-  clone.classList.remove('drag-src');
+  clone.classList.remove('drag-src','pre-press');
   clone.className=clone.className.replace(/\bsized\b/,'')+' memo-card-clone';
   clone.style.left=rect.left+'px';
   clone.style.top=rect.top+'px';
@@ -4363,46 +4369,89 @@ function startGridDrag(cell,grid,startX,startY,pointerId){
   document.body.appendChild(clone);
   cell.classList.add('drag-src');
   grid.classList.add('reorder-dragging');
-
-  gridDrag={cell,grid,clone,pointerId,offsetX:startX-rect.left,offsetY:startY-rect.top,moved:false};
+  const scroller=grid.closest('.scroll')||document.scrollingElement||document.documentElement;
+  gridDrag={cell,grid,clone,scroller,pointerId,
+    offsetX:startX-rect.left,offsetY:startY-rect.top,
+    lastX:startX,lastY:startY,moved:false,raf:0};
   try{cell.setPointerCapture(pointerId);}catch(_){}
-  if(navigator.vibrate){try{navigator.vibrate(12);}catch(_){}}
+  if(navigator.vibrate){try{navigator.vibrate(15);}catch(_){}}
   document.addEventListener('pointermove',onGridDragMove,{passive:false});
   document.addEventListener('pointerup',onGridDragEnd);
   document.addEventListener('pointercancel',onGridDragEnd);
+  gridDrag.raf=requestAnimationFrame(gridDragFrame);
 }
 
 function onGridDragMove(e){
   if(!gridDrag)return;
-  e.preventDefault();
-  const d=gridDrag; d.moved=true;
-  const x=e.clientX, y=e.clientY;
+  e.preventDefault();   // ドラッグ中はスクロールさせない
+  gridDrag.lastX=e.clientX; gridDrag.lastY=e.clientY; gridDrag.moved=true;
+  if(!gridDrag.raf)gridDrag.raf=requestAnimationFrame(gridDragFrame);
+}
+
+// 実際の移動・再配置は rAF にまとめて行う(iOSの多発する pointermove を間引いて滑らかに)
+function gridDragFrame(){
+  const d=gridDrag; if(!d)return; d.raf=0;
+  const x=d.lastX, y=d.lastY;
   d.clone.style.left=(x-d.offsetX)+'px';
   d.clone.style.top=(y-d.offsetY)+'px';
+  // 端では自動スクロール。指を止めていても続くよう、その間はフレームを回し続ける。
+  const EDGE=72, SP=15, vh=window.innerHeight;
+  let scrolling=false;
+  if(y<EDGE){ d.scroller.scrollTop-=SP; scrolling=true; }
+  else if(y>vh-EDGE){ d.scroller.scrollTop+=SP; scrolling=true; }
+  // 指の最寄りのカードを基準に差し込み位置を決める(カードの隙間の上でも効く)
+  const ref=gridInsertRef(d.grid,x,y,d.cell);
+  moveDragCellFLIP(d.grid,d.cell,ref);
+  if(scrolling)d.raf=requestAnimationFrame(gridDragFrame);
+}
 
-  // 端では自動スクロール
-  const margin=80, sp=12;
-  const sc=d.grid.closest('.scroll')||document.scrollingElement||document.documentElement;
-  if(y<margin) sc.scrollBy(0,-sp);
-  else if(y>window.innerHeight-margin) sc.scrollBy(0,sp);
+// ポインタに最も近いカードを探し、読み順(上→下/左→右)で前後どちらに入れるかを返す
+function gridInsertRef(grid,x,y,dragCell){
+  let best=null,bestD=Infinity,before=true;
+  for(const c of grid.children){
+    if(c===dragCell||c.dataset.idx===undefined)continue;
+    const r=c.getBoundingClientRect();
+    const cx=r.left+r.width/2, cy=r.top+r.height/2;
+    const dx=x-cx, dy=y-cy, dist=dx*dx+dy*dy;
+    if(dist<bestD){
+      bestD=dist; best=c;
+      if(y<r.top)before=true;
+      else if(y>r.bottom)before=false;
+      else before=x<cx;
+    }
+  }
+  if(!best)return null;
+  return before?best:best.nextSibling;
+}
 
-  // 指の下のカードを探す(クローンは pointer-events:none なので拾わない)
-  const el=document.elementFromPoint(x,y);
-  const target=el && el.closest('.memo-card[data-idx]');
-  if(!target || target===d.cell || target.classList.contains('drag-src'))return;
-  if(target.parentElement!==d.grid)return;
-  // DOM 上で d.cell を target の前/後ろへ。現在位置より前なら前、後ろなら後ろに差し込む。
-  const cells=[...d.grid.children];
-  const di=cells.indexOf(d.cell);
-  const ti=cells.indexOf(target);
-  if(di<0||ti<0)return;
-  if(ti<di) d.grid.insertBefore(d.cell,target);
-  else d.grid.insertBefore(d.cell,target.nextSibling);
+// FLIPアニメ付きで dragCell を ref の前へ移動(位置が変わらないなら何もしない)。
+// 周りのカードが「スルッと場所を空ける」動きになる。
+function moveDragCellFLIP(grid,cell,ref){
+  if(ref===cell)return;
+  if(ref===cell.nextSibling)return;                 // すでにその位置
+  if(ref===null && cell===grid.lastElementChild)return;
+  const movers=[...grid.children];
+  const first=new Map();
+  for(const c of movers)first.set(c,c.getBoundingClientRect());
+  grid.insertBefore(cell,ref);
+  for(const c of movers){
+    const a=first.get(c), b=c.getBoundingClientRect();
+    const dx=a.left-b.left, dy=a.top-b.top;
+    if(dx||dy){ c.style.transition='none'; c.style.transform='translate('+dx+'px,'+dy+'px)'; }
+  }
+  requestAnimationFrame(()=>{
+    for(const c of movers){
+      if(!c.style.transform)continue;
+      c.style.transition='transform .16s cubic-bezier(.2,.7,.3,1)';
+      c.style.transform='';
+    }
+  });
 }
 
 function onGridDragEnd(){
   if(!gridDrag)return;
   const d=gridDrag;
+  if(d.raf)cancelAnimationFrame(d.raf);
   document.removeEventListener('pointermove',onGridDragMove);
   document.removeEventListener('pointerup',onGridDragEnd);
   document.removeEventListener('pointercancel',onGridDragEnd);
@@ -4410,6 +4459,8 @@ function onGridDragEnd(){
   if(d.clone&&d.clone.parentElement)d.clone.parentElement.removeChild(d.clone);
   d.cell.classList.remove('drag-src');
   d.grid.classList.remove('reorder-dragging');
+  // FLIP の名残(inline transition/transform)を消す。span(gridColumn/Row)はそのまま。
+  for(const c of d.grid.children){ c.style.transition=''; c.style.transform=''; }
   const moved=d.moved, grid=d.grid;
   gridDrag=null;
   if(moved)commitCardOrderFromGrid(grid);
