@@ -30,7 +30,58 @@ const STUDENTS_KEY = 'snapin:students';
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Snapin-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Snapin-Token, X-Snapin-Display, X-Snapin-Platform, X-Admin-Password');
+}
+
+// 端末計測キー
+const DEVICES_ALL_KEY = 'snapin:devices:all';            // ログインした全端末(did)のSet
+const DEVICES_INSTALLED_KEY = 'snapin:devices:installed'; // standalone(PWA)で起動した端末のSet
+
+// 端末 pings を記録する。
+// ★重要: ここで何が起きても本来のレスポンスには影響させない。
+//   失敗は内部で握りつぶし、例外を外に投げない。
+async function recordDevicePing(req, auth) {
+  try {
+    const did = auth && auth.payload && auth.payload.did;
+    if (!did) return; // 端末IDが無ければ計測しない (安全側)
+
+    const mode = String(req.headers['x-snapin-display'] || 'unknown').slice(0, 16);
+    const platform = String(req.headers['x-snapin-platform'] || '').slice(0, 40);
+
+    await redis.hset(`snapin:device:${did}`, {
+      lastSeen: Date.now(),
+      mode,
+      platform,
+    });
+    await redis.sadd(DEVICES_ALL_KEY, did);
+    if (mode === 'standalone') {
+      await redis.sadd(DEVICES_INSTALLED_KEY, did);
+    }
+  } catch (e) {
+    // 計測失敗は無視 (本処理に影響させない)
+    console.error('device ping failed:', e);
+  }
+}
+
+// 端末数を集計して返す。失敗時は null。
+async function computeStats() {
+  try {
+    const [all, installed] = await Promise.all([
+      redis.scard(DEVICES_ALL_KEY),
+      redis.scard(DEVICES_INSTALLED_KEY),
+    ]);
+    return { devices: all || 0, installed: installed || 0 };
+  } catch (e) {
+    console.error('stats error:', e);
+    return null;
+  }
+}
+
+// admin パスワードのチェック (students.js と同じ方式)
+function isAdminPassword(req) {
+  const pass = req.headers['x-admin-password'];
+  if (!pass || !process.env.ADMIN_PASSWORD) return false;
+  return pass === process.env.ADMIN_PASSWORD;
 }
 
 export default async function handler(req, res) {
@@ -41,6 +92,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, reason: 'method_not_allowed' });
   }
 
+  // 端末統計の読み取り (admin.html 用): admin パスワードが正しければ数字だけ返す。
+  // ※ ここはトークン検証より前。パスワードが無い/違うときは通常フローへ進む。
+  if (req.query && req.query.stats && isAdminPassword(req)) {
+    const stats = await computeStats();
+    return res.status(200).json({ ok: true, role: 'admin', stats });
+  }
+
   // token 検証
   const auth = authFromReq(req);
   if (!auth.ok) {
@@ -49,6 +107,11 @@ export default async function handler(req, res) {
 
   // 管理者
   if (auth.payload.role === 'admin') {
+    // ?stats=1 が付いたときだけ端末数を集計して返す (通常呼び出しには負荷を足さない)
+    if (req.query && req.query.stats) {
+      const stats = await computeStats();
+      return res.status(200).json({ ok: true, role: 'admin', stats });
+    }
     return res.status(200).json({ ok: true, role: 'admin' });
   }
 
@@ -56,6 +119,9 @@ export default async function handler(req, res) {
   if (auth.payload.role !== 'student') {
     return res.status(401).json({ ok: false, reason: 'unknown_role' });
   }
+
+  // 端末計測 (塾生トークンのみ。失敗しても本処理に影響しない)
+  await recordDevicePing(req, auth);
 
   try {
     const students = (await redis.get(STUDENTS_KEY)) || [];
