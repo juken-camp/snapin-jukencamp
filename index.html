@@ -4039,9 +4039,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   background:rgba(0,0,0,.55) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/><path d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/></svg>") center/14px no-repeat;
   border-radius:50%;
 }
-/* YouTubeリンクは再生マーク(赤丸+白い三角)に差し替え */
+/* YouTubeリンクは再生マークに差し替え。
+   赤いベタ塗りの円は主張が強いので、円は🔗バッジと同じ半透明の黒にして、
+   三角だけを赤にする。赤は残しつつ通常リンクと同じトーンで馴染む。 */
 .link-card-thumb.yt::after{
-  background:#FF0000 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><path d='M8 5v14l11-7z'/></svg>") 54%/15px no-repeat;
+  background:rgba(0,0,0,.55) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='red'><path d='M8 5v14l11-7z'/></svg>") 54%/15px no-repeat;
 }
 .link-card-body{
   flex:none;
