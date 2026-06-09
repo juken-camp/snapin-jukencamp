@@ -3169,10 +3169,6 @@ async function saveShelves(){
   if(state.saving)return false;
   state.saving=true;
   setStatus('保存中…','busy');
-  // 通信が固まったときに無限待ちしないよう、25秒でタイムアウトさせる。
-  // (タイムアウトが無いと保存ボタンがチェックのまま動かなくなる原因になる)
-  const ctrl=new AbortController();
-  const timer=setTimeout(()=>ctrl.abort(),25000);
   try{
     const res=await fetch('/api/shelves',{
       method:'POST',
@@ -3180,7 +3176,6 @@ async function saveShelves(){
         'Content-Type':'application/json',
         'x-admin-password':state.password,
       },
-      signal:ctrl.signal,
       // サーバー側のフィールド名の差異に備え、複数の名前で送る
       body:JSON.stringify({
         password:state.password,
@@ -3203,13 +3198,9 @@ async function saveShelves(){
     setTimeout(()=>setStatus(''),1500);
     return true;
   }catch(err){
-    const msg=err.name==='AbortError'
-      ? '通信がタイムアウトしました。電波の良い場所で、もう一度保存してください。'
-      : '保存失敗: '+err.message;
-    setStatus(msg,'error');
+    setStatus('保存失敗: '+err.message,'error');
     return false;
   }finally{
-    clearTimeout(timer);
     state.saving=false;
   }
 }
@@ -4820,10 +4811,9 @@ function renderMemoGrid(){
       if(displayCard.text)inner+=`<div class="ctxt" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:white;padding:6px 8px;font-size:10px;-webkit-line-clamp:2;">${esc(displayCard.text)}</div>`;
     }else if(displayCard.type==='video'){
       const vbadge=`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
+      // サムネはポスター画像のみ。グリッドに <video> を置くと iOS 等で重くなるため使わない。
       if(displayCard.poster){
         inner=`<img src="${esc(displayCard.poster)}" alt="">`+vbadge;
-      }else if(displayCard.videoUrl){
-        inner=`<video src="${esc(displayCard.videoUrl)}" muted playsinline preload="metadata"></video>`+vbadge;
       }else{
         inner=vbadge;
       }
@@ -6348,15 +6338,11 @@ async function saveMemoFromModal(){
 
   const ok=await saveShelves();
   if(!ok){
-    // 失敗: ボタンを「保存」に戻し、押せる状態へ確実に復帰させる。
-    // (チェックマークのまま固まらないように。編集内容は破棄せずモーダルは開いたままにする)
-    if(btn){
-      btn.innerHTML='保存';
-      btn.classList.remove('saved');
-      btn.disabled=false;
-      delete btn.dataset.saving;
-    }
-    toast('保存できませんでした。もう一度お試しください');
+    // 失敗: ボタンを戻す
+    btn.innerHTML='保存';
+    btn.classList.remove('saved');
+    btn.disabled=false;
+    delete btn.dataset.saving;
     return;
   }
   setTimeout(()=>{
