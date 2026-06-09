@@ -6657,6 +6657,15 @@ function resolveShelfRefs(shelves){
       });
     }).filter(Boolean);
   }
+  // 共有された動画カードは、配布時にR2のリモートURL(videoUrl)を持っている。
+  // 既存の描画/再生は c._videoUrl を参照するので、ここでURLを充てて再生できるようにする。
+  // (端末ローカルのBlob動画は __hasVid 経由で別に復元されるため、ここでは触らない)
+  for(const s of shelves){
+    if(!Array.isArray(s.cards))continue;
+    for(const c of s.cards){
+      if(c && c.type==='video' && c.videoUrl && !c._videoUrl)c._videoUrl=c.videoUrl;
+    }
+  }
 }
 
 async function loadOfficialShelves(){
