@@ -1064,6 +1064,18 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   opacity:0.7;
   pointer-events:none;
 }
+/* iOS WebKit は contenteditable で削除/編集すると、その時点のフォントサイズを
+   <span style="font-size:..."> として残りのテキストに巻き込むことがある。
+   inner のフォントサイズは文字数で動的に変わるため、古い px を持った span が残ると
+   「一部だけ小さい/大きい」状態になる。子孫のタイポグラフィを強制継承して無効化する。 */
+#up-note-area *{
+  font-size:inherit !important;
+  line-height:inherit !important;
+  font-family:inherit !important;
+  font-weight:inherit !important;
+  color:inherit !important;
+  background:transparent !important;
+}
 
 /* メモ編集の揃えツールバー */
 /* 表示サイズ選択 (グリッドでのカードの大きさ)。
