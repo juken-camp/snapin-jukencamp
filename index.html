@@ -9106,6 +9106,9 @@ function renderGrid(el,cards,origin){
     el.appendChild(card);
   });
 
+  // 画面に入った動画サムネだけ自動再生する(共有グリッド等)
+  requestAnimationFrame(refreshVideoThumbs);
+
   // 選択モードのときはグリッドにマーカークラスを付ける
   if(isHome){
     el.classList.toggle('selecting',!!state.selectMode);
@@ -9557,12 +9560,13 @@ function renderFeed(el,cards,opts){
           + feedBody(c.text,c.tags);
       if(!isNoColor(c.color)){item.style.borderColor=colorById(c.color).bd;}
     }else if(c.type==='video'){
-      // フィードでも動画は静止画(ポスター)＋再生マークのみ表示し、再生は詳細を開いたときに行う。
-      // (多数の <video> を同時に持つと、特に iOS でメタデータ取得/再生がつかえて重くなるため)
+      // フィードも「画面に入った数本だけ」自動再生する遅延差し替え(下の refreshVideoThumbs)。
       const vbadge=`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
-      const media=c.poster
-        ? `<img src="${c.poster}" alt="" decoding="async" loading="lazy">`+vbadge
-        : `<div class="feed-ph" style="min-height:200px;background:#000;color:#888;font-size:14px;">動画</div>`+vbadge;
+      const src=c._videoUrl||'';
+      const fill=c.poster
+        ? `<img src="${c.poster}" alt="" decoding="async" loading="lazy" style="width:100%;display:block;">`
+        : `<div class="feed-ph" style="min-height:200px;background:#000;"></div>`;
+      const media=`<div class="gv-lazy" data-vsrc="${src}"${c.poster?` data-vposter="${c.poster}"`:''} style="position:relative;background:#000;">${fill}${vbadge}</div>`;
       inner=feedHead(FEED_ICONS.video,c,c0.pinned)
           + `<div class="feed-media">${upd}${media}</div>`
           + feedBody(c.text,c.tags);
@@ -9645,57 +9649,66 @@ function renderFeed(el,cards,opts){
 // 画面に入った動画を再生し、外れたら一時停止する。
 // iOS で自動再生するには muted + playsinline が必須 (renderFeed 側で付与済み)。
 function setupFeedVideoAutoplay(el){
-  if(!el)return;
-  // 既存の Observer を破棄して作り直す (再描画のたびに新しい <video> が生成されるため)
-  if(el._videoIO){ el._videoIO.disconnect(); }
-  const io=new IntersectionObserver((entries)=>{
-    entries.forEach(entry=>{
-      const v=entry.target;
-      if(entry.isIntersecting && entry.intersectionRatio>=0.6){
-        // muted を保証してから再生 (ブラウザの自動再生ポリシー対策)
-        v.muted=true;
-        const p=v.play();
-        if(p && p.catch)p.catch(()=>{}); // 再生拒否は無視 (黙ってポスター表示のまま)
-      }else{
-        v.pause();
-      }
-    });
-  },{root:(el.closest('.scroll')||null),threshold:[0,0.6,1]});
-  el.querySelectorAll('video.feed-video').forEach(v=>io.observe(v));
-  el._videoIO=io;
+  // 旧: フィード専用の <video> オブザーバ。現在はグリッドと共通の遅延差し替え方式に統合。
+  refreshVideoThumbs();
 }
 
 // グリッド/今日/検索などのサムネ用: ポスターに頼らず動画を直接表示する。
 // ポスターがあればそれを poster 属性に使い、表示中だけ短く再生して確実にフレームを見せる。
 function videoCardInner(c){
   const badge=`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
-  // サムネは静止画(ポスター)＋再生マークのみ。動画再生は詳細を開いたときだけ行う。
-  // グリッドに <video> を多数置くと、特に iOS で同時再生/メタデータ取得がつかえて
-  // ページが固まる(共有ページが真っ白のまま等)ため、グリッドには <video> を一切置かない。
-  if(c && c.poster){
-    return `<img class="grid-video-thumb" src="${c.poster}" alt="" decoding="async" loading="lazy" style="width:100%;height:100%;object-fit:cover;background:#000;pointer-events:none;">`+badge;
-  }
-  return `<div class="grid-video-thumb" style="width:100%;height:100%;background:#000;pointer-events:none;"></div>`+badge;
+  // 普段は静止画(ポスター)/黒のまま。画面に入った数本だけ refreshVideoThumbs() が
+  // <video> を差し込んで自動再生する(iOSの同時再生詰まりを避けるための遅延差し替え)。
+  const src=(c&&c._videoUrl)?c._videoUrl:'';
+  const poster=(c&&c.poster)?c.poster:'';
+  const fill=poster
+    ? `<img src="${poster}" alt="" decoding="async" loading="lazy" style="width:100%;height:100%;object-fit:cover;background:#000;pointer-events:none;">`
+    : '';
+  return `<div class="grid-video-thumb gv-lazy" data-vsrc="${src}"${poster?` data-vposter="${poster}"`:''} style="width:100%;height:100%;position:relative;background:#000;overflow:hidden;">${fill}</div>`+badge;
 }
 
-// サムネ動画を「画面に入っているものだけ」再生する (黒塗り防止 + 省電力)。
-// 再描画ごとに作り直すグローバル Observer。iOS は同時再生数に制限があるため可視分だけ play する。
-let _thumbVideoIO=null;
+// サムネ動画の自動再生を「画面に入っている数本だけ」に絞って行う。
+// 全カードに <video> を作ると iOS が同時再生/メタデータ取得を捌けず固まるため、
+// 可視のものだけ <video> を生成して再生し、画面外に出たら破棄する(遅延差し替え)。
+let _lazyVidIO=null;
+const _MAX_LAZY_VIDS=3; // 同時再生の上限 (iOS の同時デコード制限対策。必要なら増減可)
 function refreshVideoThumbs(){
-  if(_thumbVideoIO)_thumbVideoIO.disconnect();
-  _thumbVideoIO=new IntersectionObserver((entries)=>{
-    entries.forEach(entry=>{
-      const v=entry.target;
-      if(entry.isIntersecting){
-        v.muted=true;
-        const p=v.play();
-        if(p && p.catch)p.catch(()=>{});
-      }else{
-        try{v.pause();}catch(e){}
-      }
+  if(_lazyVidIO)_lazyVidIO.disconnect();
+  const visible=new Set();
+  const makeVid=(wrap)=>{
+    if(wrap._vid)return;
+    const src=wrap.getAttribute('data-vsrc'); if(!src)return;
+    const v=document.createElement('video');
+    v.src=src; v.muted=true; v.loop=true; v.autoplay=true;
+    v.playsInline=true; v.setAttribute('playsinline',''); v.setAttribute('webkit-playsinline','');
+    v.setAttribute('preload','metadata');
+    const ps=wrap.getAttribute('data-vposter'); if(ps)v.setAttribute('poster',ps);
+    v.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;pointer-events:none;z-index:1;';
+    wrap.appendChild(v); wrap._vid=v;
+    const p=v.play(); if(p&&p.catch)p.catch(()=>{});
+  };
+  const dropVid=(wrap)=>{
+    if(wrap._vid){
+      try{wrap._vid.pause();}catch(e){}
+      try{wrap._vid.removeAttribute('src'); wrap._vid.load();}catch(e){}
+      try{wrap._vid.remove();}catch(e){}
+      wrap._vid=null;
+    }
+  };
+  const reconcile=()=>{
+    // 交差率が高い順に上限本数だけ再生。残りと不可視は破棄。
+    const arr=[...visible].sort((a,b)=>(b._ratio||0)-(a._ratio||0));
+    arr.forEach((w,i)=>{ if(i<_MAX_LAZY_VIDS)makeVid(w); else dropVid(w); });
+    document.querySelectorAll('.gv-lazy[data-vsrc]').forEach(w=>{ if(!visible.has(w))dropVid(w); });
+  };
+  _lazyVidIO=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      const w=e.target; w._ratio=e.intersectionRatio;
+      if(e.isIntersecting && e.intersectionRatio>=0.5)visible.add(w); else visible.delete(w);
     });
-  },{threshold:0.1});
-  document.querySelectorAll('video.grid-video-thumb').forEach(v=>_thumbVideoIO.observe(v));
+    reconcile();
+  },{threshold:[0,0.25,0.5,0.75,1]});
+  document.querySelectorAll('.gv-lazy[data-vsrc]').forEach(w=>{ if(w.getAttribute('data-vsrc'))_lazyVidIO.observe(w); });
 }
 function openAddSheet(){
   $('add-mask').classList.add('on');
