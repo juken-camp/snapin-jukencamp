@@ -3220,6 +3220,26 @@ async function uploadShelfPhoto(dataUrl){
   return d.url;
 }
 
+// 大きいファイル(動画など)を R2 へ「直接」アップロードして公開URLを返す。
+// base64でJSONに載せるとVercel関数のボディ上限(約4.5MB)に当たるため、
+// サーバから署名付きPUT URLを受け取り、ブラウザから R2 へ直接 PUT する。
+// ※ R2バケット側に「PUTを許可するCORS設定」が必要 (origin=admin、method=PUT、header=content-type)。
+async function uploadShelfFileDirect(file){
+  const ct=file.type||'application/octet-stream';
+  const r=await fetch('/api/photo',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-admin-password':state.password},
+    body:JSON.stringify({action:'shelf-put-url',contentType:ct}),
+  });
+  if(!r.ok)throw new Error('URL発行に失敗 (HTTP '+r.status+')');
+  const d=await r.json();
+  if(!d.uploadUrl||!d.url)throw new Error('署名付きURL未取得 (R2_PUBLIC_URL を確認)');
+  // 署名時の ContentType と一致させて PUT する (不一致だと署名エラーになる)。
+  const put=await fetch(d.uploadUrl,{method:'PUT',headers:{'Content-Type':ct},body:file});
+  if(!put.ok)throw new Error('R2への直接アップロード失敗 (HTTP '+put.status+' / R2のCORS設定を確認)');
+  return d.url;
+}
+
 // 既存の base64 写真をまとめて R2 へ移行し、棚を保存し直す(一度実行すればOK)。
 async function migrateShelfPhotos(){
   if(!state.password){setStatus('再ログインしてください','error');return;}
@@ -5679,25 +5699,26 @@ function renderMemoModalBody(){
   const handleVideoSelect=async (file)=>{
     if(!file)return;
     if(!(file.type||'').startsWith('video/')){toast('動画ファイルを選んでください');return;}
-    // 動画は base64 にすると約1.37倍に膨らむ。サーバ(Vercel関数)の受信上限(約4.5MB)を
-    // 超えると失敗するため、元ファイル約3MBまでに制限し、短い解説クリップに案内する。
-    if(file.size > 3*1024*1024){
-      toast('動画が大きいようです。3MB以下の短いクリップにしてください');
+    if(file.size > 200*1024*1024){
+      toast('動画が大きすぎます (200MB以下にしてください)');
       return;
+    }
+    if(file.size > 40*1024*1024){
+      toast('大きい動画です。アップロードに少し時間がかかります');
     }
     setStatus('動画を準備中…','busy');
     let objUrl='';
     try{
       objUrl=URL.createObjectURL(file);
-      // ポスター生成 → R2 (失敗しても続行)
+      // ポスター(先頭フレーム)は小さいので従来のbase64経路(shelf-put)でR2へ。失敗しても続行。
       let posterUrl='';
       try{
         const poster=await makeVideoPoster(objUrl);
         if(poster)posterUrl=await uploadShelfPhoto(poster);
       }catch(e){ posterUrl=''; }
       setStatus('動画をアップロード中…','busy');
-      const dataUrl=await readAsDataURL(file);
-      const url=await uploadShelfPhoto(dataUrl); // 写真と同じ shelf-put でR2へ
+      // 動画本体は R2 へ直接PUT (Vercel関数のボディ上限を回避するため)
+      const url=await uploadShelfFileDirect(file);
       state.editingMemo.videoUrl=url;
       state.editingMemo.poster=posterUrl||state.editingMemo.poster||'';
       setStatus('');
