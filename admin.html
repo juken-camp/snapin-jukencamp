@@ -3144,7 +3144,7 @@ async function fetchShelves(){
 }
 
 async function saveShelves(){
-  if(!state.password){setStatus('再ログインしてください','error');return false;}
+  if(!state.password){state.saveError='再ログインしてください';setStatus('再ログインしてください','error');return false;}
   // ── 誤上書き防止ガード (今回のような全消し事故を防ぐ) ──
   // 1) 初回読み込みが「成功」していない状態では保存しない。
   //    (読み込み失敗や、空/不完全なまま保存して目次を上書きするのを防ぐ)
@@ -3166,8 +3166,9 @@ async function saveShelves(){
     if(!ok){ setStatus('保存をキャンセルしました','error'); return false; }
     forceShrink=true; // ユーザーが明示承認 → サーバーの大幅減ガードも通す
   }
-  if(state.saving)return false;
+  if(state.saving){ state.saveError='別の保存処理が進行中です。数秒待ってから、もう一度保存してください'; return false; }
   state.saving=true;
+  state.saveError=null;
   setStatus('保存中…','busy');
   const ctrl=new AbortController();
   const to=setTimeout(()=>{try{ctrl.abort();}catch(e){}},30000); // 30秒で打ち切り(無限ハング防止)
@@ -3189,6 +3190,7 @@ async function saveShelves(){
       }),
     });
     if(res.status===401 || res.status===403){
+      state.saveError='認証エラー: パスワードが違います';
       setStatus('認証エラー: パスワードが違います','error');
       state.password=null;
       clearAuth();
@@ -3205,7 +3207,9 @@ async function saveShelves(){
     const msg=(err && err.name==='AbortError')
       ? '保存がタイムアウトしました(30秒)。通信状況か、保存データが大きすぎないか確認してください'
       : ('保存失敗: '+(err && err.message ? err.message : err));
+    state.saveError=msg;
     setStatus(msg,'error');
+    toast(msg,{success:false});
     return false;
   }finally{
     clearTimeout(to);
@@ -6345,9 +6349,11 @@ async function saveMemoFromModal(){
   }
 
   let ok=false;
-  try{ ok=await saveShelves(); }catch(e){ ok=false; }
+  try{ ok=await saveShelves(); }catch(e){ state.saveError='保存中に例外: '+(e&&e.message?e.message:e); ok=false; }
   if(!ok){
-    restoreBtn();   // 失敗/タイムアウト: ボタンを戻す (エラーは saveShelves が表示済み)
+    restoreBtn();   // 失敗/タイムアウト: ボタンを戻す
+    // モーダルの裏に隠れて見えないので、理由はアラートで確実に出す。
+    alert('保存できませんでした:\n\n'+(state.saveError||'原因不明（通信状況を確認してください）'));
     return;
   }
   // 成功: チェック表示 → 少し待って閉じる。描画で詰まってもボタンは必ず戻す。
