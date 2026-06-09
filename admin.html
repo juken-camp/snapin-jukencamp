@@ -3169,9 +3169,12 @@ async function saveShelves(){
   if(state.saving)return false;
   state.saving=true;
   setStatus('保存中…','busy');
+  const ctrl=new AbortController();
+  const to=setTimeout(()=>{try{ctrl.abort();}catch(e){}},30000); // 30秒で打ち切り(無限ハング防止)
   try{
     const res=await fetch('/api/shelves',{
       method:'POST',
+      signal:ctrl.signal,
       headers:{
         'Content-Type':'application/json',
         'x-admin-password':state.password,
@@ -3192,15 +3195,20 @@ async function saveShelves(){
       showLogin();
       return false;
     }
+    if(res.status===413){ throw new Error('データが大きすぎます (413)。画像/動画はURL保存のはずなので、未移行の古い写真がないか確認してください'); }
     if(!res.ok)throw new Error('HTTP '+res.status);
     state.loadedShelfCount=state.shelves.length;   // 保存成功 → 基準件数を更新 (連続削除の誤検知を防ぐ)
     setStatus('保存しました');
     setTimeout(()=>setStatus(''),1500);
     return true;
   }catch(err){
-    setStatus('保存失敗: '+err.message,'error');
+    const msg=(err && err.name==='AbortError')
+      ? '保存がタイムアウトしました(30秒)。通信状況か、保存データが大きすぎないか確認してください'
+      : ('保存失敗: '+(err && err.message ? err.message : err));
+    setStatus(msg,'error');
     return false;
   }finally{
+    clearTimeout(to);
     state.saving=false;
   }
 }
@@ -6327,28 +6335,33 @@ async function saveMemoFromModal(){
     }
   });
 
-  // 保存ボタンのフィードバック
+  // 保存ボタンのフィードバック (保存中は「保存中…」、成功して初めてチェック表示)
   const btn=$('memo-save');
+  const restoreBtn=()=>{ if(btn){ btn.innerHTML='保存'; btn.classList.remove('saved'); btn.disabled=false; delete btn.dataset.saving; } };
   if(btn && !btn.dataset.saving){
     btn.dataset.saving='1';
     btn.disabled=true;
+    btn.textContent='保存中…';
+  }
+
+  let ok=false;
+  try{ ok=await saveShelves(); }catch(e){ ok=false; }
+  if(!ok){
+    restoreBtn();   // 失敗/タイムアウト: ボタンを戻す (エラーは saveShelves が表示済み)
+    return;
+  }
+  // 成功: チェック表示 → 少し待って閉じる。描画で詰まってもボタンは必ず戻す。
+  if(btn){
     btn.classList.add('saved');
     btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
   }
-
-  const ok=await saveShelves();
-  if(!ok){
-    // 失敗: ボタンを戻す
-    btn.innerHTML='保存';
-    btn.classList.remove('saved');
-    btn.disabled=false;
-    delete btn.dataset.saving;
-    return;
-  }
   setTimeout(()=>{
-    closeMemoModal();
-    renderShelfList();
-    renderMemoGrid();
+    try{
+      closeMemoModal();
+      renderShelfList();
+      renderMemoGrid();
+    }catch(e){}
+    restoreBtn();
   },500);
 }
 
