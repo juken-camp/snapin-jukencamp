@@ -3224,7 +3224,8 @@ async function uploadShelfPhoto(dataUrl){
 // base64でJSONに載せるとVercel関数のボディ上限(約4.5MB)に当たるため、
 // サーバから署名付きPUT URLを受け取り、ブラウザから R2 へ直接 PUT する。
 // ※ R2バケット側に「PUTを許可するCORS設定」が必要 (origin=admin、method=PUT、header=content-type)。
-async function uploadShelfFileDirect(file){
+// onProgress(pct) で 0〜100 の進捗を返す。fetchは進捗を取れないので XHR を使う。
+async function uploadShelfFileDirect(file, onProgress){
   const ct=file.type||'application/octet-stream';
   const r=await fetch('/api/photo',{
     method:'POST',
@@ -3235,8 +3236,32 @@ async function uploadShelfFileDirect(file){
   const d=await r.json();
   if(!d.uploadUrl||!d.url)throw new Error('署名付きURL未取得 (R2_PUBLIC_URL を確認)');
   // 署名時の ContentType と一致させて PUT する (不一致だと署名エラーになる)。
-  const put=await fetch(d.uploadUrl,{method:'PUT',headers:{'Content-Type':ct},body:file});
-  if(!put.ok)throw new Error('R2への直接アップロード失敗 (HTTP '+put.status+' / R2のCORS設定を確認)');
+  await new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest();
+    let stallTimer=null;
+    const armStall=()=>{
+      if(stallTimer)clearTimeout(stallTimer);
+      // 60秒進捗が無ければ通信が止まっているとみなして中断する。
+      stallTimer=setTimeout(()=>{ try{xhr.abort();}catch(e){} reject(new Error('60秒進みませんでした。回線か R2 の CORS 設定を確認してください')); },60000);
+    };
+    xhr.open('PUT',d.uploadUrl);
+    xhr.setRequestHeader('Content-Type',ct);
+    xhr.upload.onprogress=(e)=>{
+      if(e.lengthComputable && typeof onProgress==='function'){
+        onProgress(Math.floor(e.loaded/e.total*100));
+      }
+      armStall();
+    };
+    xhr.onload=()=>{
+      if(stallTimer)clearTimeout(stallTimer);
+      if(xhr.status>=200 && xhr.status<300)resolve();
+      else reject(new Error('R2への直接アップロード失敗 (HTTP '+xhr.status+' / CORS設定を確認)'));
+    };
+    xhr.onerror=()=>{ if(stallTimer)clearTimeout(stallTimer); reject(new Error('R2へのアップロードでネットワーク/CORSエラー (R2のCORS設定を確認)')); };
+    xhr.onabort=()=>{ if(stallTimer)clearTimeout(stallTimer); };
+    armStall();
+    xhr.send(file);
+  });
   return d.url;
 }
 
@@ -5718,7 +5743,9 @@ function renderMemoModalBody(){
       }catch(e){ posterUrl=''; }
       setStatus('動画をアップロード中…','busy');
       // 動画本体は R2 へ直接PUT (Vercel関数のボディ上限を回避するため)
-      const url=await uploadShelfFileDirect(file);
+      const url=await uploadShelfFileDirect(file,(pct)=>{
+        setStatus('動画をアップロード中… '+pct+'%','busy');
+      });
       state.editingMemo.videoUrl=url;
       state.editingMemo.poster=posterUrl||state.editingMemo.poster||'';
       setStatus('');
