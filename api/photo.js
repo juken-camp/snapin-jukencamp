@@ -16,6 +16,7 @@
 // 依存: @aws-sdk/client-s3 (package.json に追加し npm install してください)
 
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Redis } from '@upstash/redis';
 import { authFromReq } from './_lib/auth.js';
 
@@ -31,6 +32,11 @@ const MAX_BYTES = 8 * 1024 * 1024; // 1枚あたり最大8MB(デコード後)
 const s3 = new S3Client({
   region: 'auto',
   endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  // 新しめの @aws-sdk は自動で checksum ヘッダ(x-amz-checksum-*)を付けるが、
+  // R2 の署名付きURL(PUT)ではこれが原因で SignatureDoesNotMatch になることがある。
+  // 必要なときだけ計算する設定にして、署名付きアップロードを安定させる。
+  requestChecksumCalculation: 'WHEN_REQUIRED',
+  responseChecksumValidation: 'WHEN_REQUIRED',
   credentials: {
     accessKeyId: process.env.R2_ACCESS_KEY_ID,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
@@ -114,6 +120,36 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     } catch (err) {
       console.error('shelf photo error:', err);
+      return res.status(500).json({ error: err.message || 'Internal server error' });
+    }
+  }
+
+  // ─── 共有ライブラリの大きいファイル(動画など)用: 署名付きPUT URLを発行 (管理者専用) ───
+  // base64でJSONに載せると Vercel関数のボディ上限(約4.5MB)に当たるため、ブラウザから
+  // R2 へ直接アップロードできる一時URLを返す。保存先キーと公開URLも併せて返す。
+  // ※ R2バケットに PUT を許可する CORS 設定が必要 (下記返り値の uploadUrl の取得後に効く)。
+  if (action === 'shelf-put-url') {
+    const pass = req.headers['x-admin-password'];
+    if (!process.env.ADMIN_PASSWORD || pass !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      const contentType = String(body.contentType || 'application/octet-stream');
+      const photoId = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      const ShelfKey = `shelfphotos/${photoId}`;
+      // 署名時の ContentType と、クライアントが PUT 時に送る Content-Type は一致させること。
+      const cmd = new PutObjectCommand({ Bucket: BUCKET, Key: ShelfKey, ContentType: contentType });
+      const uploadUrl = await getSignedUrl(s3, cmd, { expiresIn: 600 }); // 10分有効
+      const base = (process.env.R2_PUBLIC_URL || '').replace(/\/+$/, '');
+      return res.status(200).json({
+        ok: true,
+        photoId,
+        key: ShelfKey,
+        uploadUrl,
+        url: base ? `${base}/${ShelfKey}` : null,
+      });
+    } catch (err) {
+      console.error('shelf put-url error:', err);
       return res.status(500).json({ error: err.message || 'Internal server error' });
     }
   }
