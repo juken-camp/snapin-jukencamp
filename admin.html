@@ -2667,6 +2667,16 @@ function setupNoteEditor(m){
     inner.style.justifyContent='flex-start';
   };
   noteApplyStyle=applyStyle;
+  // 揃えツールバーの点灯を、現在の解決済み揃え (applyStyle と同じ innerText 基準) に同期する。
+  // 入力で文字数が 25字しきい値をまたぐと自動判定が切り替わるため、点灯も追従させないと
+  // 「マークと本文の揃えがズレる」状態になる (ボタンを押すまで一致しない)。
+  const refreshAlignBtns=()=>{
+    const alignRow=$('align-row');
+    if(!alignRow)return;
+    const a=resolveAlign({text:editor.innerText,alignH:m.alignH,alignV:m.alignV});
+    alignRow.querySelectorAll('.align-btn[data-axis="h"]').forEach(b=>b.classList.toggle('on',b.dataset.align===a.h));
+    alignRow.querySelectorAll('.align-btn[data-axis="v"]').forEach(b=>b.classList.toggle('on',b.dataset.align===a.v));
+  };
   wrap.addEventListener('click',e=>{
     if(e.target===wrap||e.target===inner){
       editor.focus();
@@ -2680,8 +2690,10 @@ function setupNoteEditor(m){
   editor.addEventListener('input',()=>{
     m.text=editor.innerText;
     applyStyle();
+    refreshAlignBtns();
   });
   applyStyle();
+  refreshAlignBtns();
   requestAnimationFrame(applyStyle);
 }
 
