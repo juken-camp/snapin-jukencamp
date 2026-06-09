@@ -954,6 +954,19 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 /* サイズ指定カードは行/列のトラックで大きさが決まるので aspect-ratio を解除して伸ばす */
 .memo-card.sized{aspect-ratio:auto;height:100%;min-height:0;}
 .memo-card img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;-webkit-touch-callout:none;-webkit-user-drag:none;}
+.memo-card.video{background:#000;}
+.memo-card video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;background:#000;}
+.memo-card .video-play-badge{position:absolute;top:7px;right:7px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:3;}
+.memo-card .video-play-badge svg{width:11px;height:11px;margin-left:1px;}
+/* 動画編集ゾーン (写真ゾーンと同系統) */
+.video-zone{display:block;width:100%;aspect-ratio:16/10;border-radius:12px;border:1px solid var(--line2);background:#000;position:relative;overflow:hidden;}
+.video-zone.empty{display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1px dashed var(--line2);}
+.video-zone .vz-empty{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink3);font-size:13px;}
+.video-zone .vz-empty svg{color:var(--g);}
+.video-zone video{width:100%;height:100%;object-fit:contain;background:#000;display:block;}
+.video-zone-buttons{display:flex;gap:8px;margin-top:10px;}
+.video-zone-btn{flex:1;padding:10px;border:1px solid var(--line2);border-radius:10px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;text-align:center;}
+.video-zone-btn:active{background:var(--gl);}
 .memo-card .ctxt{
   padding:12px;
   font-size:11px;
@@ -4751,6 +4764,16 @@ function renderMemoGrid(){
     if(displayCard.type==='photo' || displayCard.type==='photonote'){
       inner=`<img src="${esc(displayCard.image||'')}" alt="">`;
       if(displayCard.text)inner+=`<div class="ctxt" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:white;padding:6px 8px;font-size:10px;-webkit-line-clamp:2;">${esc(displayCard.text)}</div>`;
+    }else if(displayCard.type==='video'){
+      const vbadge=`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
+      if(displayCard.poster){
+        inner=`<img src="${esc(displayCard.poster)}" alt="">`+vbadge;
+      }else if(displayCard.videoUrl){
+        inner=`<video src="${esc(displayCard.videoUrl)}" muted playsinline preload="metadata"></video>`+vbadge;
+      }else{
+        inner=vbadge;
+      }
+      if(displayCard.text)inner+=`<div class="ctxt" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:white;padding:6px 8px;font-size:10px;-webkit-line-clamp:2;">${esc(displayCard.text)}</div>`;
     }else if(displayCard.type==='note'){
       const col=colorById(displayCard.color);
       const b=noteCardBase(displayCard);
@@ -5037,6 +5060,9 @@ function cardRowPreview(dc){
   if(dc.type==='photo'||dc.type==='photonote'){
     thumb=`<div class="card-reorder-thumb">${dc.image?`<img src="${esc(dc.image)}" alt="">`:''}</div>`;
     label=esc((dc.text||'写真').slice(0,40)); kind='写真';
+  }else if(dc.type==='video'){
+    thumb=`<div class="card-reorder-thumb" style="background:#000;">${dc.poster?`<img src="${esc(dc.poster)}" alt="">`:`<svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>`}</div>`;
+    label=esc((dc.text||'動画').slice(0,40)); kind='動画';
   }else if(dc.type==='note'){
     const col=colorById(dc.color);
     thumb=`<div class="card-reorder-thumb" style="background:${col.bg};color:${col.fg};font-size:9px;padding:3px;text-align:center;overflow:hidden;line-height:1.2;">${esc((dc.text||'').slice(0,10))}</div>`;
@@ -5264,6 +5290,10 @@ function renderMemoModalBody(){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.81.01L6 21"/></svg>
         写真
       </button>
+      <button class="type-chip ${m.type==='video'?'on':''}" data-set-type="video">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 8-6 4 6 4V8z"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+        動画
+      </button>
       <button class="type-chip ${m.type==='list'?'on':''}" data-set-type="list">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         リスト
@@ -5338,6 +5368,33 @@ function renderMemoModalBody(){
       <div class="color-label">枠の色</div>
       <div class="color-row">
         ${CARD_COLORS.map(c=>`<button class="color-swatch ${(m.color||'none')===c.id?'on':''} ${c.id==='none'?'is-none':''}" data-set-color="${c.id}" style="background:${c.bg};--sw-bd:${c.bd};" title="${c.name}"></button>`).join('')}
+      </div>
+    `;
+  }else if(m.type==='video'){
+    editHtml = m.videoUrl ? `
+      <div class="video-zone">
+        <video src="${esc(m.videoUrl)}" ${m.poster?`poster="${esc(m.poster)}"`:''} controls playsinline preload="metadata"></video>
+      </div>
+      <div class="video-zone-buttons">
+        <label class="video-zone-btn" style="cursor:pointer;">
+          <input id="video-file-change" type="file" accept="video/*" style="display:none;">
+          動画を変更
+        </label>
+        <button class="video-zone-btn" id="video-clear">クリア</button>
+      </div>
+      <div class="memo-edit-area" style="margin-top:14px;">
+        <textarea id="memo-text" placeholder="一言メモ (任意)">${esc(m.text||'')}</textarea>
+      </div>
+    ` : `
+      <label class="video-zone empty" id="video-zone" style="cursor:pointer;display:flex;">
+        <input id="video-file" type="file" accept="video/*" style="display:none;">
+        <div class="vz-empty">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m22 8-6 4 6 4V8z"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+          <div>タップして動画を選択</div>
+        </div>
+      </label>
+      <div class="memo-edit-area" style="margin-top:14px;">
+        <textarea id="memo-text" placeholder="一言メモ (任意)">${esc(m.text||'')}</textarea>
       </div>
     `;
   }else if(m.type==='list'){
@@ -5617,6 +5674,55 @@ function renderMemoModalBody(){
       renderMemoModalBody();
     });
   }
+  // video: 端末の動画ファイル/録画を選び、R2へアップして公開URLを保存する。
+  // ポスター(先頭フレーム)も生成してR2へ上げ、一覧サムネに使う。
+  const handleVideoSelect=async (file)=>{
+    if(!file)return;
+    if(!(file.type||'').startsWith('video/')){toast('動画ファイルを選んでください');return;}
+    // 動画は base64 にすると約1.37倍に膨らむ。サーバ(Vercel関数)の受信上限(約4.5MB)を
+    // 超えると失敗するため、元ファイル約3MBまでに制限し、短い解説クリップに案内する。
+    if(file.size > 3*1024*1024){
+      toast('動画が大きいようです。3MB以下の短いクリップにしてください');
+      return;
+    }
+    setStatus('動画を準備中…','busy');
+    let objUrl='';
+    try{
+      objUrl=URL.createObjectURL(file);
+      // ポスター生成 → R2 (失敗しても続行)
+      let posterUrl='';
+      try{
+        const poster=await makeVideoPoster(objUrl);
+        if(poster)posterUrl=await uploadShelfPhoto(poster);
+      }catch(e){ posterUrl=''; }
+      setStatus('動画をアップロード中…','busy');
+      const dataUrl=await readAsDataURL(file);
+      const url=await uploadShelfPhoto(dataUrl); // 写真と同じ shelf-put でR2へ
+      state.editingMemo.videoUrl=url;
+      state.editingMemo.poster=posterUrl||state.editingMemo.poster||'';
+      setStatus('');
+      renderMemoModalBody();
+    }catch(err){
+      setStatus('動画のアップロードに失敗: '+err.message,'error');
+    }finally{
+      if(objUrl){try{URL.revokeObjectURL(objUrl);}catch(e){}}
+    }
+  };
+  const onVideoInput=e=>{
+    const file=e.target.files && e.target.files[0];
+    e.target.value=''; // 同じ動画を選び直しても change が再発火するように
+    handleVideoSelect(file);
+  };
+  const videoFile=$('video-file');
+  if(videoFile)videoFile.addEventListener('change',onVideoInput);
+  const videoFileChange=$('video-file-change');
+  if(videoFileChange)videoFileChange.addEventListener('change',onVideoInput);
+  const videoClear=$('video-clear');
+  if(videoClear)videoClear.addEventListener('click',()=>{
+    state.editingMemo.videoUrl=null;
+    state.editingMemo.poster=null;
+    renderMemoModalBody();
+  });
   // 共有トグル (クロスポスト)
   body.querySelectorAll('[data-share-toggle]').forEach(el=>{
     el.addEventListener('click',()=>{
@@ -5642,6 +5748,34 @@ function readAsDataURL(file){
     r.onload=()=>resolve(r.result);
     r.onerror=()=>reject(new Error('読み込み失敗'));
     r.readAsDataURL(file);
+  });
+}
+
+// 動画の先頭(0.1秒)フレームを小さな JPEG dataURL にして返す。失敗時は空文字。
+// 利用者アプリ (index.html) と同じ実装。サムネ/poster 用。
+function makeVideoPoster(objUrl){
+  return new Promise((resolve)=>{
+    const v=document.createElement('video');
+    v.muted=true; v.playsInline=true; v.preload='metadata';
+    v.src=objUrl;
+    let done=false;
+    const finish=(val)=>{ if(done)return; done=true; resolve(val); };
+    const grab=()=>{
+      try{
+        const vw=v.videoWidth||720, vh=v.videoHeight||1280;
+        const maxW=360;
+        const scale=Math.min(1, maxW/vw);
+        const cw=Math.round(vw*scale), ch=Math.round(vh*scale);
+        const cv=document.createElement('canvas');
+        cv.width=cw; cv.height=ch;
+        cv.getContext('2d').drawImage(v,0,0,cw,ch);
+        finish(cv.toDataURL('image/jpeg',0.6));
+      }catch(err){ finish(''); }
+    };
+    v.onloadeddata=()=>{ try{ v.currentTime=0.1; }catch(e){ grab(); } };
+    v.onseeked=grab;
+    v.onerror=()=>finish('');
+    setTimeout(()=>finish(''),4000); // 保険: 4秒で諦める
   });
 }
 
@@ -6052,7 +6186,7 @@ function memoBodyChanged(prev,next){
     if(typeof v==='object')return JSON.stringify(v);
     return String(v);
   };
-  const fields=['type','text','title','image','items','link','ocrText','color','alignH','alignV','size'];
+  const fields=['type','text','title','image','videoUrl','poster','items','link','ocrText','color','alignH','alignV','size'];
   for(const f of fields){
     if(norm(prev[f])!==norm(next[f]))return true;
   }
@@ -6071,6 +6205,10 @@ async function saveMemoFromModal(){
   }
   if((m.type==='photo'||m.type==='photonote') && !m.image){
     toast('写真を選択してください');
+    return;
+  }
+  if(m.type==='video' && !m.videoUrl){
+    toast('動画を選択してください');
     return;
   }
   if(m.type==='link' && !(m.link && m.link.url)){
