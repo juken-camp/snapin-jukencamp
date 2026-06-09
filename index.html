@@ -10836,7 +10836,9 @@ function renderUpload(){
 
     // 揃えボタンのアクティブ状態を更新する関数
     function refreshAlignToolbar(){
-      const align=resolveAlign({text:editor.textContent,alignH:c.alignH,alignV:c.alignV});
+      // applyStyle と同じ innerText を使う。textContent は <br>/<div> の改行を数えないため、
+      // 改行入りメモで 25字しきい値をまたぐと「マークと実際の揃え」がズレる原因になっていた。
+      const align=resolveAlign({text:editor.innerText,alignH:c.alignH,alignV:c.alignV});
       const isAutoH=!c.alignH;
       const isAutoV=!c.alignV;
       alignBar.querySelectorAll('[data-axis="h"] .up-align-btn').forEach(btn=>{
