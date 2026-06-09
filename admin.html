@@ -5728,10 +5728,15 @@ function renderMemoModalBody(){
       toast('動画が大きすぎます (200MB以下にしてください)');
       return;
     }
-    if(file.size > 40*1024*1024){
-      toast('大きい動画です。アップロードに少し時間がかかります');
-    }
+    // 動画ゾーン内に進捗/メッセージを出す (モーダルを開いている間は上部の帯が隠れて見えないため)。
+    const setZoneMsg=(title,sub,color)=>{
+      const z=$('video-zone'); if(!z)return;
+      z.style.pointerEvents='none'; // アップロード中は再タップで多重起動しないように
+      const inner=z.querySelector('.vz-empty');
+      if(inner)inner.innerHTML=`<div style="font-size:16px;font-weight:700;color:${color||'var(--g)'};">${esc(title)}</div>`+(sub?`<div style="margin-top:6px;font-size:12px;color:var(--ink3);max-width:260px;text-align:center;">${esc(sub)}</div>`:'');
+    };
     setStatus('動画を準備中…','busy');
+    setZoneMsg('準備中…','先頭フレームを作成しています');
     let objUrl='';
     try{
       objUrl=URL.createObjectURL(file);
@@ -5742,9 +5747,11 @@ function renderMemoModalBody(){
         if(poster)posterUrl=await uploadShelfPhoto(poster);
       }catch(e){ posterUrl=''; }
       setStatus('動画をアップロード中…','busy');
+      setZoneMsg('アップロード中… 0%','完了までこのままお待ちください');
       // 動画本体は R2 へ直接PUT (Vercel関数のボディ上限を回避するため)
       const url=await uploadShelfFileDirect(file,(pct)=>{
         setStatus('動画をアップロード中… '+pct+'%','busy');
+        setZoneMsg('アップロード中… '+pct+'%','完了までこのままお待ちください');
       });
       state.editingMemo.videoUrl=url;
       state.editingMemo.poster=posterUrl||state.editingMemo.poster||'';
@@ -5752,6 +5759,13 @@ function renderMemoModalBody(){
       renderMemoModalBody();
     }catch(err){
       setStatus('動画のアップロードに失敗: '+err.message,'error');
+      // 失敗内容もゾーン内に表示し、タップで再試行できるように戻す。
+      const z=$('video-zone');
+      if(z){
+        z.style.pointerEvents='';
+        const inner=z.querySelector('.vz-empty');
+        if(inner)inner.innerHTML=`<div style="font-size:14px;font-weight:700;color:var(--rose-fg);">アップロード失敗</div><div style="margin-top:6px;font-size:11px;color:var(--ink3);max-width:260px;text-align:center;word-break:break-word;">${esc(err.message)}</div><div style="margin-top:10px;font-size:12px;color:var(--g);">タップでもう一度</div>`;
+      }
     }finally{
       if(objUrl){try{URL.revokeObjectURL(objUrl);}catch(e){}}
     }
