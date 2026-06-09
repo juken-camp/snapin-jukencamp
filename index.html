@@ -9557,16 +9557,12 @@ function renderFeed(el,cards,opts){
           + feedBody(c.text,c.tags);
       if(!isNoColor(c.color)){item.style.borderColor=colorById(c.color).bd;}
     }else if(c.type==='video'){
-      const vurl=c._videoUrl||'';
-      const poster=c.poster?` poster="${c.poster}"`:'';
-      let media;
-      if(vurl){
-        media=`<video class="feed-video" src="${vurl}"${poster} muted loop playsinline webkit-playsinline preload="metadata"></video>`;
-      }else{
-        media=c.poster
-          ? `<img src="${c.poster}" alt="" decoding="async">`
-          : `<div class="feed-ph" style="min-height:200px;background:#000;color:#888;font-size:14px;">動画が見つかりません</div>`;
-      }
+      // フィードでも動画は静止画(ポスター)＋再生マークのみ表示し、再生は詳細を開いたときに行う。
+      // (多数の <video> を同時に持つと、特に iOS でメタデータ取得/再生がつかえて重くなるため)
+      const vbadge=`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
+      const media=c.poster
+        ? `<img src="${c.poster}" alt="" decoding="async" loading="lazy">`+vbadge
+        : `<div class="feed-ph" style="min-height:200px;background:#000;color:#888;font-size:14px;">動画</div>`+vbadge;
       inner=feedHead(FEED_ICONS.video,c,c0.pinned)
           + `<div class="feed-media">${upd}${media}</div>`
           + feedBody(c.text,c.tags);
@@ -9673,11 +9669,13 @@ function setupFeedVideoAutoplay(el){
 // ポスターがあればそれを poster 属性に使い、表示中だけ短く再生して確実にフレームを見せる。
 function videoCardInner(c){
   const badge=`<div class="video-play-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>`;
-  if(c && c._videoUrl){
-    return `<video class="grid-video-thumb" src="${c._videoUrl}" muted loop autoplay playsinline webkit-playsinline preload="metadata" ${c.poster?`poster="${c.poster}"`:''} style="width:100%;height:100%;object-fit:cover;background:#000;pointer-events:none;"></video>`+badge;
+  // サムネは静止画(ポスター)＋再生マークのみ。動画再生は詳細を開いたときだけ行う。
+  // グリッドに <video> を多数置くと、特に iOS で同時再生/メタデータ取得がつかえて
+  // ページが固まる(共有ページが真っ白のまま等)ため、グリッドには <video> を一切置かない。
+  if(c && c.poster){
+    return `<img class="grid-video-thumb" src="${c.poster}" alt="" decoding="async" loading="lazy" style="width:100%;height:100%;object-fit:cover;background:#000;pointer-events:none;">`+badge;
   }
-  // _videoUrl がまだ無い(復元前など)場合はポスターか黒地+再生マーク
-  return (c&&c.poster?`<img src="${c.poster}" alt="" decoding="async" loading="eager">`:'')+badge;
+  return `<div class="grid-video-thumb" style="width:100%;height:100%;background:#000;pointer-events:none;"></div>`+badge;
 }
 
 // サムネ動画を「画面に入っているものだけ」再生する (黒塗り防止 + 省電力)。
