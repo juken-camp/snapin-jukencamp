@@ -4590,6 +4590,83 @@ html:not(.en-on) .en-live{ display:none; }
 .enm-subrow{ padding-left:50px; border-top:0.5px solid var(--line); margin-top:2px; }
 .enm-subrow .enm-title{ font-size:14px; }
 .enm-note{ font-size:11.5px; color:var(--ink3); line-height:1.5; padding:2px 4px 8px; }
+/* ═══ 体験演出 (3Dモーション) ═══
+   足し算の飾りではなく「保存した」「思い出す」という行為の手応えを見えるようにする。
+   すべて transform/opacity のみ (GPU合成・レイアウト不変)。
+   reduced-motion の設定者には末尾のメディアクエリでまとめて止める (機能はそのまま)。 */
+
+/* 一覧の登場: カードが奥から順に起き上がる。
+   画面遷移・表示切替の直後だけ (JS 側の applyEnterFX が付与)。保存や編集の再描画では動かない。 */
+@keyframes fxCardEnter{
+  from{opacity:0;transform:perspective(700px) translateY(16px) translateZ(-46px) rotateX(8deg);}
+  to{opacity:1;transform:perspective(700px) translateY(0) translateZ(0) rotateX(0deg);}
+}
+.card-enter{animation:fxCardEnter .55s cubic-bezier(.22,1,.36,1) backwards;animation-delay:var(--ed,0ms);}
+
+/* 保存直後のカード: ふわっと生まれて、にじむ光がひと呼吸で消える */
+@keyframes fxCardBorn{
+  0%{box-shadow:0 0 0 0 rgba(var(--g-rgb),.55);transform:scale(.94);}
+  55%{transform:scale(1.015);}
+  100%{box-shadow:0 0 0 16px rgba(var(--g-rgb),0);transform:scale(1);}
+}
+.card-born{animation:fxCardBorn .8s cubic-bezier(.22,1,.36,1);}
+
+/* クイック保存: 入力欄からグリッドへ飛んでいく「カードの分身」(動きは fxFlyToCard が付ける) */
+.fly-ghost{
+  position:fixed;left:0;top:0;z-index:9998;pointer-events:none;
+  background:var(--gl);border:1.5px solid var(--g);border-radius:2px;
+  color:var(--gd);font-size:12px;line-height:1.5;padding:10px;
+  overflow:hidden;box-sizing:border-box;
+  box-shadow:0 10px 30px rgba(0,0,0,.16);
+  transform-origin:top left;
+  word-break:break-word;
+}
+
+/* ログイン画面: 背景でメモのかけらが静かに漂う (テーマ色に追従) */
+.login-wrap{position:relative;}
+.login-hero,.login-cards,.login-pwa{position:relative;z-index:1;}
+.login-float{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.login-float i{
+  position:absolute;display:block;border-radius:5px;
+  background:linear-gradient(135deg,rgba(var(--g-rgb),.14),rgba(var(--gd-rgb),.07));
+  border:1px solid rgba(var(--g-rgb),.18);
+  animation:fxFloat 12s ease-in-out infinite alternate;
+  will-change:transform;
+}
+.login-float i:nth-child(1){width:52px;height:52px;left:8%;top:14%;animation-duration:13s;}
+.login-float i:nth-child(2){width:34px;height:44px;right:10%;top:20%;animation-duration:10s;animation-delay:-3s;}
+.login-float i:nth-child(3){width:64px;height:40px;left:14%;bottom:18%;animation-duration:15s;animation-delay:-6s;}
+.login-float i:nth-child(4){width:30px;height:30px;right:16%;bottom:24%;animation-duration:9s;animation-delay:-2s;background:linear-gradient(135deg,rgba(232,163,61,.16),rgba(232,163,61,.06));border-color:rgba(232,163,61,.2);}
+.login-float i:nth-child(5){width:42px;height:54px;left:42%;top:6%;animation-duration:14s;animation-delay:-8s;background:linear-gradient(135deg,rgba(63,127,184,.14),rgba(63,127,184,.05));border-color:rgba(63,127,184,.18);}
+.login-float i:nth-child(6){width:26px;height:34px;right:38%;bottom:10%;animation-duration:11s;animation-delay:-5s;}
+@keyframes fxFloat{
+  from{transform:perspective(600px) translateY(10px) rotateX(8deg) rotateY(-6deg);}
+  to{transform:perspective(600px) translateY(-14px) rotateX(-6deg) rotateY(8deg);}
+}
+
+/* ログイン画面の登場: 上から順に立ち上がる */
+@keyframes fxHeroIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.login-logo{animation:fxHeroIn .6s .05s cubic-bezier(.22,1,.36,1) backwards;}
+.login-by{animation:fxHeroIn .6s .16s cubic-bezier(.22,1,.36,1) backwards;}
+.login-punch{animation:fxHeroIn .6s .3s cubic-bezier(.22,1,.36,1) backwards;}
+.login-tag{animation:fxHeroIn .6s .4s cubic-bezier(.22,1,.36,1) backwards;}
+.login-cards{animation:fxHeroIn .6s .52s cubic-bezier(.22,1,.36,1) backwards;}
+.login-pwa{animation:fxHeroIn .6s .64s cubic-bezier(.22,1,.36,1) backwards;}
+/* ロゴの「In」が上からスナップして収まる = アプリ名そのものを動きで見せる */
+@keyframes fxSnapIn{
+  0%{opacity:0;transform:translateY(-20px) rotate(7deg) scale(1.25);}
+  62%{opacity:1;transform:translateY(2px) rotate(-1deg) scale(.98);}
+  100%{opacity:1;transform:translateY(0) rotate(0) scale(1);}
+}
+.login-logo em{display:inline-block;animation:fxSnapIn .65s .75s cubic-bezier(.34,1.56,.64,1) backwards;}
+
+/* 動きを減らす設定の人にはまとめて止める */
+@media (prefers-reduced-motion: reduce){
+  .card-enter,.card-born,
+  .login-logo,.login-by,.login-punch,.login-tag,.login-cards,.login-pwa,.login-logo em,
+  .login-float i{animation:none !important;}
+  .fly-ghost{display:none;}
+}
 </style>
 </head>
 <body>
@@ -4598,6 +4675,7 @@ html:not(.en-on) .en-live{ display:none; }
 <!-- LOGIN -->
 <div class="screen active" id="screen-login">
   <div class="login-wrap">
+    <div class="login-float" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="login-hero">
       <div class="login-logo">Snap<em>In</em></div>
       <div class="login-by">by JUKEN CAMP</div>
@@ -5684,6 +5762,7 @@ const state={
   chatRef:null,
   currentOfficial:null,
   mosaicMode:false,
+  fxMilestone:0,       // お祝い済みの節目枚数 (1,10,30…)。同じ節目を繰り返し祝わないために永続化
   todayMosaic:false,   // 「今日」ページの暗記モード(ぼかし)。昨日以降の過去メモに適用 (今日のメモは除外)
   detailMosaic:false,  // 詳細画面のモザイク状態
   detailAiMode:false,  // 詳細画面でAI送信モードか
@@ -5772,6 +5851,7 @@ function buildLightPayload(){
     enRate:state.enRate,
     enLevel:state.enLevel,
     lastCloudBackupAt:state.lastCloudBackupAt,
+    fxMilestone:state.fxMilestone||0,
   };
 }
 
@@ -6085,6 +6165,7 @@ function applyPayload(d){
   state.enLevel=_normEnLevel(d.enLevel); // 英検レベル。未設定/不正は準2級
   state._savedAt=d._savedAt||0;
   state.lastCloudBackupAt=d.lastCloudBackupAt||0;
+  state.fxMilestone=d.fxMilestone||0;
   applyTheme();
   applyDark();
   applyEnMode();
@@ -7018,6 +7099,7 @@ async function refreshMe(force){
 
 function goto(id,push){
   if(push===undefined)push=true;
+  _enterFXAt=Date.now(); // 直後の一覧描画にだけ登場モーションを許可 (体験演出)
   // 設定シートが開いていたら閉じる (画面遷移時に取り残されない)
   if($('settings-sheet')?.classList.contains('on'))closeSettings();
   // 「＋」メニュー(add-sheet)が開いたまま別画面へ遷移する場合も閉じる
@@ -9118,6 +9200,11 @@ function renderGrid(el,cards,origin){
     el.appendChild(card);
   });
 
+  // 画面遷移直後だけ、カードが奥から順に起き上がる (体験演出)
+  applyEnterFX(el);
+  // 直前に保存されたカードがあれば、ふわっと光らせる
+  if(isHome)applyBornFX(el);
+
   // 画面に入った動画サムネだけ自動再生する(共有グリッド等)
   requestAnimationFrame(refreshVideoThumbs);
 
@@ -9144,9 +9231,9 @@ function renderGrid(el,cards,origin){
           return;
         }
         if(state.mosaicMode){
-          // モザイク中: タップで見える/隠れるをトグル (暗記練習用)
+          // モザイク中: タップでカードをめくって見える/隠れるをトグル (暗記練習用)
           // 通常モードに戻すには右上の目玉ボタンを押す
-          card.classList.toggle('mosaic');
+          fxFlipCard(card,()=>card.classList.toggle('mosaic'));
         }else{
           openDetail(c,'mine');
         }
@@ -9563,6 +9650,7 @@ function renderFeed(el,cards,opts){
     const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
     const item=document.createElement('div');
     item.className='feed-item';
+    item.dataset.id=c0.id; // 体験演出 (飛翔の着地点・保存直後の発光) でカードを特定する
     const upd=cardHasUpdate(c0)
       ? `<div class="card-update-badge" title="共有ライブラリが更新しました">更新</div>` : '';
     let inner='';
@@ -9649,6 +9737,10 @@ function renderFeed(el,cards,opts){
     });
     el.appendChild(item);
   });
+  // 画面遷移直後だけ、項目が奥から順に起き上がる (体験演出)
+  applyEnterFX(el);
+  // 直前に保存されたカードがあれば、ふわっと光らせる (ホームのみ)
+  if(el.id==='feed-home')applyBornFX(el);
   setupFeedVideoAutoplay(el);
   // メモのフォント/余白/最小高さを枠幅から確定 (グリッド/詳細と改行を一致させる)。
   applyFeedNoteStyle(el);
@@ -10600,6 +10692,7 @@ function quickSave(){
   };
   state.cards.unshift(c);
   save();
+  state._bornId={id:c.id,at:Date.now()}; // 直後の一覧描画でこのカードを光らせる (体験演出)
 
   // クイック入力欄に保存完了フィードバック
   const inp=$('quick-input');
@@ -10613,6 +10706,8 @@ function quickSave(){
   if(navigator.vibrate)navigator.vibrate(15);
   onQuickInput();
   renderHome();
+  fxFlyToCard(wrap||inp,c.id,v); // 入力欄からカードが飛んでグリッドに収まる (体験演出)
+  setTimeout(fxCheckMilestone,700); // 着地を見届けてから節目のお祝い
   setTimeout(()=>{
     inp.classList.remove('saved-flash');
     if(wrap)wrap.classList.remove('saved-flash');
@@ -11552,6 +11647,11 @@ function saveCard(){
   }
 
   function onSaveSuccess(){
+    // 新規カードなら、遷移先の一覧でふわっと光らせる + 節目ならお祝い (体験演出)
+    if(wasNew){
+      state._bornId={id:c.id,at:Date.now()};
+      setTimeout(fxCheckMilestone,900);
+    }
     // 保存ボタンを ✓ に変えて「保存された」感を出す
     if(!btn){
       // ボタンが見つからない異常系: そのまま遷移
@@ -15682,6 +15782,7 @@ function showSaveError(){
 
 function setView(v){
   state.view=v;
+  _enterFXAt=Date.now(); // 切替直後の描画に登場モーションを許可 (体験演出)
   $('vt-grid').classList.toggle('on',v==='grid');
   $('vt-reel').classList.toggle('on',v==='reel');
   renderHome();
@@ -15711,8 +15812,15 @@ function toggleMosaic(){
       feed.querySelectorAll('.feed-item.tapped').forEach(it=>it.classList.remove('tapped'));
     }
   }else if(grid && !grid.classList.contains('hide')){
-    // グリッドは各カードに .mosaic を付けてぼかす (タップで個別に解除できる)
-    grid.querySelectorAll('.card').forEach(card=>card.classList.toggle('mosaic',state.mosaicMode));
+    // グリッドはカードを1枚ずつ裏返して切り替える (フラッシュカードをめくる手応え)。
+    // 端から波のように伝わる。タップで個別にめくり直せるのは従来どおり。
+    const on=state.mosaicMode;
+    if(navigator.vibrate)navigator.vibrate(8);
+    grid.querySelectorAll('.card').forEach((card,i)=>{
+      if(card.classList.contains('mosaic')===on)return; // 既に目的の面なら触らない
+      const delay=Math.min(i*26,650);
+      setTimeout(()=>fxFlipCard(card,()=>card.classList.toggle('mosaic',on)),delay);
+    });
   }else{
     // どちらも非表示 (空ホーム等) のときだけ通常の再描画にフォールバック
     renderHome();
@@ -16221,6 +16329,161 @@ async function refreshFromLogo(logoEl){
 // バウンド質感が違って不自然になる。ネイティブに完全に任せる方が一貫性がある。
 // 更新は SnapIn ロゴタップに集約 (途中で止まる/カクつく問題を構造的に回避)。
 
+
+// ═══ 体験演出 (3Dモーション) ═══
+// 方針: 派手さを足すのではなく「保存した」「思い出す」という行為そのものを
+// 目に見える手応えにする。すべて transform/opacity のみ (GPU合成)。
+// 動きを減らす設定 (prefers-reduced-motion) の人には一切動かさない。
+const FX_REDUCE=!!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+// ── 一覧の登場ウェーブ ──
+// 画面遷移・表示切替の直後 (600ms以内) の再構築だけ、カードが奥から順に起き上がる。
+// 保存・編集による再描画では動かさない (毎回動くとうるさいので)。
+let _enterFXAt=0;
+function applyEnterFX(el){
+  if(FX_REDUCE || !el)return;
+  if(Date.now()-_enterFXAt>600)return;
+  _enterFXAt=0;
+  const kids=el.children;
+  const n=Math.min(kids.length,24); // 最初の1画面ぶんだけ。それ以降は素で表示 (負荷を増やさない)
+  for(let i=0;i<n;i++){
+    kids[i].classList.add('card-enter');
+    kids[i].style.setProperty('--ed',Math.min(i*30,560)+'ms');
+  }
+}
+
+// ── 保存直後のカードの発光 ──
+// state._bornId={id,at} を立てておくと、直後の一覧描画でそのカードがふわっと生まれる。
+// 1.5秒で失効 (別画面の後の描画で誤発光しないように)。
+function applyBornFX(el){
+  const b=state._bornId;
+  if(!b)return;
+  if(Date.now()-b.at>1500){state._bornId=null;return;}
+  const t=el.querySelector('[data-id="'+b.id+'"]');
+  if(!t)return;
+  state._bornId=null;
+  t.classList.add('card-born');
+  setTimeout(()=>t.classList.remove('card-born'),950);
+}
+
+// ── クイック保存: 入力欄からグリッドへ「カードが飛んで収まる」──
+function fxFlyToCard(fromEl,cardId,text){
+  if(FX_REDUCE || !fromEl)return;
+  requestAnimationFrame(()=>{
+    const target=document.querySelector('#grid-home .card[data-id="'+cardId+'"], #feed-home .feed-item[data-id="'+cardId+'"]');
+    if(!target)return;
+    const from=fromEl.getBoundingClientRect();
+    const to=target.getBoundingClientRect();
+    if(!to.width || to.top<-to.height)return; // 着地点が画面外なら飛ばさない
+    const g=document.createElement('div');
+    g.className='fly-ghost';
+    g.style.width=to.width+'px';
+    g.style.height=to.height+'px';
+    g.textContent=(text||'').slice(0,40);
+    document.body.appendChild(g);
+    const fx=from.left+from.width/2-to.width/2;
+    const anim=g.animate([
+      {transform:'perspective(700px) translate('+fx+'px,'+from.top+'px) scale(.55) rotateX(28deg)',opacity:.95},
+      {transform:'perspective(700px) translate('+to.left+'px,'+to.top+'px) scale(1) rotateX(0deg)',opacity:1}
+    ],{duration:430,easing:'cubic-bezier(.3,.8,.3,1)'});
+    anim.onfinish=()=>g.remove();
+    setTimeout(()=>{if(g.parentNode)g.remove();},800); // 保険 (WAAPI未対応・中断時)
+  });
+}
+
+// ── 思い出すモード: カードを裏返す (フラッシュカードをめくる手応え) ──
+// 90°で中身を切り替える二段モーション。preserve-3d を使わないので
+// overflow:hidden の角丸クリップ (iOS WebKit) と衝突しない。
+function fxFlipCard(card,midFn){
+  if(FX_REDUCE){midFn();return;}
+  if(card.dataset.flipping==='1'){midFn();return;} // 連打時は即時反映で確定
+  card.dataset.flipping='1';
+  card.style.transition='transform .13s ease-in';
+  card.style.transform='perspective(640px) rotateY(90deg)';
+  setTimeout(()=>{
+    midFn();
+    card.style.transition='none';
+    card.style.transform='perspective(640px) rotateY(-90deg)';
+    void card.offsetWidth; // 反映を確定させてから戻りの transition を張る
+    card.style.transition='transform .16s ease-out';
+    card.style.transform='';
+    setTimeout(()=>{
+      card.style.transition='';
+      delete card.dataset.flipping;
+    },180);
+  },135);
+}
+
+// ── 節目のお祝い (1枚目・10枚目…) ──
+// 数字で煽らない。紙吹雪がひと呼吸だけ舞って、トーストが事実を一行だけ伝える。
+const FX_MILESTONES=[1,10,30,50,100,200,365,500,1000];
+function fxCheckMilestone(){
+  const n=getActiveCards().length;
+  let top=0;
+  for(const m of FX_MILESTONES){ if(n>=m)top=m; }
+  if(top<=(state.fxMilestone||0))return;
+  const exact=(n===top); // この保存でちょうど節目に到達したときだけ祝う
+  state.fxMilestone=top; // 既存利用者の過去の節目は静かに消化 (後からまとめて祝わない)
+  save();
+  if(!exact)return;
+  fxBurst();
+  toast(top===1?'はじめての1枚を残しました':'メモが'+top+'枚になりました');
+  if(navigator.vibrate)navigator.vibrate([12,40,12]);
+}
+
+function fxBurst(){
+  if(FX_REDUCE || !document.body.animate)return;
+  const cs=getComputedStyle(document.documentElement);
+  const colors=['--g','--amber','--sky','--rose'].map(v=>cs.getPropertyValue(v).trim()).filter(Boolean);
+  if(!colors.length)return;
+  const wrap=document.createElement('div');
+  wrap.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden;';
+  document.body.appendChild(wrap);
+  const cx=window.innerWidth/2, cy=window.innerHeight-140;
+  for(let i=0;i<26;i++){
+    const p=document.createElement('div');
+    const sz=5+Math.random()*6;
+    p.style.cssText='position:absolute;left:0;top:0;width:'+sz+'px;height:'+(Math.random()<.4?sz:sz*.55)+'px;border-radius:'+(Math.random()<.4?'50%':'2px')+';background:'+colors[i%colors.length]+';will-change:transform;';
+    wrap.appendChild(p);
+    const ang=(-90+(Math.random()*110-55))*Math.PI/180;
+    const dist=110+Math.random()*210;
+    const dx=Math.cos(ang)*dist, dy=Math.sin(ang)*dist;
+    p.animate([
+      {transform:'translate('+cx+'px,'+cy+'px) rotate(0deg)',opacity:1},
+      {transform:'translate('+(cx+dx)+'px,'+(cy+dy)+'px) rotate('+(Math.random()*540-270)+'deg)',opacity:1,offset:.65},
+      {transform:'translate('+(cx+dx*1.15)+'px,'+(cy+dy+180)+'px) rotate('+(Math.random()*720-360)+'deg)',opacity:0}
+    ],{duration:950+Math.random()*450,easing:'cubic-bezier(.2,.7,.3,1)'});
+  }
+  setTimeout(()=>wrap.remove(),1700);
+}
+
+// ── カードの押し心地 ──
+// 触った位置に沿ってわずかに傾く (最大6°)。指を離すと弾性で戻る。
+// transform だけなのでレイアウトは動かない。スクロール開始 (pointercancel) で即解除。
+(function(){
+  if(FX_REDUCE)return;
+  let tiltEl=null;
+  document.addEventListener('pointerdown',e=>{
+    const card=(e.target && e.target.closest)?e.target.closest('.card,.today-newcard'):null;
+    if(!card || card.dataset.flipping==='1')return;
+    const r=card.getBoundingClientRect();
+    if(r.width<40 || r.height<40)return;
+    const px=(e.clientX-r.left)/r.width-0.5;
+    const py=(e.clientY-r.top)/r.height-0.5;
+    tiltEl=card;
+    card.style.transition='transform .12s ease-out';
+    card.style.transform='perspective(520px) rotateX('+(-py*6).toFixed(2)+'deg) rotateY('+(px*6).toFixed(2)+'deg) scale(.97)';
+  },{passive:true,capture:true});
+  function clearTilt(){
+    if(!tiltEl)return;
+    const el=tiltEl;tiltEl=null;
+    if(el.dataset.flipping==='1')return; // フリップ演出中のカードには触らない
+    el.style.transform='';
+    setTimeout(()=>{ if(!el.style.transform && el.dataset.flipping!=='1')el.style.transition=''; },170);
+  }
+  document.addEventListener('pointerup',clearTilt,{passive:true,capture:true});
+  document.addEventListener('pointercancel',clearTilt,{passive:true,capture:true});
+})();
 
 // 起動
 setupNavs();
