@@ -3301,32 +3301,38 @@ async function uploadShelfFileDirect(file, onProgress){
   return d.url;
 }
 
-// 既存の base64 写真をまとめて R2 へ移行し、棚を保存し直す(一度実行すればOK)。
+// 既存の base64 画像(カード写真 + 棚アイコン)をまとめて R2 へ移行し、棚を保存し直す(一度実行すればOK)。
 async function migrateShelfPhotos(){
   if(!state.password){setStatus('再ログインしてください','error');return;}
+  // 写真もアイコンも {get,set} で同じ流れに乗せる。
   const targets=[];
   for(const sh of (state.shelves||[])){
+    // 棚アイコン (まだ base64 のものだけ)
+    if(sh && typeof sh.icon==='string' && sh.icon.startsWith('data:')){
+      targets.push({ get:()=>sh.icon, set:(u)=>{ sh.icon=u; } });
+    }
+    // カード写真
     for(const card of (sh.cards||[])){
       if(card && !card._ref && (card.type==='photo'||card.type==='photonote')
          && typeof card.image==='string' && card.image.startsWith('data:')){
-        targets.push(card);
+        targets.push({ get:()=>card.image, set:(u)=>{ card.image=u; } });
       }
     }
   }
-  if(targets.length===0){ setStatus('移行が必要な写真はありません'); setTimeout(()=>setStatus(''),1800); return; }
-  if(!confirm(`${targets.length}枚の写真をクラウド(R2)へ移行します。よろしいですか?`))return;
+  if(targets.length===0){ setStatus('移行が必要な画像はありません'); setTimeout(()=>setStatus(''),1800); return; }
+  if(!confirm(`${targets.length}件の画像(アイコン含む)をクラウド(R2)へ移行します。よろしいですか?`))return;
   let done=0, failed=0;
-  for(const card of targets){
-    setStatus(`写真を移行中… (${done+failed+1} / ${targets.length})`,'busy');
+  for(const t of targets){
+    setStatus(`画像を移行中… (${done+failed+1} / ${targets.length})`,'busy');
     try{
-      const url=await uploadShelfPhoto(card.image);
-      card.image=url;
+      const url=await uploadShelfPhoto(t.get());
+      t.set(url);
       done++;
     }catch(e){ failed++; }
   }
   if(failed>0){ setStatus(`移行: 成功${done} / 失敗${failed}。R2_PUBLIC_URL の設定を確認してください`,'error'); return; }
   const ok=await saveShelves();
-  if(ok)setStatus(`${done}枚をクラウドへ移行して保存しました`);
+  if(ok)setStatus(`${done}件をクラウドへ移行して保存しました`);
 }
 
 // ═══ STUDENTS ═══
@@ -4744,7 +4750,10 @@ function renderShelfEdit(){
         });
         const cur=getSelectedShelf();
         if(!cur)return;
-        cur.icon=compressed;
+        // 写真と同じく、base64のままJSONに載せず R2 へ上げて公開URLだけ保存する。
+        // (アイコンをbase64で直書きすると棚JSONが肥大化し、読み取りの転送量が増える)
+        setStatus('アイコンをクラウドへ保存中…','busy');
+        cur.icon=await uploadShelfPhoto(compressed);
         await saveShelves();
         // 編集パネルを再描画 (アイコン表示を更新)
         renderShelfEdit();
