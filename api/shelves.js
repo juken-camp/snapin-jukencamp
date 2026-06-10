@@ -94,6 +94,12 @@ export default async function handler(req, res) {
         return res.status(200).json({ shelves });
       }
 
+      // 公開GETはCDN(エッジ)でキャッシュ可能：全員同じ内容で認証不要。
+      //  s-maxage=60               → エッジに60秒キャッシュ（この間オリジン関数を叩かない）
+      //  stale-while-revalidate=300 → 期限切れ後も古い内容を即返しつつ、裏で更新を取りにいく
+      // ※ ゴミ箱GET(trash=1)はこの行より前で return 済みなのでキャッシュされない。
+      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+
       // ── 通常: 公開中の棚を返す (認証不要 / 利用者アプリもこれを読む) ──
       let ids = (await redis.get(IDS_KEY)) || [];
 
@@ -118,6 +124,7 @@ export default async function handler(req, res) {
       const shelves = results.filter(Boolean);
       return res.status(200).json({ shelves });
     } catch (err) {
+      res.setHeader('Cache-Control', 'no-store'); // エラー応答はキャッシュさせない
       console.error('shelves GET error:', err);
       return res.status(500).json({ error: err.message, shelves: [] });
     }
