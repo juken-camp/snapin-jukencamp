@@ -6636,7 +6636,7 @@ function hydrateShelvesFromCache(){
       resolveShelfRefs(OFFICIAL_SHELVES);
       // 枠(リスト構造)は即出すが、名前・画像は OFFICIAL_FRESH=true (最新取得後) まで
       // スケルトン表示にして、古いキャッシュ値のチラ見せを防ぐ。
-      // /api/shelves-read(Edge)で取得が数十msなので、スケルトンはほぼ一瞬で消える。
+      // /api/shelves はCDNキャッシュ済みなら取得が一瞬なので、スケルトンはすぐ消える。
     }
   }catch(e){/* キャッシュが壊れていても無視して通常取得に任せる */}
 }
@@ -6682,11 +6682,9 @@ function resolveShelfRefs(shelves){
 
 async function loadOfficialShelves(){
   try{
-    // 読み取りは Edge Runtime の専用エンドポイント (/api/shelves-read) を優先する。
-    // コールドスタートがほぼ 0 なので、キャッシュ名 → 最新名 の差し替えが一瞬で済む。
-    // 未デプロイ・エラー時は従来の Node 版 /api/shelves(GET) に自動フォールバック。
-    let res=await fetch('/api/shelves-read');
-    if(!res.ok)res=await fetch('/api/shelves');
+    // 公開棚の読み取りは /api/shelves(GET)。サーバー側で s-maxage を付けて
+    // CDN(エッジ)にキャッシュさせているので、何度開いてもオリジン関数はほぼ叩かない。
+    let res=await fetch('/api/shelves');
     if(!res.ok)return;
     const data=await res.json();
     OFFICIAL_SHELVES=Array.isArray(data.shelves)?data.shelves:[];
