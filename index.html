@@ -5652,6 +5652,11 @@ try{
 const STORAGE_KEY='snapin_v3';
 const $=id=>document.getElementById(id);
 
+// 日本語IMEで変換を確定するEnterを「送信/追加」と誤検知しないためのガード。
+// 変換中のEnterは keydown が isComposing=true (旧Safari等は keyCode 229) で届く。
+// テキスト入力欄の Enter ハンドラは必ずこれを先に見る。
+const isImeEnter=e=>!!(e && (e.isComposing || e.keyCode===229));
+
 // ── デバッグ表示 (URL に #debug を付けたときだけ画面に状態を出す) ──
 // 通常は何もしない。問題の特定用。例: https://...app/#debug
 const _DBG = (typeof location!=='undefined') && /debug/i.test(location.hash||'');
@@ -6337,12 +6342,15 @@ function scanLinkThumbs(root){
 function initLinkThumbWatch(){
   try{
     scanLinkThumbs(document);
-    new MutationObserver(muts=>{
-      for(const m of muts)for(const n of m.addedNodes){
-        if(n.nodeType!==1)continue;
-        if(n.matches && n.matches('.link-card-thumb img'))hookLinkThumb(n);
-        else scanLinkThumbs(n);
-      }
+    // 描画バースト(renderHome等)では大量のノードが一気に追加されるため、
+    // 変更ごとに追加ノードを個別走査すると重い。変更をまとめて
+    // 1フレームに1回だけ全体を走査する (hookLinkThumb は dataset.fitHooked で
+    // 二重配線しないので、全体走査を繰り返しても安全で安い)。
+    let queued=false;
+    new MutationObserver(()=>{
+      if(queued)return;
+      queued=true;
+      requestAnimationFrame(()=>{ queued=false; scanLinkThumbs(document); });
     }).observe(document.body,{childList:true,subtree:true});
   }catch(_){}
 }
@@ -6727,13 +6735,13 @@ function refreshOfficialViews(){
 // 自分のグループが所有する共有ライブラリを取得し、OFFICIAL_SHELVES に足す。
 // (グローバルの共有ライブラリとは別エンドポイント。自分のグループの分しか返らない)
 async function mergeGroupShelves(){
-  state.groupShelfIds=[];
-  if(!isStudent() || !state.auth || !state.auth.teamId)return;
+  // ログアウト/グループ未所属が確定している時だけクリアする。
+  if(!isStudent() || !state.auth || !state.auth.teamId){state.groupShelfIds=[];return;}
   try{
     const res=await fetch('/api/teams?gshelf=1',{headers:{'x-snapin-token':state.auth.token}});
-    if(!res.ok)return;
+    if(!res.ok)return; // 一時的な失敗 → 前回の groupShelfIds を保持 (画面から消えるちらつき防止)
     const data=await res.json();
-    if(!data || !data.ok || !Array.isArray(data.shelves))return;
+    if(!data || !data.ok || !Array.isArray(data.shelves))return; // 同上: 前回値を保持
     const ids=[];
     for(const s of data.shelves){
       if(!s || !s.id)continue;
@@ -6743,9 +6751,9 @@ async function mergeGroupShelves(){
       const i=OFFICIAL_SHELVES.findIndex(x=>x && x.id===s.id);
       if(i>=0)OFFICIAL_SHELVES[i]=s; else OFFICIAL_SHELVES.push(s);
     }
-    state.groupShelfIds=ids;
+    state.groupShelfIds=ids; // 取得に成功した時だけ確定更新
   }catch(err){
-    console.warn('グループライブラリの取得に失敗:',err);
+    console.warn('グループライブラリの取得に失敗:',err); // 前回値を保持
   }
 }
 
@@ -7862,7 +7870,7 @@ function showShareRecvError(){
 function renderShareRecv(p){
   const body=$('share-recv-body');
   let html='';
-  if(p.image)html+=`<img src="${p.image}" alt="">`;
+  if(p.image){const _s=safeImgSrc(p.image);if(_s)html+=`<img src="${_s}" alt="">`;}
   if(p.type==='link' && p.link){
     html+=`<div class="share-recv-link"><span>🔗</span><span>${esc(p.link.title||p.link.url||'')}</span></div>`;
   }
@@ -7902,7 +7910,7 @@ async function importSharedCard(){
     date:todayStr(),
     created:Date.now(),
   };
-  if(p.image)nc.image=p.image;
+  if(p.image && /^data:image\//i.test(String(p.image)))nc.image=p.image;
   if(p.link)nc.link=p.link;
   if(Array.isArray(p.items))nc.items=p.items;
   if(p.color)nc.color=p.color;
@@ -7959,7 +7967,7 @@ function gotoInbox(){
 }
 function inboxPreviewHTML(card){
   let h='';
-  if(card.image)h+=`<img src="${card.image}" alt="">`;
+  if(card.image){const _s=safeImgSrc(card.image);if(_s)h+=`<img src="${_s}" alt="">`;}
   if(card.type==='link' && card.link)h+=`<div class="ginbox-preview-link"><span>🔗</span><span>${esc(card.link.title||card.link.url||'')}</span></div>`;
   if(Array.isArray(card.items))card.items.forEach(it=>{ h+=`<div class="ginbox-preview-li"><span>${it.d?'☑':'☐'}</span><span>${esc(it.t||'')}</span></div>`; });
   if(card.text)h+=`<div class="ginbox-preview-text">${esc(card.text)}</div>`;
@@ -7998,7 +8006,7 @@ async function inboxKeep(id){
     date:todayStr(),
     created:Date.now(),
   };
-  if(p.image)nc.image=p.image;
+  if(p.image && /^data:image\//i.test(String(p.image)))nc.image=p.image;
   if(p.link)nc.link=p.link;
   if(Array.isArray(p.items))nc.items=p.items;
   if(p.color)nc.color=p.color;
@@ -8175,9 +8183,17 @@ async function cloudRestore(){
   if(!okRestore)return;
   // 端末固有の情報は保持しつつ、メモ系を反映する
   const keepAuth=state.auth, keepDev=state.deviceId;
+  // 動画メモはクラウドに含まれない (buildCloudPayload で除外) ため、
+  // そのまま上書きするとこの端末の動画メモが消えてしまう。復元後に戻せるよう退避しておく。
+  const keepVideos=(state.cards||[]).filter(c=>c && c.type==='video');
   applyPayload(data.backup.payload);
   state.auth=keepAuth;
   state.deviceId=keepDev;
+  // 退避した動画メモを先頭に戻す (同idが既にあれば二重追加しない)
+  for(let i=keepVideos.length-1;i>=0;i--){
+    const v=keepVideos[i];
+    if(!state.cards.some(c=>c && c.id===v.id))state.cards.unshift(v);
+  }
   state._savedAt=Date.now();
   save();
 
@@ -8225,24 +8241,42 @@ function updateCloudStatus(){
 // 失敗しても何も言わない / 通信不可なら何もしない / ログイン中のみ。本番の動作を一切妨げない。
 let _autoBackupTimer=null;
 let _lastPushedSavedAt=0;
+let _autoBackupDeadline=0; // 未送信の変更が最初に出てから「これまでには必ず送る」期限
 const AUTO_BACKUP_DELAY=20000; // 最後の変更から20秒後にまとめて
+const AUTO_BACKUP_MAX_WAIT=90000; // ただし連続入力中でも最大90秒に1回は送る
 function scheduleAutoBackup(){
   if(!isStudent())return;
+  // save() のたびにタイマーを張り直すと、入力し続ける限り20秒が永久に
+  // リセットされて一度も送られない。期限(deadline)を別に持ち、
+  // 「20秒待つ or 期限が先に来たら期限まで」の短い方で発火させる。
+  const now=Date.now();
+  if(!_autoBackupDeadline)_autoBackupDeadline=now+AUTO_BACKUP_MAX_WAIT;
   if(_autoBackupTimer)clearTimeout(_autoBackupTimer);
-  _autoBackupTimer=setTimeout(()=>{autoBackupNow();},AUTO_BACKUP_DELAY);
+  const wait=Math.max(0,Math.min(AUTO_BACKUP_DELAY,_autoBackupDeadline-now));
+  _autoBackupTimer=setTimeout(()=>{autoBackupNow();},wait);
 }
 async function autoBackupNow(){
   if(!isStudent())return;
   if(typeof navigator!=='undefined' && navigator.onLine===false)return;
   // 前回 push 以降に変更が無ければ送らない
-  if((state._savedAt||0) <= _lastPushedSavedAt)return;
+  if((state._savedAt||0) <= _lastPushedSavedAt){_autoBackupDeadline=0;return;}
+  // ここで一度ウィンドウを閉じる。次の変更(save)が来たら新しい期限が始まる。
+  _autoBackupDeadline=0;
   const targetSavedAt=state._savedAt||Date.now();
   try{
-    const res=await fetch(SYNC_ENDPOINT,{
+    const body=JSON.stringify({action:'push', payload:buildCloudPayload(), savedAt:targetSavedAt});
+    const opts={
       method:'POST',
       headers:{'Content-Type':'application/json','x-snapin-token':state.auth.token},
-      body:JSON.stringify({action:'push', payload:buildCloudPayload(), savedAt:targetSavedAt}),
-    });
+      body,
+    };
+    // アプリを閉じた/裏に回した瞬間の送信は、通常の fetch だとページ凍結で打ち切られる
+    // (特に iOS Safari)。keepalive を付けると送信が完了まで生き残る。
+    // ただし keepalive のボディ上限は約64KBなので、超える場合は付けない (付けると即失敗するため)。
+    if(typeof document!=='undefined' && document.visibilityState==='hidden' && body.length<60000){
+      opts.keepalive=true;
+    }
+    const res=await fetch(SYNC_ENDPOINT,opts);
     if(!res.ok)return; // 認証切れ/サイズ超過などは静かに諦める (次の機会に再試行)
     const data=await res.json();
     _lastPushedSavedAt=targetSavedAt;
@@ -11193,6 +11227,7 @@ function appendUploadTagEditor(body){
   addBtn.addEventListener('click',()=>commit());
   input.addEventListener('keydown',e=>{
     if(e.key==='Enter'){
+      if(isImeEnter(e))return; // 変換確定のEnterは無視
       e.preventDefault();
       commit();
     }
@@ -11258,6 +11293,7 @@ function renderListItems(wrap){
     inp.addEventListener('input',e=>{state.current.items[i].t=e.target.value;});
     inp.addEventListener('keydown',e=>{
       if(e.key==='Enter'){
+        if(isImeEnter(e))return; // 変換確定のEnterで項目が増えないように
         e.preventDefault();
         // いま編集中の項目の「次」に新しい項目を挿入し、記号は今の項目から引き継ぐ。
         const cur=state.current.items[i];
@@ -15524,6 +15560,14 @@ function esc(s){
   if(s==null)return '';
   return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// 他のユーザー由来の画像文字列(共有リンク・グループ受信箱など)を <img src> に入れる前の安全化。
+// data:image/ か https:// か blob: で始まるものだけ通し、必ずエスケープする。
+// (javascript: スキームや属性破り「" onerror=...」の混入をここで遮断する)
+function safeImgSrc(s){
+  s=String(s||'');
+  if(!/^(data:image\/|https:\/\/|blob:)/i.test(s))return '';
+  return esc(s);
+}
 // AI返信から Markdown 装飾記号を取り除いてプレーンテキスト化する。
 // # や * といった記号が生で出ると読みにくいので、表示前にここで除去/変換する。
 // 内容は壊さず、見出し記号や強調マークだけを取る、リストの - は ・ に置換する。
@@ -16030,6 +16074,7 @@ $('detail-chat-log').addEventListener('click',e=>{
 });
 $('detail-input').addEventListener('keydown',e=>{
   if(e.key==='Enter' && !e.shiftKey && (e.metaKey || e.ctrlKey)){
+    if(isImeEnter(e))return; // 変換確定のEnterでは送信しない
     // Cmd/Ctrl+Enter で送信
     e.preventDefault();
     detailSend();
@@ -16054,7 +16099,7 @@ $('detail-input').addEventListener('keydown',e=>{
   }
   btn.addEventListener('click',()=>doAdd());
   inp.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){e.preventDefault();doAdd();}
+    if(e.key==='Enter'){if(isImeEnter(e))return;e.preventDefault();doAdd();}
   });
   // 詳細画面が開かれている間だけサジェストが意味を持つので、
   // フォーカス時に一度配線して使い回す。
@@ -16106,6 +16151,7 @@ $('url-cancel').addEventListener('click',closeUrlModal);
 $('url-fetch').addEventListener('click',fetchUrlAndCreate);
 $('url-input').addEventListener('keydown',e=>{
   if(e.key==='Enter'){
+    if(isImeEnter(e))return;
     e.preventDefault();
     fetchUrlAndCreate();
   }else if(e.key==='Escape'){
@@ -16327,6 +16373,7 @@ document.addEventListener('visibilitychange',()=>{
   if(!nameInp || !bdInp)return;
   nameInp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){
+      if(isImeEnter(e))return; // 名前の変換確定で次欄へ飛ばない
       e.preventDefault();
       bdInp.focus();
     }
@@ -16336,6 +16383,7 @@ document.addEventListener('visibilitychange',()=>{
   });
   bdInp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){
+      if(isImeEnter(e))return;
       e.preventDefault();
       doClaimSubmit();
     }
@@ -16352,16 +16400,16 @@ document.addEventListener('visibilitychange',()=>{
     e.target.value=e.target.value.toUpperCase().replace(/\s/g,'');
   });
   codeInp.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){e.preventDefault();nameInp.focus();}
+    if(e.key==='Enter'){if(isImeEnter(e))return;e.preventDefault();nameInp.focus();}
   });
   nameInp.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){e.preventDefault();secInp.focus();}
+    if(e.key==='Enter'){if(isImeEnter(e))return;e.preventDefault();secInp.focus();}
   });
   secInp.addEventListener('input',e=>{
     e.target.value=e.target.value.replace(/\D/g,'').slice(0,4);
   });
   secInp.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){e.preventDefault();doJoinSubmit();}
+    if(e.key==='Enter'){if(isImeEnter(e))return;e.preventDefault();doJoinSubmit();}
   });
 })();
 
