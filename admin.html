@@ -128,7 +128,9 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   align-items:center;
   gap:6px;
   box-shadow:var(--shadow);
-  white-space:nowrap;
+  white-space:normal;
+  text-align:left;
+  line-height:1.5;
   pointer-events:none;
   opacity:0;
   visibility:hidden;
@@ -1022,6 +1024,53 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .memo-reorder-toggle.on{background:var(--g);color:#fff;}
 .memo-reorder-toggle:active{opacity:.7;}
 .reorder-hint{font-size:11px;color:var(--ink3);padding:0 20px 10px;}
+
+/* 並べ替えモード: タップで出る「いちばん上へ/下へ」ジャンプメニュー */
+.jump-menu-mask{
+  position:fixed;inset:0;z-index:120;
+  background:rgba(0,0,0,0);
+  visibility:hidden;pointer-events:none;
+  display:flex;align-items:flex-end;justify-content:center;
+  transition:background .18s ease-out, visibility 0s linear .18s;
+}
+.jump-menu-mask.on{
+  visibility:visible;pointer-events:auto;
+  background:rgba(0,0,0,.35);
+  transition:background .18s ease-out, visibility 0s linear 0s;
+}
+.jump-menu{
+  width:100%;max-width:430px;
+  background:var(--bg);
+  border-radius:18px 18px 0 0;
+  padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+  transform:translateY(100%);
+  transition:transform .22s cubic-bezier(.22,.94,.34,1);
+}
+.jump-menu-mask.on .jump-menu{transform:translateY(0);}
+.jump-menu-title{
+  font-size:12px;color:var(--ink3);
+  padding:0 4px 10px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.jump-menu button{
+  display:flex;align-items:center;gap:10px;
+  width:100%;padding:13px 14px;margin-bottom:8px;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  font-size:14px;font-weight:600;color:var(--ink);
+  cursor:pointer;
+}
+.jump-menu button:active{background:var(--gl);}
+.jump-menu button svg{width:18px;height:18px;flex:none;color:var(--g);}
+.jump-menu button.jump-cancel{
+  justify-content:center;color:var(--ink3);font-weight:500;
+  background:transparent;border-color:transparent;margin-bottom:0;
+}
+/* ジャンプ直後の到着ハイライト (どこへ動いたかが一目で分かるように) */
+@keyframes jumpFlash{
+  0%{box-shadow:0 0 0 3px var(--g);}
+  100%{box-shadow:0 0 0 3px rgba(0,0,0,0);}
+}
+.memo-card.jump-flash{animation:jumpFlash 1.1s ease-out;}
 /* 新規メモ: グリッドとは別の独立ボタン(グリッドの配列を実際の公開ビューと一致させるため) */
 .memo-add-btn{
   margin:2px 14px 12px;
@@ -1789,7 +1838,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   opacity:0;
   pointer-events:none;
   transition:all .25s;
-  z-index:200;
+  z-index:500; /* 確認ダイアログ(400)より前面。エラーがマスクの裏に隠れないように */
   display:flex;
   align-items:center;
   gap:7px;
@@ -2296,7 +2345,7 @@ html.pre-auth #main-screen{display:block!important;}
 </style>
 <script>
 /* 初回ペイント前に認証状態を判定し、ログイン画面のフラッシュを防ぐ */
-(function(){try{var a=localStorage.getItem('snapin_admin_auth');if(a){var d=JSON.parse(a);if(d&&d.password){document.documentElement.classList.add('pre-auth');}}}catch(e){}})();
+(function(){try{var a=localStorage.getItem('snapin_admin_auth');if(a){var d=JSON.parse(a);if(d&&(d.password||(d.v===2&&d.p))){document.documentElement.classList.add('pre-auth');}}}catch(e){}})();
 </script>
 </head>
 <body>
@@ -2555,6 +2604,10 @@ html.pre-auth #main-screen{display:block!important;}
 
 const $=id=>document.getElementById(id);
 
+// 日本語IMEで変換を確定するEnterを「追加/送信」と誤検知しないためのガード。
+// 変換中のEnterは keydown が isComposing=true (旧Safari等は keyCode 229) で届く。
+const isImeEnter=e=>!!(e && (e.isComposing || e.keyCode===229));
+
 // 利用者アプリ (index.html) と完全に同一の定義に揃える。
 // id・bg(背景)・fg(文字)・bd(枠線) すべて一致させないと、
 // 管理画面で付けた色が利用者端末で正しく表示されない。
@@ -2808,6 +2861,7 @@ function renderListItems(wrap){
     inp.addEventListener('input',e=>{state.editingMemo.items[i].t=e.target.value;});
     inp.addEventListener('keydown',e=>{
       if(e.key==='Enter'){
+        if(isImeEnter(e))return; // 変換確定のEnterで項目が増えないように
         e.preventDefault();
         // いま編集中の項目の「次」に新しい項目を挿入し、記号は今の項目から引き継ぐ。
         const cur=state.editingMemo.items[i];
@@ -3045,14 +3099,61 @@ function studentInCurCat(s){return catOf(s)===state.category;}
 
 const ADMIN_AUTH_KEY='snapin_admin_auth';
 
+// ── パスワードの保存形式 ──
+// API認証にパスワード文字列そのものが必要なため、ハッシュ化はできない。
+// ただし localStorage に平文のまま置くと、画面共有・端末バックアップの閲覧などで
+// そのまま目に入るので、端末ごとの乱数キーで XOR + Base64 の難読化をかけて保存する。
+// (本質的な保護はサーバー側認証。これは「うっかり露出」を防ぐためのもの)
+const ADMIN_AUTH_OBF_KEY='snapin_admin_k';
+function _obfKey(){
+  try{
+    let k=localStorage.getItem(ADMIN_AUTH_OBF_KEY);
+    if(!k){
+      const a=new Uint8Array(16);
+      crypto.getRandomValues(a);
+      k=btoa(String.fromCharCode(...a));
+      localStorage.setItem(ADMIN_AUTH_OBF_KEY,k);
+    }
+    return Uint8Array.from(atob(k),c=>c.charCodeAt(0));
+  }catch(e){return null;}
+}
+function _obf(s){
+  const k=_obfKey();
+  if(!k)return null;
+  const bytes=new TextEncoder().encode(String(s));
+  const out=bytes.map((b,i)=>b^k[i%k.length]);
+  return btoa(String.fromCharCode(...out));
+}
+function _deobf(s){
+  try{
+    const k=_obfKey();
+    if(!k)return null;
+    const bytes=Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+    const out=bytes.map((b,i)=>b^k[i%k.length]);
+    return new TextDecoder().decode(out);
+  }catch(e){return null;}
+}
+
 function loadAuth(){
   try{
     const raw=localStorage.getItem(ADMIN_AUTH_KEY);
     if(!raw)return false;
     const d=JSON.parse(raw);
+    // 新形式 (v2: 難読化済み)
+    if(d && d.v===2 && d.p){
+      const pw=_deobf(d.p);
+      if(pw){
+        state.password=pw;
+        state.email=d.email||'';
+        return true;
+      }
+      return false; // 復号失敗 (キー消失等) → 再ログインへ
+    }
+    // 旧形式 (平文)。読み込んだうえで新形式に移行して上書きする。
     if(d && d.password){
       state.password=d.password;
       state.email=d.email||'';
+      saveAuth();
       return true;
     }
   }catch(e){}
@@ -3061,10 +3162,13 @@ function loadAuth(){
 
 function saveAuth(){
   try{
-    localStorage.setItem(ADMIN_AUTH_KEY,JSON.stringify({
-      email:state.email,
-      password:state.password,
-    }));
+    const p=_obf(state.password);
+    if(p){
+      localStorage.setItem(ADMIN_AUTH_KEY,JSON.stringify({v:2,email:state.email,p}));
+    }else{
+      // 難読化が使えない環境 (crypto/TextEncoder なし) では従来形式にフォールバック
+      localStorage.setItem(ADMIN_AUTH_KEY,JSON.stringify({email:state.email,password:state.password}));
+    }
   }catch(e){}
 }
 
@@ -3089,12 +3193,18 @@ function toast(msg,opts){
   t.classList.toggle('success', !!success);
   t.classList.add('on');
   clearTimeout(toastT);
-  toastT=setTimeout(()=>t.classList.remove('on'),1800);
+  // 長いメッセージ (エラー文など) は読み切れるよう表示時間を延ばす (1.8〜6秒)
+  const dur=Math.min(6000, Math.max(1800, 1200 + String(msg).length*55));
+  toastT=setTimeout(()=>t.classList.remove('on'),dur);
 }
 
 // アプリ内 確認ダイアログ (window.confirm の置き換え)。Promise<boolean> を返す。
 // confirmDialog('本文') または confirmDialog({title, message, okLabel, danger})
 let _confirmResolve=null;
+// window.alert の置き換え (OKボタンのみ)。await で閉じるまで待てる。
+function alertDialog(title,message){
+  return confirmDialog({title,message,okLabel:'OK',cancelLabel:''});
+}
 function confirmDialog(arg){
   const opts=(typeof arg==='string')?{message:arg}:(arg||{});
   const mask=$('confirm-mask');
@@ -3141,6 +3251,9 @@ function setStatus(text,kind){
   const sp=document.createElement('span');
   sp.textContent=text;
   s.appendChild(sp);
+  // エラーは画面上部の小さな帯だけだと見落としやすい (特にスクロール中・モーダル表示中)。
+  // 必ずトーストでも出して、どの画面状態でも気づけるようにする。
+  if(kind==='error')toast(text,{success:false});
 }
 
 // ═══ API ═══
@@ -3174,19 +3287,23 @@ async function saveShelves(){
   //    (読み込み失敗や、空/不完全なまま保存して目次を上書きするのを防ぐ)
   if(!state.shelvesFetchOk){
     setStatus('読み込みが完了していないため保存を中止しました','error');
-    alert('安全のため保存を中止しました。\n共有ライブラリの読み込みがまだ成功していません。\nページを再読み込みしてから操作してください。');
+    await alertDialog('保存を中止しました','安全のため保存を中止しました。\n共有ライブラリの読み込みがまだ成功していません。\nページを再読み込みしてから操作してください。');
     return false;
   }
   // 2) ライブラリ0件の保存は中止 (全消し上書きを防ぐ)
   if(!Array.isArray(state.shelves) || state.shelves.length===0){
     setStatus('ライブラリが空のため保存を中止しました','error');
-    alert('安全のため保存を中止しました。\nライブラリが0件の状態を保存しようとしました。\n意図しない場合はページを再読み込みしてください。');
+    await alertDialog('保存を中止しました','安全のため保存を中止しました。\nライブラリが0件の状態を保存しようとしました。\n意図しない場合はページを再読み込みしてください。');
     return false;
   }
   // 3) 取得時より件数が大きく減る保存は確認を挟む (例: 22件→2件のような激減を検知)
   let forceShrink=false;
   if(state.loadedShelfCount>0 && state.shelves.length < state.loadedShelfCount-1){
-    const ok=confirm(`ライブラリ数が ${state.loadedShelfCount} 件 → ${state.shelves.length} 件に減っています。\n本当にこの内容で保存しますか?\n意図しない場合はキャンセルして、ページを再読み込みしてください。`);
+    const ok=await confirmDialog({
+      title:'ライブラリ数が減っています',
+      message:`${state.loadedShelfCount} 件 → ${state.shelves.length} 件に減っています。\n本当にこの内容で保存しますか？\n意図しない場合はキャンセルして、ページを再読み込みしてください。`,
+      okLabel:'この内容で保存',danger:true,
+    });
     if(!ok){ setStatus('保存をキャンセルしました','error'); return false; }
     forceShrink=true; // ユーザーが明示承認 → サーバーの大幅減ガードも通す
   }
@@ -3232,8 +3349,7 @@ async function saveShelves(){
       ? '保存がタイムアウトしました(30秒)。通信状況か、保存データが大きすぎないか確認してください'
       : ('保存失敗: '+(err && err.message ? err.message : err));
     state.saveError=msg;
-    setStatus(msg,'error');
-    toast(msg,{success:false});
+    setStatus(msg,'error'); // エラートーストも setStatus 側で自動表示される
     return false;
   }finally{
     clearTimeout(to);
@@ -3320,7 +3436,7 @@ async function migrateShelfPhotos(){
     }
   }
   if(targets.length===0){ setStatus('移行が必要な画像はありません'); setTimeout(()=>setStatus(''),1800); return; }
-  if(!confirm(`${targets.length}件の画像(アイコン含む)をクラウド(R2)へ移行します。よろしいですか?`))return;
+  if(!await confirmDialog({title:'画像をクラウドへ移行',message:`${targets.length}件の画像(アイコン含む)をクラウド(R2)へ移行します。よろしいですか？`,okLabel:'移行する'}))return;
   let done=0, failed=0;
   for(const t of targets){
     setStatus(`画像を移行中… (${done+failed+1} / ${targets.length})`,'busy');
@@ -4055,7 +4171,7 @@ async function saveTeamFromModal(){
 
 async function regenTeamCode(t){
   if(!t)return;
-  if(!confirm(`「${t.name}」の参加コードを作り直しますか?\n古いコードでは参加できなくなります。`))return;
+  if(!await confirmDialog({title:'参加コードを再発行',message:`「${t.name}」の参加コードを作り直しますか？\n古いコードでは参加できなくなります。`,okLabel:'作り直す',danger:true}))return;
   const data=await teamApi({action:'regen',id:t.id});
   if(!data)return;
   await fetchTeams();renderTeamsList();
@@ -4063,7 +4179,7 @@ async function regenTeamCode(t){
 
 async function syncTeam(t){
   if(!t)return;
-  if(!confirm(`「${t.name}」の設定（共有ライブラリ・AI）を、所属メンバー全員に反映しますか?`))return;
+  if(!await confirmDialog({title:'メンバーに反映',message:`「${t.name}」の設定（共有ライブラリ・AI）を、所属メンバー全員に反映しますか？`,okLabel:'反映する'}))return;
   const data=await teamApi({action:'sync',id:t.id});
   if(!data)return;
   setStatus(`${data.updated||0}人に反映しました`);setTimeout(()=>setStatus(''),1600);
@@ -4072,7 +4188,7 @@ async function syncTeam(t){
 async function toggleTeamDisabled(t){
   if(!t)return;
   const next=!t.disabled;
-  if(next && !confirm(`「${t.name}」を無効化しますか?\n新しい参加ができなくなります（既存メンバーはそのまま使えます）。`))return;
+  if(next && !await confirmDialog({title:'グループを無効化',message:`「${t.name}」を無効化しますか？\n新しい参加ができなくなります（既存メンバーはそのまま使えます）。`,okLabel:'無効化する',danger:true}))return;
   const data=await teamApi({action:'update',id:t.id,disabled:next});
   if(!data)return;
   await fetchTeams();renderTeamsList();
@@ -4080,7 +4196,7 @@ async function toggleTeamDisabled(t){
 
 async function deleteTeam(t){
   if(!t)return;
-  if(!confirm(`「${t.name}」を削除しますか?\nこの操作は元に戻せません。\n(すでに参加したメンバーのアカウントはそのまま残ります)`))return;
+  if(!await confirmDialog({title:'グループを削除',message:`「${t.name}」を削除しますか？\nこの操作は元に戻せません。\n(すでに参加したメンバーのアカウントはそのまま残ります)`,okLabel:'削除する',danger:true}))return;
   const data=await teamApi({action:'delete',id:t.id});
   if(!data)return;
   await fetchTeams();renderTeamsList();updateTeamsTabCount();
@@ -4240,6 +4356,18 @@ async function tryLogin(){
     btn.textContent='ログイン';
     return;
   }
+  // パスワードをこの場で検証する。
+  // (従来は認証不要のGETしか叩いておらず、間違ったパスワードでもログインが通って
+  //  最初の保存時に初めて「認証エラー」になっていた)
+  try{
+    const vres=await fetch('/api/me?stats=1',{cache:'no-store',headers:{'x-admin-password':password}});
+    if(vres.status===401 || vres.status===403){
+      setStatus('パスワードが違います','error');
+      btn.disabled=false;
+      btn.textContent='ログイン';
+      return;
+    }
+  }catch(e){ /* 通信不調などは従来通り進める (保存時にも再検証される) */ }
   // パスワードはメモリ+localStorageに保持
   state.password=password;
   state.email=email;
@@ -4633,7 +4761,7 @@ function renderShelfEdit(){
         <div class="memo-list-head-count">${(s.cards||[]).length} 件</div>
       </div>
     </div>
-    ${state.cardReorder?'<div class="reorder-hint">カードを長押し → そのままドラッグで移動。指を離すと並び順が保存されます。</div>':'<button class="memo-add-btn" id="memo-add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>新しいメモ</button>'}
+    ${state.cardReorder?'<div class="reorder-hint">長押し → ドラッグで移動。<b>タップ</b>すると「いちばん上へ / いちばん下へ」をすぐ選べます。</div>':'<button class="memo-add-btn" id="memo-add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>新しいメモ</button>'}
     <div class="memo-grid" id="memo-grid"></div>
   `;
 
@@ -4968,22 +5096,30 @@ function attachCardGridDrag(cell){
       cell.classList.remove('pre-press');
       cell.removeEventListener('pointermove',preMove);
       cell.removeEventListener('pointerup',preUp);
-      cell.removeEventListener('pointercancel',preUp);
+      cell.removeEventListener('pointercancel',preCancel);
     };
     const preMove=ev=>{
       // 長押し成立前に大きく動いたらスクロール意図とみなして中止(ブレには寛容に)
       if(Math.hypot(ev.clientX-startX,ev.clientY-startY)>14)cleanup();
     };
-    const preUp=()=>cleanup();
+    const preUp=()=>{
+      // 長押しが成立する前に指を離した = ただのタップ。
+      // 並べ替えモード中のタップは「いちばん上へ/下へ」ジャンプメニューを開く。
+      const wasTap=!!_gridLongPressTimer;
+      cleanup();
+      if(wasTap)openReorderJumpMenu(cell,grid);
+    };
+    // pointercancel はスクロール開始などブラウザ側の中断。タップ扱いにせず後始末だけ行う。
+    const preCancel=()=>cleanup();
     cell.addEventListener('pointermove',preMove,{passive:true});
     cell.addEventListener('pointerup',preUp);
-    cell.addEventListener('pointercancel',preUp);
+    cell.addEventListener('pointercancel',preCancel);
     _gridLongPressTimer=setTimeout(()=>{
       _gridLongPressTimer=null;
       cell.classList.remove('pre-press');
       cell.removeEventListener('pointermove',preMove);
       cell.removeEventListener('pointerup',preUp);
-      cell.removeEventListener('pointercancel',preUp);
+      cell.removeEventListener('pointercancel',preCancel);
       startGridDrag(cell,grid,startX,startY,pointerId);
     },150);
   });
@@ -5018,6 +5154,77 @@ function startGridDrag(cell,grid,startX,startY,pointerId){
   gridDrag.raf=requestAnimationFrame(gridDragFrame);
 }
 function blockTouchMoveWhileDrag(e){ if(gridDrag && e.cancelable)e.preventDefault(); }
+
+// ══ 並べ替えモード: タップで「いちばん上へ/いちばん下へ」ジャンプ ══
+// 投稿数が多いと端までのドラッグが大変なので、タップ一発で先頭/末尾に送れるようにする。
+let _jumpMenuEl=null;
+function ensureJumpMenu(){
+  if(_jumpMenuEl)return _jumpMenuEl;
+  const mask=document.createElement('div');
+  mask.className='jump-menu-mask';
+  mask.innerHTML=`
+    <div class="jump-menu">
+      <div class="jump-menu-title" id="jump-menu-title"></div>
+      <button type="button" data-jump="top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M5 12l7-7 7 7"/><path d="M5 4h14"/></svg>
+        いちばん上へ移動
+      </button>
+      <button type="button" data-jump="bottom">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13M5 12l7 7 7-7"/><path d="M5 20h14"/></svg>
+        いちばん下へ移動
+      </button>
+      <button type="button" class="jump-cancel" data-jump="cancel">キャンセル</button>
+    </div>`;
+  document.body.appendChild(mask);
+  mask.addEventListener('click',e=>{
+    if(e.target===mask){closeJumpMenu();return;}
+    const btn=e.target.closest('button[data-jump]');
+    if(!btn)return;
+    const act=btn.dataset.jump;
+    const cell=mask._cell, grid=mask._grid;
+    closeJumpMenu();
+    if(act==='cancel' || !cell || !grid || !grid.contains(cell))return;
+    jumpCardToEdge(grid,cell,act);
+  });
+  _jumpMenuEl=mask;
+  return mask;
+}
+function openReorderJumpMenu(cell,grid){
+  if(gridDrag)return;
+  const mask=ensureJumpMenu();
+  mask._cell=cell;
+  mask._grid=grid;
+  // どのメモを動かすのか分かるよう、本文の冒頭をタイトルに出す
+  const t=(cell.textContent||'').trim().replace(/\s+/g,' ').slice(0,24);
+  const ttl=mask.querySelector('#jump-menu-title');
+  if(ttl)ttl.textContent=t?`「${t}${(cell.textContent||'').trim().length>24?'…':''}」を移動`:'このメモを移動';
+  mask.classList.add('on');
+  if(navigator.vibrate){try{navigator.vibrate(8);}catch(_){}}
+}
+function closeJumpMenu(){
+  if(!_jumpMenuEl)return;
+  _jumpMenuEl.classList.remove('on');
+  _jumpMenuEl._cell=null;
+  _jumpMenuEl._grid=null;
+}
+function jumpCardToEdge(grid,cell,where){
+  if(where==='top'){
+    if(cell===grid.firstElementChild){toast('すでにいちばん上です');return;}
+    grid.insertBefore(cell,grid.firstElementChild);
+  }else{
+    if(cell===grid.lastElementChild){toast('すでにいちばん下です');return;}
+    grid.appendChild(cell);
+  }
+  commitCardOrderFromGrid(grid); // DOM並びから順序を確定して保存 (既存のドラッグと同じ経路)
+  // 移動先まで画面を送り、到着地点を一瞬ハイライトして迷子を防ぐ
+  requestAnimationFrame(()=>{
+    try{cell.scrollIntoView({behavior:'smooth',block:'center'});}catch(_){cell.scrollIntoView();}
+    cell.classList.remove('jump-flash');
+    void cell.offsetWidth; // アニメ再生のためのリフロー
+    cell.classList.add('jump-flash');
+    setTimeout(()=>cell.classList.remove('jump-flash'),1200);
+  });
+}
 
 function onGridDragMove(e){
   if(!gridDrag)return;
@@ -5657,7 +5864,7 @@ function renderMemoModalBody(){
       state.editingMemo.link._inputUrl=e.target.value;
     });
     linkUrlInp.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){e.preventDefault();fetchLinkInModal();}
+      if(e.key==='Enter'){if(isImeEnter(e))return;e.preventDefault();fetchLinkInModal();}
     });
   }
   // link: 取得ボタン
@@ -6385,8 +6592,8 @@ async function saveMemoFromModal(){
   try{ ok=await saveShelves(); }catch(e){ state.saveError='保存中に例外: '+(e&&e.message?e.message:e); ok=false; }
   if(!ok){
     restoreBtn();   // 失敗/タイムアウト: ボタンを戻す
-    // モーダルの裏に隠れて見えないので、理由はアラートで確実に出す。
-    alert('保存できませんでした:\n\n'+(state.saveError||'原因不明（通信状況を確認してください）'));
+    // メモ編集モーダルの上に重なって表示される (confirm-mask は z-index:400 > modal:100)
+    await alertDialog('保存できませんでした', state.saveError||'原因不明（通信状況を確認してください）');
     return;
   }
   // 成功: チェック表示 → 少し待って閉じる。描画で詰まってもボタンは必ず戻す。
@@ -6478,7 +6685,7 @@ $('cat-modal-mask').addEventListener('click',e=>{
   if(e.target===$('cat-modal-mask'))closeCategoryModal();
 });
 $('cat-modal-input').addEventListener('keydown',e=>{
-  if(e.key==='Enter'){e.preventDefault();saveCategoryFromModal();}
+  if(e.key==='Enter'){if(isImeEnter(e))return;e.preventDefault();saveCategoryFromModal();}
 });
 
 // ─── 検索・絞り込み ───
@@ -6553,7 +6760,7 @@ $('password-toggle').addEventListener('click',()=>{
 // Enterでログイン
 ['login-email','login-password'].forEach(id=>{
   $(id).addEventListener('keydown',e=>{
-    if(e.key==='Enter'){e.preventDefault();tryLogin();}
+    if(e.key==='Enter'){if(isImeEnter(e))return;e.preventDefault();tryLogin();}
   });
 });
 
