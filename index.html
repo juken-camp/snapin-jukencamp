@@ -14736,19 +14736,25 @@ function renderLibNewSection(seenShelves){
   if(top.length===0){sec.innerHTML='';return;}
   const cardsHtml=top.map(({card:c,shelf:s})=>{
     let thumb='';
+    let thumbStyle='';
     if(c.type==='photo'||c.type==='photonote'){
       thumb=`<img src="${c.image||''}" alt="" decoding="async" loading="eager">`;
     }else if(c.type==='note'){
       thumb=esc((c.text||'').slice(0,40));
+      const col=colorById(c.color);
+      thumbStyle=` style="background:${col.bg};color:${col.fg};"`;
     }else if(c.type==='list'){
       thumb=`<b>${esc(c.title||'リスト')}</b><br>${(c.items||[]).slice(0,2).map(i=>'・'+esc(i.t)).join('<br>')}`;
+      const col=colorById(c.color);
+      thumbStyle=` style="background:${col.bg};color:${col.fg};"`;
     }else if(c.type==='link'){
       const link=c.link||{};
       thumb=link.image?`<img src="${esc(link.image)}" alt="" decoding="async">`:esc(link.title||link.url||'(リンク)');
+      if(!link.image){const col=colorById(c.color);thumbStyle=` style="background:${col.bg};color:${col.fg};"`;}
     }
     return `
       <div class="lib-new-card" data-shelf-id="${esc(s.id)}" data-card-id="${esc(c.id)}">
-        <div class="lib-new-card-thumb">${thumb}</div>
+        <div class="lib-new-card-thumb"${thumbStyle}>${thumb}</div>
         <div class="lib-new-card-foot">
           ${s.icon
             ? `<div class="av has-icon"><img src="${esc(s.icon)}" alt=""></div>`
