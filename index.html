@@ -5053,6 +5053,10 @@ html:not(.en-on) .en-live{ display:none; }
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
         リンクで共有
       </button>
+      <button class="menu-item" data-action="save-to-photos" id="menu-save-photos-btn" style="display:none;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span id="menu-save-photos-label">カメラロールに保存</span>
+      </button>
       <button class="menu-item" data-action="refetch-link" id="menu-refetch-btn" style="display:none;">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         情報を取り直す
@@ -12971,6 +12975,16 @@ function openDetail(c,origin){
   const refetchBtn=$('menu-refetch-btn');
   if(refetchBtn)refetchBtn.style.display=(!isOfficial && c.type==='link' && c.link && (c.link.url||c.link.originalUrl) && !isLinkedCard(c))?'':'none';
 
+  // 「カメラロールに保存」は写真・動画カード(メディアあり)のときだけ表示。
+  // もらった共有メモの画像/動画も端末に保存できる。
+  const savePhotosBtn=$('menu-save-photos-btn');
+  if(savePhotosBtn){
+    const hasMedia=!!(c.image || (c.type==='video' && (c._videoUrl||c.__hasVid)));
+    savePhotosBtn.style.display=hasMedia?'':'none';
+    const lbl=$('menu-save-photos-label');
+    if(lbl)lbl.textContent=(c.type==='video')?'ビデオを保存':'カメラロールに保存';
+  }
+
   // 共有カードでは入力バー非表示
   $('detail-input-bar').style.display=isOfficial?'none':'';
 
@@ -15910,6 +15924,95 @@ function toggleDetailMosaic(){
   }
 }
 
+// ═══ カメラロール(写真アプリ)に保存 ═══
+// 画像・動画を端末のカメラロールに保存する。
+// iOS/iPadOS では写真アプリへ直接書き込むAPIが無いため、Web Share API の
+// ファイル共有を使う。共有シートに出る「画像を保存 / ビデオを保存」で
+// カメラロールへ入る (iOS標準の動作)。
+// 非対応環境(PC等)では通常のファイルダウンロードにフォールバックする。
+
+// data URL を同期的に Blob へ変換する (base64 / URLエンコード両対応)。
+// fetch を挟まず同期で作ることで、iOS の「ユーザー操作中だけ共有を許可」制約に
+// 確実に間に合わせる。
+function _dataUrlToBlob(dataUrl){
+  const comma=dataUrl.indexOf(',');
+  const head=dataUrl.slice(0,comma);
+  const body=dataUrl.slice(comma+1);
+  const mime=(head.match(/data:([^;]+)/)||[])[1]||'application/octet-stream';
+  let bytes;
+  if(/;base64/i.test(head)){
+    const bin=atob(body);
+    bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  }else{
+    bytes=new TextEncoder().encode(decodeURIComponent(body));
+  }
+  return new Blob([bytes],{type:mime});
+}
+
+// Blob を <a download> でダウンロードする (フォールバック用)。
+function _downloadBlob(blob,fname){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=fname;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){}},1000);
+}
+
+async function saveToPhotos(){
+  $('detail-menu')?.classList.remove('on');
+  const c=state.current;
+  if(!c)return;
+  const isVideo=(c.type==='video');
+  try{
+    let blob=null, fname='';
+    if(isVideo){
+      // 動画は Blob (objectURL もしくは IndexedDB)。
+      if(c._videoUrl){
+        blob=await (await fetch(c._videoUrl)).blob();
+      }else if(c.id && imgDB && imgDB.getVideo){
+        blob=await imgDB.getVideo(c.id);
+      }
+      const isMov=blob && /quicktime|mov/i.test(blob.type||'');
+      fname=`snapin-${Date.now()}.${isMov?'mov':'mp4'}`;
+    }else if(c.image){
+      // 画像は data URL → 同期で Blob 化 (共有の許可を失わないため)。
+      if(typeof c.image==='string' && c.image.startsWith('data:')){
+        blob=_dataUrlToBlob(c.image);
+      }else{
+        blob=await (await fetch(c.image)).blob();
+      }
+      let sub=(blob.type.split('/')[1]||'jpg').replace('jpeg','jpg').replace('svg+xml','svg');
+      fname=`snapin-${Date.now()}.${sub}`;
+    }
+    if(!blob || !blob.size){ toast('保存できるデータが見つかりません'); return; }
+
+    const file=new File([blob],fname,{type:blob.type||(isVideo?'video/mp4':'image/jpeg')});
+
+    // iOS等: 共有シート経由でカメラロールへ
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({files:[file]});
+      }catch(err){
+        if(err && err.name==='AbortError')return; // ユーザーがキャンセル
+        // 共有に失敗 → ダウンロードにフォールバック
+        _downloadBlob(blob,fname);
+        toast('ダウンロードしました');
+      }
+      return;
+    }
+
+    // 非対応(PCブラウザ等): ファイルとしてダウンロード
+    _downloadBlob(blob,fname);
+    toast('ダウンロードしました');
+  }catch(e){
+    console.warn('saveToPhotos failed',e);
+    toast('保存に失敗しました');
+  }
+}
+
 // ═══ EVENT DELEGATION ═══
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-action]');
@@ -16004,6 +16107,7 @@ document.addEventListener('click',e=>{
     case 'edit-card':editCard();break;
     case 'delete-card':deleteCard();break;
     case 'share-card':shareCard();break;
+    case 'save-to-photos':saveToPhotos();break;
     case 'send-to-group':sendToGroup();break;
     case 'close-share-choice':closeShareChoice();break;
     case 'share-memo-only':shareChoicePick(false);break;
