@@ -1310,6 +1310,40 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   pointer-events:none; /* タッチは親 .detail-img で拾う */
 }
 .detail-img.zoomed img{cursor:grab;}
+/* 拡大中だけ、枠の下端を指でドラッグして高さを広げるためのハンドル。
+   等倍時は完全に無効(透明・操作不可)で、引き算デザインを崩さない。 */
+.img-resize-handle{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:28px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding-bottom:6px;
+  box-sizing:border-box;
+  cursor:ns-resize;
+  z-index:5;
+  opacity:0;
+  pointer-events:none; /* 等倍時は触れない(画像ドラッグの邪魔をしない) */
+  transition:opacity .18s;
+  touch-action:none;
+  background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,0.25));
+}
+.detail-img.zoomed .img-resize-handle{
+  opacity:1;
+  pointer-events:auto;
+}
+.img-resize-grip{
+  width:46px;
+  height:5px;
+  border-radius:3px;
+  background:rgba(255,255,255,0.95);
+  box-shadow:0 1px 3px rgba(0,0,0,0.4);
+  transition:width .12s;
+}
+.img-resize-handle:active .img-resize-grip{width:60px;background:#fff;}
 /* 動画は写真と同じく指の操作を親スクロールに渡す (pointer-events:none)。タップは親で拾う。 */
 .detail-img video{max-height:55vh;pointer-events:none;}
 .detail-body{padding:18px 18px 24px;}
@@ -12426,6 +12460,8 @@ function setupImageZoom(container){
   // 既にハンドラがセット済みなら、画像だけ差し替えてリセット
   if(container._zoomReady){
     if(container._resetZoom)container._resetZoom();
+    // innerHTML の差し替えでリサイズハンドルが消えるので、無ければ作り直す
+    if(container._ensureResizeHandle)container._ensureResizeHandle();
     return;
   }
   container._zoomReady=true;
@@ -12442,6 +12478,9 @@ function setupImageZoom(container){
   let dragStartTx=0, dragStartTy=0;
   // ダブルタップ判定
   let lastTapTime=0;
+  // 枠の高さリサイズ用 (拡大中に下端をドラッグ)
+  let resizing=false;
+  let resizeStartY=0, resizeStartH=0;
 
   function getImg(){return container.querySelector('img');}
   function apply(){
@@ -12451,7 +12490,12 @@ function setupImageZoom(container){
     container.classList.toggle('zoomed', scale>1.02);
   }
   function reset(){
-    scale=1;tx=0;ty=0;apply();
+    scale=1;tx=0;ty=0;
+    // 広げた枠の高さも元(CSSの max-height:55vh)へ戻す
+    container.style.height='';
+    container.style.maxHeight='';
+    container._baseH=0;
+    apply();
   }
   // 拡大時の translate を「画像が枠から離れすぎない」範囲にクランプ
   function clampTranslate(){
@@ -12587,6 +12631,68 @@ function setupImageZoom(container){
   container.addEventListener('touchcancel',()=>{
     pinching=false;dragging=false;
   });
+
+  // ── 拡大中に枠の下端をドラッグして高さを広げるハンドル ──
+  // 画像を顕微鏡のように拡大したとき、55vh の枠だと一度に見える範囲が狭い。
+  // 下端をつまんで枠を縦に広げると、拡大した画像をより広く一度に見られる。
+  function ensureResizeHandle(){
+    // innerHTML 差し替えで消えることがあるので、無ければ作り直す
+    if(container.querySelector('.img-resize-handle'))return;
+    const handle=document.createElement('div');
+    handle.className='img-resize-handle';
+    handle.innerHTML='<div class="img-resize-grip"></div>';
+
+    function startResize(clientY){
+      resizing=true;
+      resizeStartY=clientY;
+      resizeStartH=container.offsetHeight;
+      // 初回ドラッグ時に「元の高さ」を記録 (これより縮められないようにする下限)
+      if(!container._baseH)container._baseH=container.offsetHeight;
+    }
+    function moveResize(clientY){
+      if(!resizing)return;
+      const minH=container._baseH||220;
+      const maxH=Math.round((window.innerHeight||800)*0.92);
+      let nh=resizeStartH+(clientY-resizeStartY);
+      if(nh<minH)nh=minH;
+      if(nh>maxH)nh=maxH;
+      // CSS の max-height:55vh を解除して任意の高さを許可
+      container.style.maxHeight='none';
+      container.style.height=nh+'px';
+      // 枠が広がった分、拡大画像を広い範囲で見られるよう位置を調整
+      clampTranslate();
+      apply();
+    }
+    function endResize(){ resizing=false; }
+
+    handle.addEventListener('touchstart',e=>{
+      if(e.touches.length!==1)return;
+      startResize(e.touches[0].clientY);
+      e.stopPropagation(); // 親(画像)のピンチ/ドラッグ処理を発火させない
+      if(e.cancelable)e.preventDefault();
+    },{passive:false});
+    handle.addEventListener('touchmove',e=>{
+      if(!resizing)return;
+      moveResize(e.touches[0].clientY);
+      e.stopPropagation();
+      if(e.cancelable)e.preventDefault(); // ページのスクロールを抑止
+    },{passive:false});
+    handle.addEventListener('touchend',e=>{ endResize(); e.stopPropagation(); });
+    handle.addEventListener('touchcancel',()=>{ endResize(); });
+    // デスクトップ(マウス)でも操作できるようにする
+    handle.addEventListener('mousedown',e=>{
+      startResize(e.clientY);
+      e.preventDefault();
+      const mm=ev=>moveResize(ev.clientY);
+      const mu=()=>{ endResize(); window.removeEventListener('mousemove',mm); window.removeEventListener('mouseup',mu); };
+      window.addEventListener('mousemove',mm);
+      window.addEventListener('mouseup',mu);
+    });
+
+    container.appendChild(handle);
+  }
+  container._ensureResizeHandle=ensureResizeHandle;
+  ensureResizeHandle();
 
   // 状態リセットを公開 (新しい画像が入った時用)
   container._resetZoom=reset;
