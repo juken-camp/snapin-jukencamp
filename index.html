@@ -507,13 +507,13 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   word-break:break-word;
 }
 /* リスト型カードのアイテム表示 (グリッドの.cardと今日の横スクロール.today-newcardで共通) */
-.card .li, .today-newcard .li{display:flex;gap:0.4em;margin-bottom:0.28em;align-items:flex-start;line-height:1.3;}
-.card .li span, .today-newcard .li span{min-width:0;white-space:normal;word-break:break-word;overflow-wrap:anywhere;}
-.card .li .chk, .today-newcard .li .chk{width:0.9em;height:0.9em;border:1px solid var(--ink3);border-radius:0.2em;flex-shrink:0;margin-top:0.15em;display:flex;align-items:center;justify-content:center;color:#fff;box-sizing:border-box;}
-.card .li .chk svg, .today-newcard .li .chk svg{width:0.7em;height:0.7em;display:block;}
-.card .li.done .chk, .today-newcard .li.done .chk{background:var(--g);border-color:var(--g);}
-.card .li.done, .today-newcard .li.done{color:var(--ink3);text-decoration:line-through;}
-.card .li .li-num, .today-newcard .li .li-num{width:1.3em;font-size:1em;text-align:left;flex-shrink:0;color:var(--ink2);font-family:var(--font-en);}
+.card .li, .today-newcard .li, .lib-new-card-thumb .li{display:flex;gap:0.4em;margin-bottom:0.28em;align-items:flex-start;line-height:1.3;}
+.card .li span, .today-newcard .li span, .lib-new-card-thumb .li span{min-width:0;white-space:normal;word-break:break-word;overflow-wrap:anywhere;}
+.card .li .chk, .today-newcard .li .chk, .lib-new-card-thumb .li .chk{width:0.9em;height:0.9em;border:1px solid var(--ink3);border-radius:0.2em;flex-shrink:0;margin-top:0.15em;display:flex;align-items:center;justify-content:center;color:#fff;box-sizing:border-box;}
+.card .li .chk svg, .today-newcard .li .chk svg, .lib-new-card-thumb .li .chk svg{width:0.7em;height:0.7em;display:block;}
+.card .li.done .chk, .today-newcard .li.done .chk, .lib-new-card-thumb .li.done .chk{background:var(--g);border-color:var(--g);}
+.card .li.done, .today-newcard .li.done, .lib-new-card-thumb .li.done{color:var(--ink3);text-decoration:line-through;}
+.card .li .li-num, .today-newcard .li .li-num, .lib-new-card-thumb .li .li-num{width:1.3em;font-size:1em;text-align:left;flex-shrink:0;color:var(--ink2);font-family:var(--font-en);}
 
 .card-source{
   position:absolute;
@@ -2315,6 +2315,16 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   line-height:1.4;
 }
 .lib-new-card-thumb img{width:100%;height:100%;object-fit:cover;}
+/* 「新着」サムネの note は、グリッド(.card.note)と同じ構造・同じフォント計算で描画して
+   見た目(フォントサイズ・改行位置・余白・揃え)をグリッド/詳細と統一する。
+   固定フォントの概要表示はやめ、実際のメモと同じ比率で縮小表示する。 */
+.lib-new-card-thumb.note{padding:0;display:block;}
+.lib-new-card-thumb.note .ctxt{position:relative;display:block;width:100%;height:100%;overflow:hidden;padding:0;box-sizing:border-box;}
+.lib-new-card-thumb.note .ctxt-inner{position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;white-space:pre-wrap;word-break:break-word;}
+/* 「新着」サムネの list も、グリッド/今日と同じ listCardInner (チェックボックス付き全項目) で
+   描画し、applyListThumbFit が枠に収まるようフォントを縮小する。2項目の概要表示はやめる。 */
+.lib-new-card-thumb.list{padding:0;display:block;}
+.lib-new-card-thumb.list .ctxt{display:block;width:100%;height:100%;overflow:hidden;padding:8px;box-sizing:border-box;text-align:left;}
 .lib-new-card-foot{
   padding:7px 9px 8px;
   font-size:10px;
@@ -6583,12 +6593,34 @@ function applyGridNoteScale(root){
   applyListThumbFit(scope);
 }
 
+// 「新着」サムネの note を、グリッドと同じ計算で枠の実幅に合わせてフォント確定する。
+// グリッドの正方形カードと同じ「幅基準」でフォントサイズ・改行位置を決めるため、
+// .ctxt の実幅(clientWidth)を測って noteCardStyle を呼び直す。
+function applyLibNewNoteScale(root){
+  const scope=root||document;
+  scope.querySelectorAll('.lib-new-card-thumb.note .ctxt-inner').forEach(inner=>{
+    const ctxt=inner.parentElement;
+    if(!ctxt||!ctxt.clientWidth)return;
+    const w=ctxt.clientWidth; // 幅基準 (グリッドの正方形カードと同じ比率)
+    // 親 .lib-new-card の棚ID・カードIDから元カードを引く (揃え・色のため)
+    let c=null;
+    const cardEl=inner.closest('.lib-new-card');
+    if(cardEl){
+      const s=(OFFICIAL_SHELVES||[]).find(x=>x.id===cardEl.dataset.shelfId);
+      if(s)c=(s.cards||[]).find(x=>x.id===cardEl.dataset.cardId);
+    }
+    if(!c)c={text:inner.dataset.text||inner.innerText||'',color:'white'};
+    const col=colorById(c.color);
+    inner.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;white-space:pre-wrap;word-break:break-word;'+noteCardStyle(c,col,w);
+  });
+}
+
 // リスト型カードのフォントを「全項目を折り返したまま枠に収まる最大サイズ」に合わせる。
 // listThumbFontSize の値を初期値に、はみ出していれば 0.5px ずつ下げる (下限4px)。
 // 各項目は CSS で自由に折り返す (行数制限なし) ので、縮小しきれば必ず全文が見える。
 function applyListThumbFit(root){
   const scope=root||document;
-  const nodes=scope.querySelectorAll('.card.list .ctxt, .today-newcard.list .ctxt');
+  const nodes=scope.querySelectorAll('.card.list .ctxt, .today-newcard.list .ctxt, .lib-new-card-thumb.list .ctxt');
   nodes.forEach(el=>{
     if(!el.clientHeight)return;
     let fz=parseFloat(el.style.fontSize)||10;
@@ -14857,16 +14889,20 @@ function renderLibNewSection(seenShelves){
   const cardsHtml=top.map(({card:c,shelf:s})=>{
     let thumb='';
     let thumbStyle='';
+    let thumbClass='';
     if(c.type==='photo'||c.type==='photonote'){
       thumb=`<img src="${c.image||''}" alt="" decoding="async" loading="eager">`;
     }else if(c.type==='note'){
-      thumb=esc((c.text||'').slice(0,40));
+      // グリッド/詳細と同じ .ctxt/.ctxt-inner 構造で描画。フォントサイズ・改行位置・揃えは
+      // 描画後に applyLibNewNoteScale が枠の実幅に合わせて確定する (グリッドと同一計算)。
       const col=colorById(c.color);
-      thumbStyle=` style="background:${col.bg};color:${col.fg};"`;
+      thumbClass=' note';
+      thumb=`<div class="ctxt" style="background:${col.bg};"><div class="ctxt-inner" data-text="${esc(c.text||'')}" style="${noteCardStyle(c,col)}">${esc(c.text||'')}</div></div>`;
     }else if(c.type==='list'){
-      thumb=`<b>${esc(c.title||'リスト')}</b><br>${(c.items||[]).slice(0,2).map(i=>'・'+esc(i.t)).join('<br>')}`;
-      const col=colorById(c.color);
-      thumbStyle=` style="background:${col.bg};color:${col.fg};"`;
+      // グリッド/今日と同じ listCardInner (チェックボックス付き全項目) で描画。
+      // applyListThumbFit が枠に収まるようフォントを縮小する。見た目を統一。
+      thumbClass=' list';
+      thumb=listCardInner(c);
     }else if(c.type==='link'){
       const link=c.link||{};
       thumb=link.image?`<img src="${esc(link.image)}" alt="" decoding="async">`:esc(link.title||link.url||'(リンク)');
@@ -14874,7 +14910,7 @@ function renderLibNewSection(seenShelves){
     }
     return `
       <div class="lib-new-card" data-shelf-id="${esc(s.id)}" data-card-id="${esc(c.id)}">
-        <div class="lib-new-card-thumb"${thumbStyle}>${thumb}</div>
+        <div class="lib-new-card-thumb${thumbClass}"${thumbStyle}>${thumb}</div>
         <div class="lib-new-card-foot">
           ${s.icon
             ? `<div class="av has-icon"><img src="${esc(s.icon)}" alt=""></div>`
@@ -14894,6 +14930,10 @@ function renderLibNewSection(seenShelves){
       <div class="lib-new-strip">${cardsHtml}</div>
     </div>
   `;
+  // note/list サムネのフォントを、グリッドと同じ計算で枠に合わせて確定する (見た目を統一)
+  applyLibNewNoteScale(sec);
+  applyListThumbFit(sec);
+  requestAnimationFrame(()=>{ applyLibNewNoteScale(sec); applyListThumbFit(sec); });
   // クリックで該当棚を開く
   sec.querySelectorAll('.lib-new-card').forEach(el=>{
     el.addEventListener('click',()=>{
@@ -16639,6 +16679,7 @@ function relayoutNoteScales(){
     applyGridNoteScale(document);
     if(typeof applyDetailNoteStyle==='function')applyDetailNoteStyle();
     if(typeof applyFeedNoteStyle==='function')applyFeedNoteStyle(document);
+    if(typeof applyLibNewNoteScale==='function')applyLibNewNoteScale(document);
   }catch(e){}
 }
 let _resizeRafId=null;
