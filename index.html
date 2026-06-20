@@ -16033,18 +16033,38 @@ async function saveToPhotos(){
         blob=_dataUrlToBlob(c.image);
       }else{
         // URLの場合 (共有ライブラリの master 画像が R2 等にある時)。
-        // fetch 失敗は外側 catch ではなくここで捕えて、利用者に分かりやすい一言を出す。
-        // (外側 catch で握ると「保存に失敗しました」だけになり、原因がぼやけるため)
-        try{
-          const res=await fetch(c.image);
-          if(!res.ok)throw new Error('status '+res.status);
-          blob=await res.blob();
-        }catch(fetchErr){
-          dbg('image fetch failed: '+(fetchErr&&fetchErr.message||fetchErr));
-          // ※デバッグ用: 原因が特定できたら通常文言「画像を取り込めませんでした」に戻す
-          const errInfo=(fetchErr&&fetchErr.name?fetchErr.name+': ':'')+(fetchErr&&fetchErr.message||String(fetchErr));
-          toast('画像を取り込めませんでした ('+errInfo.slice(0,60)+')');
-          return;
+        // R2 公開URL(pub-xxxx.r2.dev)は CORS が効かず直接 fetch すると失敗するため、
+        // shelfphotos/ パターンなら同一オリジンの /api/photo 経由で取りに行く。
+        const sm=c.image.match(/\/shelfphotos\/([a-zA-Z0-9_-]+)/);
+        if(sm && state.auth && state.auth.token){
+          try{
+            const res=await fetch('/api/photo',{
+              method:'POST',
+              headers:{'Content-Type':'application/json','x-snapin-token':state.auth.token},
+              body:JSON.stringify({action:'shelf-get', photoId:sm[1]}),
+            });
+            if(!res.ok)throw new Error('status '+res.status);
+            const d=await res.json();
+            if(!d.dataUrl)throw new Error('no dataUrl in response');
+            blob=_dataUrlToBlob(d.dataUrl);
+          }catch(fetchErr){
+            dbg('shelf-get failed: '+(fetchErr&&fetchErr.message||fetchErr));
+            const errInfo=(fetchErr&&fetchErr.name?fetchErr.name+': ':'')+(fetchErr&&fetchErr.message||String(fetchErr));
+            toast('画像を取り込めませんでした ('+errInfo.slice(0,60)+')');
+            return;
+          }
+        }else{
+          // shelfphotos でない URL、または未認証 → 直接 fetch (CORS で失敗する可能性あり)
+          try{
+            const res=await fetch(c.image);
+            if(!res.ok)throw new Error('status '+res.status);
+            blob=await res.blob();
+          }catch(fetchErr){
+            dbg('image fetch failed: '+(fetchErr&&fetchErr.message||fetchErr));
+            const errInfo=(fetchErr&&fetchErr.name?fetchErr.name+': ':'')+(fetchErr&&fetchErr.message||String(fetchErr));
+            toast('画像を取り込めませんでした ('+errInfo.slice(0,60)+')');
+            return;
+          }
         }
       }
       let sub=(blob.type.split('/')[1]||'jpg').replace('jpeg','jpg').replace('svg+xml','svg');
