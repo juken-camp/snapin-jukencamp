@@ -154,6 +154,30 @@ export default async function handler(req, res) {
     }
   }
 
+  // ─── 共有ライブラリの写真を「サーバー経由で」読み取り (CORS回避用) ───
+  // 公開URL(pub-xxxx.r2.dev)は Cloudflare の CORS が効かず、ブラウザの fetch() が
+  // 失敗する。PWA で共有メモの画像を「カメラロールに保存」する時など、画像を
+  // バイト列で取りたい場面で、同一オリジンのこの API 経由で取得する。
+  // 認証: 塾生 or 管理者 (PWA で共有メモを保存できる人と同じ範囲)
+  if (action === 'shelf-get') {
+    const authResult = await authorize(req);
+    if (!authResult.ok) {
+      return res.status(authResult.status).json({ error: 'Unauthorized', reason: authResult.reason });
+    }
+    const photoId = safeId(body.photoId || '');
+    if (!photoId) return res.status(400).json({ error: 'photoId required' });
+    try {
+      const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: `shelfphotos/${photoId}` }));
+      const bytes = await obj.Body.transformToByteArray();
+      const b64 = Buffer.from(bytes).toString('base64');
+      const type = obj.ContentType || 'image/jpeg';
+      return res.status(200).json({ ok: true, dataUrl: `data:${type};base64,${b64}` });
+    } catch (e) {
+      // NoSuchKey など → 見つからない
+      return res.status(404).json({ ok: false, error: 'not_found' });
+    }
+  }
+
   // ─── 従来: ユーザーごとの写真 (x-snapin-token 認証) ───
   const authResult = await authorize(req);
   if (!authResult.ok) {
