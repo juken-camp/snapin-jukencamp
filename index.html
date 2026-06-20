@@ -16041,7 +16041,9 @@ async function saveToPhotos(){
           blob=await res.blob();
         }catch(fetchErr){
           dbg('image fetch failed: '+(fetchErr&&fetchErr.message||fetchErr));
-          toast('画像を取り込めませんでした');
+          // ※デバッグ用: 原因が特定できたら通常文言「画像を取り込めませんでした」に戻す
+          const errInfo=(fetchErr&&fetchErr.name?fetchErr.name+': ':'')+(fetchErr&&fetchErr.message||String(fetchErr));
+          toast('画像を取り込めませんでした ('+errInfo.slice(0,60)+')');
           return;
         }
       }
