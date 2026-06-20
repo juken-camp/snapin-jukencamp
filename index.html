@@ -16008,9 +16008,14 @@ function _downloadBlob(blob,fname){
 
 async function saveToPhotos(){
   $('detail-menu')?.classList.remove('on');
-  const c=state.current;
-  if(!c)return;
+  const c0=state.current;
+  if(!c0)return;
+  // 共有ライブラリから保存したメモ(リンクカード)の場合、c0 は参照情報だけで
+  // 画像本体は共有元(master)または _snap に入っている。
+  // resolveLiveCard でマージしたコピーを使う。
+  const c=isLinkedCard(c0)?resolveLiveCard(c0):c0;
   const isVideo=(c.type==='video');
+  dbg('saveToPhotos start type='+c.type+' linked='+isLinkedCard(c0)+' hasImg='+!!c.image+' imgIsData='+(c.image&&typeof c.image==='string'&&c.image.startsWith('data:')));
   try{
     let blob=null, fname='';
     if(isVideo){
@@ -16027,7 +16032,18 @@ async function saveToPhotos(){
       if(typeof c.image==='string' && c.image.startsWith('data:')){
         blob=_dataUrlToBlob(c.image);
       }else{
-        blob=await (await fetch(c.image)).blob();
+        // URLの場合 (共有ライブラリの master 画像が R2 等にある時)。
+        // fetch 失敗は外側 catch ではなくここで捕えて、利用者に分かりやすい一言を出す。
+        // (外側 catch で握ると「保存に失敗しました」だけになり、原因がぼやけるため)
+        try{
+          const res=await fetch(c.image);
+          if(!res.ok)throw new Error('status '+res.status);
+          blob=await res.blob();
+        }catch(fetchErr){
+          dbg('image fetch failed: '+(fetchErr&&fetchErr.message||fetchErr));
+          toast('画像を取り込めませんでした');
+          return;
+        }
       }
       let sub=(blob.type.split('/')[1]||'jpg').replace('jpeg','jpg').replace('svg+xml','svg');
       fname=`snapin-${Date.now()}.${sub}`;
@@ -16043,6 +16059,7 @@ async function saveToPhotos(){
       }catch(err){
         if(err && err.name==='AbortError')return; // ユーザーがキャンセル
         // 共有に失敗 → ダウンロードにフォールバック
+        dbg('share failed: '+(err&&err.name||err));
         _downloadBlob(blob,fname);
         toast('ダウンロードしました');
       }
@@ -16054,6 +16071,7 @@ async function saveToPhotos(){
     toast('ダウンロードしました');
   }catch(e){
     console.warn('saveToPhotos failed',e);
+    dbg('saveToPhotos catch: '+(e&&e.message||e));
     toast('保存に失敗しました');
   }
 }
