@@ -536,6 +536,7 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));
   -webkit-filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));
 }
+.card.video .pin-badge{right:36px;} /* 再生マークと重ならない位置 */
 .feed-item .pin-badge{top:16px;right:16px;}
 
 /* グリッドの選択モード (長押しで起動、複数選択して削除) */
@@ -9211,9 +9212,9 @@ function renderGrid(el,cards,origin){
     if(origin==='mine' && cardHasUpdate(c)){
       inner+=`<div class="card-update-badge" title="共有ライブラリが更新しました">更新</div>`;
     }
-    // ピン留めバッジ
-    if(origin==='mine' && c.pinned){
-      inner+=`<div class="pin-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
+    // ピン留めバッジ: 自分のメモは利用者の整理、共有メモは発信者からの重要指定。
+    if(c.pinned){
+      inner+=`<div class="pin-badge" title="上部に固定"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`;
     }
     // 選択マーク (常に DOM に置いて CSS で表示制御)
     if(isHome){
@@ -15053,7 +15054,8 @@ function openOfficial(s){
     }
   }
   updateOfficialSubBtn();
-  renderGrid($('off-grid'),s.cards,'official');
+  // 発信者が固定したメモを先頭へ。固定同士・通常メモ同士の手動順序は保つ。
+  renderGrid($('off-grid'),sortPinnedFirst(Array.isArray(s.cards)?s.cards:[]),'official');
   goto('screen-official');
   // 配布型、または登録ずみの棚を開いたら「見た」とマーク (新着バッジを消す)
   if(canSeeShelfId(s.id) || state.subscribed.includes(s.id)){
