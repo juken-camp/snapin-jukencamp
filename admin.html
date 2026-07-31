@@ -960,6 +960,22 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 .memo-card video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;background:#000;}
 .memo-card .video-play-badge{position:absolute;top:7px;right:7px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:3;}
 .memo-card .video-play-badge svg{width:11px;height:11px;margin-left:1px;}
+/* 公開ページと同じ「発信者による重要指定」。通常表示では固定メモを先頭にまとめる。 */
+.memo-pin-badge{
+  position:absolute;
+  top:6px;right:6px;
+  width:23px;height:23px;
+  border-radius:50%;
+  background:rgba(29,158,117,.92);
+  color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+  z-index:4;
+  box-shadow:0 1px 4px rgba(0,0,0,.24);
+}
+.memo-pin-badge svg{width:13px;height:13px;}
+/* 動画の再生マークと重ならないよう、固定ピンだけ少し左へ寄せる。 */
+.memo-card.video .memo-pin-badge{right:36px;}
 /* 動画編集ゾーン (写真ゾーンと同系統) */
 .video-zone{display:block;width:100%;aspect-ratio:16/10;border-radius:12px;border:1px solid var(--line2);background:#000;position:relative;overflow:hidden;}
 .video-zone.empty{display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1px dashed var(--line2);}
@@ -1595,6 +1611,50 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
   border:1.5px dashed var(--line2);
   pointer-events:none;
 }
+
+/* メモ編集画面: 公開ページの先頭へ固定するスイッチ */
+.memo-pin-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:13px 14px;
+  margin:14px 0 8px;
+  background:var(--surface2);
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+.memo-pin-copy{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.memo-pin-icon{
+  width:32px;height:32px;
+  border-radius:50%;
+  background:var(--gl);
+  color:var(--g);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.memo-pin-icon svg{width:16px;height:16px;}
+.memo-pin-title{font-size:13px;font-weight:700;color:var(--ink);}
+.memo-pin-desc{font-size:11px;line-height:1.45;color:var(--ink3);margin-top:2px;}
+.memo-pin-switch{
+  position:relative;
+  width:46px;height:28px;
+  border-radius:14px;
+  background:var(--line2);
+  flex-shrink:0;
+  transition:background-color .15s;
+}
+.memo-pin-switch::after{
+  content:"";
+  position:absolute;
+  top:3px;left:3px;
+  width:22px;height:22px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.2);
+  transition:transform .15s;
+}
+.memo-pin-switch.on{background:var(--g);}
+.memo-pin-switch.on::after{transform:translateX(18px);}
 
 /* リスト編集 */
 .list-edit{
@@ -4761,7 +4821,7 @@ function renderShelfEdit(){
         <div class="memo-list-head-count">${(s.cards||[]).length} 件</div>
       </div>
     </div>
-    ${state.cardReorder?'<div class="reorder-hint">長押し → ドラッグで移動。<b>タップ</b>すると「いちばん上へ / いちばん下へ」をすぐ選べます。</div>':'<button class="memo-add-btn" id="memo-add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>新しいメモ</button>'}
+    ${state.cardReorder?`<div class="reorder-hint">長押し → ドラッグで移動。<b>タップ</b>すると「いちばん上へ / いちばん下へ」をすぐ選べます。${(s.cards||[]).some(c=>c.pinned)?'<br>固定中のメモは、公開ページでは常に先頭に表示されます。':''}</div>`:'<button class="memo-add-btn" id="memo-add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>新しいメモ</button>'}
     <div class="memo-grid" id="memo-grid"></div>
   `;
 
@@ -4933,6 +4993,14 @@ window.addEventListener('resize',()=>{
   _memoGridResizeRaf=requestAnimationFrame(syncMemoGridCellSize);
 });
 
+// 通常表示では固定メモだけを先頭にまとめる。各グループ内の手動順序は維持する。
+// 並べ替えモード中は配列そのものの順序を見せ、従来どおり自由に編集できるようにする。
+function memoEntriesForDisplay(cards,reorder){
+  const entries=(Array.isArray(cards)?cards:[]).map((card,index)=>({card,index}));
+  if(reorder)return entries;
+  return entries.sort((a,b)=>(b.card.pinned?1:0)-(a.card.pinned?1:0));
+}
+
 function renderMemoGrid(){
   const s=getSelectedShelf();
   if(!s)return;
@@ -4947,7 +5015,7 @@ function renderMemoGrid(){
       if(!cc._ref)byId.set(cc.id,{card:cc,shelf:sh});
     }
   }
-  (s.cards||[]).forEach((c,idx)=>{
+  memoEntriesForDisplay(s.cards,reorder).forEach(({card:c,index:idx})=>{
     let displayCard=c;
     let isRef=false;
     let originShelf=null;
@@ -5039,7 +5107,10 @@ function renderMemoGrid(){
         </div>`;
       }
     }
-    cell.innerHTML=badge+inner;
+    const pinBadge=displayCard.pinned===true
+      ? `<div class="memo-pin-badge" title="公開ページの上部に固定中"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>`
+      : '';
+    cell.innerHTML=badge+pinBadge+inner;
     cell.dataset.idx=idx;
     if(reorder){
       attachCardGridDrag(cell);
@@ -5784,7 +5855,20 @@ function renderMemoModalBody(){
     </div>
   `;
 
-  body.innerHTML=typeHtml+editHtml+shareHtml+dateHtml+delHtml;
+  const pinHtml=`
+    <div class="memo-pin-row">
+      <div class="memo-pin-copy">
+        <div class="memo-pin-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 3l5 5-4 1-3 5-2-2-5 5-2-2 5-5-2-2 5-3z"/></svg></div>
+        <div>
+          <div class="memo-pin-title">上部に固定</div>
+          <div class="memo-pin-desc">重要なメモとして、共有ライブラリの先頭に表示します</div>
+        </div>
+      </div>
+      <button type="button" class="memo-pin-switch ${m.pinned===true?'on':''}" id="memo-pin-toggle" role="switch" aria-checked="${m.pinned===true?'true':'false'}" aria-label="上部に固定"></button>
+    </div>
+  `;
+
+  body.innerHTML=typeHtml+editHtml+shareHtml+pinHtml+dateHtml+delHtml;
 
   // ノート(テキストメモ)は index と同じ自動スケール編集にする
   if(m.type==='note')setupNoteEditor(m);
@@ -6048,6 +6132,15 @@ function renderMemoModalBody(){
       renderMemoModalBody();
     });
   });
+  // 発信者の重要指定。本文更新とは分けて保存し、閲覧者にはピンと先頭表示で伝える。
+  const pinToggle=$('memo-pin-toggle');
+  if(pinToggle){
+    pinToggle.addEventListener('click',()=>{
+      state.editingMemo.pinned=!(state.editingMemo.pinned===true);
+      pinToggle.classList.toggle('on',state.editingMemo.pinned);
+      pinToggle.setAttribute('aria-checked',state.editingMemo.pinned?'true':'false');
+    });
+  }
   // delete
   const delBtn=$('memo-del');
   if(delBtn){
@@ -6573,6 +6666,8 @@ async function saveMemoFromModal(){
         id:memo.id,
         _ref:true,
         _originShelf:s.id,
+        // 固定状態も参照側へ写し、管理画面の各共有先でも公開時と同じ先頭表示にする。
+        pinned:memo.pinned===true,
         // 既存の参照があればその時刻を残す(新着の重複発火を防ぐ)
         created:existingRef?existingRef.created:Date.now(),
       });
