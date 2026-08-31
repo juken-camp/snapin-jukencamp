@@ -3564,6 +3564,13 @@ async function saveStudents(){
   }
 }
 
+// 生徒データに、削除済みライブラリのIDや同じIDが重複して残っていても、
+// 管理画面では「現在存在するライブラリ」だけを有効な登録として扱う。
+function activeStudentShelfIds(ids){
+  const activeIds=new Set((state.shelves||[]).map(sh=>sh.id));
+  return [...new Set((Array.isArray(ids)?ids:[]).filter(id=>activeIds.has(id)))];
+}
+
 function updateStudentsTabCount(){
   const el=$('students-tab-count');
   if(el)el.textContent=state.students.filter(studentInCurCat).length;
@@ -3626,7 +3633,7 @@ function renderStudentsList(){
     const claimed=!!s.claimedBy;
     const bdShow=s.birthday?s.birthday.slice(0,2)+'/'+s.birthday.slice(2):'';
     const initial=esc((s.name||'?').slice(0,1));
-    const libN=Array.isArray(s.shelfIds)?s.shelfIds.length:0;
+    const libN=activeStudentShelfIds(s.shelfIds).length;
     const libIco='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
     row.innerHTML=`
       <div class="student-avatar ${claimed?'':'unclaimed'}">${initial}</div>
@@ -3661,7 +3668,11 @@ function openStudentModal(student){
       createdAt:Date.now(),
     };
   }
-  state.editingStudent=Object.assign({},student,{_new:isNew});
+  // 配列も複製し、保存前のチェック操作が一覧側の元データを直接変えないようにする。
+  state.editingStudent=Object.assign({},student,{
+    shelfIds:Array.isArray(student.shelfIds)?student.shelfIds.slice():[],
+    _new:isNew,
+  });
   $('student-modal-title').textContent=isNew?'塾生を追加':'塾生を編集';
   renderStudentModalBody();
   $('student-modal').classList.add('on');
@@ -3678,7 +3689,10 @@ function renderStudentModalBody(){
   const body=$('student-modal-body');
   const s=state.editingStudent;
   if(!s)return;
-  const shelfIds=Array.isArray(s.shelfIds)?s.shelfIds:[];
+  // 編集画面を開いた時点で、削除済みIDと重複IDを取り除く。
+  // この状態で保存すれば、照喜名朝友さんのような古い登録もデータ上から修復される。
+  const shelfIds=activeStudentShelfIds(s.shelfIds);
+  s.shelfIds=shelfIds;
   const scat=catOf(s);
   // この区分のライブラリ + すでに紐付いているものを表示
   const allShelves=state.shelves||[];
@@ -3783,7 +3797,7 @@ async function saveStudentFromModal(){
     name:name,
     nameKey:'',
     birthday:bd,
-    shelfIds:Array.isArray(s.shelfIds)?s.shelfIds:[],
+    shelfIds:activeStudentShelfIds(s.shelfIds),
     category:catOf(s),
     aiEnabled:true,
     revoked:false,
@@ -4743,10 +4757,27 @@ async function purgeShelf(id){
       body:JSON.stringify({action:'purge',shelfId:id}),
     });
     if(!res.ok)throw new Error('HTTP '+res.status);
-    setStatus('完全に削除しました');
+
+    // 完全削除したライブラリIDを名簿からも除去する。
+    // ゴミ箱へ移した段階では復元に備えて残し、完全削除時だけ整理する。
+    let studentLinksChanged=false;
+    (state.students||[]).forEach(student=>{
+      if(!Array.isArray(student.shelfIds)||!student.shelfIds.includes(id))return;
+      student.shelfIds=student.shelfIds.filter(shelfId=>shelfId!==id);
+      studentLinksChanged=true;
+    });
+    if(studentLinksChanged){
+      const studentsSaved=await saveStudents();
+      if(!studentsSaved){
+        setStatus('ライブラリは削除しましたが、名簿の紐付け整理に失敗しました','error');
+      }
+    }else{
+      setStatus('完全に削除しました');
+    }
   }catch(err){setStatus('削除に失敗: '+err.message,'error');return;}
   await fetchTrash();
   renderTrash();
+  renderStudentsList();
 }
 
 // ═══ SHELF EDIT ═══
