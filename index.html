@@ -4658,10 +4658,10 @@ html:not(.en-on) .en-live{ display:none; }
 .inline-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0 12px;}
 .inline-controls button{font-family:inherit;font-size:12px;min-height:36px;padding:6px 10px;border-radius:8px;color:var(--g);background:transparent;}
 .inline-controls button:disabled{opacity:.35;}
+#inline-undo-btn{display:inline-flex;align-items:center;gap:4px;}
 .inline-edit-toolbar{display:none;flex-shrink:0;background:var(--bg);border-bottom:.5px solid var(--line);padding:0 14px;}
 .inline-editing .inline-edit-toolbar{display:block;}
 .inline-edit-toolbar .inline-controls{margin:0;flex-wrap:nowrap;gap:4px;}
-.inline-edit-toolbar #inline-add-btn{display:none;}
 .inline-editing #detail-input-bar,.inline-editing #detail-chat-log,.inline-editing #reply-preview,.inline-editing>.bnav{display:none!important;}
 .inline-save-status{font-size:11px;color:var(--ink3);margin-left:auto;}
 .inline-save-status.error{color:var(--rose);}
@@ -7321,6 +7321,13 @@ function uiOwner(){return JSON.stringify([state.user?.mode||'',state.auth?.stude
 function bodyCopy(c){
   return c.type==='note'?{text:String(c.text||'')}:{title:String(c.title||''),items:(c.items||[]).map(i=>Object.assign({},i))};
 }
+// 編集欄の空行は入力場所として残し、保存するリストからは除く。
+// 既存項目を空にした場合も、消した内容をそのまま保存する。
+function inlineStoredBody(c){
+  const body=bodyCopy(c);
+  if(c.type==='list')body.items=body.items.filter(i=>i.t.trim()!=='');
+  return body;
+}
 function bodyEqual(a,b){return JSON.stringify(a)===JSON.stringify(b);}
 function canTapEdit(c){return !!(state.tapEdit && c && c._origin!=='official' && !isLinkedCard(c) && !c.deletedAt && (c.type==='note'||c.type==='list'));}
 function uiRouteKey(id){
@@ -7518,7 +7525,7 @@ function applyInlineDraft(c){
   const d=_ui.drafts[c.id];
   return canTapEdit(c) && d?.type===c.type?Object.assign({},c,d.body):c;
 }
-function bodyValid(c){return c.type==='note'?!!c.text?.trim():!!c.items?.length && c.items.every(i=>!!i.t?.trim());}
+function bodyValid(c){return c.type==='note'?!!c.text?.trim():Array.isArray(c.items);}
 function markInlineDraft(){
   if(!state.current || !canTapEdit(state.current))return;
   _ui.drafts[state.current.id]={type:state.current.type,body:bodyCopy(state.current)};
@@ -7531,11 +7538,11 @@ function saveInlineBody(){
   const stored=state.cards.find(x=>x.id===c.id);
   if(!stored)return false;
   if(!bodyValid(c)){setInlineStatus('空欄は下書きとして保持',true);return false;}
-  const body=bodyCopy(c);
+  const body=inlineStoredBody(c);
   const changed=!bodyEqual(body,bodyCopy(stored));
   if(!changed && !_pendingBodySaves.has(c.id)){delete _ui.drafts[c.id];writeUI();setInlineStatus('保存済み');return true;}
   if(changed && (!_inline || !_inline.historyAdded)){addBodyHistory(stored,bodyCopy(stored));if(_inline)_inline.historyAdded=true;}
-  Object.assign(stored,body);stored._rev=Date.now();
+  Object.assign(stored,body);stored._rev=Math.max(Date.now(),(Number(stored._rev)||0)+1);
   c._bodyHistory=stored._bodyHistory;c._rev=stored._rev;
   const ok=save();
   if(ok){_pendingBodySaves.delete(c.id);delete _ui.drafts[c.id];writeUI();setInlineStatus('保存済み');}
@@ -7545,8 +7552,8 @@ function saveInlineBody(){
     const payload=buildLightPayload();payload._savedAt=state._savedAt;
     imgDB.putMeta(payload).then(()=>{
       if(_pendingBodySaves.get(c.id)===signature)_pendingBodySaves.delete(c.id);
-      if(_ui.drafts[c.id] && bodyEqual(_ui.drafts[c.id].body,body)){delete _ui.drafts[c.id];writeUI();}
-      if(state.current?.id===c.id && bodyEqual(bodyCopy(state.current),body))setInlineStatus('保存済み');
+      if(_ui.drafts[c.id] && bodyEqual(inlineStoredBody(Object.assign({type:c.type},_ui.drafts[c.id].body)),body)){delete _ui.drafts[c.id];writeUI();}
+      if(state.current?.id===c.id && bodyEqual(inlineStoredBody(state.current),body))setInlineStatus('保存済み');
     }).catch(()=>{if(state.current?.id===c.id)setInlineStatus('保存できません。入力は保持しています',true);});
   }
   return ok;
@@ -7593,7 +7600,7 @@ function placeInlineCaret(el,event,end){
 }
 function beginInlineEdit(el,kind,idx,event,end){
   if(!canTapEdit(state.current)||state.detailMosaic)return;
-  if(_inline?.el===el)return;
+  if(_inline?.el===el){if(end){placeInlineCaret(el,null,true);scheduleInlineCaret();}return;}
   finishInlineEdit(true);
   _inline={el,kind,idx,cardId:state.current.id,composing:false,historyAdded:false};
   el.textContent=kind==='text'?state.current.text||'':kind==='title'?state.current.title||'':state.current.items[idx]?.t||'';
@@ -7625,7 +7632,7 @@ function bindInlineField(el,kind,idx){
   });
 }
 function inlineControls(){
-  return `<div class="inline-controls"><button id="inline-add-btn" type="button">${state.current.type==='list'?'＋ 項目を追加':'＋ 書き足す'}</button><button id="inline-undo-btn" type="button">元に戻す</button><button id="inline-done-btn" type="button">完了</button><span class="inline-save-status" id="inline-save-status" role="status" aria-live="polite">保存済み</span></div>`;
+  return `<div class="inline-controls"><button id="inline-add-btn" type="button">${state.current.type==='list'?'＋ 項目を追加':'＋ 書き足す'}</button><button id="inline-undo-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 14-5-5 5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg>元に戻す</button><span class="inline-save-status" id="inline-save-status" role="status" aria-live="polite">保存済み</span></div>`;
 }
 function renderInlineList(c){
   const col=colorById(c.color);let num=0;
@@ -7654,11 +7661,6 @@ function wireInlineBody(){
     else beginInlineEdit($('detail-content').querySelector('.detail-note-inner'),'text',null,null,true);
   });
   $('inline-undo-btn')?.addEventListener('click',e=>{e.stopPropagation();undoInlineBody();});
-  $('inline-done-btn')?.addEventListener('click',e=>{
-    e.stopPropagation();finishInlineEdit();
-    if(_ui.drafts[state.current.id])setInlineStatus(bodyValid(state.current)?'保存中…':'空欄は下書きとして保持',!bodyValid(state.current));
-    else setInlineStatus('保存済み');
-  });
   setInlineStatus(_ui.drafts[state.current.id]?'下書きを復元しました':'保存済み');
 }
 function renderInlineBody(){
@@ -7687,7 +7689,6 @@ function appendInlineItem(at){
 function removeInlineItem(idx){
   if(!canTapEdit(state.current)||state.detailMosaic)return;
   finishInlineEdit();
-  if(state.current.items.length<=1){toast('最後の項目は残してください');return;}
   state.current.items=state.current.items.filter((_,i)=>i!==idx);markInlineDraft();saveInlineBody();renderInlineBody();
 }
 function toggleInlineCheck(idx){
@@ -7700,14 +7701,14 @@ function undoInlineBody(){
   if(!canTapEdit(state.current)||state.detailMosaic)return;
   const c=state.current,stored=state.cards.find(x=>x.id===c.id);if(!stored)return;
   // 未保存の空欄等は先に取り消す。保存済み本文の履歴はまだ消さない。
-  const pending=_ui.drafts[c.id] && !bodyEqual(bodyCopy(c),bodyCopy(stored));
+  const pending=_ui.drafts[c.id] && !bodyEqual(inlineStoredBody(c),bodyCopy(stored));
   clearTimeout(_inlineTimer);_inlineTimer=null;
   if(_inline){const el=_inline.el;_inline=null;el.removeAttribute('contenteditable');el.blur();}
   endInlineLayout();
   if(pending){Object.assign(c,bodyCopy(stored));delete _ui.drafts[c.id];writeUI();renderInlineBody();return;}
   const h=Array.isArray(stored._bodyHistory)?stored._bodyHistory:[];
   if(!h.length)return;
-  Object.assign(stored,h.pop().body);stored._rev=Date.now();Object.assign(c,bodyCopy(stored));
+  Object.assign(stored,h.pop().body);stored._rev=Math.max(Date.now(),(Number(stored._rev)||0)+1);Object.assign(c,bodyCopy(stored));
   markInlineDraft();_pendingBodySaves.set(c.id,'undo');
   saveInlineBody();renderInlineBody();
 }
@@ -16703,6 +16704,10 @@ async function saveToPhotos(){
 }
 
 // ═══ EVENT DELEGATION ═══
+// 保存は自動。本文以外をタップしたら編集を閉じ、チャット欄とナビを戻す。
+$('screen-detail').addEventListener('click',e=>{
+  if(_inline&&!_inline.el.contains(e.target)&&!e.target.closest('.inline-controls'))finishInlineEdit();
+});
 // iOSでも背景のタップをクリックとして受け取れるよう、背景自身にもリスナーを持たせる。
 document.querySelectorAll('.sheet-mask,.settings-backdrop').forEach(el=>el.addEventListener('click',()=>{}));
 document.addEventListener('click',e=>{
