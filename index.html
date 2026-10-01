@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SnapIn</title>
+<!-- 本文が描画される前に待機状態にし、保存された画面の選択後に表示する。 -->
+<script>
+(function(){
+  const root=document.documentElement;
+  root.classList.add('snapin-booting');
+  let timer;
+  const finish=()=>{root.classList.remove('snapin-booting');clearTimeout(timer);};
+  window.__snapinBoot={finish};
+  // 本体スクリプトのエラー等で待機表示が残り続けないための保険。
+  timer=setTimeout(finish,10000);
+})();
+</script>
 <!-- キャッシュを無効化 (PWA 含め、常に最新のHTMLが取得されるように) -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
@@ -86,6 +98,11 @@ input,textarea{font-family:inherit;border:none;outline:none;background:none;colo
 
 .screen{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;position:relative;}
 .screen.active{display:flex;}
+html.snapin-booting .app{visibility:hidden;pointer-events:none;}
+html.snapin-booting body::before{
+  content:'読み込み中…';position:fixed;inset:0;display:flex;
+  align-items:center;justify-content:center;color:var(--ink3);font-size:13px;
+}
 /* 外枠はスクロールさせず、各画面の .scroll だけを動かす。 */
 @supports (overflow:clip){.app,.screen{overflow:clip;}}
 
@@ -5725,24 +5742,6 @@ html:not(.en-on) .en-live{ display:none; }
 
 
 </div><!-- .app -->
-
-<!-- 起動直後のチラ見え対策: 重い本体スクリプトが走る前に、ログイン済みなら
-     初期表示を screen-login から screen-home に同期で切り替えておく。
-     (本体の load()&&state.user 判定はスクリプト末尾で走るため、それより前に
-      ブラウザが初期 active の screen-login を一瞬描画してしまうのを防ぐ) -->
-<script>
-try{
-  var _p=localStorage.getItem('snapin_v3');
-  if(_p){
-    var _d=JSON.parse(_p);
-    if(_d && _d.user){
-      var _lg=document.getElementById('screen-login');
-      var _hm=document.getElementById('screen-home');
-      if(_lg&&_hm){ _lg.classList.remove('active'); _hm.classList.add('active'); }
-    }
-  }
-}catch(e){/* 壊れていても本体の通常起動に任せる */}
-</script>
 
 <script>
 (function(){
@@ -17210,6 +17209,7 @@ initLinkThumbWatch();
 if(load() && state.user){
   setupNavs(); // load() で復元した認証状態を反映 (塾生なら共有タブのロックを解除)
   startUIResume();
+  window.__snapinBoot.finish();
   // 起動時に塾生情報を最新化 (force=true、スロットリング無視)
   refreshMe(true);
   // 起動時に「届いたメモ」の件数を取って共有タブのバッジに反映 (グループ管理者のみ)
@@ -17237,18 +17237,28 @@ if(load() && state.user){
   // localStorage に保存が無い → IDB の耐久コピーから復旧を試みる
   // (ブラウザの容量退避や localStorage クリアでログイン情報ごと消えた場合の保険)
   goto('screen-login',false);
-  reconcileFromIDB().then(swapped=>{
+  reconcileFromIDB().then(async swapped=>{
     if(!swapped || !state.user)return;
+    setupNavs();
     startUIResume();
+    // 端末内の予備データから復旧する場合も、前の画面を選んでから表示する。
+    await recoverUI();
+    window.__snapinBoot.finish();
     refreshMe(true);
     purgeOldTrash().catch(()=>{});
     save(); // localStorage を復旧 (書ければ)
     hydrateCardImages().then(()=>{
       const cur=document.querySelector('.screen.active');
       if(cur && cur.id==='screen-home')renderHome();
-      recoverUI();
+      if(cur && cur.id==='screen-today')renderToday();
+      if(cur && cur.id==='screen-detail' && state.current){
+        const fresh=state.cards.find(x=>x.id===state.current.id);
+        if(fresh && !_inline)openDetail(fresh,state.current._origin||'mine');
+      }
+      restorePosition(document.querySelector('.screen.active')?.id);
     }).catch(()=>{});
-  }).catch(e=>console.warn('boot recover failed:',e));
+  }).catch(e=>console.warn('boot recover failed:',e))
+    .finally(()=>window.__snapinBoot.finish());
 }
 
 // 共有リンク (?s=トークン) で開かれていたら、受け取り画面を出す (ログイン状態に関わらず)
