@@ -4688,6 +4688,24 @@ html:not(.en-on) .en-live{ display:none; }
 .inline-editable:empty::before{content:attr(data-placeholder);color:var(--ink3);font-size:16px;pointer-events:none;}
 .inline-list-title{font-size:17px;font-weight:600;margin-bottom:14px;opacity:.75;white-space:pre-wrap;word-break:break-word;}
 
+/* 箇条書きは詳細・編集・サムネで同じ比率のレイアウトを使う。 */
+.snapin-list-body{box-sizing:border-box;padding:1.2em 1.2em .666667em;border-radius:.933333em;line-height:1.5;}
+.snapin-list-body .snapin-list-title{font-size:1.133333em;font-weight:600;margin-bottom:.823529em;opacity:.75;white-space:pre-wrap;word-break:break-word;}
+.snapin-list-body .snapin-list-row{display:flex;align-items:center;gap:.8em;padding:.666667em 0;margin:0;border-bottom:.033333em solid rgba(0,0,0,.07);font-size:inherit;line-height:1.5;}
+.snapin-list-body .snapin-list-row:last-child{border-bottom:none;}
+.snapin-list-body .snapin-list-row>.snapin-list-text{flex:1;min-width:0;min-height:1.5em;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;}
+.snapin-list-body .snapin-list-row .chk{width:1.466667em;height:1.466667em;margin:0;border:.1em solid var(--ink3);border-radius:.333333em;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;box-sizing:border-box;}
+.snapin-list-body .snapin-list-row .chk svg{width:.8em;height:.8em;display:block;}
+.snapin-list-body .snapin-list-row.done{color:var(--ink3);text-decoration:line-through;}
+.snapin-list-body .snapin-list-row.done .chk{background:var(--g);border-color:var(--g);}
+.snapin-list-body .snapin-list-row:focus-within{color:inherit;text-decoration:none;}
+.snapin-list-body .snapin-list-row .snapin-list-number{width:1.571429em;height:1.571429em;font-size:.933333em;flex-shrink:0;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--font-en);font-weight:500;color:inherit;opacity:.7;}
+.snapin-list-body .inline-check-button{font:inherit;width:calc(1.466667em + 16px);height:calc(1.466667em + 16px);min-height:38px;margin:-8px;}
+.snapin-list-body .inline-editable:empty::before{font-size:1em;}
+.card.list .ctxt.list-thumb,.today-newcard.list .ctxt.list-thumb,.lib-new-card-thumb.list .ctxt.list-thumb{padding:0;display:block;white-space:normal;}
+.list-thumb .snapin-list-body{width:354px;font-size:15px;}
+.detail-list-card.snapin-list-body{font-size:15px;}
+
 </style>
 </head>
 <body>
@@ -6398,41 +6416,30 @@ function resolveAlign(c){
   };
 }
 
-// グリッド/横スクロールのリスト型カード用: チェックボックス付きの統一見た目を返す。
-// today-newcard でも card でも同じ HTML を使うことで、見た目が一貫する。
-// 項目数に応じてフォントを下げ、サムネでもできるだけ多くの項目を表示する (最小4px)。
-// 各項目は最大2行まで折り返す (CSS の .li span 側で -webkit-line-clamp:2)。
-// 折り返しで縦に伸びる分、1行固定だった頃より各段を少しずつ小さめにしてある。
-function listThumbFontSize(n){
-  if(n<=3)return 10;
-  if(n<=5)return 9;
-  if(n<=7)return 8;
-  if(n<=9)return 7;
-  if(n<=11)return 6;
-  if(n<=14)return 5;
-  return 4;            // 下限 (メモの最小と同じ)
+// 詳細・タップ編集・一覧で共通の箇条書き。寸法はこの基準幅から比例させる。
+const LIST_LAYOUT_WIDTH=354, LIST_LAYOUT_FONT_SIZE=15;
+function listBodyMarkup(c,mode){
+  const editable=mode==='edit',thumb=mode==='thumb';
+  const col=colorById(c.color);
+  const items=thumb?(c.items||[]).slice(0,40):(c.items||[]); // 一覧の従来の描画上限を維持。
+  let num=0;
+  const rows=items.map((i,idx)=>{
+    const number=(i.mark||'check')==='number';if(number)num++;
+    const checkSvg=i.d?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>':'';
+    let mark=number?`<div class="snapin-list-number ${thumb?'li-num':'dli-num'}">${num}.</div>`:`<div class="chk${i.d?' on':''}">${checkSvg}</div>`;
+    if(editable&&!number)mark=`<button type="button" class="inline-check-button" data-inline-check="${idx}" aria-label="${i.d?'未完了にする':'完了にする'}" aria-pressed="${!!i.d}">${mark}</button>`;
+    const textAttrs=editable?` data-inline-item="${idx}" data-placeholder="項目を書く…"`:'';
+    const remove=editable?`<button type="button" class="inline-item-remove" data-inline-remove="${idx}" aria-label="この項目を削除">×</button>`:'';
+    return `<div class="snapin-list-row ${thumb?'li':'detail-list-item'} ${i.d&&!number?'done':''}" data-list-idx="${idx}">${mark}<span class="snapin-list-text${editable?' inline-item-text':''}"${textAttrs}>${esc(i.t)}</span>${remove}</div>`;
+  }).join('');
+  const title=(editable||c.title)?`<div class="snapin-list-title${editable?' inline-list-title':''}"${editable?' data-placeholder="タイトルを追加…"':''}>${esc(c.title||'')}</div>`:'';
+  const width=thumb?`width:${LIST_LAYOUT_WIDTH}px;`:'';
+  return `<div class="snapin-list-body${thumb?'':' detail-list-card'}" style="${width}font-size:${LIST_LAYOUT_FONT_SIZE}px;background:${col.bg};color:${col.fg};">${title}${rows}</div>`;
 }
 function listCardInner(c){
   if(typeof isLinkedCard==='function' && isLinkedCard(c))c=resolveLiveCard(c);
   const col=colorById(c.color);
-  const allItems=c.items||[];
-  const itemsArr=allItems.slice(0,40); // 描画コストの安全上限。実質的に全件表示。
-  const fz=listThumbFontSize(allItems.length);
-  const itemsHtml=itemsArr.map((i,idx)=>{
-    const m=i.mark||'check';
-    const done=i.d===true;
-    if(m==='number'){
-      let num=0;
-      for(let k=0;k<=idx;k++){
-        if(((c.items||[])[k].mark||'check')==='number')num++;
-      }
-      return `<div class="li"><div class="li-num">${num}.</div><span>${esc(i.t)}</span></div>`;
-    }
-    const checkSvg=done?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>':'';
-    return `<div class="li ${done?'done':''}"><div class="chk">${checkSvg}</div><span>${esc(i.t)}</span></div>`;
-  }).join('');
-  const title=c.title?`<div style="font-weight:600;font-size:1.1em;margin-bottom:0.4em;color:${col.fg};opacity:0.7;">${esc(c.title)}</div>`:'';
-  return `<div class="ctxt" style="font-size:${fz}px;background:${col.bg};color:${col.fg};">${title}${itemsHtml}</div>`;
+  return `<div class="ctxt list-thumb" style="background:${col.bg};color:${col.fg};">${listBodyMarkup(c,'thumb')}</div>`;
 }
 
 // リンクカードの一覧表示用HTML。グリッドセル・今日のメモ・フィードで共通利用。
@@ -6687,21 +6694,30 @@ function applyLibNewNoteScale(root){
   });
 }
 
-// リスト型カードのフォントを「全項目を折り返したまま枠に収まる最大サイズ」に合わせる。
-// listThumbFontSize の値を初期値に、はみ出していれば 0.5px ずつ下げる (下限4px)。
-// 各項目は CSS で自由に折り返す (行数制限なし) ので、縮小しきれば必ず全文が見える。
+// 基準幅での改行位置を保ち、余白・チェック欄を含む全体を枠に合わせる。
 function applyListThumbFit(root){
   const scope=root||document;
-  const nodes=scope.querySelectorAll('.card.list .ctxt, .today-newcard.list .ctxt, .lib-new-card-thumb.list .ctxt');
+  const nodes=scope.querySelectorAll('.card.list .list-thumb, .today-newcard.list .list-thumb, .lib-new-card-thumb.list .list-thumb');
   nodes.forEach(el=>{
-    if(!el.clientHeight)return;
-    let fz=parseFloat(el.style.fontSize)||10;
-    let guard=0;
-    while(el.scrollHeight>el.clientHeight && fz>4 && guard<40){
-      fz=Math.max(4,fz-0.5);
-      el.style.fontSize=fz+'px';
-      guard++;
+    const body=el.querySelector('.snapin-list-body');
+    if(!body||!el.clientWidth||!el.clientHeight)return;
+    if(!body._listNaturalHeight){
+      body.style.width=LIST_LAYOUT_WIDTH+'px';body.style.fontSize=LIST_LAYOUT_FONT_SIZE+'px';
+      body._listNaturalHeight=body.scrollHeight;
     }
+    let scale=Math.min(el.clientWidth/LIST_LAYOUT_WIDTH,el.clientHeight/Math.max(1,body._listNaturalHeight));
+    const apply=()=>{body.style.width=(LIST_LAYOUT_WIDTH*scale)+'px';body.style.fontSize=(LIST_LAYOUT_FONT_SIZE*scale)+'px';};
+    apply();
+    // 小数pxの丸めによる縦のはみ出しだけ、実寸で補正する。
+    for(let n=0;n<3 && body.scrollHeight>el.clientHeight;n++){
+      scale*=el.clientHeight/body.scrollHeight;apply();
+    }
+  });
+}
+function applyDetailListStyle(){
+  document.querySelectorAll('.detail-list-card.snapin-list-body').forEach(body=>{
+    if(_inline?.el && body.contains(_inline.el))return;
+    if(body.clientWidth)body.style.fontSize=(LIST_LAYOUT_FONT_SIZE*body.clientWidth/LIST_LAYOUT_WIDTH)+'px';
   });
 }
 
@@ -6736,6 +6752,7 @@ function applyDetailNoteStyle(){
     inner.style.height='';
     wrap.style.minHeight=w+'px';
   });
+  applyDetailListStyle();
 }
 
 // フィード(縦スクロール)のメモも、詳細画面と同じ計算でフォント/余白/最小高さを
@@ -7634,13 +7651,7 @@ function inlineControls(){
   return `<div class="inline-controls"><button id="inline-add-btn" type="button">${state.current.type==='list'?'＋ 項目を追加':'＋ 書き足す'}</button><button id="inline-undo-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 14-5-5 5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg>元に戻す</button><span class="inline-save-status" id="inline-save-status" role="status" aria-live="polite">保存済み</span></div>`;
 }
 function renderInlineList(c){
-  const col=colorById(c.color);let num=0;
-  const rows=(c.items||[]).map((i,idx)=>{
-    const number=(i.mark||'check')==='number';if(number)num++;
-    const mark=number?`<div class="dli-num">${num}.</div>`:`<button type="button" class="inline-check-button" data-inline-check="${idx}" aria-label="${i.d?'未完了にする':'完了にする'}" aria-pressed="${!!i.d}"><div class="chk${i.d?' on':''}">${i.d?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4L19 7"/></svg>':''}</div></button>`;
-    return `<div class="detail-list-item ${i.d&&!number?'done':''}" data-list-idx="${idx}">${mark}<span class="inline-item-text" data-inline-item="${idx}" data-placeholder="項目を書く…">${esc(i.t)}</span><button type="button" class="inline-item-remove" data-inline-remove="${idx}" aria-label="この項目を削除">×</button></div>`;
-  }).join('');
-  return `<div class="detail-list-card" style="background:${col.bg};color:${col.fg};"><div class="inline-list-title" data-placeholder="タイトルを追加…">${esc(c.title||'')}</div>${rows}</div>`;
+  return listBodyMarkup(c,'edit');
 }
 function wireInlineBody(){
   if(!canTapEdit(state.current))return;
@@ -13426,30 +13437,7 @@ function openDetail(c,origin){
       contentHtml=`<div class="detail-text">${linkify(c.text||'')}</div>`;
     }
   }else if(c.type==='list'){
-    const col=colorById(c.color);
-    const title=c.title?`<div style="font-size:17px;font-weight:600;margin-bottom:14px;color:${col.fg};opacity:0.75;">${esc(c.title)}</div>`:'';
-    const items=c.items||[];
-    const itemsHtml=items.map((i,idx)=>{
-      const mark=i.mark||'check';
-      const done=i.d===true;
-      let markHtml;
-      if(mark==='number'){
-        let num=0;
-        for(let k=0;k<=idx;k++){
-          if((items[k].mark||'check')==='number')num++;
-        }
-        markHtml=`<div class="dli-num">${num}.</div>`;
-      }else{
-        markHtml=`<div class="chk${done?' on':''}">${done?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4L19 7"/></svg>':''}</div>`;
-      }
-      return `
-      <div class="detail-list-item ${done && mark==='check'?'done':''}" data-list-idx="${idx}">
-        ${markHtml}
-        <span>${esc(i.t)}</span>
-      </div>
-    `;}).join('');
-    // ノート詳細と同じく、指定色のカードで包む (グリッドの見た目と一致させる)
-    contentHtml=`<div class="detail-list-card" style="background:${col.bg};color:${col.fg};">${title}${itemsHtml}</div>`;
+    contentHtml=listBodyMarkup(c,'detail');
   }else if(c.type==='link'){
     // リンクカード詳細表示 + 「サイトを開く」ボタン + メモ(自分用コメント)
     const link=c.link||{};
