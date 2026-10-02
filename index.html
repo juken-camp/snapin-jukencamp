@@ -6417,6 +6417,16 @@ function resolveAlign(c){
 
 // 詳細・タップ編集・一覧で共通の箇条書き。寸法はこの基準幅から比例させる。
 const LIST_LAYOUT_WIDTH=354, LIST_LAYOUT_FONT_SIZE=15;
+function listLayoutFontSize(c){
+  const items=c.items||[];
+  const chars=String(c.title||'').length+items.reduce((n,i)=>n+String(i.t||'').length,0);
+  const rows=items.reduce((n,i)=>n+String(i.t||'').split('\n').length,0);
+  if(rows<=2 && chars<=50)return 26;
+  if(rows<=3 && chars<=100)return 24;
+  if(rows<=5 && chars<=160)return 22.5;
+  if(rows<=8 && chars<=240)return 19;
+  return LIST_LAYOUT_FONT_SIZE;
+}
 function listBodyMarkup(c,mode){
   const editable=mode==='edit',thumb=mode==='thumb';
   const col=colorById(c.color);
@@ -6433,7 +6443,8 @@ function listBodyMarkup(c,mode){
   }).join('');
   const title=(editable||c.title)?`<div class="snapin-list-title${editable?' inline-list-title':''}"${editable?' data-placeholder="タイトルを追加…"':''}>${esc(c.title||'')}</div>`:'';
   const width=thumb?`width:${LIST_LAYOUT_WIDTH}px;`:'';
-  return `<div class="snapin-list-body${thumb?'':' detail-list-card'}" style="${width}font-size:${LIST_LAYOUT_FONT_SIZE}px;background:${col.bg};color:${col.fg};">${title}${rows}</div>`;
+  const fontSize=listLayoutFontSize(c);
+  return `<div class="snapin-list-body${thumb?'':' detail-list-card'}" data-list-font-size="${fontSize}" style="${width}font-size:${fontSize}px;background:${col.bg};color:${col.fg};">${title}${rows}</div>`;
 }
 function listCardInner(c){
   if(typeof isLinkedCard==='function' && isLinkedCard(c))c=resolveLiveCard(c);
@@ -6700,12 +6711,13 @@ function applyListThumbFit(root){
   nodes.forEach(el=>{
     const body=el.querySelector('.snapin-list-body');
     if(!body||!el.clientWidth||!el.clientHeight)return;
+    const baseFont=Number(body.dataset.listFontSize)||LIST_LAYOUT_FONT_SIZE;
     if(!body._listNaturalHeight){
-      body.style.width=LIST_LAYOUT_WIDTH+'px';body.style.fontSize=LIST_LAYOUT_FONT_SIZE+'px';
+      body.style.width=LIST_LAYOUT_WIDTH+'px';body.style.fontSize=baseFont+'px';
       body._listNaturalHeight=body.scrollHeight;
     }
     let scale=Math.min(el.clientWidth/LIST_LAYOUT_WIDTH,el.clientHeight/Math.max(1,body._listNaturalHeight));
-    const apply=()=>{body.style.width=(LIST_LAYOUT_WIDTH*scale)+'px';body.style.fontSize=(LIST_LAYOUT_FONT_SIZE*scale)+'px';};
+    const apply=()=>{body.style.width=(LIST_LAYOUT_WIDTH*scale)+'px';body.style.fontSize=(baseFont*scale)+'px';};
     apply();
     // 小数pxの丸めによる縦のはみ出しだけ、実寸で補正する。
     for(let n=0;n<3 && body.scrollHeight>el.clientHeight;n++){
@@ -6716,7 +6728,9 @@ function applyListThumbFit(root){
 function applyDetailListStyle(){
   document.querySelectorAll('.detail-list-card.snapin-list-body').forEach(body=>{
     if(_inline?.el && body.contains(_inline.el))return;
-    if(body.clientWidth)body.style.fontSize=(LIST_LAYOUT_FONT_SIZE*body.clientWidth/LIST_LAYOUT_WIDTH)+'px';
+    const baseFont=state.current?.type==='list'?listLayoutFontSize(state.current):Number(body.dataset.listFontSize)||LIST_LAYOUT_FONT_SIZE;
+    body.dataset.listFontSize=String(baseFont);
+    if(body.clientWidth)body.style.fontSize=(baseFont*body.clientWidth/LIST_LAYOUT_WIDTH)+'px';
   });
 }
 
