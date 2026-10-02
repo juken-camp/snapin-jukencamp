@@ -6727,6 +6727,9 @@ function applyListThumbFit(root){
 }
 function applyDetailListStyle(){
   document.querySelectorAll('.detail-list-card.snapin-list-body').forEach(body=>{
+    // メモと同じく、項目が少ない段階でも正方形の背景を先に確保する。
+    // 内容が枠を超えたときは通常のフローで縦に伸ばし、全文を表示する。
+    if(body.clientWidth)body.style.minHeight=body.clientWidth+'px';
     if(_inline?.el && body.contains(_inline.el))return;
     const baseFont=state.current?.type==='list'?listLayoutFontSize(state.current):Number(body.dataset.listFontSize)||LIST_LAYOUT_FONT_SIZE;
     body.dataset.listFontSize=String(baseFont);
