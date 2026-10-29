@@ -71,7 +71,7 @@ function eikenGuidance(level) {
 }
 
 // すべて環境変数で上書き可能 (Vercel の Settings → Environment Variables)
-const TR_MODEL     = process.env.TRANSLATE_MODEL || 'claude-haiku-4-5-20251001';
+const TR_MODEL     = process.env.TRANSLATE_MODEL || 'claude-haiku-5-5';
 const TR_MAX_CHARS = parseInt(process.env.TR_MAX_CHARS || '1500', 10); // 1行が長すぎる入力は翻訳しない
 const TR_DEV_DAILY = parseInt(process.env.TR_ANON_DAILY || '150', 10); // 端末ごと 1日の翻訳回数上限
 const TR_IP_DAILY  = parseInt(process.env.TR_IP_DAILY  || '5000', 10); // IPごと 1日の翻訳回数上限 (学校の共有wifi想定で高め)
@@ -130,8 +130,9 @@ async function handleTranslate(req, res, body) {
     // 3) 翻訳 (Haiku)
     const result = await client.messages.create({
       model: TR_MODEL,
-      max_tokens: 1024,
-      temperature: 0, // 翻訳は決定的に。同じ日本語＋同じ級なら、作り直しても必ず同じ英文になる(覚えた英文がブレない)。
+      max_tokens: 1536, // 新トークナイザーでのトークン増加に備える
+      // Haiku 5.5 は temperature を受け付けないため指定しない。翻訳結果は共有キャッシュで再利用する。
+      ...(TR_MODEL === 'claude-haiku-5-5' ? { thinking: { type: 'disabled' } } : {}),
       system: dir === 'en2ja' ? TRANSLATE_SYSTEM_EN2JA : (TRANSLATE_SYSTEM + eikenGuidance(level)),
       messages: [{ role: 'user', content: text }],
     });
@@ -258,8 +259,9 @@ export default async function handler(req, res) {
     // OCR モード (画像から文字を読み取る)
     if (ocrImage) {
       const result = await client.messages.create({
-        model: 'claude-haiku-4-5-20251001', // OCRは高速・低コストのHaikuで十分
-        max_tokens: 2048, // 表や長文画像でも切れないように余裕を持たせる
+        model: 'claude-haiku-5-5', // OCRは高速・低コストのHaikuで十分
+        max_tokens: 3072, // 新トークナイザーでも表や長文画像が途中で切れにくいよう余裕を持たせる
+        thinking: { type: 'disabled' }, // OCRは応答速度とコストを優先
         messages: [
           {
             role: 'user',
@@ -303,7 +305,7 @@ export default async function handler(req, res) {
     );
     let model;
     if (hasImage) {
-      model = 'claude-sonnet-4-6';
+      model = 'claude-sonnet-5-5';
     } else {
       // 最後のユーザーメッセージのテキストを抽出
       const lastUser = [...messages].reverse().find(m => m.role === 'user');
@@ -320,18 +322,21 @@ export default async function handler(req, res) {
       // 長文回答を期待するキーワード (「まとめて」「全部」「最初から最後まで」など)
       const longAnswerKeywords = /まとめて|全部|すべて|一覧|最初から最後|最後まで|くわしく|詳しく|順番に|それぞれ|どんな/;
       if (sonnetKeywords.test(lastText) || longAnswerKeywords.test(lastText)) {
-        model = 'claude-sonnet-4-6';
+        model = 'claude-sonnet-5-5';
       } else {
-        model = 'claude-haiku-4-5-20251001';
+        model = 'claude-haiku-5-5';
       }
     }
 
-    // max_tokens: 旧 1024 だと長い解説で途中で切れていた (例: 教科書15項目を順に解説)。
-    // Haiku 4.5 / Sonnet 4.6 はいずれも 64K 出力に対応しているので、4096 まで余裕を持って許容する。
-    // コスト面では、画像入力1リクエストあたり総額の差は数円以下なので影響は軽微。
+    // 数学・画像・詳しい解説は Sonnet、それ以外は Haiku に振り分ける既存ルールを維持。
+    // 新トークナイザーでトークン数が増えるため、長文解説の上限を少し広げる。
+    // 従来どおり思考なしで使い、回答速度とコスト、表示形式を保つ。
     const result = await client.messages.create({
       model,
-      max_tokens: 4096,
+      max_tokens: 6144,
+      ...(model === 'claude-haiku-5-5'
+        ? { thinking: { type: 'disabled' } }
+        : { thinking: { type: 'between_tools' } }), // Sonnet 5.5 は disabled 非対応
       system: system || FALLBACK_SYSTEM_PROMPT,
       messages: messages.map((m) => ({
         role: m.role || 'user',
